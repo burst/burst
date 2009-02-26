@@ -82,7 +82,7 @@ motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,moti
 
 # Raise The RIGHT_LEG
 ActualPosition = motionProxy.getPosition("RLeg", motion.SPACE_SUPPORT_LEG)
-X = -0.01
+X = 0.01
 Y = 0.00
 Z = 0.03
 wX = 0.0
@@ -110,7 +110,7 @@ Id5 = motionProxy.post.gotoAngle('LShoulderPitch', 120 * motion.TO_RAD, Interpol
 Id6 = motionProxy.post.gotoAngle('LElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move The RIGHT_LEG Backward
-X = -0.04
+X = 0.04
 Y = 0.00
 Z = 0.03
 wX = 0.00
@@ -138,7 +138,7 @@ motionProxy.post.gotoAngle('LShoulderPitch', 70 * motion.TO_RAD, InterpolationTi
 motionProxy.post.gotoAngle('LElbowRoll', -80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 InterpolationTimeForThisSection = 0.1 #In seconds
 # Shoot The RIGHT_LEG
-X = 0.10
+X = -0.10
 Y = 0.00
 Z = 0.05
 wX = 0.00

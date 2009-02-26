@@ -63,12 +63,12 @@ motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)
 # Send angles through a smooth interpolation (max motors speed: 30%)
 motionProxy.gotoBodyAnglesWithSpeed(InitialPosition ,30, motion.INTERPOLATION_SMOOTH)
 
-motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
+motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_RIGHT)
 # Set the Balancer in Automatique Mode
 motionProxy.setBalanceMode(motion.BALANCE_MODE_AUTO)
 
-# Go to Simple Support LEFT
-motionProxy.setSupportMode(motion.SUPPORT_MODE_LEFT)
+# Go to Simple Support RIGHT
+motionProxy.setSupportMode(motion.SUPPORT_MODE_RIGHT)
 time.sleep(3)
 
 #####################################################################
@@ -76,27 +76,27 @@ time.sleep(3)
 InterpolationTimeForThisSection = 0.4 #In seconds
 
 #~ # Bend The Torso Forward
-Rx = -0.2
+Rx = 0.2
 Ry = 0.0
 motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
-# Raise The RIGHT_LEG
-ActualPosition = motionProxy.getPosition("RLeg", motion.SPACE_SUPPORT_LEG)
-X = -0.01
+# Raise The LEFT_LEG
+ActualPosition = motionProxy.getPosition("LLeg", motion.SPACE_SUPPORT_LEG)
+X = 0.01
 Y = 0.00
 Z = 0.03
 wX = 0.0
 wY = 0.0
 wZ = 0.0
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH) 
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH) 
 
 #####################################################################
 #####################################################################
 InterpolationTimeForThisSection = 0.4 #In seconds
 
 # Bend The Torso Forward
-Rx = -0.2
+Rx = 0.2
 Ry = 0.4
 motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
@@ -104,27 +104,27 @@ motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,moti
 motionProxy.post.gotoAngle('HeadPitch', -0.4, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move Arms
-Id3 = motionProxy.post.gotoAngle('RShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id4 = motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id5 = motionProxy.post.gotoAngle('LShoulderPitch', 120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id6 = motionProxy.post.gotoAngle('LElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id3 = motionProxy.post.gotoAngle('LShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id4 = motionProxy.post.gotoAngle('LElbowRoll', -80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id5 = motionProxy.post.gotoAngle('RShoulderPitch', 120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id6 = motionProxy.post.gotoAngle('RElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
-# Move The RIGHT_LEG Backward
-X = -0.04
+# Move The LEFT_LEG Backward
+X = 0.04
 Y = 0.00
 Z = 0.03
 wX = 0.00
-wY = -0.1
+wY = 0.1
 wZ = 0.00
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
 
 #####################################################################
 #####################################################################
 InterpolationTimeForThisSection = 0.4 #In seconds
 
 # Bend The Torso Backward
-Rx = -0.2
+Rx = 0.2
 Ry = 0.1
 Id1 = motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
@@ -132,27 +132,27 @@ Id1 = motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSectio
 Id2 = motionProxy.post.gotoAngle('HeadPitch', -0.1, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move Arms
-motionProxy.post.gotoAngle('RShoulderPitch', 100 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-motionProxy.post.gotoAngle('RElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-motionProxy.post.gotoAngle('LShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-motionProxy.post.gotoAngle('LElbowRoll', -80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+motionProxy.post.gotoAngle('LShoulderPitch', 100 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+motionProxy.post.gotoAngle('LElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+motionProxy.post.gotoAngle('RShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 InterpolationTimeForThisSection = 0.1 #In seconds
-# Shoot The RIGHT_LEG
-X = 0.10
+# Shoot The LEFT_LEG
+X = -0.10
 Y = 0.00
 Z = 0.05
 wX = 0.00
 wY = 0.00
 wZ = 0.00
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
 
 #####################################################################
 #####################################################################
 InterpolationTimeForThisSection = 0.4 #In seconds
 
 # Straighten The Torso
-Rx = -0.2
+Rx = 0.2
 Ry = 0.0
 motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
@@ -160,12 +160,12 @@ motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,moti
 motionProxy.post.gotoAngle('HeadPitch', 0.0, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move Arms
-Id3 = motionProxy.post.gotoAngle('RShoulderPitch', 120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id4 = motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id5 = motionProxy.post.gotoAngle('LShoulderPitch',120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-Id6 = motionProxy.post.gotoAngle('LElbowRoll', -80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id3 = motionProxy.post.gotoAngle('LShoulderPitch', 120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id4 = motionProxy.post.gotoAngle('LElbowRoll', -80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id5 = motionProxy.post.gotoAngle('RShoulderPitch',120 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id6 = motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
-# Lower The RIGHT_LEG
+# Lower The LEFT_LEG
 X = 0.00
 Y = 0.00
 Z = 0.02
@@ -173,7 +173,7 @@ wX = 0.00
 wY = 0.00
 wZ = 0.00
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
 
 #####################################################################
 #####################################################################
@@ -184,7 +184,7 @@ Rx = 0.0
 Ry = 0.0
 motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
-# Down The RIGHT_LEG
+# Down The LEFT_LEG
 X = 0.00
 Y = 0.00
 Z = 0.00
@@ -192,13 +192,12 @@ wX = 0.00
 wY = 0.00
 wZ = 0.00
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
 
 #####################################################################
 #####################################################################
 # Go to Double Support Mode
-motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
+motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_RIGHT)
 time.sleep(3)
 motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)
-
 
