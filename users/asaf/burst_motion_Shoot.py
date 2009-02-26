@@ -136,7 +136,7 @@ motionProxy.post.gotoAngle('LShoulderPitch', 100 * motion.TO_RAD, InterpolationT
 motionProxy.post.gotoAngle('LElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 motionProxy.post.gotoAngle('RShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-
+InterpolationTimeForThisSection = 0.1 #In seconds
 # Shoot The LEFT_LEG
 X = 0.10
 Y = 0.00
@@ -149,7 +149,7 @@ motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK
 
 #####################################################################
 #####################################################################
-InterpolationTimeForThisSection = 0.5 #In seconds
+InterpolationTimeForThisSection = 0.4 #In seconds
 
 # Straighten The Torso
 Rx = 0.2

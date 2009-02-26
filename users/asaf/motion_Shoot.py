@@ -129,14 +129,14 @@ Ry = 0.1
 Id1 = motionProxy.post.gotoTorsoOrientation(Rx,Ry,InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move Head
-Id2 = motionProxy.post.gotoAngle('HeadPitch', -0.1, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
+Id2 = motionProxy.post.gotoAngle('HeadPitch', 0.1, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 
 # Move Arms
 motionProxy.post.gotoAngle('LShoulderPitch', 100 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 motionProxy.post.gotoAngle('LElbowRoll', 0 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 motionProxy.post.gotoAngle('RShoulderPitch', 70 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
 motionProxy.post.gotoAngle('RElbowRoll', 80 * motion.TO_RAD, InterpolationTimeForThisSection,motion.INTERPOLATION_SMOOTH)
-
+InterpolationTimeForThisSection = 0.1 #In seconds
 # Shoot The LEFT_LEG
 X = 0.10
 Y = 0.00

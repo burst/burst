@@ -14,7 +14,7 @@ from motion_CurrentConfig import *
 # Create python broker
 
 try:
-  broker = ALBroker("pythonBroker","127.0.0.1",9999,IP, PORT)
+  broker = ALBroker("pythonBroker","127.0.0.1",9999,IP,PORT)
 except RuntimeError,e:
   print("cannot connect")
   exit(1)
