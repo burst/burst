@@ -1,13 +1,14 @@
+#!/usr/bin/env python
 from time import sleep
+import sys
 
-import burst
-from burst import naoqi
+from burst import ALBroker, default_help, ip, port
 
 def main():
-    if burst.ip is None or burst.port is None:
-        print burst.default_help()
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print default_help()
         raise SystemExit
-    broker = naoqi.ALBroker("test_simulation", "127.0.0.1", 9999, burst.ip, burst.port)
+    broker = ALBroker("test_simulation", "127.0.0.1", 9999, ip, port)
     from bodyposition import BodyPosition
     bp = BodyPosition(broker=broker)
     while True:

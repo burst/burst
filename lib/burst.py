@@ -7,13 +7,14 @@ old:
 from naoqi import bla
 
 new:
-from burst.naoqi import bla
+from burst import bla
 
 old:
 import naoqi
 
-new:
-from burst import naoqi
+new: (two alternatives)
+import burst # you get the naoqi namespace plus some burst-ities.
+from burst import naoqi # the naoqi module
 
 (note, this won't work: import burst.naoqi as naoqi)
 
@@ -98,7 +99,7 @@ except Exception, e:
     pass
 
 def default_help():
-    return "usage: --port=<port> --ip=<ip>\n"
+    return "usage: %s --port=<port> --ip=<ip>\n" % sys.argv[0]
 
 def test():
     import burst
