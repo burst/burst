@@ -91,7 +91,7 @@ def addPropertiesToBodyPosition():
 
 addPropertiesToBodyPosition()
 
-if __name__ == '__main__':
+def read_until_ctrl_c():
     from time import sleep
     bp = BodyPosition()
     try:
@@ -101,4 +101,7 @@ if __name__ == '__main__':
             sleep(0.1)
     except KeyboardInterrupt:
         print "ctrl-c pressed, exiting..."
+
+if __name__ == '__main__':
+    read_until_ctrl_c()
 

@@ -37,7 +37,10 @@ predefined_sys_paths = [
 
 import os
 import sys
-import socket # for resolving a hostname
+try: # doesn't work on opennao
+    from socket import getaddrinfo # for resolving a hostname
+except:
+    getaddrinfo = lambda ip, port: [[None, None, None, [ip]]]
 
 def fix_sys_path():
     naoqi_root = None
@@ -79,8 +82,20 @@ import naoqi
 
 from getopt import gnu_getopt
 
+def get_default_ip():
+    # on the nao the ip should be something that would work - since naoqi by default
+    # doesn't listen to the loopback (why? WHY??), we need to find out the public address.
+    # "ip route get" does the trick
+    ip = "127.0.0.1"
+    try:
+        import socket
+    except:
+        t = os.popen('ip route get 1.1.1.1').read()
+        ip = t[t.find('src')+3:].split()[0]
+    return ip
+
 # defaults - suitable for a locally running naoqi, like on a robot.
-ip = "127.0.0.1"
+ip = get_default_ip()
 port = 9559
 
 try:
@@ -90,7 +105,7 @@ try:
             ip = v
             # harmless if already an ip
             try:
-                ip = socket.getaddrinfo(ip, None)[0][4][0]
+                ip = getaddrinfo(ip, None)[0][4][0]
             except Exception, e:
                 print "Warning: can't resolve %r, assuming ip" % ip
         elif k == '--port':
@@ -99,13 +114,21 @@ except Exception, e:
     pass
 
 def default_help():
-    return "usage: %s --port=<port> --ip=<ip>\n" % sys.argv[0]
+    return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]
 
 def test():
     import burst
     print "naoqi = %s" % burst.naoqi
     print "ip    = %s" % burst.ip
     print "port  = %s" % burst.port
+    print
+    if '--bodyposition' in sys.argv:
+        import bodyposition
+        bodyposition.read_until_ctrl_c()
+    else:
+        print "you can use various switches to test the nao:"
+        print default_help() + ' [--bodyposition]'
+        print "--bodyposition - enter an endless loop printing various sensors (good for testing)"
 
 # put all of naoqi namespace in burst
 from naoqi import *
