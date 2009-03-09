@@ -33,11 +33,13 @@ predefined_sys_paths = [
  ),
 ]
 
+
 import os
 import sys
 import socket # for resolving a hostname
 
 def fix_sys_path():
+    naoqi_root = None
     al_dir = os.environ.get('AL_DIR', None)
     if al_dir != None:
         if not os.path.exists(al_dir):
@@ -56,6 +58,12 @@ def fix_sys_path():
             naoqi_root = paths[0]
             naoqi_imp = paths[1]
             break
+    if naoqi_root is None:
+        print """ERROR: naoqi is not installed. Please install it and make sure the AL_DIR environment
+variable points to it. See https://shwarma.cs.biu.ac.il/moin/NaoQi for OS specific instructions
+"""
+        raise SystemExit
+
 
 # maybe this is already taken care of? test first.
 try:
@@ -70,15 +78,20 @@ import naoqi
 
 from getopt import gnu_getopt
 
-ip = None
-port = None
+# defaults - suitable for a locally running naoqi, like on a robot.
+ip = "127.0.0.1"
+port = 9559
+
 try:
     opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port='])
     for k, v in opts:
         if k == '--ip':
             ip = v
             # harmless if already an ip
-            ip = socket.getaddrinfo(ip, None)[0][4][0]
+            try:
+                ip = socket.getaddrinfo(ip, None)[0][4][0]
+            except Exception, e:
+                print "Warning: can't resolve %r, assuming ip" % ip
         elif k == '--port':
             port = int(v)
 except Exception, e:

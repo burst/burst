@@ -4,9 +4,6 @@ import burst
 from burst import ALBroker, ALProxy
 import motion
 
-IP = "192.168.2.101" # Put here the IP address of your robot
-PORT = 9559
-
 def split_camel(st):
     ret = []
     s = 0
@@ -42,10 +39,10 @@ class BodyPosition(object):
     _short_to_full_name_d = dict(_short_to_full_name)
     _full_to_short_name_d = dict([(y,x) for x,y in _short_to_full_name])
 
-    def __init__(self, broker=None):
+    def __init__(self, broker=None, ip=burst.ip, port=burst.port):
         self._broker = broker
         if self._broker is None:
-            self._broker = ALBroker("pybroker", "127.0.0.1", 9999, IP, PORT)
+            self._broker = ALBroker("pybroker", "127.0.0.1", 9999, ip, port)
         self._mem = ALProxy("ALMemory")
         self._d = dict([(x, 0.0) for x in self._short_to_full_name_d.values()])
         
@@ -97,8 +94,11 @@ addPropertiesToBodyPosition()
 if __name__ == '__main__':
     from time import sleep
     bp = BodyPosition()
-    while True:
-        bp.update()
-        bp.pprint()
-        sleep(0.1)
+    try:
+        while True:
+            bp.update()
+            bp.pprint()
+            sleep(0.1)
+    except KeyboardInterrupt:
+        print "ctrl-c pressed, exiting..."
 
