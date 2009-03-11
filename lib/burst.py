@@ -20,6 +20,8 @@ from burst import naoqi # the naoqi module
 
 """
 
+debug = False # set to False when checking in
+
 # Test where we are - could be one of simulator, on robot, or remote.
 # there is no actual difference between simulator and remote, or actually
 # robot - as long as we use the AL_DIR variable. If it doesn't exist, try
@@ -98,8 +100,9 @@ def get_default_ip():
 ip = get_default_ip()
 port = 9559
 
-try:
-    opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port='])
+def parse_command_line_arguments():
+    global ip, port
+    opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port=', 'bodyposition'])
     for k, v in opts:
         if k == '--ip':
             ip = v
@@ -110,8 +113,14 @@ try:
                 print "Warning: can't resolve %r, assuming ip" % ip
         elif k == '--port':
             port = int(v)
+    globals()['ip'] = ip
+    globals()['port'] = port
+
+try:
+    parse_command_line_arguments()
 except Exception, e:
-    pass
+    if debug:
+        import pdb; pdb.set_trace()
 
 def default_help():
     return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]

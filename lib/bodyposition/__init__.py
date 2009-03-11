@@ -75,8 +75,14 @@ class BodyPosition(object):
         return self._short_to_full_name_d[n]
 
     def __str__(self):
+        def safe_inv(x):
+            if x == 0.0:
+                return 1e100
+            else:
+                return 1.0/x
+
         return '\n'.join(
-             ['%25s: %8.2f (%2.6f)' % (self.short(k), self._d[k], 1.0/self._d[k]) for k in self._fsr_full]
+             ['%25s: %8.2f (%2.6f)' % (self.short(k), self._d[k], safe_inv(self._d[k])) for k in self._fsr_full]
              + ['%25s: %8.2f' % (self.short(k), self._d[k]) for k in self._inertial_full])
         
     def pprint(self):
