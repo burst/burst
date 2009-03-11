@@ -284,8 +284,7 @@ class OpenHandCommand(Command):
 
 class CommandParser(object):
 	
-	commands = [SayCommand, StiffnessOnCommand, StiffnessOffCommand, WalkCommand, CrouchPositionCommand, ZeroPositionCommand, 
-		InitPositionCommand, ExitCommand, HelpCommand, ShootCommand, FlexArmCommand, UnflexArmCommand, OpenHandCommand, CloseHandCommand]
+	commands = Registrat.registered
 
 	@classmethod
 	def parseSingleCommand(clazz, userCommand):
