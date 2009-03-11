@@ -6,9 +6,9 @@ from burst import *
 import burst
 import motion
 
-# Define the variables for the robot's IP and port.
-ip = "192.168.7.666" # The default IP.
-port = 9559 # The default port.
+# The robot's IP and port.
+ip = "192.168.7.106" #burst.ip
+port = 9559 #burst.port
 broker = None
 
 def init():
@@ -19,10 +19,20 @@ def init():
 
 def getBroker():
 	return broker
-	
+
+motionProxy = None
+
 def getMotionProxy():
-	return ALProxy("ALMotion")
+	global motionProxy
+	if motionProxy == None:
+		motionProxy = ALProxy("ALMotion")
+	return motionProxy
+
+speechProxy = None
 
 def getSpeechProxy():
-	return ALProxy("ALTextToSpeech")
+	global speechProxy
+	if speechProxy == None:
+		speechProxy = ALProxy("ALTextToSpeech")
+	return speechProxy
 	

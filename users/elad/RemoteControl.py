@@ -1,4 +1,5 @@
 import sys
+import readline
 import Robot
 import Util
 from Util import *
@@ -28,11 +29,20 @@ import BasicMotion
 import Commands
 from Commands import *
 
+#motionProxy = Robot.getMotionProxy()
+#print motionProxy.post.closeHand("RHand")
+#motionProxy.post.closeHand("LHand")
+
+#from Commands import CommandParser
+#CompoundCommand([CommandParser.parseSingleCommand("openhand right"), CommandParser.parseSingleCommand("openhand left")], False).execute()
+#CompoundCommand( [CompoundCommand([CommandParser.parseSingleCommand("closehand right"), CommandParser.parseSingleCommand("closehand left")], True)], True ).execute()
+
 try:
 	while True:
 		selection = raw_input("> ")
 		try:
-			x = Commands.CommandParser.parseSingleCommand(selection)
+			#x = Commands.CommandParser.parseSingleCommand(selection)
+			x = Commands.CommandParser.parse(selection)
 			x.execute()
 		except UnsupportedCommand:
 			print "Error: Unsupported command."

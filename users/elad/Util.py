@@ -24,3 +24,16 @@ class StringTokenizer(object):
 			
 	def hasMoreTokens(self):
 		return self.currentPosition < len(self.source)
+		
+def findClosingPara(string):
+	i = 1
+	acc = 1
+	while i < len(string):
+		if string[i] == "(":
+			acc += 1
+		elif string[i] == ")":
+			acc -= 1
+		if acc == 0:
+			return i
+		i += 1
+	raise Exception # TODO: "No matching paranthesis."
