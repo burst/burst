@@ -311,7 +311,6 @@ class CommandParser(object):
 		print userCommand
 		raise UnsupportedCommand()
 
-#"""		
 	@classmethod
 	def parseCompoundCommand(clazz, userCommand):
 		
@@ -345,14 +344,8 @@ class CommandParser(object):
 			else:
 				coms.append(CommandParser.parseSingleCommand(userCommand))
 				userCommand = ""
-#			raw_input()
 		
 		return CompoundCommand(coms, sync)
-#"""
-
-#	@classmethod
-#	def parseCompoundCommand(clazz, userCommand):
-		
 	
 	@classmethod
 	def parse(clazz, userCommand):
