@@ -23,6 +23,10 @@ class Command(object):
 		
 	def wait(self):
 		pass
+	
+	# DBG
+	def toString(self):
+		return self.command
 
 
 class CompoundCommand(object):
@@ -42,6 +46,17 @@ class CompoundCommand(object):
 		if not self.isSynchronous: # Otherwise, you've already waited when executing.
 			for command in self.commands:
 				command.wait()
+	
+	# DBG
+	def toString(self):
+		string = "["
+		if len(self.commands) > 0:
+			string += self.commands[0].toString()
+		i = 1
+		while i < len(self.commands):
+			string += ", " + self.commands[i].toString()
+			i += 1
+		return string + "]"
 
 
 class TerminateSignal(Exception):
@@ -293,40 +308,54 @@ class CommandParser(object):
 		for command in clazz.commands:
 			if command.triggeredBy(keyword):
 				return command(userCommand)
+		print userCommand
 		raise UnsupportedCommand()
-		
+
+#"""		
 	@classmethod
 	def parseCompoundCommand(clazz, userCommand):
-		usercommand = userCommand.strip()
 		
 		sync = False
 		coms = []
 		
+		userCommand = userCommand.strip()
 		while userCommand != "":
-			usercommand = userCommand.strip()
-			if userCommand[0] == "(":
+			userCommand = userCommand.strip()
+#			print "userCommand = " + userCommand
+			if userCommand == "":
+				break
+			elif userCommand[0] == "(":
 				closing = Util.findClosingPara(userCommand)
 				coms.append(CommandParser.parseCompoundCommand(userCommand[1:closing]))
-				userCommand = userCommand[closing+1:].strip()
-			elif "|" in userCommand:
-				delimiter = userCommand.find("|")
-				coms.append(CommandParser.parseSingleCommand(userCommand[0:delimiter]))
-				userCommand = userCommand[delimiter+1:]
-			elif "&" in userCommand:
-				delimiter = userCommand.find("&")
-				coms.append(CommandParser.parseSingleCommand(userCommand[0:delimiter]))
-				sync = True
+				userCommand = userCommand[closing+1:]
+			elif ("|" in userCommand) or ("&" in userCommand):
+				delimiter1 = userCommand.find("|")
+				delimiter2 = userCommand.find("&")
+				if delimiter1 == -1:
+					delimiter = delimiter2
+				elif delimiter2 == -1:
+					delimiter = delimiter1
+				else:
+					delimiter = min(delimiter1, delimiter2)
+				if userCommand[delimiter] == "&":
+					sync = True
+				if delimiter != 0:
+					coms.append(CommandParser.parseCompoundCommand(userCommand[0:delimiter]))
 				userCommand = userCommand[delimiter+1:]
 			else:
 				coms.append(CommandParser.parseSingleCommand(userCommand))
 				userCommand = ""
-				
-			userCommand = userCommand.strip()
-			
-		return CompoundCommand(coms, sync)
+#			raw_input()
 		
+		return CompoundCommand(coms, sync)
+#"""
+
+#	@classmethod
+#	def parseCompoundCommand(clazz, userCommand):
+		
+	
 	@classmethod
 	def parse(clazz, userCommand):
 		return CommandParser.parseCompoundCommand(userCommand)
 		
-
+# son & 0 & (openhand right | openhand left | say opening) & (i | closehand right | closehand left) & sof
