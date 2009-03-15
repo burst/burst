@@ -11,10 +11,7 @@ port = burst.port
 broker = None
 
 def init():
-#	if Util.runningOnRobot():
-#		broker = ALBroker("pythonBroker", "127.0.0.1", 9999, "127.0.0.1", port)	
-#	else:
-		broker = ALBroker("pythonBroker", "127.0.0.1", 9999, ip, port)
+	broker = ALBroker("pythonBroker", "127.0.0.1", 9999, ip, port)
 
 def getBroker():
 	return broker
@@ -25,6 +22,7 @@ def getMotionProxy():
 	global motionProxy
 	if motionProxy == None:
 		motionProxy = ALProxy("ALMotion")
+		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return motionProxy
 
 speechProxy = None
@@ -33,5 +31,7 @@ def getSpeechProxy():
 	global speechProxy
 	if speechProxy == None:
 		speechProxy = ALProxy("ALTextToSpeech")
+		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return speechProxy
-	
+
+

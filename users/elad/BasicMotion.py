@@ -1,18 +1,28 @@
 # TODO: Rename to BasicControl, and have every command pass through this module on its way to the Robot?
 
-import os, sys, time
+import os, sys, time, math
 import Robot
+
+
+def clearPendingTasks():
+	stopWalking()
+
 
 def wait(pid):
 	motionProxy = Robot.getMotionProxy()
 	motionProxy.wait(pid, 0)
+
 
 def setStiffness(stiffness):
 	motionProxy = Robot.getMotionProxy().post
 	TimeInterpolation = 0.05
 	pid = motionProxy.setBodyStiffness(stiffness,TimeInterpolation)
 	time.sleep(TimeInterpolation) # TODO: Should no longer be necessary once I finish the interpreter.
+	# Dirty hack:
+	if stiffness == 0.0:
+		stopWalking()
 	return pid
+
 
 def slowStraightWalk(distance):
 	motionProxy = Robot.getMotionProxy().post
@@ -22,6 +32,7 @@ def slowStraightWalk(distance):
 	motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
 	motionProxy.addWalkStraight( distance, 80)
 	return motionProxy.walk()
+
 	
 def fastStraightWalk(distance):
 	motionProxy = Robot.getMotionProxy().post
@@ -29,6 +40,7 @@ def fastStraightWalk(distance):
 	motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 	motionProxy.addWalkStraight(distance, 25)
 	return motionProxy.walk()
+
 
 def initPosition():
 	motionProxy = Robot.getMotionProxy().post
@@ -49,23 +61,31 @@ def zeroPosition():
 
 
 def flexLeftArm():
-	motionProxy = Robot.getMotionProxy()
-	x = motionProxy.getChainAngles("RArm")
-	x[4] = -3.14
-	motionProxy.post.gotoChainAngles("RArm", x, 3, 1)
-	x = motionProxy.getPosition("LArm",0)
+	motionProxy = Robot.getMotionProxy().post
+	x = motionProxy.getChainAngles("LArm")
+	x[3] = -math.pi
+	return motionProxy.post.gotoChainAngles("LArm", x, 3.0, 1)
 
 
 def unflexLeftArm():
-	motionProxy = Robot.getMotionProxy()
+	motionProxy = Robot.getMotionProxy().post
+	x = motionProxy.getChainAngles("LArm")
+	x[3] = math.pi
+	return motionProxy.post.gotoChainAngles("LArm", x, 3.0, 1)
 
 
 def flexRightArm():
-	motionProxy = Robot.getMotionProxy()
+	motionProxy = Robot.getMotionProxy().post
+	x = motionProxy.getChainAngles("RArm")
+	x[3] = math.pi
+	return motionProxy.post.gotoChainAngles("RArm", x, 3.0, 1)
 	
 
 def unflexRightArm():
-	motionProxy = Robot.getMotionProxy()
+	motionProxy = Robot.getMotionProxy().post
+	x = motionProxy.getChainAngles("RArm")
+	x[3] = -math.pi
+	return motionProxy.post.gotoChainAngles("RArm", x, 3.0, 1)
 
 
 def closeRightHand():
@@ -88,4 +108,21 @@ def openLeftHand():
 	return motionProxy.openHand("LHand")
 
 
+def stopWalking():
+	motionProxy = Robot.getMotionProxy()
+	motionProxy.clearFootsteps()
+	return None
+
+
+def killAllTasks():
+	"""	
+	# Deprecated.
+	motionProxy = Robot.getMotionProxy()
+	motionProxy.killAll()
+	# Fix the balance
+	motionProxy.setBalanceMode(1)
+	#motionProxy.setSupportMode(0)
+	return None
+	"""
+	pass
 

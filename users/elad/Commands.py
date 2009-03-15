@@ -229,9 +229,10 @@ class FlexArmCommand(Command):
 	keywords = ["flex"]
 	
 	def execute(self):
-		if "l" in self.command:
+		modifiers = self.command[len(Util.StringTokenizer(self.command).nextToken()):]
+		if "l" in modifiers:
 			self.pid = BasicMotion.flexLeftArm()
-		elif "r" in self.command:
+		elif "r" in modifiers:
 			self.pid = BasicMotion.flexRightArm()
 		else:
 			raise ParseError
@@ -248,9 +249,10 @@ class UnflexArmCommand(Command):
 	keywords = ["unflex"]
 	
 	def execute(self):
-		if "l" in self.command:
+		modifiers = self.command[len(Util.StringTokenizer(self.command).nextToken()):]
+		if "l" in modifiers:
 			self.pid = BasicMotion.unflexLeftArm()
-		elif "r" in self.command:
+		elif "r" in modifiers:
 			self.pid = BasicMotion.unflexRightArm()
 		else:
 			raise ParseError
@@ -297,6 +299,33 @@ class OpenHandCommand(Command):
 		BasicMotion.wait(self.pid)
 
 
+class StopWalkingCommand(Command):
+	"stop"
+	
+	__metaclass__ = Registrat
+	
+	keywords = ["stop", "halt", "s"]
+	
+	def execute(self):
+		BasicMotion.stopWalking()
+	
+	def wait():
+		pass # Asynchronous anyhow.
+		
+
+class StopWalkingCommand(Command):
+	"kill"
+	
+	__metaclass__ = Registrat
+	
+	keywords = ["kill"]
+	
+	def execute(self):
+		BasicMotion.killAllTasks()
+	
+	def wait():
+		pass # Asynchronous anyhow.
+
 class CommandParser(object):
 	
 	commands = Registrat.registered
@@ -325,7 +354,9 @@ class CommandParser(object):
 				break
 			elif userCommand[0] == "(":
 				closing = Util.findClosingPara(userCommand)
-				coms.append(CommandParser.parseCompoundCommand(userCommand[1:closing]))
+				pid = CommandParser.parseCompoundCommand(userCommand[1:closing])
+				if pid != None:
+					coms.append(pid)
 				userCommand = userCommand[closing+1:]
 			elif ("|" in userCommand) or ("&" in userCommand):
 				delimiter1 = userCommand.find("|")
