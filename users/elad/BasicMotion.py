@@ -47,26 +47,26 @@ def zeroPosition():
 	motionProxy = Robot.getMotionProxy().post
 	return motionProxy.gotoBodyAnglesWithSpeed(26*[0.0] , 15, Robot.motion.INTERPOLATION_SMOOTH)
 
-"""
+
 def flexLeftArm():
 	motionProxy = Robot.getMotionProxy()
-	motionProxy.closeHand("LHand")
-	
+	x = motionProxy.getChainAngles("RArm")
+	x[4] = -3.14
+	motionProxy.post.gotoChainAngles("RArm", x, 3, 1)
+	x = motionProxy.getPosition("LArm",0)
+
 
 def unflexLeftArm():
 	motionProxy = Robot.getMotionProxy()
-	motionProxy.openHand("LHand")
 
 
 def flexRightArm():
 	motionProxy = Robot.getMotionProxy()
-	motionProxy.closeHand("RHand")
 	
 
 def unflexRightArm():
 	motionProxy = Robot.getMotionProxy()
-	motionProxy.openHand("RHand")
-"""
+
 
 def closeRightHand():
 	motionProxy = Robot.getMotionProxy().post

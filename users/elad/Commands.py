@@ -229,9 +229,9 @@ class FlexArmCommand(Command):
 	keywords = ["flex"]
 	
 	def execute(self):
-		if "left" in self.command:
+		if "l" in self.command:
 			self.pid = BasicMotion.flexLeftArm()
-		elif "right" in self.command:
+		elif "r" in self.command:
 			self.pid = BasicMotion.flexRightArm()
 		else:
 			raise ParseError
@@ -248,9 +248,9 @@ class UnflexArmCommand(Command):
 	keywords = ["unflex"]
 	
 	def execute(self):
-		if "left" in self.command:
+		if "l" in self.command:
 			self.pid = BasicMotion.unflexLeftArm()
-		elif "right" in self.command:
+		elif "r" in self.command:
 			self.pid = BasicMotion.unflexRightArm()
 		else:
 			raise ParseError
@@ -264,12 +264,12 @@ class CloseHandCommand(Command):
 	
 	__metaclass__ = Registrat
 	
-	keywords = ["closehand", "handclose", "close_hand", "hand_close"]
+	keywords = ["closehand", "handclose", "close_hand", "hand_close", "ch"]
 	
 	def execute(self):
-		if "left" in self.command:
+		if "l" in self.command:
 			self.pid = BasicMotion.closeLeftHand()
-		elif "right" in self.command:
+		elif "r" in self.command:
 			self.pid = BasicMotion.closeRightHand()
 		else:
 			raise ParseError
@@ -283,12 +283,12 @@ class OpenHandCommand(Command):
 	
 	__metaclass__ = Registrat
 	
-	keywords = ["openhand", "handopen", "open_hand", "hand_open"]
+	keywords = ["openhand", "handopen", "open_hand", "hand_open", "oh"]
 	
 	def execute(self):
-		if "left" in self.command:
+		if "l" in self.command:
 			self.pid = BasicMotion.openLeftHand()
-		elif "right" in self.command:
+		elif "r" in self.command:
 			self.pid = BasicMotion.openRightHand()
 		else:
 			raise ParseError

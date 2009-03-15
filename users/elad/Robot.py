@@ -1,7 +1,6 @@
 import os, sys, time
 import Util
-
-sys.path.append('../../lib')
+sys.path.append(os.path.join(os.path.dirname(sys.modules['Robot'].__file__), '../../lib'))
 from burst import *
 import burst
 import motion
