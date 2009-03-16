@@ -109,7 +109,7 @@ def openLeftHand():
 
 
 def stopWalking():
-	motionProxy = Robot.getMotionProxy()
+	motionProxy = Robot.getMotionProxy().post
 	motionProxy.clearFootsteps()
 	return None
 
@@ -125,4 +125,11 @@ def killAllTasks():
 	return None
 	"""
 	pass
+
+
+def addWalkStraight(distance, samples):
+	motionProxy = Robot.getMotionProxy().post
+	motionProxy.addWalkStraight(distance, samples)
+
+
 

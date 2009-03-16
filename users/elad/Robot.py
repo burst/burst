@@ -6,12 +6,16 @@ import burst
 import motion
 
 # The robot's IP and port.
-ip = burst.ip
-port = burst.port
+ip = "192.168.7.106"#burst.ip
+port = 9559#burst.port
+
 broker = None
+proxies = []
 
 def init():
-	broker = ALBroker("pythonBroker", "127.0.0.1", 9999, ip, port)
+	global broker
+	if broker is None:
+		broker = ALBroker("pythonBroker", "127.0.0.1", 9999, ip, port)
 
 def getBroker():
 	return broker
@@ -20,8 +24,10 @@ motionProxy = None
 
 def getMotionProxy():
 	global motionProxy
-	if motionProxy == None:
+	global proxies
+	if motionProxy is None:
 		motionProxy = ALProxy("ALMotion")
+		proxies.append(motionProxy)
 		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return motionProxy
 
@@ -29,9 +35,22 @@ speechProxy = None
 
 def getSpeechProxy():
 	global speechProxy
-	if speechProxy == None:
+	global proxies
+	if speechProxy is None:
 		speechProxy = ALProxy("ALTextToSpeech")
+		proxies.append(speechProxy)
 		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return speechProxy
+
+def shutdown():
+	pass
+#	global proxies
+#	global broker
+#	for proxy in proxies:
+#		proxy.__del__()
+#	broker.__del__()
+#	print "done?"
+
+
 
 

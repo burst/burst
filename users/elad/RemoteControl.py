@@ -38,3 +38,4 @@ try:
 except TerminateSignal:
 	pass
 
+Robot.shutdown()

@@ -100,6 +100,16 @@ def get_default_ip():
 ip = get_default_ip()
 port = 9559
 
+_broker = None
+
+def get_broker(_ip = None, _port = None):
+    global _broker
+    if _broker is None:
+        if _ip is None: _ip = ip
+        if _port is None: _port = port
+    	_broker =  ALBroker("pybroker", "127.0.0.1", 9999, _ip, _port)
+    return _broker
+
 def parse_command_line_arguments():
     global ip, port
     opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port=', 'bodyposition'])
