@@ -84,6 +84,7 @@ def run():
 			if "walking" in robotStatus or "turning" in robotStatus:
 				BasicMotion.stopWalking()
 			BasicMotion.shoot()
+			robotStatus = "shooting"
 		# Stop walking:
 		if abs(joystickStatus.x) < threshold and abs(joystickStatus.y) < threshold:
 			if "walking" in robotStatus or "turning" in robotStatus:
@@ -126,8 +127,6 @@ def run():
 				BasicMotion.turn(1.0)
 			robotStatus = "turning left"
 
-
-			robotStatus = "shooting"
 		# In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
 		time.sleep(0.001)
 		
