@@ -129,7 +129,12 @@ def killAllTasks():
 
 def addWalkStraight(distance, samples):
 	motionProxy = Robot.getMotionProxy().post
-	motionProxy.addWalkStraight(distance, samples)
+	return motionProxy.addWalkStraight(distance, samples)
 
 
+def turn(degrees):
+	motionProxy = Robot.getMotionProxy().post
+	motionProxy.addTurn(float(degrees), 18)
+	return motionProxy.walk()
+	
 

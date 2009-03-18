@@ -17,6 +17,7 @@ class Command(object):
 
 	def __init__(self, command):
 		self.command = command
+#		self.modifiers = Util
 	
 	def execute(self):
 		pass
@@ -101,7 +102,7 @@ class SayCommand(Command):
 		self.pid = Robot.getSpeechProxy().post.say(self.command[3:]) # TODO: Should pass through some other module.
 	
 	def wait(self):
-		Robot.getSpeechProxy().wait(self.pid)
+		Robot.getSpeechProxy().wait(self.pid, 0)
 
 
 class StiffnessOnCommand(Command):
@@ -326,6 +327,21 @@ class StopWalkingCommand(Command):
 	def wait():
 		pass # Asynchronous anyhow.
 
+
+class TurnCommand(Command):
+	"turn"
+	
+	__metaclass__ = Registrat
+	
+	keywords = ["turn"]
+	
+	def execute(self):
+		self.pid = BasicMotion.turn(Util.StringTokenizer(self.command[4:]).nextToken())
+	
+	def wait(self):
+		BasicMotion.wait(self.pid)
+		
+		
 class CommandParser(object):
 	
 	commands = Registrat.registered

@@ -24,6 +24,11 @@ class StringTokenizer(object):
 			
 	def hasMoreTokens(self):
 		return self.currentPosition < len(self.source)
+	
+#	def tokenize(self):
+#		result = []
+#		while self.
+		
 		
 def findClosingPara(string):
 	i = 1

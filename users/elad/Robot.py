@@ -28,7 +28,7 @@ def getMotionProxy():
 	if motionProxy is None:
 		motionProxy = ALProxy("ALMotion")
 		proxies.append(motionProxy)
-		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
+#		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return motionProxy
 
 speechProxy = None
@@ -39,7 +39,7 @@ def getSpeechProxy():
 	if speechProxy is None:
 		speechProxy = ALProxy("ALTextToSpeech")
 		proxies.append(speechProxy)
-		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
+#		print "Creating a proxy. This is a debugging message, in case multiple proxies cause some tasks not to be killed by the killAll method."
 	return speechProxy
 
 def shutdown():
