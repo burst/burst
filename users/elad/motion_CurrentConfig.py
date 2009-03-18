@@ -19,11 +19,6 @@ else:
   alPath = alPath.replace("~", home)
   alPath = alPath.replace("'", "")
   sys.path.append(alPath)
-#  import naoqi
-#  from naoqi import ALBroker
-#  from naoqi import ALModule
-#  from naoqi import ALProxy
-#  from naoqi import ALBehavior
   from naoqi import *
   import motion
 

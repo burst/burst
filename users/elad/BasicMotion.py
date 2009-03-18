@@ -138,3 +138,9 @@ def turn(degrees):
 	return motionProxy.walk()
 	
 
+def addTurn(degrees):
+	motionProxy = Robot.getMotionProxy().post
+	motionProxy.addTurn(float(degrees), 18)
+
+
+

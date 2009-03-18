@@ -31,10 +31,10 @@ try:
 			x = Commands.CommandParser.parse(selection)
 			x.execute()
 			#print x.toString()
-		except UnsupportedCommand:
-			print "Error: Unsupported command."
-		except ParseError:
-			print "Error: Could not parse the command."
+		except UnsupportedCommand, e:
+			print "Error: Unsupported command (" + str(e) + ")."
+		except ParseError, e:
+			print "Error: Could not parse the command (" + str(e) + ")."
 except TerminateSignal:
 	pass
 

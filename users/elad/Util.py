@@ -6,7 +6,7 @@ def runningOnRobot():
 	
 	
 class StringTokenizer(object):
-	def __init__(self,source):
+	def __init__(self, source):
 		self.source = source
 		self.currentPosition = 0;
 		while self.currentPosition < len(source) and source[self.currentPosition] == ' ':
@@ -25,9 +25,13 @@ class StringTokenizer(object):
 	def hasMoreTokens(self):
 		return self.currentPosition < len(self.source)
 	
-#	def tokenize(self):
-#		result = []
-#		while self.
+	@staticmethod
+	def tokenize(string):
+		result = []
+		tokenizer = StringTokenizer(string)
+		while tokenizer.hasMoreTokens():
+			result.append(tokenizer.nextToken())
+		return result
 		
 		
 def findClosingPara(string):

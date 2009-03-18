@@ -1,3 +1,5 @@
+# TODO: 0 & i - results in the command prompt not being returned to until the robot finishes executing this instruction
+# That's probably because compound commands don't finish executing immediately. I should think of a way to get around that.
 import Robot
 import Util
 from Util import *
@@ -17,7 +19,8 @@ class Command(object):
 
 	def __init__(self, command):
 		self.command = command
-#		self.modifiers = Util
+		self.modifiers = Util.StringTokenizer.tokenize(command)[1:]
+#		print "Debugging: " + str(self.command) + " - " + str(self.modifiers)
 	
 	def execute(self):
 		pass
@@ -99,6 +102,7 @@ class SayCommand(Command):
 	keywords = ["say"]
 	
 	def execute(self):
+		# I don't use the modifiers here, since extra spaces might have meaning.
 		self.pid = Robot.getSpeechProxy().post.say(self.command[3:]) # TODO: Should pass through some other module.
 	
 	def wait(self):
@@ -141,12 +145,14 @@ class WalkCommand(Command):
 	keywords = ["w", "walk"]
 	
 	def execute(self): # TODO: Fix.
-		stringTokenizer = StringTokenizer(self.command[5:])
-		distance = float(stringTokenizer.nextToken())
-		if not stringTokenizer.hasMoreTokens():
+		print self.modifiers
+		if len(self.modifiers) < 1:
+			raise ParseError, "distance expected"
+		distance = float(self.modifiers[0])
+		if len(self.modifiers) == 1:
 			self.pid = BasicMotion.slowStraightWalk(distance)
 		else:
-			gait = stringTokenizer.nextToken()
+			gait = self.modifiers[1]
 			if gait in ["slow", "slowly", "s"]:
 				self.pid = BasicMotion.slowStraightWalk(distance)
 			elif gait in ["fast", "f", "quick", "quickly", "q"]:
@@ -236,7 +242,7 @@ class FlexArmCommand(Command):
 		elif "r" in modifiers:
 			self.pid = BasicMotion.flexRightArm()
 		else:
-			raise ParseError
+			raise ParseError, "right/left expected"
 		
 	def wait(self):
 		BasicMotion.wait(self.pid)
@@ -256,7 +262,7 @@ class UnflexArmCommand(Command):
 		elif "r" in modifiers:
 			self.pid = BasicMotion.unflexRightArm()
 		else:
-			raise ParseError
+			raise ParseError, "right/left expected"
 	
 	def wait(self):
 		BasicMotion.wait(self.pid)
@@ -275,7 +281,7 @@ class CloseHandCommand(Command):
 		elif "r" in self.command:
 			self.pid = BasicMotion.closeRightHand()
 		else:
-			raise ParseError
+			raise ParseError, "right/left expected"
 	
 	def wait(self):
 		BasicMotion.wait(self.pid)
@@ -294,7 +300,7 @@ class OpenHandCommand(Command):
 		elif "r" in self.command:
 			self.pid = BasicMotion.openRightHand()
 		else:
-			raise ParseError
+			raise ParseError, "right/left expected"
 
 	def wait(self):
 		BasicMotion.wait(self.pid)
@@ -353,8 +359,7 @@ class CommandParser(object):
 		for command in clazz.commands:
 			if command.triggeredBy(keyword):
 				return command(userCommand)
-		print userCommand
-		raise UnsupportedCommand()
+		raise UnsupportedCommand, str(userCommand)
 
 	@classmethod
 	def parseCompoundCommand(clazz, userCommand):

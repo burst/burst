@@ -36,38 +36,102 @@ class JoystickWrapper(object):
 	def get_y(self, upToDate=False):
 		if not upToDate:
 			self.__class__.update()
-		return self.joystick.get_axis(self.y_axis)
+		return -self.joystick.get_axis(self.y_axis)
 	
 	def isButtonPressed(self, buttonNumber, upToDate=False):
 		if not upToDate:
 			self.__class__.update()
 		return self.joystick.get_button(buttonNumber) == 1
-				
+	
+	def getStatus(self):
+		return JoystickStatus(self)
+	
+	def count_buttons(self):
+		return self.joystick.get_numbuttons()
 
+class JoystickStatus(object):
+	def __init__(self, joystick):
+		self.joystick = joystick
+		self.buttons = joystick.count_buttons() * [False]
+		self.update()
+	
+	def update(self):
+		pygame.event.poll()
+		self.x = self.joystick.get_x(True)
+		self.y = self.joystick.get_y(True)
+		i = 0
+		for i in range(len(self.buttons)):
+			self.buttons[i] = self.joystick.isButtonPressed(i, True)
+	
+	
 def run():
-	walking = False
+	print "eek"
+	robotStatus = "at rest"
 	joystick = JoystickWrapper(0,1)
 	Robot.init()
+	joystickStatus = joystick.getStatus()
+
 	while True:
-		if joystick.isButtonPressed(closeButton):
-			BasicMotion.stopWalking()
-			walking = False
+		joystickStatus.update()
+		# Exit
+		if joystickStatus.buttons[closeButton]:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			robotStatus = "exiting"
 			break
-		if joystick.isButtonPressed(shootButton):
-			#BasicMotion.wait(BasicMotion.stopWalking())
-			BasicMotion.stopWalking() # TODO
-			import Shoot
-			Shoot.do()			
-		x, y = joystick.get_x(), joystick.get_y() # TODO
-		if abs(x) < threshold and abs(y) < threshold:
-			BasicMotion.stopWalking()
-			walking = False
-		elif abs(y) > threshold:
-			if not walking:
-				walking = True
-				BasicMotion.slowStraightWalk(1.0)
-			else:
+		# Shooting:
+		elif joystickStatus.buttons[shootButton] and abs(joystickStatus.y) < threshold and abs(joystickStatus.x) < threshold:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			BasicMotion.shoot()
+		# Stop walking:
+		if abs(joystickStatus.x) < threshold and abs(joystickStatus.y) < threshold:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			robotStatus = "at rest"
+		# Walk forwards:
+		elif joystickStatus.y > threshold and abs(joystickStatus.x) < threshold:
+			if robotStatus == "walking forwards":
 				BasicMotion.addWalkStraight(0.1, 60)
-	Robot.shutdown()
+			else:
+				if "walking" in robotStatus or "turning" in robotStatus:
+					BasicMotion.stopWalking()
+				BasicMotion.slowStraightWalk(1.0)
+			robotStatus = "walking forwards"
+		# Walk backwards:
+		elif joystickStatus.y < -threshold and abs(joystickStatus.x) < threshold:
+			if robotStatus == "walking backwards":
+				BasicMotion.addWalkStraight(-0.1, 60)
+			else:
+				if "walking" in robotStatus or "turning" in robotStatus:
+					BasicMotion.stopWalking()
+				BasicMotion.slowStraightWalk(-1.0)
+			robotStatus = "walking backwards"
+		# Turn right:
+		elif abs(joystickStatus.y) < threshold and joystickStatus.x > threshold:
+			if robotStatus == "turning right":
+				BasicMotion.addTurn(-1.0)
+			else:
+				if "walking" in robotStatus or "turning" in robotStatus:
+					BasicMotion.stopWalking()
+				BasicMotion.turn(-1.0)
+			robotStatus = "turning right"
+		# Turn left:
+		elif abs(joystickStatus.y) < threshold and joystickStatus.x < -threshold:
+			if robotStatus == "turning left":
+				BasicMotion.addTurn(1.0)
+			else:
+				if "walking" in robotStatus or "turning" in robotStatus:
+					BasicMotion.stopWalking()
+				BasicMotion.turn(1.0)
+			robotStatus = "turning left"
+
+
+			robotStatus = "shooting"
+		# In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
+		time.sleep(0.001)
+		
+	Robot.shutdown()	
+
 
 run()
