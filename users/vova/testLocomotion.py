@@ -9,5 +9,5 @@ c.memoryProxy.insertData("Burst/Odometry/Y",0,0)
 c.memoryProxy.insertData("Burst/Odometry/Yaw",-1.57009,0)
 
 #c.testWalk()
-c.goToLocation(1,1,0)
+c.goToLocation(1,0,0)
 print "aaaa"

@@ -21,23 +21,23 @@ class Locomotion:
             (ip & port provided from outside)
         """
         try:
-          broker = ALBroker("pythonBroker",local_ip,local_port,IP, PORT)
-          self.broker=broker
+          self.broker = ALBroker("pythonBroker",local_ip,local_port,IP, PORT)
+
         except RuntimeError,e:
           print("cannot connect to main broker")
           exit(1)
           
         try:
-            motionProxy = ALProxy("ALMotion")
-            self.motionProxy=motionProxy
+            self.motionProxy = ALProxy("ALMotion")
+            
         except Exception,e:
           print "Error when creating motion proxy:"
           print str(e)
           exit(1)
     
         try:
-            memoryProxy = ALProxy("ALMemory")
-            self.memoryProxy=memoryProxy
+            self.memoryProxy = ALProxy("ALMemory")
+            
         except Exception,e:
           print "Error when creating motion proxy:"
           print str(e)
@@ -97,7 +97,7 @@ class Locomotion:
         y=self.memoryProxy.getData("Burst/Odometry/Y",0)
         yaw= self.memoryProxy.getData("Burst/Odometry/Yaw",0)
         #Calculate the angle for the first turn
-        beta=math.atan2(math.fabs(y-targetY),math.fabs(x-targetX))
+        beta=math.atan2(math.fabs(x-targetX),math.fabs(y-targetY))
         alpha1=beta-yaw
         #Calculate the distance to walk
         dist=math.sqrt(math.pow((y-targetY),2) + math.pow((x-targetX),2))
@@ -110,7 +110,7 @@ class Locomotion:
         self.motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
         self.motionProxy.setWalkArmsEnable(True)
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        self.motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
+        self.motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.22, 2.0 )
         # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
         self.motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
         
@@ -118,7 +118,7 @@ class Locomotion:
         self.motionProxy.addTurn( alpha1, 80 )
         print "alpha1: "+ str(alpha1)
         #Walk
-        self.motionProxy.addWalkStraight( dist/2, 80 )
+        self.motionProxy.addWalkStraight( dist, 80 )
         print "dist: "+ str(dist)
         #Turn 2
         self.motionProxy.addTurn( alpha2, 80 )
