@@ -5,9 +5,16 @@ import Util
 from Util import *
 import BasicMotion
 
+class Registrat(type):
+	registered = []
+	def __new__(cls, name, bases, dct):
+		clazz = type.__new__(cls, name, bases, dct)
+		Registrat.registered.append(clazz)
+		return clazz
 
 class Command(object):
 	""
+	__metaclass__ = Registrat
 	
 	keywords = []
 	
@@ -75,17 +82,9 @@ class ParseError(Exception):
 	pass
 
 
-class Registrat(type):
-	registered = []
-	def __new__(cls, name, bases, dct):
-		clazz = type.__new__(cls, name, bases, dct)
-		Registrat.registered.append(clazz)
-		return clazz
-
 class HelpCommand(Command):
 	"help"
 	
-	__metaclass__ = Registrat
 	
 	keywords = ["help", "command", "commands", "list", "h", "?"]
 	
@@ -97,8 +96,6 @@ class HelpCommand(Command):
 class SayCommand(Command):
 	"say"
 	
-	__metaclass__ = Registrat
-
 	keywords = ["say"]
 	
 	def execute(self):
@@ -112,8 +109,6 @@ class SayCommand(Command):
 class StiffnessOnCommand(Command):
 	"stiffness_on"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["stiffness_on", "stiffnesson", "son"]
 
 	def execute(self):
@@ -126,8 +121,6 @@ class StiffnessOnCommand(Command):
 class StiffnessOffCommand(Command):
 	"stiffness_off"
 	
-	__metaclass__ = Registrat
-
 	keywords = ["soff", "sof", "soft", "stiffness_off", "stiffnessoff"]
 
 	def execute(self):
@@ -139,8 +132,6 @@ class StiffnessOffCommand(Command):
 
 class WalkCommand(Command):
 	"walk"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["w", "walk"]
 	
@@ -167,8 +158,6 @@ class WalkCommand(Command):
 class CrouchPositionCommand(Command):
 	"crouch"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["crouch", "c"]
 	
 	def execute(self):
@@ -178,8 +167,6 @@ class CrouchPositionCommand(Command):
 
 class ZeroPositionCommand(Command):
 	"zero (position)"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["0", "z", "zero"]
 	
@@ -192,8 +179,6 @@ class ZeroPositionCommand(Command):
 
 class InitPositionCommand(Command):
 	"initial (position)"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["init", "i", "initial", "initial position"]
 	
@@ -208,8 +193,6 @@ class InitPositionCommand(Command):
 class ShootCommand(Command):
 	"shoot"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["shoot"]
 	
 	def execute(self): # TODO: Return pid.
@@ -220,8 +203,6 @@ class ShootCommand(Command):
 class ExitCommand(Command):
 	"exit"
 	
-	__metaclass__ = Registrat
-
 	keywords = ["exit", "quit", "q", "e"]
 	
 	def execute(self):
@@ -230,8 +211,6 @@ class ExitCommand(Command):
 
 class FlexArmCommand(Command):
 	"flex"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["flex"]
 	
@@ -251,8 +230,6 @@ class FlexArmCommand(Command):
 class UnflexArmCommand(Command):
 	"unflex"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["unflex"]
 	
 	def execute(self):
@@ -271,8 +248,6 @@ class UnflexArmCommand(Command):
 class CloseHandCommand(Command):
 	"close_hand"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["closehand", "handclose", "close_hand", "hand_close", "ch"]
 	
 	def execute(self):
@@ -289,8 +264,6 @@ class CloseHandCommand(Command):
 
 class OpenHandCommand(Command):
 	"open_hand"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["openhand", "handopen", "open_hand", "hand_open", "oh"]
 	
@@ -309,8 +282,6 @@ class OpenHandCommand(Command):
 class StopWalkingCommand(Command):
 	"stop"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["stop", "halt", "s"]
 	
 	def execute(self):
@@ -323,8 +294,6 @@ class StopWalkingCommand(Command):
 class StopWalkingCommand(Command):
 	"kill"
 	
-	__metaclass__ = Registrat
-	
 	keywords = ["kill"]
 	
 	def execute(self):
@@ -336,8 +305,6 @@ class StopWalkingCommand(Command):
 
 class TurnCommand(Command):
 	"turn"
-	
-	__metaclass__ = Registrat
 	
 	keywords = ["turn"]
 	
