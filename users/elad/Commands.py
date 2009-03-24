@@ -1,9 +1,13 @@
+# One good test: son & 0 & (openhand right | openhand left | say opening) & (i | closehand right | closehand left) & sof
+
 # TODO: 0 & i - results in the command prompt not being returned to until the robot finishes executing this instruction
 # That's probably because compound commands don't finish executing immediately. I should think of a way to get around that.
+
 import Robot
 import Util
 from Util import *
 import BasicMotion
+
 
 class Registrat(type):
 	registered = []
@@ -12,8 +16,10 @@ class Registrat(type):
 		Registrat.registered.append(clazz)
 		return clazz
 
+
 class Command(object):
 	""
+
 	__metaclass__ = Registrat
 	
 	keywords = []
@@ -27,17 +33,12 @@ class Command(object):
 	def __init__(self, command):
 		self.command = command
 		self.modifiers = Util.StringTokenizer.tokenize(command)[1:]
-#		print "Debugging: " + str(self.command) + " - " + str(self.modifiers)
 	
 	def execute(self):
 		pass
 		
 	def wait(self):
 		pass
-	
-	# DBG
-	def toString(self):
-		return self.command
 
 
 class CompoundCommand(object):
@@ -82,9 +83,12 @@ class ParseError(Exception):
 	pass
 
 
+class ModuleSanityException(Exception):
+	pass
+	
+
 class HelpCommand(Command):
 	"help"
-	
 	
 	keywords = ["help", "command", "commands", "list", "h", "?"]
 	
@@ -251,9 +255,9 @@ class CloseHandCommand(Command):
 	keywords = ["closehand", "handclose", "close_hand", "hand_close", "ch"]
 	
 	def execute(self):
-		if "l" in self.command:
+		if "l" in self.modifiers or "left" in self.modifiers:
 			self.pid = BasicMotion.closeLeftHand()
-		elif "r" in self.command:
+		elif "r" in self.modifiers or "right" in self.modifiers:
 			self.pid = BasicMotion.closeRightHand()
 		else:
 			raise ParseError, "right/left expected"
@@ -313,6 +317,15 @@ class TurnCommand(Command):
 	
 	def wait(self):
 		BasicMotion.wait(self.pid)
+
+
+class WaitCommand(Command): # Note that this one is synchronous.
+	"wait"
+	
+	keywords = ["wait"]
+	
+	def execute(self):
+		time.sleep(float(self.modifiers[0]))
 		
 		
 class CommandParser(object):
@@ -337,7 +350,6 @@ class CommandParser(object):
 		userCommand = userCommand.strip()
 		while userCommand != "":
 			userCommand = userCommand.strip()
-#			print "userCommand = " + userCommand
 			if userCommand == "":
 				break
 			elif userCommand[0] == "(":
@@ -370,4 +382,15 @@ class CommandParser(object):
 	def parse(clazz, userCommand):
 		return CommandParser.parseCompoundCommand(userCommand)
 		
-# son & 0 & (openhand right | openhand left | say opening) & (i | closehand right | closehand left) & sof
+
+def moduleSanityCheck():
+	# Make sure no keyword is used by more than one Command. (Sure, it's quite inefficient, but who cares?)
+	for command1 in Registrat.registered:
+		for command2 in Registrat.registered:
+			if command1 != command2:
+				for keyword in command1.keywords:
+					if keyword in command2.keywords:
+						raise ModuleSanityException()
+
+	
+moduleSanityCheck()

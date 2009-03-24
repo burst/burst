@@ -62,7 +62,20 @@ class JoystickStatus(object):
 		i = 0
 		for i in range(len(self.buttons)):
 			self.buttons[i] = self.joystick.isButtonPressed(i, True)
-	
+
+
+class Registrat(type):
+	registered = []
+	def __new__(cls, name, bases, dct):
+		clazz = type.__new__(cls, name, bases, dct)
+		Registrat.registered.append(clazz)
+		return clazz	
+
+
+#class JoystickCommand(object):
+#	
+#	
+#	__metaclass__ = Registrat
 	
 def run():
 	print "eek"

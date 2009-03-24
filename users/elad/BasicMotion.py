@@ -134,13 +134,17 @@ def addWalkStraight(distance, samples):
 
 def turn(degrees):
 	motionProxy = Robot.getMotionProxy().post
-	motionProxy.addTurn(float(degrees), 18)
+	motionProxy.addTurn(float(degrees), 60)
 	return motionProxy.walk()
 	
 
 def addTurn(degrees):
 	motionProxy = Robot.getMotionProxy().post
-	motionProxy.addTurn(float(degrees), 18)
+	motionProxy.addTurn(float(degrees), 60)
 
+
+def shoot():
+	import Shoot
+	Shoot.do()
 
 
