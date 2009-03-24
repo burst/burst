@@ -12,6 +12,8 @@ closeButton = 1
 pygame.init()
 pygame.joystick.init()
 
+robotStatus = ""
+
 class JoystickWrapper(object):
 	def __init__(self, x_axis=0, y_axis=1):
 		self.x_axis = x_axis
@@ -49,6 +51,7 @@ class JoystickWrapper(object):
 	def count_buttons(self):
 		return self.joystick.get_numbuttons()
 
+
 class JoystickStatus(object):
 	def __init__(self, joystick):
 		self.joystick = joystick
@@ -64,6 +67,10 @@ class JoystickStatus(object):
 			self.buttons[i] = self.joystick.isButtonPressed(i, True)
 
 
+class QuitException(Exception):
+	pass
+	
+	
 class Registrat(type):
 	registered = []
 	def __new__(cls, name, bases, dct):
@@ -72,78 +79,165 @@ class Registrat(type):
 		return clazz	
 
 
-#class JoystickCommand(object):
-#	
-#	
-#	__metaclass__ = Registrat
+class JoystickCommand(object):
+
+	__metaclass__ = Registrat
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		pass
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		pass
+		
+
+# Exit
+class ExitJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		return joystickStatus.buttons[closeButton]
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if "walking" in robotStatus or "turning" in robotStatus:
+			BasicMotion.stopWalking()
+		robotStatus = "exiting"
+		raise QuitException
+		
+
+# Shoot
+class ShootJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return joystickStatus.buttons[shootButton] and abs(joystickStatus.y) < threshold and abs(joystickStatus.x) < threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if "walking" in robotStatus or "turning" in robotStatus:
+			BasicMotion.stopWalking()
+		BasicMotion.shoot()
+		robotStatus = "shooting"
+		
+
+# Stop
+class StopJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return abs(joystickStatus.x) < threshold and abs(joystickStatus.y) < threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if "walking" in robotStatus or "turning" in robotStatus:
+			BasicMotion.stopWalking()
+		robotStatus = "at rest"
+		
+		
+# Walk Forwards
+class WalkForwardsJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return joystickStatus.y > threshold and abs(joystickStatus.x) < threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if robotStatus == "walking forwards":
+			BasicMotion.addWalkStraight(0.1, 60)
+		else:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			BasicMotion.slowStraightWalk(1.0)
+		robotStatus = "walking forwards"
+		
+
+# Walk Backwards
+class WalkBackwardsJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return joystickStatus.y < -threshold and abs(joystickStatus.x) < threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if robotStatus == "walking backwards":
+			BasicMotion.addWalkStraight(-0.1, 60)
+		else:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			BasicMotion.slowStraightWalk(-1.0)
+		robotStatus = "walking backwards"
+
+
+# Turn Right
+class TurnRightJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return abs(joystickStatus.y) < threshold and joystickStatus.x > threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if robotStatus == "turning right":
+			BasicMotion.addTurn(-1.0)
+		else:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			BasicMotion.turn(-1.0)
+		robotStatus = "turning right"
+
+
+# Turn Left
+class TurnLeftJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		return abs(joystickStatus.y) < threshold and joystickStatus.x < -threshold
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+		if robotStatus == "turning left":
+			BasicMotion.addTurn(1.0)
+		else:
+			if "walking" in robotStatus or "turning" in robotStatus:
+				BasicMotion.stopWalking()
+			BasicMotion.turn(1.0)
+		robotStatus = "turning left"
+
 	
 def run():
-	print "eek"
+	global robotStatus
 	robotStatus = "at rest"
 	joystick = JoystickWrapper(0,1)
 	Robot.init()
-	joystickStatus = joystick.getStatus()
-
+	
 	while True:
-		joystickStatus.update()
-		# Exit
-		if joystickStatus.buttons[closeButton]:
-			if "walking" in robotStatus or "turning" in robotStatus:
-				BasicMotion.stopWalking()
-			robotStatus = "exiting"
+		joystickStatus = joystick.getStatus()
+		try:
+			for command in Registrat.registered:
+				if command.isTriggeredBy(joystickStatus, robotStatus):
+					command.trigger(joystickStatus)
+					break
+		except QuitException:
 			break
-		# Shooting:
-		elif joystickStatus.buttons[shootButton] and abs(joystickStatus.y) < threshold and abs(joystickStatus.x) < threshold:
-			if "walking" in robotStatus or "turning" in robotStatus:
-				BasicMotion.stopWalking()
-			BasicMotion.shoot()
-			robotStatus = "shooting"
-		# Stop walking:
-		if abs(joystickStatus.x) < threshold and abs(joystickStatus.y) < threshold:
-			if "walking" in robotStatus or "turning" in robotStatus:
-				BasicMotion.stopWalking()
-			robotStatus = "at rest"
-		# Walk forwards:
-		elif joystickStatus.y > threshold and abs(joystickStatus.x) < threshold:
-			if robotStatus == "walking forwards":
-				BasicMotion.addWalkStraight(0.1, 60)
-			else:
-				if "walking" in robotStatus or "turning" in robotStatus:
-					BasicMotion.stopWalking()
-				BasicMotion.slowStraightWalk(1.0)
-			robotStatus = "walking forwards"
-		# Walk backwards:
-		elif joystickStatus.y < -threshold and abs(joystickStatus.x) < threshold:
-			if robotStatus == "walking backwards":
-				BasicMotion.addWalkStraight(-0.1, 60)
-			else:
-				if "walking" in robotStatus or "turning" in robotStatus:
-					BasicMotion.stopWalking()
-				BasicMotion.slowStraightWalk(-1.0)
-			robotStatus = "walking backwards"
-		# Turn right:
-		elif abs(joystickStatus.y) < threshold and joystickStatus.x > threshold:
-			if robotStatus == "turning right":
-				BasicMotion.addTurn(-1.0)
-			else:
-				if "walking" in robotStatus or "turning" in robotStatus:
-					BasicMotion.stopWalking()
-				BasicMotion.turn(-1.0)
-			robotStatus = "turning right"
-		# Turn left:
-		elif abs(joystickStatus.y) < threshold and joystickStatus.x < -threshold:
-			if robotStatus == "turning left":
-				BasicMotion.addTurn(1.0)
-			else:
-				if "walking" in robotStatus or "turning" in robotStatus:
-					BasicMotion.stopWalking()
-				BasicMotion.turn(1.0)
-			robotStatus = "turning left"
-
-		# In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
-		time.sleep(0.001)
+		time.sleep(0.001) # In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
 		
 	Robot.shutdown()	
-
 
 run()

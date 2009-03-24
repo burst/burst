@@ -94,7 +94,8 @@ class HelpCommand(Command):
 	
 	def execute(self):
 		for command in Registrat.registered:
-			print command.__doc__.center(20) + " " + str(command.keywords)
+			if command != Command: # Ignore the abstract class everyone's inheriting from.
+				print command.__doc__.center(20) + " " + str(command.keywords)
 			
 			
 class SayCommand(Command):
