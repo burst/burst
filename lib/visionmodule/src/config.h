@@ -15,7 +15,7 @@
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: Typedefs :::..
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::: Platform variables :::..
-# define VISIONMODULE_IS_REMOTE_ON
+# define VISIONMODULE_IS_REMOTE_OFF
 
 # define VISIONMODULE_REVISION ""
 
