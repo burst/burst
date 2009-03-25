@@ -1,0 +1,1 @@
+this library contains binary (or python if we use them later) naoqi modules. It is checked in to the repository. Every module make file should copy the newly created module here. We will create symlinks in each robot from /opt/naoqi/modules/lib to here.
