@@ -19,6 +19,7 @@ else:
   from naoqi import ALModule
   from naoqi import ALProxy
   from naoqi import ALBehavior
+  import motion
 
 # Replace here with your robot's IP address
 IP = "192.168.7.108"
@@ -57,51 +58,49 @@ except Exception, e:
   print str(e)
   exit(1)
 
-# A simple loop that reads the memValue and checks
-# whether logos are detected
-#
-# Note : using C++, you can instead use a callback
-# to get notified when the memValue changes
-
-#TimeInterpolation = 0.05
-#motionProxy.setJointStiffness('HeadYaw',1.0,TimeInterpolation)
-#motionProxy.gotoAngle("HeadYaw",0.3,TimeInterpolation*10,1) #0.23
-#visionProxy.getBall()
+TimeInterpolation = 0.05
+motionProxy.setJointStiffness('HeadYaw',1.0,TimeInterpolation)
+motionProxy.gotoAngle("HeadYaw",0.31,TimeInterpolation*10,1) #0.23
+visionProxy.getBall()
 time.sleep(1.0)
 
+#motionProxy.gotoAngle("HeadYaw",-0.15,TimeInterpolation*10,1) #0.23
+#print (10*motion.TO_RAD)
+#exit(0)
+
 while True:
-#for i in range(0, 100):
-  #time.sleep(0.5)
+#for i in range(0, 1):
+  #time.sleep(0.1)
   #print(i)
 
   #visionProxy.getBallRemote()
-  a = visionProxy.getBall()
-  print a;
+  visionProxy.getBall()
+  visionProxy.getBall()
 
-  #val = memoryProxy.getData(memValue, 0)
+  val = memoryProxy.getData(memValue, 0)
   #val = 320
 
   # head between -2 (right) to 2 (left)
   # ball between 0 (left) to 640/320 (right)
+  # camera is 46.4 horizontal, 34.8 vertical (specs), fov 58 (specs)
 
-
-#  if(val):
-#    if(val>0):
-#      print "Ball X: ", val
-#      currentHeadYaw = motionProxy.getAngle("HeadYaw")
-#      print "currentHeadYaw: %f" % currentHeadYaw
-#      xtodeg = ((160.0-val)/160.0) # between 1 (left) to -1 (right)
-#      print "xtodeg: %f" % xtodeg
-#      
-#      if (abs(xtodeg)>0.05):
-#       xtodegfactor = 0.2
-#       newHeadYaw = currentHeadYaw + xtodeg*xtodegfactor
-#       print "newHeadYaw: %f" % newHeadYaw
-#       #motionProxy.setAngle("HeadYaw",(320.0-val)/320.0/2)
-#       motionProxy.gotoAngle("HeadYaw",newHeadYaw,TimeInterpolation*10,1)
-#       #print "test: %f" % ((320.0-val)/320.0/2)
-#  else:
-#    print "* No ball detected"
+  if(val):
+    if(val>0):
+      print "Ball X: ", val
+      currentHeadYaw = motionProxy.getAngle("HeadYaw")
+      print "currentHeadYaw: %f" % currentHeadYaw
+      xtodeg = ((160.0-val)/160.0) # between 1 (left) to -1 (right)
+      print "xtodeg: %f" % xtodeg
+      
+      if (abs(xtodeg)>0.05):
+       xtodegfactor = 23.2 #46.4/2
+       newHeadYaw = currentHeadYaw + (xtodeg*xtodegfactor*motion.TO_RAD)
+       print "newHeadYaw: %f" % newHeadYaw
+       #motionProxy.setAngle("HeadYaw",(320.0-val)/320.0/2)
+       motionProxy.gotoAngle("HeadYaw",newHeadYaw,TimeInterpolation*10,1)
+       #print "test: %f" % ((320.0-val)/320.0/2)
+  else:
+    print "* No ball detected"
 
 
 #  if(val):
@@ -114,7 +113,7 @@ while True:
 #  else:
 #    print "* No logo detected"
 
-#motionProxy.setJointStiffness('HeadYaw',0.0,TimeInterpolation)
+motionProxy.setJointStiffness('HeadYaw',0.0,TimeInterpolation)
 visionProxy.unRegisterFromVIM()
 
 print "Test terminated successfully" 
