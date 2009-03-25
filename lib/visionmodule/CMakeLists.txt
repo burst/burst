@@ -48,10 +48,7 @@ IF( "x$ENV{AL_DIR}x" STREQUAL "xx" )
 #  SET( ENV{AL_DIR} /opt/aldebaran/info/naoqi )
   MESSAGE( STATUS "Warning variable AL_DIR has not been set !" )
 ENDIF( "x$ENV{AL_DIR}x" STREQUAL "xx" )
-#SET( AL_DIR "$ENV{AL_DIR}" )
-
-INCLUDE ( ../findroot.cmake )
-
+SET( AL_DIR "$ENV{AL_DIR}" )
 
 
 
