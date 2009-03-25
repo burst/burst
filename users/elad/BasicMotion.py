@@ -115,16 +115,12 @@ def stopWalking():
 
 
 def killAllTasks():
-	"""	
 	# Deprecated.
 	motionProxy = Robot.getMotionProxy()
 	motionProxy.killAll()
-	# Fix the balance
-	motionProxy.setBalanceMode(1)
+	#motionProxy.setBalanceMode(1)
 	#motionProxy.setSupportMode(0)
 	return None
-	"""
-	pass
 
 
 def addWalkStraight(distance, samples):
