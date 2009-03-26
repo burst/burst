@@ -15,14 +15,6 @@ import BasicMotion
 import Commands
 from Commands import *
 
-#motionProxy = Robot.getMotionProxy()
-#print motionProxy.post.closeHand("RHand")
-#motionProxy.post.closeHand("LHand")
-
-#from Commands import CommandParser
-#CompoundCommand([CommandParser.parseSingleCommand("openhand right"), CommandParser.parseSingleCommand("openhand left")], False).execute()
-#CompoundCommand( [CompoundCommand([CommandParser.parseSingleCommand("closehand right"), CommandParser.parseSingleCommand("closehand left")], True)], True ).execute()
-
 try:
 	while True:
 		selection = raw_input("> ")

@@ -144,3 +144,11 @@ def shoot():
 	Shoot.do()
 
 
+def getUpFromFront():
+	import GetUpFromFront
+	GetUpFromFront.do()
+
+
+def getUpFromBack():
+	import GetUpFromBack
+	GetUpFromBack.do()

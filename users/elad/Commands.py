@@ -140,7 +140,6 @@ class WalkCommand(Command):
 	keywords = ["w", "walk"]
 	
 	def execute(self): # TODO: Fix.
-		print self.modifiers
 		if len(self.modifiers) < 1:
 			raise ParseError, "distance expected"
 		distance = float(self.modifiers[0])
@@ -313,7 +312,7 @@ class TurnCommand(Command):
 	keywords = ["turn"]
 	
 	def execute(self):
-		self.pid = BasicMotion.turn(Util.StringTokenizer(self.command[4:]).nextToken())
+		self.pid = BasicMotion.turn(self.modifiers[0])
 	
 	def wait(self):
 		BasicMotion.wait(self.pid)
@@ -326,6 +325,22 @@ class WaitCommand(Command): # Note that this one is synchronous.
 	
 	def execute(self):
 		time.sleep(float(self.modifiers[0]))
+
+
+class GetUpCommand(Command):
+	"get_up"
+	
+	keywords = ["get_up", "getup", "gu"]
+	
+	def execute(self):
+		if len(self.modifiers) == 0:
+			pass # TODO: Decide position on your own.
+		elif self.modifiers[0] == "front":
+			BasicMotion.getUpFromFront()
+		elif self.modifiers[0] == "back":
+			BasicMotion.getUpFromBack()
+		else:
+			raise ParseError, self.command + " accepts the following modifiers: front/back."
 		
 		
 class CommandParser(object):
