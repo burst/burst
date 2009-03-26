@@ -6,8 +6,12 @@ import burst
 import motion
 
 # The robot's IP and port.
-ip = burst.ip#"192.168.7.158"
-port = burst.port#9559
+ip = burst.ip
+port = burst.port
+#ip = "192.168.7.158"
+#port = 9559
+#ip = "127.0.0.1"
+#port = 9560	
 
 broker = None
 proxies = []

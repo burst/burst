@@ -1,12 +1,11 @@
 # One good test: son & 0 & (openhand right | openhand left | say opening) & (i | closehand right | closehand left) & sof
 
-# TODO: 0 & i - results in the command prompt not being returned to until the robot finishes executing this instruction
-# That's probably because compound commands don't finish executing immediately. I should think of a way to get around that.
+# TODO: Compound commands don't release the command prompt immediately, but simple commands do. They should behave the same.
 
 import Robot
 import Util
 from Util import *
-import BasicMotion
+import BasicMotion # TODO: Should be accessible through Robot, probably.
 
 
 class Registrat(type):

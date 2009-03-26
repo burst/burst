@@ -21,7 +21,7 @@ else:
   from naoqi import ALBehavior
 
 # Replace here with your robot's IP address
-IP = "192.168.7.108"
+IP = "192.168.7.158"
 PORT = 9559
 
 #IP_REMOTE = "127.0.0.1" 

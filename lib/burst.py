@@ -36,6 +36,7 @@ predefined_sys_paths = [
  ),
 ]
 
+LOCALHOST_IP = '127.0.0.1'
 
 import os
 import sys
@@ -44,9 +45,17 @@ try: # doesn't work on opennao
 except:
     getaddrinfo = lambda ip, port: [[None, None, None, [ip]]]
 
+def connecting_to_webots():
+    global ip
+    is_nao = os.popen("uname -m").read().strip() == 'i586'
+    return not is_nao and ip == LOCALHOST_IP
+
 def fix_sys_path():
     naoqi_root = None
-    al_dir = os.environ.get('AL_DIR', None)
+    if connecting_to_webots():
+        al_dir = os.environ.get('AL_DIR_WEBOTS', None)
+    else:
+        al_dir = os.environ.get('AL_DIR', None)
     if al_dir != None:
         if not os.path.exists(al_dir):
             print "AL_DIR set to nonexistant path!\nAL_DIR = %s\nQuitting." % al_dir
@@ -71,24 +80,13 @@ variable points to it. See https://shwarma.cs.biu.ac.il/moin/NaoQi for OS specif
         raise SystemExit
 
 
-# maybe this is already taken care of? test first.
-try:
-    import naoqi
-except:
-    pass
-
-if 'naoqi' not in sys.modules:
-    fix_sys_path()
-
-import naoqi
-
 from getopt import gnu_getopt
 
 def get_default_ip():
     # on the nao the ip should be something that would work - since naoqi by default
     # doesn't listen to the loopback (why? WHY??), we need to find out the public address.
     # "ip route get" does the trick
-    ip = "127.0.0.1"
+    ip = LOCALHOST_IP
     try:
         import socket
     except:
@@ -107,7 +105,7 @@ def get_broker(_ip = None, _port = None):
     if _broker is None:
         if _ip is None: _ip = ip
         if _port is None: _port = port
-    	_broker =  ALBroker("pybroker", "127.0.0.1", 9999, _ip, _port)
+    	_broker =  ALBroker("pybroker", LOCALHOST_IP, 9999, _ip, _port)
     return _broker
 
 def parse_command_line_arguments():
@@ -131,6 +129,20 @@ try:
 except Exception, e:
     if debug:
         import pdb; pdb.set_trace()
+
+# Set path only after reading command line arguments - we need them to know if we are connecting
+# to a simulator.
+
+# maybe this is already taken care of? test first.
+try:
+    import naoqi
+except:
+    pass
+
+if 'naoqi' not in sys.modules:
+    fix_sys_path()
+
+import naoqi
 
 def default_help():
     return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]
