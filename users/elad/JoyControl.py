@@ -62,15 +62,14 @@ class JoystickStatus(object):
 		pygame.event.poll()
 		self.x = self.joystick.get_x(True)
 		self.y = self.joystick.get_y(True)
-		i = 0
-		for i in range(len(self.buttons)):
+		for i in xrange(len(self.buttons)):
 			self.buttons[i] = self.joystick.isButtonPressed(i, True)
 
 
 class QuitException(Exception):
 	pass
-	
-	
+
+
 class Registrat(type):
 	registered = []
 	def __new__(cls, name, bases, dct):
@@ -80,7 +79,7 @@ class Registrat(type):
 
 
 class JoystickCommand(object):
-
+	
 	__metaclass__ = Registrat
 	
 	@classmethod

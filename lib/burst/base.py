@@ -1,26 +1,6 @@
 """
-Main entry point for naoqi usage.
-
-Usage: import this instead of naoqi
-
-old:
-from naoqi import bla
-
-new:
-from burst import bla
-
-old:
-import naoqi
-
-new: (two alternatives)
-import burst # you get the naoqi namespace plus some burst-ities.
-from burst import naoqi # the naoqi module
-
-(note, this won't work: import burst.naoqi as naoqi)
-
+finds naoqi, fixes sys.path and then imports it.
 """
-
-debug = False # set to False when checking in
 
 # Test where we are - could be one of simulator, on robot, or remote.
 # there is no actual difference between simulator and remote, or actually
@@ -98,16 +78,6 @@ def get_default_ip():
 ip = get_default_ip()
 port = 9559
 
-_broker = None
-
-def get_broker(_ip = None, _port = None):
-    global _broker
-    if _broker is None:
-        if _ip is None: _ip = ip
-        if _port is None: _port = port
-    	_broker =  ALBroker("pybroker", LOCALHOST_IP, 9999, _ip, _port)
-    return _broker
-
 def parse_command_line_arguments():
     global ip, port
     opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port=', 'bodyposition'])
@@ -144,26 +114,4 @@ if 'naoqi' not in sys.modules:
 
 import naoqi
 
-def default_help():
-    return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]
-
-def test():
-    import burst
-    print "naoqi = %s" % burst.naoqi
-    print "ip    = %s" % burst.ip
-    print "port  = %s" % burst.port
-    print
-    if '--bodyposition' in sys.argv:
-        import bodyposition
-        bodyposition.read_until_ctrl_c()
-    else:
-        print "you can use various switches to test the nao:"
-        print default_help() + ' [--bodyposition]'
-        print "--bodyposition - enter an endless loop printing various sensors (good for testing)"
-
-# put all of naoqi namespace in burst
-from naoqi import *
-
-if __name__ == '__main__':
-    test()
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env python
+
 from time import sleep
 import sys
-
-from burst import ALBroker, default_help, ip, port
+sys.path.append('../')
 
 def main():
+    import burst
     if '--help' in sys.argv or '-h' in sys.argv:
         print default_help()
         raise SystemExit
-    broker = ALBroker("test_simulation", "127.0.0.1", 9999, ip, port)
+    burst.init()
+    broker = burst.getBroker()
     from bodyposition import BodyPosition
     bp = BodyPosition(broker=broker)
     while True:
