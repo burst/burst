@@ -3,6 +3,7 @@
 # TODO: Compound commands don't release the command prompt immediately, but simple commands do. They should behave the same.
 
 import burst
+from burst_exceptions import *
 import Util
 #from Util import *
 import BasicMotion # TODO: Should be accessible through Robot, probably.
@@ -336,13 +337,35 @@ class GetUpCommand(Command):
 	
 	def execute(self):
 		if len(self.modifiers) == 0:
-			pass # TODO: Decide position on your own.
+			BasicMotion.getUp()
 		elif self.modifiers[0] == "front":
 			BasicMotion.getUpFromFront()
 		elif self.modifiers[0] == "back":
 			BasicMotion.getUpFromBack()
 		else:
 			raise ParseError, self.command + " accepts the following modifiers: front/back."
+
+
+class MoveHeadCommand(Command):
+	"movehead"
+	
+	keywords = ["movehead", "move_head", "mh"]
+	
+	def execute(self):
+		if len(self.modifiers) < 2:
+			raise ParseError, "coordinates expected"
+		x = self.modifiers[0]
+		y = self.modifiers[1]
+		self.pid = BasicMotion.moveHead(x, y)
+		
+
+class SoftExitCommand(Command):
+	"softexit"
+	
+	keywords = ["softexit", "soft_exit", "se"]
+	
+	def execute(self):
+		CommandParser.parseCompoundCommand("i&sof&q").execute()
 		
 		
 class CommandParser(object):

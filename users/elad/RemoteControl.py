@@ -1,6 +1,7 @@
 import sys
 import readline
 import burst
+from burst_exceptions import *
 #import Util
 
 # TODO: If running on the robot, user 127.0.0.1 as the address?
@@ -14,6 +15,8 @@ import BasicMotion
 import Commands
 from Commands import *
 
+BasicMotion.headStiffnessOff()
+
 try:
 	while True:
 		selection = raw_input("> ")
@@ -24,6 +27,10 @@ try:
 			print "Error: Unsupported command (" + str(e) + ")."
 		except ParseError, e:
 			print "Error: Could not parse the command (" + str(e) + ")."
+		except NotLyingDownException, e:
+			print "Not lying down."
+		except UnsafeToGetUpException, e:
+			print "It's not safe to get up - the robot is probably lying on its side."
 except TerminateSignal:
 	pass
 

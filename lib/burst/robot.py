@@ -4,13 +4,13 @@ import motion
 from naoqi import ALBroker, ALProxy
 from base import ip, port, LOCALHOST_IP
 
-__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'shutdown']
+__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'shutdown']
 
 _broker = None
 proxies = []
 motionProxy = None
 speechProxy = None
-
+memoryProxy = None
 
 class InitException(Exception):
 	pass
@@ -45,6 +45,17 @@ def getSpeechProxy():
 		speechProxy = ALProxy("ALTextToSpeech")
 		proxies.append(speechProxy)
 	return speechProxy
+
+
+def getMemoryProxy():
+	global memoryProxy, proxies, _broker
+	if _broker is None:
+		raise InitException, "Must initialize the module first."
+	if memoryProxy is None:
+		memoryProxy = ALProxy("ALMemory")
+		proxies.append(memoryProxy)
+	return memoryProxy
+
 
 def shutdown():
 	pass

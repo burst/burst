@@ -2,6 +2,7 @@
 
 import os, sys, time, math
 import burst
+from burst_exceptions import *
 
 
 def clearPendingTasks():
@@ -152,3 +153,57 @@ def getUpFromFront():
 def getUpFromBack():
 	import GetUpFromBack
 	GetUpFromBack.do()
+
+
+def isOnBack():
+	memory = burst.getMemoryProxy()
+	y = memory.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",0)
+	return y < -1.0
+
+
+def isOnBelly():
+	memory = burst.getMemoryProxy()
+	y = memory.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",0)
+	return y > 1.0
+
+
+def isSafeToGetUp():
+	memory = burst.getMemoryProxy()
+	x = memory.getData("Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",0)
+	return abs(x) < 0.5
+
+
+def getUp():
+	if isOnBelly():
+		if isSafeToGetUp():
+			getUpFromFront()
+		else:
+			raise UnsafeToGetUpException
+	elif isOnBack():
+		if isSafeToGetUp():
+			getUpFromBack()
+		else:
+			raise UnsafeToGetUpException
+	else:
+		raise NotLyingDownException
+
+
+def headStiffnessOn():
+	motionProxy = burst.getMotionProxy().post
+	motionProxy.setChainStiffness('Head', 1.0, 0)
+	
+	
+def headStiffnessOff():
+	motionProxy = burst.getMotionProxy().post
+	motionProxy.setChainStiffness('Head', 0.0, 0)
+
+
+def moveHead(x, y):
+	motionProxy = burst.getMotionProxy()
+	headStiffnessOn()
+	motionProxy.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
+
+
+# -2, -1?, -0.4, 0
+
+
