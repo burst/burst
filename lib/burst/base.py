@@ -114,4 +114,3 @@ if 'naoqi' not in sys.modules:
 
 import naoqi
 
-

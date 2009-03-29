@@ -1,10 +1,10 @@
 import time
-import Robot
-Robot.init()
+import burst
+burst.init()
 	
 def do():
-	motion = Robot.motion
-	ALMotion_Proxy = Robot.getMotionProxy()
+	motion = burst.motion
+	ALMotion_Proxy = burst.getMotionProxy()
 
 	TimeInterpolation = 0.05
 	ALMotion_Proxy.setBodyStiffness(1.0,TimeInterpolation)

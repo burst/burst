@@ -2,10 +2,10 @@
 Walk
 """
 
-import Robot
-Robot.init()
-motionProxy = Robot.getMotionProxy()
-motion = Robot.motion
+import burst
+burst.init()
+motionProxy = burst.getMotionProxy()
+motion = burst.motion
 
 class WalkType:
 	SLOW = 0

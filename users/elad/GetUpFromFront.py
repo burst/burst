@@ -1,9 +1,9 @@
 import time
-import Robot
-Robot.init()
+import burst
+burst.init()
 
 def do():
-	ALMotion_Proxy = Robot.getMotionProxy()
+	ALMotion_Proxy = burst.getMotionProxy()
 	 
 	#________________________________
 	# Remote procedure call

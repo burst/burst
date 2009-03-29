@@ -1,7 +1,8 @@
 import os, sys, time
+import burst
 import pygame
-import Robot
 import BasicMotion
+
 
 # Constants:
 threshold = 0.5
@@ -68,7 +69,7 @@ class JoystickStatus(object):
 
 class QuitException(Exception):
 	pass
-
+	
 
 class Registrat(type):
 	registered = []
@@ -224,7 +225,7 @@ def run():
 	global robotStatus
 	robotStatus = "at rest"
 	joystick = JoystickWrapper(0,1)
-	Robot.init()
+	burst.init()
 	
 	while True:
 		joystickStatus = joystick.getStatus()
@@ -237,6 +238,6 @@ def run():
 			break
 		time.sleep(0.001) # In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
 		
-	Robot.shutdown()	
+	burst.shutdown()	
 
 run()

@@ -1,13 +1,12 @@
 import sys
 import readline
-import Robot
-import Util
-from Util import *
+import burst
+#import Util
 
 # TODO: If running on the robot, user 127.0.0.1 as the address?
 
-Robot.init()
-print "Controlling the robot at " + Robot.ip + ":" + str(Robot.port)
+burst.init()
+print "Controlling the robot at " + burst.ip + ":" + str(burst.port)
 
 import BasicMotion
 
@@ -19,10 +18,8 @@ try:
 	while True:
 		selection = raw_input("> ")
 		try:
-			#x = Commands.CommandParser.parseSingleCommand(selection)
 			x = Commands.CommandParser.parse(selection)
 			x.execute()
-			#print x.toString()
 		except UnsupportedCommand, e:
 			print "Error: Unsupported command (" + str(e) + ")."
 		except ParseError, e:
@@ -30,4 +27,4 @@ try:
 except TerminateSignal:
 	pass
 
-Robot.shutdown()
+burst.shutdown()

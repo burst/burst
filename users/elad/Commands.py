@@ -2,9 +2,9 @@
 
 # TODO: Compound commands don't release the command prompt immediately, but simple commands do. They should behave the same.
 
-import Robot
+import burst
 import Util
-from Util import *
+#from Util import *
 import BasicMotion # TODO: Should be accessible through Robot, probably.
 
 
@@ -84,7 +84,7 @@ class ParseError(Exception):
 
 class ModuleSanityException(Exception):
 	pass
-	
+
 
 class HelpCommand(Command):
 	"help"
@@ -104,10 +104,10 @@ class SayCommand(Command):
 	
 	def execute(self):
 		# I don't use the modifiers here, since extra spaces might have meaning.
-		self.pid = Robot.getSpeechProxy().post.say(self.command[3:]) # TODO: Should pass through some other module.
+		self.pid = burst.getSpeechProxy().post.say(self.command[3:]) # TODO: Should pass through some other module.
 	
 	def wait(self):
-		Robot.getSpeechProxy().wait(self.pid, 0)
+		burst.getSpeechProxy().wait(self.pid, 0)
 
 
 class StiffnessOnCommand(Command):
@@ -209,7 +209,7 @@ class ExitCommand(Command):
 	keywords = ["exit", "quit", "q", "e"]
 	
 	def execute(self):
-		raise TerminateSignal()
+		raise TerminateSignal, ""
 		
 
 class FlexArmCommand(Command):
@@ -312,6 +312,8 @@ class TurnCommand(Command):
 	keywords = ["turn"]
 	
 	def execute(self):
+		if len(self.modifiers) < 1:
+			raise ParseError, "how much should I turn?"
 		self.pid = BasicMotion.turn(self.modifiers[0])
 	
 	def wait(self):
