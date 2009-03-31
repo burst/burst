@@ -1,6 +1,6 @@
 /**
- * @author Patrick de Pas
- * Aldebaran Robotics (c) 2007 All Rights Reserved - This is an example of use.\n
+ * @author Eran Polosetski
+ * BURST 2009 - Vision module
  *
  */
 
@@ -12,14 +12,9 @@
 #include "alptr.h"
 #include "opencv/cv.h"
 using namespace AL;
-/**
- * This class is an example of use of the video input module.
- */
-class vision : public AL::ALModule
-{
 
+class vision : public AL::ALModule {
   public:
-
     /**
      * Default Constructor.
      */
