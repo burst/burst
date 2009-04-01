@@ -32,10 +32,7 @@ def connecting_to_webots():
 
 def fix_sys_path():
     naoqi_root = None
-    if connecting_to_webots():
-        al_dir = os.environ.get('AL_DIR_WEBOTS', None)
-    else:
-        al_dir = os.environ.get('AL_DIR', None)
+    al_dir = os.environ.get('AL_DIR', None)
     if al_dir != None:
         if not os.path.exists(al_dir):
             print "AL_DIR set to nonexistant path!\nAL_DIR = %s\nQuitting." % al_dir
