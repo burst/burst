@@ -37,13 +37,18 @@ class vision : public AL::ALModule {
 
     /**
      * saveImage : save the last image received.
-     * @param pName name of the file
+     * @param pName path of the file
      */
     void saveImage(std::string pName);
 
     /**
+     * saveImageRaw : save the last image received (raw).
+     */
+    void saveImageRaw();
+
+    /**
      * saveImageRemote : save the last image received. To be used if visionmodule is a remote module.
-     * @param pName name of the file
+     * @param pName path of the file
      */
     void saveImageRemote(std::string pName);
 

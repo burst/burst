@@ -44,18 +44,21 @@ vision::vision( ALPtr<ALBroker> pBroker, std::string pName ): ALModule(pBroker ,
   BIND_METHOD( vision::testRemote );
 
   functionName( "saveImage","vision", "Save an image received from the camera." );
-  addParam( "pName", "name of the picture" );
+  addParam( "pName", "path of the picture" );
   BIND_METHOD( vision::saveImage );
 
+  functionName( "saveImageRaw","vision", "Save a raw image received from the camera." );
+  BIND_METHOD( vision::saveImageRaw );
+
   functionName( "saveImageRemote","vision", "Save an image received from the camera. to be used if the visionmodule is a remote module." );
-  addParam( "pName", "name of the picture" );
+  addParam( "pName", "path of the picture" );
   BIND_METHOD( vision::saveImageRemote );
 
   //Create a proxy on logger module
   try
   {
     log = getParentBroker()->getLoggerProxy();
-    log->logInFile(true, "test.txt", "lowinfo");
+    //log->logInFile(true, "test.txt", "lowinfo");
   }catch( ALError& e)
   {
     std::cout << "could not create a proxy to ALLogger module" << std::endl;
@@ -113,13 +116,13 @@ void vision::registerToVIM()
   //specification of the resolution among :
   // kVGA ( 640 * 480 ), kQVGA ( 320 * 240 ), kQQVGA ( 160 * 120 ).
   // ( definitions included in alvisiondefinitions.h )
-  resolution = kQVGA; //kQVGA
+  resolution = kVGA; //kQVGA
 
   //specification of the color space desired among :
   //  kYuvColorSpace, kyUvColorSpace, kyuVColorSpace,
   //  kYUVColorSpace, kYUV422InterlacedColorSpace, kRGBColorSpace.
   // ( definitions contained in alvisiondefinitions.h )
-  colorSpace = kRGBColorSpace;
+  colorSpace = kRGBColorSpace; //kRGBColorSpace
 
   //minimal number of frames per second ( fps ) required among: 5, 10, 15, and 30 fps.
   int fps = 30;
@@ -154,10 +157,79 @@ void vision::unRegisterFromVIM()
 }
 
 
+/**
+ * saveImageRaw : save the last image received (raw).
+ */
+// Copied from VisionDef.h
+#define NAO_IMAGE_WIDTH      320
+#define NAO_IMAGE_HEIGHT     240
+#define IMAGE_BYTE_SIZE    (NAO_IMAGE_WIDTH * NAO_IMAGE_HEIGHT * 2)
+void vision::saveImageRaw(){
+
+  //First you have to declare an ALVisionImage to get the video buffer.
+  // ( definition included in alvisiondefinitions.h and alvisiondefinitions.cpp )
+  ALVisionImage* imageIn;
+
+  //Now you can get the pointer to the video structure.
+  try
+  {
+    imageIn = ( ALVisionImage* ) ( camera->call<int>( "getDirectRawImageLocal", name ) );
+  }catch( ALError& e)
+  {
+    log->error( "vision", "could not call the getImageLocal method of the NaoCam module" );
+  }
+
+  std::cout<< imageIn->toString();
+
+    static int saved_frames = 0;
+    int MAX_FRAMES = 150;
+    if (saved_frames > MAX_FRAMES)
+        return;
+
+    string EXT(".NFRM");
+    string BASE("/");
+    int NUMBER = saved_frames;
+    string FOLDER("/home/root/frames");
+    stringstream FRAME_PATH;
+
+    FRAME_PATH << FOLDER << BASE << NUMBER << EXT;
+    fstream fout(FRAME_PATH.str().c_str(), fstream::out);
+
+    // Retrive joints
+    //vector<float> joints = getVisionBodyAngles();
+
+    // Lock and write image
+    fout.write(reinterpret_cast<const char*>(imageIn->getFrame()), IMAGE_BYTE_SIZE);
+
+    // Write joints
+    //for (vector<float>::const_iterator i = joints.begin(); i < joints.end();
+    //     i++) {
+    //    fout << *i << " ";
+    //}
+
+    // Write sensors
+    //vector<float> sensor_data = getAllSensors();
+    //for (vector<float>::const_iterator i = sensor_data.begin();
+    //     i != sensor_data.end(); i++) {
+    //    fout << *i << " ";
+    //}
+
+    fout.close();
+    cout << "Saved frame #" << saved_frames++ << endl;
+
+    //Now you have finished with the image, you have to release it in the V.I.M.
+    try {
+        camera->call<int>( "releaseDirectRawImage", name );
+    } catch (ALError& e) {
+        log->error( "vision", "could not call the releaseImage method of the NaoCam module" );
+    }
+}
+
+
 
 /**
  * saveImage : save the last image received.
- * @param pName name of the file
+ * @param pName path of the file
  */
 void vision::saveImage( std::string pName ){
 
@@ -212,7 +284,7 @@ void vision::saveImage( std::string pName ){
 
 /**
  * saveImageRemote : test remote image
- * @param pName name of the file
+ * @param pName path of the file
  */
 void vision::testRemote(){
 
@@ -279,7 +351,7 @@ printf("testRemote finished\n");
 
 /**
  * saveImageRemote : save the last image received. To be used if visionmodule is a remote module.
- * @param pName name of the file
+ * @param pName path of the file
  */
 void vision::saveImageRemote( std::string pName ){
 
