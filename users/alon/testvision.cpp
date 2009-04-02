@@ -34,8 +34,8 @@ void tryoutstuff()
     //proxy on the video input module
     ALPtr<AL::ALProxy> camera;
 
-    log = broker->getLoggerProxy();
-    memory = broker->getMemoryProxy();
+    //log = broker->getLoggerProxy(); // seems to be redundant?? is the constructor already doing this? wire capture shows two albroker:exploreToGetModuleByNameResponse requests...
+    //memory = broker->getMemoryProxy();
     camera = broker->getProxy( "NaoCam" );
 
   string name = "testvision_GVM";

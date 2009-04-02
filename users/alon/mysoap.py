@@ -1,6 +1,23 @@
 import re
+import os
 import socket
+import base64 # for getRemoteImage
 from xml.dom import minidom
+from time import sleep
+
+import Image
+
+#################################################################################################
+
+def getip():
+    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+
+def compresstoprint(s, first, last):
+    if len(s) < first + last + 3:
+        return s
+    return s[:first] + '\n...\n' + s[-last:]
+
+#################################################################################################
 
 class XMLObject(object):
 
@@ -115,28 +132,85 @@ def registerBroker(name, ip, port, processId, modulePointer, isABroker=True, kee
     broker = X('albroker:pBrokerToRegister', [], children=[
             X(name=k, attrs=[], children=[v]) for k, v in [
                 ('name', name),
-                ('architecture', architecture),
-                ('ip', ip),
-                ('port', port),
-                ('processId', processId),
-                ('modulePointer', modulePointer),
-                ('isABroker', isABroker),
-                ('keepAlive', keepAlive)
+                ('architecture', str(architecture)),
+                ('ip', str(ip)),
+                ('port', str(port)),
+                ('processId', str(processId)),
+                ('modulePointer', str(modulePointer)),
+                ('isABroker', isABroker and 'true' or 'false'),
+                ('keepAlive', keepAlive and 'true' or 'false')
             ]
         ])
     o.body.C(X('albroker:registerBroker').C(broker))
     return o
 
-#################################################################################################
+def exploreToGetModuleByNameObject(moduleName, dontLookIntoBrokerName, searchUp=True, searchDown=True):
+    """
+    <albroker:exploreToGetModuleByName><albroker:pModuleName>ALLogger</albroker:pModuleName><albroker:pSearchUp>true</albroker:pSearchUp><albroker:pSearchDown>true</albroker:pSearchDown><albroker:pDontLookIntoBrokerName>visionmodule</albroker:pDontLookIntoBrokerName></albroker:exploreToGetModuleByName>
+    """
+    o = S()
+    o.body.C(X('albroker:exploreToGetModuleByName', children=[
+            X('albroker:pModuleName', children=[moduleName]),
+            X('albroker:pSearchUp', children=[searchUp and 'true' or 'false']),
+            X('albroker:pSearchDown', children=[searchDown and 'true' or 'false']),
+            X('albroker:pDontLookIntoBrokerName', children=[dontLookIntoBrokerName]),
+        ]))
+    return o
+
+def serializeToSoap(x):
+    """ returns an XMLObject, of name 'item' with appropriate type according to x
+        array - xsi:type="Array"
+        string - string
+        int - int
+    """
+    if isinstance(x, list) or isinstance(x, tuple):
+        thetype = 'Array'
+        children = [serializeToSoap(c) for c in x]
+    else:
+        if isinstance(x, int):
+            thetype = 'xsd:int'
+        else:
+            thetype = 'xsd:string'
+        x = str(x)
+        children = [x]
+    return X('item', [('xsi:type', thetype)], children)
+
+def callNaoQiObject(mod, meth, *args):
+    """<albroker:callNaoqi>
+    <albroker:mod>NaoCam</albroker:mod>
+    <albroker:meth>register</albroker:meth>
+    <albroker:p>
+        <item xsi:type="Array">
+            <item xsi:type="xsd:string">testvision_GVM</item>
+            <item xsi:type="xsd:int">2</item>
+            <item xsi:type="xsd:int">11</item>
+            <item xsi:type="xsd:int">15</item>
+        </item>
+    </albroker:p></albroker:callNaoqi>
+    """
+    o = S()
+    p = serializeToSoap(args) # note - this always creates an Array arround them
+    o.body.C(X('albroker:callNaoqi', children=[
+        X('albroker:mod', [], [mod]),
+        X('albroker:meth', [], [meth]),
+        X('albroker:p', [], [p])]))
+    return o
+
+##########################################################################################
 # Connection (Top Level object)
 
-DEBUG=True
+DEBUG=False
 
 class NaoQiConnection(object):
     def __init__(self, url):
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
+        self._myip = getip()
+        self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
+        self._brokername = "soaptest"
+        self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
+        self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
 
     def sendrecv(self, o):
         s = socket.socket()
@@ -155,23 +229,71 @@ class NaoQiConnection(object):
         content_length = int(re.search('Content-Length: ([0-9]+)', headers).groups()[0])
         if DEBUG:
             print "expecting %s" % content_length
-        body = h[-1] + s.recv(content_length-1)
+        # this loop is required for getting large stuff, like getRemoteImage (1200000~ bytes for 640x480 RGB)
+        rest = []
+        left = content_length - 1
+        while left > 0:
+            rest.append(s.recv(content_length-1))
+            left -= len(rest[-1])
+        body = h[-1] + ''.join(rest)
         if DEBUG:
-            print "***     Got:          ***\n%s" % (headers + body)
+            print "***     Got:          ***\n%s" % compresstoprint(headers + body, 1000, 1000)
+            print "*************************"
         xml = minidom.parseString(body)
         soapbody = xml.documentElement.childNodes[0]
         return soapbody
 
     def getBrokerInfo(self):
         soapbody = self.sendrecv(self._getBrokerInfoObject)
-        ret = soapbody.childNodes[0].childNodes[0] # always a wrapper around the return
-        return [(x.nodeName, x.childNodes[0].nodeValue) for x in ret.childNodes]
+        return self.getpairs(soapbody.childNodes[0].childNodes[0])
 
     def getInfo(self, modulename):
         self._getInfoObject.body['albroker:getInfo']['albroker:pModuleName']._children[0] = modulename
         soapbody = self.sendrecv(self._getInfoObject)
-        ret = soapbody.childNodes[0] # always a wrapper around the return
-        return [(x.nodeName, x.childNodes[0].nodeValue) for x in ret.childNodes]
+        return self.getpairs(soapbody.childNodes[0])
+
+    def getpairs(self, elem):
+        return [(x.nodeName, x.childNodes[0].nodeValue) for x in elem.childNodes]
+
+    def getitems(self, elem):
+        # like getpairs, but ignore the names - they will all be "item"
+        return [x.childNodes[0].nodeValue for x in elem.childNodes]
+
+    def registerBroker(self):
+        """
+        this registers ourselves as a broker - this is of course not enough, we need to
+        to actually listen to this port
+        """
+        obj = registerBroker(name=self._brokername, ip=self._myip, port=self._myport, processId=os.getpid(), modulePointer=-1, isABroker=True, keepAlive=False, architecture=0)
+        soapbody = self.sendrecv(obj)
+        return soapbody.childNodes[0].childNodes[0].childNodes[0].nodeValue
+
+    def exploreToGetModuleByName(self, modulename):
+        obj = exploreToGetModuleByNameObject(moduleName=modulename, dontLookIntoBrokerName = self._brokername)
+        soapbody = self.sendrecv(obj)
+        return self.getpairs(soapbody.childNodes[0].childNodes[0])
+
+    def registerToCamera(self, resolution=2, colorspace=11, fps=15):
+        obj = callNaoQiObject(self._camera_module, 'register', self._camera_name, resolution, colorspace, fps)
+        soapbody = self.sendrecv(obj)
+        # return value is a single string, the name to use for all further communication
+        self._camera_name = soapbody.childNodes[0].childNodes[0].childNodes[0].childNodes[0].nodeValue
+        return self._camera_name
+
+    def getImageRemote(self):
+        """
+    <albroker:meth>getImageRemote</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">testvision_GVM</item></item></albroker:p>
+        """
+        obj = callNaoQiObject(self._camera_module, 'getImageRemote', self._camera_name)
+        soapbody = self.sendrecv(obj)
+        (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
+            encoded_image) = self.getitems(soapbody.childNodes[0].childNodes[0].childNodes[0])
+        width, height = int(width), int(height)
+        imageraw = base64.decodestring(encoded_image)
+        image = Image.fromstring('RGB', (width, height), imageraw)
+        image.save('test.jpg')
+        os.system('xdg-open %s/test.jpg' % os.getcwd())
+        return image
 
 #################################################################################################
 
@@ -189,6 +311,15 @@ def test():
     print broker_info
     d = dict(broker_info)
     print con.getInfo(d['name'])
+    print con.registerBroker()
+    print con.exploreToGetModuleByName('ALLogger')
+    print con.exploreToGetModuleByName('ALMemory')
+    print con.exploreToGetModuleByName('NaoCam')
+    print con.registerToCamera()
+
+    while True:
+        con.getImageRemote()
+        sleep(1)
 
 if __name__ == '__main__':
     test()

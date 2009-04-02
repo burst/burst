@@ -1,3 +1,10 @@
+"""
+Example conversation, captured with:
+    sudo tcpdump -s 0 -i wlan0 -vv -w getremoteimage.tcpdump host nao.local
+    while running the c++ example in this same directory:
+    ./testvision -p nao.local
+"""
+
 msgs = [ 
 """
 POST / HTTP/1.1
