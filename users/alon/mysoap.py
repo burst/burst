@@ -4,10 +4,23 @@ import socket
 import base64 # for getRemoteImage
 from xml.dom import minidom
 from time import sleep
+import stat
+import datetime
 
 import Image
 
+import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions.py
+import memory
+
 #################################################################################################
+# Constants
+
+CAMERA_WHICH_PARAM = 18
+CAMERA_WHICH_BOTTOM_CAMERA = 1
+CAMERA_WHICH_TOP_CAMERA = 0
+
+#################################################################################################
+# Utilities
 
 def getip():
     return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
@@ -18,6 +31,7 @@ def compresstoprint(s, first, last):
     return s[:first] + '\n...\n' + s[-last:]
 
 #################################################################################################
+# totally minimal SOAP Implementation
 
 class XMLObject(object):
 
@@ -78,22 +92,14 @@ SOAPAction: ""
 X = XMLObject
 
 namespaces = [(lambda (a,b): (a, b[1:-1]))(n.split('=')) for n in 'xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:albroker="urn:albroker" xmlns:al="urn:aldebaran"'.split(' ')]
-getInfoBase = X('SOAP-ENV:Envelope', namespaces,
-        [
-            X('SOAP-ENV:Body', [],
-                [
-                    X('albroker:getInfo', [],
-                        [
-                            X('albroker:pModuleName', [], ['NaoQi'])
-                        ])
-                ])
-        ])
 
 class SOAPObject(XMLObject):
+
     def __init__(self):
         super(SOAPObject, self).__init__('SOAP-ENV:Envelope',
             attrs = namespaces,
             children = [X('SOAP-ENV:Body')])
+
     def getbody(self):
         return self._d['SOAP-ENV:Body']
     body = property(getbody)
@@ -110,7 +116,11 @@ def getBrokerInfoObject():
 
 def getInfoObject(modname):
     o = S()
-    o.body.C(X('albroker:getInfo').C(X('albroker:pModuleName', [], [modname])))
+    o.body.C(
+        X('albroker:getInfo').C(
+            X('albroker:pModuleName', [], [modname])
+        )
+    )
     return o
 
 def registerBroker(name, ip, port, processId, modulePointer, isABroker=True, keepAlive=False, architecture=0):
@@ -235,6 +245,7 @@ class NaoQiConnection(object):
         while left > 0:
             rest.append(s.recv(content_length-1))
             left -= len(rest[-1])
+        print "memory = %s" % memory.memory()
         body = h[-1] + ''.join(rest)
         if DEBUG:
             print "***     Got:          ***\n%s" % compresstoprint(headers + body, 1000, 1000)
@@ -273,14 +284,17 @@ class NaoQiConnection(object):
         soapbody = self.sendrecv(obj)
         return self.getpairs(soapbody.childNodes[0].childNodes[0])
 
-    def registerToCamera(self, resolution=2, colorspace=11, fps=15):
+    def registerToCamera(self,
+            resolution=vision_definitions.kQQVGA,
+            colorspace=vision_definitions.kRGBColorSpace,
+            fps=15):
         obj = callNaoQiObject(self._camera_module, 'register', self._camera_name, resolution, colorspace, fps)
         soapbody = self.sendrecv(obj)
         # return value is a single string, the name to use for all further communication
         self._camera_name = soapbody.childNodes[0].childNodes[0].childNodes[0].childNodes[0].nodeValue
         return self._camera_name
 
-    def getImageRemote(self):
+    def getImageRemoteRGB(self):
         """
     <albroker:meth>getImageRemote</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">testvision_GVM</item></item></albroker:p>
         """
@@ -290,12 +304,35 @@ class NaoQiConnection(object):
             encoded_image) = self.getitems(soapbody.childNodes[0].childNodes[0].childNodes[0])
         width, height = int(width), int(height)
         imageraw = base64.decodestring(encoded_image)
+        return imageraw, width, height
+
+    def getImageRemote(self, debug_file_name = None):
+        imageraw, width, height = self.getImageRemoteRGB()
         image = Image.fromstring('RGB', (width, height), imageraw)
-        image.save('test.jpg')
-        os.system('xdg-open %s/test.jpg' % os.getcwd())
+        if debug_file_name:
+            if debug_file_name[:1] != '/':
+                debug_file_name = os.path.join(os.getcwd(), debug_file_name)
+            image.save(debug_file_name)
+            file_ctime = datetime.datetime.fromtimestamp(os.stat('test.jpg')[stat.ST_CTIME])
+            print "saved to %s, %s" % (debug_file_name, str(file_ctime))
+            #os.system('xdg-open %s' % debug_file_name)
         return image
 
+    def setCameraParameter(self, param, value):
+        obj = callNaoQiObject(self._camera_module, 'setParam', int(param), int(value))
+        soapbody = self.sendrecv(obj)
+        return self.getitems(soapbody.childNodes[0].childNodes[0])
+
+    def switchToBottomCamera(self):
+        self.setCameraParameter(CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA)
+
+    def switchToTopCamera(self):
+        self.setCameraParameter(CAMERA_WHICH_PARAM, CAMERA_WHICH_TOP_CAMERA)
+
 #################################################################################################
+# Main and Tests
+
+target_url = 'http://messi.local:9559/'
 
 def test():
     print X('SOAP-ENV:Envelope')
@@ -304,9 +341,9 @@ def test():
     gi2 = getInfoObject('NaoQi')
     print gi2
     assert(str(gi2) == str(getInfoBase))
-    req = Requester('http://nao.local:9559/')
+    req = Requester(target_url)
     print req.make(getInfoObject('NaoQi'))
-    con = NaoQiConnection('http://nao.local:9559/')
+    con = NaoQiConnection(target_url)
     broker_info = con.getBrokerInfo()
     print broker_info
     d = dict(broker_info)
@@ -315,12 +352,27 @@ def test():
     print con.exploreToGetModuleByName('ALLogger')
     print con.exploreToGetModuleByName('ALMemory')
     print con.exploreToGetModuleByName('NaoCam')
+
+def main():
+    import sys
+    url = target_url
+    if len(sys.argv) > 1:
+        url = sys.argv[-1]
+    print "using target = %s" % url
+    con = NaoQiConnection(url)
+    broker_info = dict(con.getBrokerInfo())
+    print con.getInfo(broker_info['name'])
+    print con.registerBroker()
+    print con.exploreToGetModuleByName('NaoCam')
     print con.registerToCamera()
 
+    c = 0
+    meths = (lambda: (con.switchToBottomCamera(), con.getImageRemote('top.jpg')),
+             lambda: (con.switchToTopCamera(), con.getImageRemote('bottom.jpg')))
     while True:
-        con.getImageRemote()
-        sleep(1)
+        meths[c]()
+        c = 1 - c
 
 if __name__ == '__main__':
-    test()
+    main()
 
