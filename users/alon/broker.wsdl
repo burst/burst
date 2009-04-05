@@ -1,0 +1,997 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="broker"
+ targetNamespace="http://localhost/broker.wsdl"
+ xmlns:tns="http://localhost/broker.wsdl"
+ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+ xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:f="http://tempuri.org/f.xsd"
+ xmlns:al="http://tempuri.org/al.xsd"
+ xmlns:albroker="http://localhost/broker.wsdl"
+ xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+ xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+ xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+ <schema targetNamespace="http://tempuri.org/f.xsd"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:f="http://tempuri.org/f.xsd"
+  xmlns:al="http://tempuri.org/al.xsd"
+  xmlns:albroker="http://localhost/broker.wsdl"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified">
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/" schemaLocation="http://schemas.xmlsoap.org/soap/encoding/"/>
+ </schema>
+
+ <schema targetNamespace="http://tempuri.org/al.xsd"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:f="http://tempuri.org/f.xsd"
+  xmlns:al="http://tempuri.org/al.xsd"
+  xmlns:albroker="http://localhost/broker.wsdl"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified">
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/" schemaLocation="http://schemas.xmlsoap.org/soap/encoding/"/>
+ </schema>
+
+ <schema targetNamespace="http://localhost/broker.wsdl"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:f="http://tempuri.org/f.xsd"
+  xmlns:al="http://tempuri.org/al.xsd"
+  xmlns:albroker="http://localhost/broker.wsdl"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified">
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/" schemaLocation="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <!-- operation request element -->
+  <element name="callNaoqi">
+   <complexType>
+    <sequence>
+     <element name="mod" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="meth" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="p" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="callNaoqiResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="callNaoqi2">
+   <complexType>
+    <sequence>
+     <element name="mod" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="meth" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="p" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="callNaoqi2Response">
+   <complexType>
+    <sequence>
+     <element name="return" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="pCallNaoqiN">
+   <complexType>
+    <sequence>
+     <element name="nIP" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="nPort" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="nMod" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="nMeth" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="mod" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="meth" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="p" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="pCallNaoqiNResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="pCallNaoqi">
+   <complexType>
+    <sequence>
+     <element name="mod" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="meth" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="p" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getModuleByName">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getModuleByNameResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="exploreToGetModuleByName">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pSearchUp" type="xsd:bool" minOccurs="1" maxOccurs="1"/>
+     <element name="pSearchDown" type="xsd:bool" minOccurs="1" maxOccurs="1"/>
+     <element name="pDontLookIntoBrokerName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="exploreToGetModuleByNameResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getModuleList">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getModuleListResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getGlobalModuleList">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getGlobalModuleListResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getBrokerList">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getBrokerListResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="registerBroker">
+   <complexType>
+    <sequence>
+     <element name="pBrokerToRegister" type="al:ALModuleInfo" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="registerBrokerResponse">
+   <complexType>
+    <sequence>
+     <element name="unused" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="unregisterBroker">
+   <complexType>
+    <sequence>
+     <element name="pBrokerToUnregister" type="al:ALModuleInfo" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="unregisterBrokerResponse">
+   <complexType>
+    <sequence>
+     <element name="unused" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="unregisterModuleReference">
+   <complexType>
+    <sequence>
+     <element name="moduleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getBrokerInfo">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getBrokerInfoResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="al:ALModuleInfo" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="exit">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="dataChanged">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pDataName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pValue" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+     <element name="pMessage" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="dataChangedResponse">
+   <complexType>
+    <sequence>
+     <element name="unused" type="xsd:int" minOccurs="0" maxOccurs="1" nillable="true"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="listMethods">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="listMethodsResponse">
+   <complexType>
+    <sequence>
+     <element name="pMethodListName" type="xsd:string" minOccurs="1" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="methodHelp">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pMethodeName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="init">
+   <complexType>
+    <sequence>
+     <element name="pBrokerName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pIP" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pPort" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="pParentBrokerIP" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="pParentBrokerPort" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="pKeepAlive" type="xsd:bool" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="initResponse">
+   <complexType>
+    <sequence>
+     <element name="unused" type="xsd:int" minOccurs="0" maxOccurs="1" nillable="true"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="version">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="versionResponse">
+   <complexType>
+    <sequence>
+     <element name="pVersion" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="sendBackIP">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="sendBackIPResponse">
+   <complexType>
+    <sequence>
+     <element name="pIP" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getBrokerName">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getBrokerNameResponse">
+   <complexType>
+    <sequence>
+     <element name="pBrokerName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getInfo">
+   <complexType>
+    <sequence>
+     <element name="pModuleName" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="ALModuleInfo">
+   <complexType>
+    <sequence>
+     <element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="architecture" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="ip" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+     <element name="port" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="processId" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="modulePointer" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+     <element name="isABroker" type="xsd:bool" minOccurs="1" maxOccurs="1"/>
+     <element name="keepAlive" type="xsd:bool" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="stopTask">
+   <complexType>
+    <sequence>
+     <element name="id" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="stopTaskResponse">
+   <complexType>
+    <sequence>
+     <element name="num" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="stopTaskName">
+   <complexType>
+    <sequence>
+     <element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="stopTaskNameResponse">
+   <complexType>
+    <sequence>
+     <element name="num" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation request element -->
+  <element name="getDebugTaskList">
+   <complexType>
+    <sequence>
+    </sequence>
+   </complexType>
+  </element>
+  <!-- operation response element -->
+  <element name="getDebugTaskListResponse">
+   <complexType>
+    <sequence>
+     <element name="return" type="xsd:anyType" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+ </schema>
+
+</types>
+
+<message name="callNaoqi">
+ <part name="parameters" element="albroker:callNaoqi"/>
+</message>
+
+<message name="callNaoqiResponse">
+ <part name="parameters" element="albroker:callNaoqiResponse"/>
+</message>
+
+<message name="callNaoqi2">
+ <part name="parameters" element="albroker:callNaoqi2"/>
+</message>
+
+<message name="callNaoqi2Response">
+ <part name="parameters" element="albroker:callNaoqi2Response"/>
+</message>
+
+<message name="pCallNaoqiN">
+ <part name="parameters" element="albroker:pCallNaoqiN"/>
+</message>
+
+<message name="pCallNaoqiNResponse">
+ <part name="parameters" element="albroker:pCallNaoqiNResponse"/>
+</message>
+
+<message name="pCallNaoqi">
+ <part name="parameters" element="albroker:pCallNaoqi"/>
+</message>
+
+<message name="getModuleByName">
+ <part name="parameters" element="albroker:getModuleByName"/>
+</message>
+
+<message name="getModuleByNameResponse">
+ <part name="parameters" element="albroker:getModuleByNameResponse"/>
+</message>
+
+<message name="exploreToGetModuleByName">
+ <part name="parameters" element="albroker:exploreToGetModuleByName"/>
+</message>
+
+<message name="exploreToGetModuleByNameResponse">
+ <part name="parameters" element="albroker:exploreToGetModuleByNameResponse"/>
+</message>
+
+<message name="getModuleList">
+ <part name="parameters" element="albroker:getModuleList"/>
+</message>
+
+<message name="getModuleListResponse">
+ <part name="parameters" element="albroker:getModuleListResponse"/>
+</message>
+
+<message name="getGlobalModuleList">
+ <part name="parameters" element="albroker:getGlobalModuleList"/>
+</message>
+
+<message name="getGlobalModuleListResponse">
+ <part name="parameters" element="albroker:getGlobalModuleListResponse"/>
+</message>
+
+<message name="getBrokerList">
+ <part name="parameters" element="albroker:getBrokerList"/>
+</message>
+
+<message name="getBrokerListResponse">
+ <part name="parameters" element="albroker:getBrokerListResponse"/>
+</message>
+
+<message name="registerBrokerRequest">
+ <part name="parameters" element="albroker:registerBroker"/>
+</message>
+
+<message name="registerBrokerResponse">
+ <part name="parameters" element="albroker:registerBrokerResponse"/>
+</message>
+
+<message name="unregisterBrokerRequest">
+ <part name="parameters" element="albroker:unregisterBroker"/>
+</message>
+
+<message name="unregisterBrokerResponse">
+ <part name="parameters" element="albroker:unregisterBrokerResponse"/>
+</message>
+
+<message name="unregisterModuleReference">
+ <part name="parameters" element="albroker:unregisterModuleReference"/>
+</message>
+
+<message name="getBrokerInfo">
+ <part name="parameters" element="albroker:getBrokerInfo"/>
+</message>
+
+<message name="getBrokerInfoResponse">
+ <part name="parameters" element="albroker:getBrokerInfoResponse"/>
+</message>
+
+<message name="exit">
+ <part name="parameters" element="albroker:exit"/>
+</message>
+
+<message name="dataChangedRequest">
+ <part name="parameters" element="albroker:dataChanged"/>
+</message>
+
+<message name="dataChangedResponse">
+ <part name="parameters" element="albroker:dataChangedResponse"/>
+</message>
+
+<message name="listMethodsRequest">
+ <part name="parameters" element="albroker:listMethods"/>
+</message>
+
+<message name="listMethodsResponse">
+ <part name="parameters" element="albroker:listMethodsResponse"/>
+</message>
+
+<message name="methodHelp">
+ <part name="parameters" element="albroker:methodHelp"/>
+</message>
+
+<message name="ALValue">
+ <part name="parameters" element="ALValue"/>
+</message>
+
+<message name="initRequest">
+ <part name="parameters" element="albroker:init"/>
+</message>
+
+<message name="initResponse">
+ <part name="parameters" element="albroker:initResponse"/>
+</message>
+
+<message name="versionRequest">
+ <part name="parameters" element="albroker:version"/>
+</message>
+
+<message name="versionResponse">
+ <part name="parameters" element="albroker:versionResponse"/>
+</message>
+
+<message name="sendBackIPRequest">
+ <part name="parameters" element="albroker:sendBackIP"/>
+</message>
+
+<message name="sendBackIPResponse">
+ <part name="parameters" element="albroker:sendBackIPResponse"/>
+</message>
+
+<message name="getBrokerNameRequest">
+ <part name="parameters" element="albroker:getBrokerName"/>
+</message>
+
+<message name="getBrokerNameResponse">
+ <part name="parameters" element="albroker:getBrokerNameResponse"/>
+</message>
+
+<message name="getInfo">
+ <part name="parameters" element="albroker:getInfo"/>
+</message>
+
+<message name="ALModuleInfo">
+ <part name="parameters" element="al:ALModuleInfo"/>
+</message>
+
+<message name="stopTaskRequest">
+ <part name="parameters" element="albroker:stopTask"/>
+</message>
+
+<message name="stopTaskResponse">
+ <part name="parameters" element="albroker:stopTaskResponse"/>
+</message>
+
+<message name="stopTaskNameRequest">
+ <part name="parameters" element="albroker:stopTaskName"/>
+</message>
+
+<message name="stopTaskNameResponse">
+ <part name="parameters" element="albroker:stopTaskNameResponse"/>
+</message>
+
+<message name="getDebugTaskList">
+ <part name="parameters" element="albroker:getDebugTaskList"/>
+</message>
+
+<message name="getDebugTaskListResponse">
+ <part name="parameters" element="albroker:getDebugTaskListResponse"/>
+</message>
+
+<portType name="brokerPortType">
+ <operation name="callNaoqi">
+  <documentation>Service definition of function albroker__callNaoqi</documentation>
+  <input message="tns:callNaoqi"/>
+  <output message="tns:callNaoqiResponse"/>
+ </operation>
+ <operation name="callNaoqi2">
+  <documentation>Service definition of function albroker__callNaoqi2</documentation>
+  <input message="tns:callNaoqi2"/>
+  <output message="tns:callNaoqi2Response"/>
+ </operation>
+ <operation name="pCallNaoqiN">
+  <documentation>Service definition of function albroker__pCallNaoqiN</documentation>
+  <input message="tns:pCallNaoqiN"/>
+  <output message="tns:pCallNaoqiNResponse"/>
+ </operation>
+ <operation name="pCallNaoqi">
+  <documentation>Service definition of function albroker__pCallNaoqi</documentation>
+  <input message="tns:pCallNaoqi"/>
+ </operation>
+ <operation name="getModuleByName">
+  <documentation>Service definition of function albroker__getModuleByName</documentation>
+  <input message="tns:getModuleByName"/>
+  <output message="tns:getModuleByNameResponse"/>
+ </operation>
+ <operation name="exploreToGetModuleByName">
+  <documentation>Service definition of function albroker__exploreToGetModuleByName</documentation>
+  <input message="tns:exploreToGetModuleByName"/>
+  <output message="tns:exploreToGetModuleByNameResponse"/>
+ </operation>
+ <operation name="getModuleList">
+  <documentation>Service definition of function albroker__getModuleList</documentation>
+  <input message="tns:getModuleList"/>
+  <output message="tns:getModuleListResponse"/>
+ </operation>
+ <operation name="getGlobalModuleList">
+  <documentation>Service definition of function albroker__getGlobalModuleList</documentation>
+  <input message="tns:getGlobalModuleList"/>
+  <output message="tns:getGlobalModuleListResponse"/>
+ </operation>
+ <operation name="getBrokerList">
+  <documentation>Service definition of function albroker__getBrokerList</documentation>
+  <input message="tns:getBrokerList"/>
+  <output message="tns:getBrokerListResponse"/>
+ </operation>
+ <operation name="registerBroker">
+  <documentation>Service definition of function albroker__registerBroker</documentation>
+  <input message="tns:registerBrokerRequest"/>
+  <output message="tns:registerBrokerResponse"/>
+ </operation>
+ <operation name="unregisterBroker">
+  <documentation>Service definition of function albroker__unregisterBroker</documentation>
+  <input message="tns:unregisterBrokerRequest"/>
+  <output message="tns:unregisterBrokerResponse"/>
+ </operation>
+ <operation name="unregisterModuleReference">
+  <documentation>Service definition of function albroker__unregisterModuleReference</documentation>
+  <input message="tns:unregisterModuleReference"/>
+ </operation>
+ <operation name="getBrokerInfo">
+  <documentation>Service definition of function albroker__getBrokerInfo</documentation>
+  <input message="tns:getBrokerInfo"/>
+  <output message="tns:getBrokerInfoResponse"/>
+ </operation>
+ <operation name="exit">
+  <documentation>Service definition of function albroker__exit</documentation>
+  <input message="tns:exit"/>
+ </operation>
+ <operation name="dataChanged">
+  <documentation>Service definition of function albroker__dataChanged</documentation>
+  <input message="tns:dataChangedRequest"/>
+  <output message="tns:dataChangedResponse"/>
+ </operation>
+ <operation name="listMethods">
+  <documentation>Service definition of function albroker__listMethods</documentation>
+  <input message="tns:listMethodsRequest"/>
+  <output message="tns:listMethodsResponse"/>
+ </operation>
+ <operation name="methodHelp">
+  <documentation>Service definition of function albroker__methodHelp</documentation>
+  <input message="tns:methodHelp"/>
+  <output message="tns:ALValue"/>
+ </operation>
+ <operation name="init">
+  <documentation>Service definition of function albroker__init</documentation>
+  <input message="tns:initRequest"/>
+  <output message="tns:initResponse"/>
+ </operation>
+ <operation name="version">
+  <documentation>Service definition of function albroker__version</documentation>
+  <input message="tns:versionRequest"/>
+  <output message="tns:versionResponse"/>
+ </operation>
+ <operation name="sendBackIP">
+  <documentation>Service definition of function albroker__sendBackIP</documentation>
+  <input message="tns:sendBackIPRequest"/>
+  <output message="tns:sendBackIPResponse"/>
+ </operation>
+ <operation name="getBrokerName">
+  <documentation>Service definition of function albroker__getBrokerName</documentation>
+  <input message="tns:getBrokerNameRequest"/>
+  <output message="tns:getBrokerNameResponse"/>
+ </operation>
+ <operation name="getInfo">
+  <documentation>Service definition of function albroker__getInfo</documentation>
+  <input message="tns:getInfo"/>
+  <output message="tns:ALModuleInfo"/>
+ </operation>
+ <operation name="stopTask">
+  <documentation>Service definition of function albroker__stopTask</documentation>
+  <input message="tns:stopTaskRequest"/>
+  <output message="tns:stopTaskResponse"/>
+ </operation>
+ <operation name="stopTaskName">
+  <documentation>Service definition of function albroker__stopTaskName</documentation>
+  <input message="tns:stopTaskNameRequest"/>
+  <output message="tns:stopTaskNameResponse"/>
+ </operation>
+ <operation name="getDebugTaskList">
+  <documentation>Service definition of function albroker__getDebugTaskList</documentation>
+  <input message="tns:getDebugTaskList"/>
+  <output message="tns:getDebugTaskListResponse"/>
+ </operation>
+</portType>
+
+<binding name="broker" type="tns:brokerPortType">
+ <SOAP:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+ <operation name="callNaoqi">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="callNaoqi2">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="pCallNaoqiN">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="pCallNaoqi">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+ </operation>
+ <operation name="getModuleByName">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="exploreToGetModuleByName">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getModuleList">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getGlobalModuleList">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getBrokerList">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="registerBroker">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="unregisterBroker">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="unregisterModuleReference">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+ </operation>
+ <operation name="getBrokerInfo">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="exit">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="dataChanged">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="listMethods">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="methodHelp">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="init">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="version">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="sendBackIP">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getBrokerName">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getInfo">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="stopTask">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="stopTaskName">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+ <operation name="getDebugTaskList">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+</binding>
+
+<service name="broker">
+ <documentation>gSOAP 2.7.12 generated service definition</documentation>
+ <port name="broker" binding="tns:broker">
+  <SOAP:address location="http://localhost/brokerserver.cgi"/>
+ </port>
+</service>
+
+</definitions>

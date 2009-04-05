@@ -14,8 +14,8 @@ motion_proxy = burst.getMotionProxy()
 # by user code.
 debug = False # set to False when checking in
 
-def init():
-    robot.init()
+def init(**kw):
+    robot.init(**kw)
 
 def default_help():
     return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]

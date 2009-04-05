@@ -9,7 +9,6 @@
 
 // ..::: Headers ::
 # include "alxplatform.h"
-# include "config.h"
 # include <fstream>
 # include <sstream>
 # include <albroker.h>
