@@ -174,7 +174,9 @@ def isSafeToGetUp():
 
 
 def getUp():
+	print "a"
 	if isOnBelly():
+		print "b"
 		if isSafeToGetUp():
 			getUpFromFront()
 		else:
