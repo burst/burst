@@ -1,6 +1,6 @@
 /**
- * @author Patrick de Pas
- * Aldebaran Robotics (c) 2007 All Rights Reserved - This is an example of use.\n
+ * @author Eran Polosetski
+ * BURST 2009 - Vision module
  *
  */
 
@@ -12,14 +12,9 @@
 #include "alptr.h"
 #include "opencv/cv.h"
 using namespace AL;
-/**
- * This class is an example of use of the video input module.
- */
-class vision : public AL::ALModule
-{
 
+class vision : public AL::ALModule {
   public:
-
     /**
      * Default Constructor.
      */
@@ -41,14 +36,25 @@ class vision : public AL::ALModule
     void unRegisterFromVIM();
 
     /**
+     * setCamera : select the current camera.
+     * @param whichCam index of the camera (0 - top, 1 - bottom)
+     */
+    void setCamera(int whichCam);
+
+    /**
      * saveImage : save the last image received.
-     * @param pName name of the file
+     * @param pName path of the file
      */
     void saveImage(std::string pName);
 
     /**
+     * saveImageRaw : save the last image received (raw).
+     */
+    void saveImageRaw();
+
+    /**
      * saveImageRemote : save the last image received. To be used if visionmodule is a remote module.
-     * @param pName name of the file
+     * @param pName path of the file
      */
     void saveImageRemote(std::string pName);
 
@@ -120,6 +126,13 @@ class vision : public AL::ALModule
     //CvSeq* getHullByColor(IplImage* img, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea);
 
     CvMemStorage* storage;
+
+    // Camera identification
+    static const int TOP_CAMERA = 0;
+    static const int BOTTOM_CAMERA = 1;
+
+    // Camera setup information
+    static const int CAMERA_SLEEP_TIME = 200;
 
 };
 #endif // vision_H

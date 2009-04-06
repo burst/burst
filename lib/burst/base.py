@@ -32,10 +32,7 @@ def connecting_to_webots():
 
 def fix_sys_path():
     naoqi_root = None
-    if connecting_to_webots():
-        al_dir = os.environ.get('AL_DIR_WEBOTS', None)
-    else:
-        al_dir = os.environ.get('AL_DIR', None)
+    al_dir = os.environ.get('AL_DIR', None)
     if al_dir != None:
         if not os.path.exists(al_dir):
             print "AL_DIR set to nonexistant path!\nAL_DIR = %s\nQuitting." % al_dir
@@ -78,17 +75,19 @@ def get_default_ip():
 ip = get_default_ip()
 port = 9559
 
+def host_to_ip(ip):
+    try:
+        ip = getaddrinfo(ip, None)[0][4][0]
+    except Exception, e:
+        print "Warning: can't resolve %r, assuming ip" % ip
+    return ip
+
 def parse_command_line_arguments():
     global ip, port
     opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port=', 'bodyposition'])
     for k, v in opts:
         if k == '--ip':
-            ip = v
-            # harmless if already an ip
-            try:
-                ip = getaddrinfo(ip, None)[0][4][0]
-            except Exception, e:
-                print "Warning: can't resolve %r, assuming ip" % ip
+            ip = host_to_ip(v)
         elif k == '--port':
             port = int(v)
     globals()['ip'] = ip

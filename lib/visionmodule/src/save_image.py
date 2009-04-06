@@ -19,21 +19,16 @@ else:
   from naoqi import ALModule
   from naoqi import ALProxy
   from naoqi import ALBehavior
+  import motion
 
 # Replace here with your robot's IP address
-IP = "192.168.7.158"
-PORT = 9559
+#IP = "192.168.7.108"
+#PORT = 9559
+IP = "127.0.0.1" 
+PORT = 9560
 
 #IP_REMOTE = "127.0.0.1" 
 #PORT_REMOTE = 54010
-
-# Create a proxy to ALMotion
-try:
-  motionProxy = ALProxy("ALMotion", IP, PORT)
-except Exception, e:
-  print "Error when creating motion proxy:"
-  print str(e)
-  exit(1)
 
 # Create a proxy to Vision module
 try:
@@ -45,26 +40,9 @@ except Exception, e:
 
 visionProxy.registerToVIM()
 
-# ALMemory variable where the ALVisionLogo modules
-# outputs its results
-memValue = "/BURST/Vision/BallX"
+#visionProxy.saveImageRemote("/var/tmp/")
+visionProxy.saveImage("/var/tmp/")
 
-# Create a proxy to ALMemory
-try:
-  memoryProxy = ALProxy("ALMemory", IP, PORT)
-except Exception, e:
-  print "Error when creating memory proxy:"
-  print str(e)
-  exit(1)
+visionProxy.unRegisterFromVIM()
 
-# A simple loop that reads the memValue and checks
-# whether logos are detected
-#
-# Note : using C++, you can instead use a callback
-# to get notified when the memValue changes
-
-TimeInterpolation = 0.05
-motionProxy.setJointStiffness('HeadYaw',1.0,TimeInterpolation)
-visionProxy.getBall()
-time.sleep(1.0)
-
+print "Test terminated successfully" 
