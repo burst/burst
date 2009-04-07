@@ -36,8 +36,8 @@ def mylogger(something):
             log.append((time.time() - start_time, '%s: %s: %r, %r' % (what, self.name, args, kw)))
             print '%3.2f: %s' % (log[-1][0], str(log[-1][1])[:80])
             
-    return something
     #return wrap(something)
+    return something
 
 ALProxy_real = ALProxy
 def ALProxy(*args, **kw): return mylogger(ALProxy_real(*args, **kw))
@@ -63,28 +63,6 @@ try:
 except Exception,e:
   print "Error when creating motion proxy:"
   print str(e)
-  exit(1)
-
-
-try:
-  ttsProxy = ALProxy("ALTextToSpeech")
-except Exception,e:
-  pass
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# create proxy
-try:
-  alultrasoundProxy = ALProxy("ALUltraSound",IP,PORT)
-except RuntimeError,e:
-  print "error while creating alultrasound's proxy"
-  exit(1)
-
-# subscribe to ALUltraound
-try:
-  period = 250 # minimum should be 240ms according to documentation
-  alultrasoundProxy.subscribe("test", [ period ] )
-  print "subscription to ALUltrasound is ok"
-except RuntimeError,e:
-  print "error while subscribing to alultrasound"
   exit(1)
 
 
@@ -125,37 +103,31 @@ motionProxy.setChainStiffness("Head",0.0)
 
 #time.sleep(2)
 #if ( ttsProxy ):
-#    ttsProxy.say("Move my head if you want me to stop")
+ # ttsProxy.say("Move my head if you want me to stop")
 
-ultrasound_stop_distance = 0.60
+ultrasound_stop_distance = 0.41
 
 while (motionProxy.isRunning(walkTaskId)):
     US = memoryProxy.getData("extractors/alultrasound/distances", 0)
     #~ print US
     if ((US[0] < ultrasound_stop_distance) or (US[1] < ultrasound_stop_distance)):
         print "Obstacle found!"
-        if ( ttsProxy ):
-            ttsProxy.say("Obstacle found!")
-        
         motionProxy.clearFootsteps()#stops the walking
+        
+        #~ motionProxy.waitUntilWalkIsFinished ()
         
         time.sleep(3)
         
         print "Footsteps cleared!"
-        if ( ttsProxy ):
-            ttsProxy.say("Footsteps cleared!")
-        
-        motionProxy.addTurn( 120.0 * motion.TO_RAD, 50 )#turn 90 deg left(?)
+        #~ motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)#stay steady
+        motionProxy.addTurn( 90.0 * motion.TO_RAD, 50 )#turn 90 deg left(?)
         motionProxy.walk()#stops the loop till finish turning
         motionProxy.addWalkStraight( 10, 25 )
         walkTaskId = motionProxy.post.walk() 
-        
-    if (abs(motionProxy.getAngle("HeadYaw") - previousHeadAngle) > 0.1):
-        motionProxy.clearFootsteps()#stops the walking
+    #~ if (abs(motionProxy.getAngle("HeadYaw") - previousHeadAngle) > 0.1):
+        #~ motionProxy.clearFootsteps()#stops the walking
 
 print "bye bye"
-if ( ttsProxy ):
-    ttsProxy.say("bye bye")
 
   #time.sleep(0.025)
 

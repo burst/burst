@@ -29,8 +29,10 @@ else:
 
 
 IP = "192.168.7.110" # Put here the IP address of your robot
-
 PORT = 9559
+
+#IP = "127.0.0.1" # Put here the IP address of your robot
+#PORT = 9560
 
 if (IP == ""):
   print "IP address not defined, aborting"
