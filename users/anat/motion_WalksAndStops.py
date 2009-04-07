@@ -7,7 +7,40 @@ Small example to show use of taks ids.
 
 from motion_CurrentConfig import *
 
+log = []
+start_time = time.time()
+def mylogger(something):
+    
+    class wrap(object):
+        
+        def __init__(self, obj):
+            self.obj = obj
+            if hasattr(obj, '__class__'):
+                self.name = obj.__class__.__name__
+            else:
+                self.name = repr(obj)
+            
+        def __call__(self, *args, **kw):
+            self.__log('__call__', args, kw)
+            return self.obj(*args, **kw)
+            
+        def __getitem__(self, k):
+            self.__log('__getitem__', [k])
+            return self.obj.__getitem__(k)
+            
+        def __getattr__(self, k):
+            self.__log('__getattr__', [k])
+            return getattr(self.obj, k)
+            
+        def __log(self, what, args=[], kw={}):
+            log.append((time.time() - start_time, '%s: %s: %r, %r' % (what, self.name, args, kw)))
+            print '%3.2f: %s' % (log[-1][0], str(log[-1][1])[:80])
+            
+    return wrap(something)
 
+ALProxy_real = ALProxy
+def ALProxy(*args, **kw): return mylogger(ALProxy_real(*args, **kw))
+    return ALProxy_real(*args, **kw)
 
 #####
 # Create python broker
@@ -95,16 +128,21 @@ motionProxy.setChainStiffness("Head",0.0)
  # ttsProxy.say("Move my head if you want me to stop")
 
 while (motionProxy.isRunning(walkTaskId)):
-  US = memoryProxy.getData("extractors/alultrasound/distances",0)
-  print US
-  if( US[0] < 0.4 || US[1] <0.4):
-      motionProxy.clearFootsteps()#stops the walking
-      motionProxy.addTurn( 0.3*5, 25 )#turn 90 deg left(?)
-      motionProxy.addWalkStraight( 10, 25 )
-      walkTaskId = motionProxy.post.walk() 
-  if( abs(motionProxy.getAngle("HeadYaw") - previousHeadAngle) > 0.1):
-      motionProxy.clearFootsteps()#stops the walking
-    
+    US = memoryProxy.getData("extractors/alultrasound/distances", 0)
+    print US
+    if ((US[0] < 0.41) or (US[1] < 0.41)):
+        print "going for a walk"
+        motionProxy.clearFootsteps()#stops the walking
+        motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)#stay steady
+        motionProxy.addTurn( 0.3*5, 25 )#turn 90 deg left(?)
+        motionProxy.walk()#stops the loop till finish turning
+        motionProxy.addWalkStraight( 10, 25 )
+        walkTaskId = motionProxy.post.walk() 
+    if (abs(motionProxy.getAngle("HeadYaw") - previousHeadAngle) > 0.1):
+        motionProxy.clearFootsteps()#stops the walking
+
+print "bye bye"
+
   #time.sleep(0.025)
 
 motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)#stay steady
