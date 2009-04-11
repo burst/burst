@@ -22,8 +22,11 @@ else:
   import motion
 
 # Replace here with your robot's IP address
-IP = "192.168.7.158"
-PORT = 9559
+#IP = "192.168.7.158"
+#PORT = 9559
+
+IP = "127.0.0.1"
+PORT = 9560
 
 #IP_REMOTE = "127.0.0.1" 
 #PORT_REMOTE = 54010
@@ -58,9 +61,11 @@ except Exception, e:
   print str(e)
   exit(1)
 
+visionProxy.setCamera(1) # 0 - top camera, 1 - bottom camera
+
 TimeInterpolation = 0.05
-motionProxy.setJointStiffness('HeadYaw',1.0,TimeInterpolation)
-motionProxy.gotoAngle("HeadYaw",0.31,TimeInterpolation*10,1) #0.23
+motionProxy.setJointStiffness('HeadYaw',1.0) #,TimeInterpolation
+motionProxy.gotoAngle("HeadYaw",0.23,TimeInterpolation*10,1) #0.23 #0.31
 visionProxy.getBall()
 time.sleep(1.0)
 

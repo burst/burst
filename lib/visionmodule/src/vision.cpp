@@ -28,6 +28,9 @@ vision::vision( ALPtr<ALBroker> pBroker, std::string pName ): ALModule(pBroker ,
   functionName( "unRegisterFromVIM","vision", "Unregister from the V.I.M." );
   BIND_METHOD( vision::unRegisterFromVIM );
 
+  functionName( "setCamera", "vision" ,  "select the current camera (0 - top, 1 - bottom)." );
+  BIND_METHOD( vision::setCamera );
+
   functionName( "getBall","vision", "Get the ball rect (within the field area!). To be used if the visionmodule is a local module." );
   BIND_METHOD( vision::getBall );
 
@@ -116,13 +119,13 @@ void vision::registerToVIM()
   //specification of the resolution among :
   // kVGA ( 640 * 480 ), kQVGA ( 320 * 240 ), kQQVGA ( 160 * 120 ).
   // ( definitions included in alvisiondefinitions.h )
-  resolution = kVGA; //kQVGA
+  resolution = kQVGA; //kQVGA
 
   //specification of the color space desired among :
   //  kYuvColorSpace, kyUvColorSpace, kyuVColorSpace,
   //  kYUVColorSpace, kYUV422InterlacedColorSpace, kRGBColorSpace.
   // ( definitions contained in alvisiondefinitions.h )
-  colorSpace = kRGBColorSpace; //kRGBColorSpace
+  colorSpace = kBGRColorSpace; //kRGBColorSpace
 
   //minimal number of frames per second ( fps ) required among: 5, 10, 15, and 30 fps.
   int fps = 30;
@@ -154,6 +157,31 @@ void vision::unRegisterFromVIM()
   {
     log->error( "vision", "could not call the unregister method of the " + name +" module" );
   }
+}
+
+/**
+ * setCamera : select the current camera.
+ * @param whichCam index of the camera (0 - top, 1 - bottom)
+ */
+void vision::setCamera(int whichCam) {
+	int currentCam =  camera->call<int>( "getParam", kCameraSelectID );
+	if (whichCam != currentCam) {
+		camera->callVoid( "setParam", kCameraSelectID, whichCam);
+		SleepMs(CAMERA_SLEEP_TIME);
+		currentCam =  camera->call<int>( "getParam", kCameraSelectID );
+		if (whichCam != currentCam){
+			cout << "Failed to switch to camera "<<whichCam
+				 <<" retry in " << CAMERA_SLEEP_TIME <<" ms" <<endl;
+			SleepMs(CAMERA_SLEEP_TIME);
+			currentCam =  camera->call<int>( "getParam", kCameraSelectID );
+			if (whichCam != currentCam){
+				cout << "Failed to switch to camera "<<whichCam
+					 <<" ... returning, no parameters initialized" <<endl;
+				return;
+			}
+		}
+		cout << "Switched to camera " << whichCam <<" successfully"<<endl;
+	}
 }
 
 
@@ -817,7 +845,9 @@ ALValue vision::getBall() {
 	// parameters for pan/tilt camera
 	//CvSeq* field = getLargestColoredContour(src, 155, 5, 100, 300, fieldRect);
 	// parameters for Nao camera in lab
-    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect);
+//    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect);
+    // Params for WEBOTS
+    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect);
 
     if (field != NULL) {
 //    	printf("Field: %d, %d, %d, %d\n", fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
@@ -851,7 +881,9 @@ ALValue vision::getBall() {
 	    // parameters for pan/tilt camera
 	    //getLargestColoredContour(imageClipped, 17, 10, 100, 50, ballRect);
 	    // parameters for Nao camera in lab
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 25, 50, 30, ballRect);
+//		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 25, 50, 30, ballRect);
+		// Params for webots
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 10, 50, 30, ballRect);
 
 //log->info( "vision", "Searching ball3" );
 		if (ballHull != NULL) {

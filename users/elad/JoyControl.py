@@ -220,6 +220,24 @@ class TurnLeftJoystickCommand(JoystickCommand):
 			BasicMotion.turn(1.0)
 		robotStatus = "turning left"
 
+
+# Get Up # TODO: NOT WORKING!
+def GetUpJoystickCommand(JoystickCommand):
+	
+	@classmethod
+	def isTriggeredBy(clazz, joystickStatus, robotStatus):
+		global threshold
+		print "x"
+		return abs(joystickStatus.y) < threshold and abs(joystickStatus.x) < threshold and joystickStatus.buttons[3]
+	
+	@classmethod
+	def trigger(clazz, joystickStatus):
+		global robotStatus
+#		BasicMotion.clearPendingTasks()
+
+		BasicMotion.getUp()
+		robotStatus = "getting up"
+	
 	
 def run():
 	global robotStatus

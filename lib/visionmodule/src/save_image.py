@@ -22,8 +22,10 @@ else:
   import motion
 
 # Replace here with your robot's IP address
-IP = "192.168.7.108"
-PORT = 9559
+#IP = "192.168.7.108"
+#PORT = 9559
+IP = "127.0.0.1" 
+PORT = 9560
 
 #IP_REMOTE = "127.0.0.1" 
 #PORT_REMOTE = 54010
@@ -38,7 +40,8 @@ except Exception, e:
 
 visionProxy.registerToVIM()
 
-visionProxy.saveImageRaw()
+#visionProxy.saveImageRemote("/var/tmp/")
+visionProxy.saveImage("/var/tmp/")
 
 visionProxy.unRegisterFromVIM()
 

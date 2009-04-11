@@ -36,6 +36,12 @@ class vision : public AL::ALModule {
     void unRegisterFromVIM();
 
     /**
+     * setCamera : select the current camera.
+     * @param whichCam index of the camera (0 - top, 1 - bottom)
+     */
+    void setCamera(int whichCam);
+
+    /**
      * saveImage : save the last image received.
      * @param pName path of the file
      */
@@ -120,6 +126,13 @@ class vision : public AL::ALModule {
     //CvSeq* getHullByColor(IplImage* img, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea);
 
     CvMemStorage* storage;
+
+    // Camera identification
+    static const int TOP_CAMERA = 0;
+    static const int BOTTOM_CAMERA = 1;
+
+    // Camera setup information
+    static const int CAMERA_SLEEP_TIME = 200;
 
 };
 #endif // vision_H

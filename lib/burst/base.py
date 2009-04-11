@@ -9,6 +9,8 @@ finds naoqi, fixes sys.path and then imports it.
 # all arround - so this is probably a good occasion to use syslog to scream
 # at our users).
 
+from . import debug
+
 predefined_sys_paths = [
  # opennao (as came with the robots)
 ('/opt/naoqi/extern/python/aldebaran',
