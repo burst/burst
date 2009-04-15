@@ -65,6 +65,8 @@ if __name__ == '__main__':
     stage.connect('button-press-event', clutter.main_quit)
     stage.connect('destroy', clutter.main_quit)
     stage.set_color(stage_color)
+    stage.set_user_resizable(True)
+    stage.set_size(200, 200)
     
     texture = clutter.Texture('top.jpg')
     #texture.set_size(300, 300)
