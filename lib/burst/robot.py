@@ -29,7 +29,7 @@ def init(ip = None, port = None):
     if _broker is None:
         if ip is not None: base.ip = host_to_ip(ip)
         if port is not None: base.port = port
-        _broker =  ALBroker("pybroker", LOCALHOST_IP, 9999, base.ip, base.port)
+        _broker =  ALBroker("pybroker", LOCALHOST_IP, 10234, base.ip, base.port)
 
 def getBroker():
     global _broker
