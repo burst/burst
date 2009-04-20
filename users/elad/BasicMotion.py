@@ -16,9 +16,7 @@ def wait(pid):
 
 def setStiffness(stiffness):
     motionProxy = burst.getMotionProxy().post
-    TimeInterpolation = 0.05
-    pid = motionProxy.setBodyStiffness(stiffness,TimeInterpolation)
-    time.sleep(TimeInterpolation) # TODO: Should no longer be necessary once I finish the interpreter.
+    pid = motionProxy.setBodyStiffness(stiffness)
     # Dirty hack:
     if stiffness == 0.0:
         stopWalking()
