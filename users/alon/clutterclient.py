@@ -87,12 +87,19 @@ class Main(object):
 
 start_time = time()
 
+def parseargs():
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
+    parser.add_option('-p', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
+    options, args = parser.parse_args()
+    options.ip = options.ip or '127.0.0.1'
+    options.port = options.port or ((options.ip == '127.0.0.1' and 9560) or 9559)
+    return options
+
 if __name__ == '__main__':
-   
-    import sys
-    url = "http://localhost:9560/"
-    if len(sys.argv) > 1:
-        url = sys.argv[-1]
+    options = parseargs()
+    url = "http://%s:%s/" % (options.ip, options.port)
     print "using url =", url
 
     main = Main(url)
