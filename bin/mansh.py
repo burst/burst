@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+shell to test Man module, i.e. nao-man.
+uses burst, so all the regular command line arguments apply,
+including --ip and --port.
+"""
+
 import readline
 import cPickle
 import os
@@ -8,7 +14,6 @@ import burst
 
 HISTORY_FILE=os.path.join(os.getenv('HOME'), '.mansh_history')
 
-# use --ip, --port to this shell
 
 def execer(txt):
     exec(txt)
