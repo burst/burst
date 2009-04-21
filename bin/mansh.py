@@ -54,7 +54,11 @@ class Main:
             if res == 'error':
                 print "ERROR"
             else:
-                last = cPickle.loads(res)
+                try:
+                    last = cPickle.loads(res)
+                except:
+                    print "Error unpickling, returning raw result"
+                    last = res
                 print last
 
 
