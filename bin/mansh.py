@@ -14,6 +14,27 @@ import burst
 
 HISTORY_FILE=os.path.join(os.getenv('HOME'), '.mansh_history')
 
+uninstall_tracer="""
+import sys
+sys.settrace(None)
+"""
+
+install_tracer="""
+def one(frame, what, gad):
+    code=frame.f_code
+    filename=code.co_filename
+    line=code.co_firstlineno
+    try:
+        fd=open(filename)
+        theline=fd.readlines()[line-1]
+        fd.close()
+    except:
+        theline=('%s: %s' % (filename, line))[:80]
+    print theline
+
+import sys
+sys.settrace(one)
+"""
 
 def execer(txt):
     exec(txt)
@@ -32,7 +53,10 @@ class Main:
         self.man_func = self.man.pyEval
         self.state = 'eval'
         self.state_func = {'eval': self.man.pyEval,
-            'exec': self.man.pyExec, 'local': execer}
+            'exec': self.man.pyExec, 'local': execer
+            }
+        self.cmds = {'trace': lambda: self.man.pyExec(install_tracer),
+            'traceoff': lambda: self.man.pyExec(uninstall_tracer)}
         self.states = self.state_func.keys()
         try:
             self.mainloop()
@@ -47,6 +71,9 @@ class Main:
             if cmd in self.states:
                 self.man_func = self.state_func[cmd]
                 self.state = cmd
+                continue
+            elif cmd in self.cmds.keys():
+                self.cmds[cmd]()
                 continue
             res = self.man_func(cmd)
             if self.state != 'eval':
