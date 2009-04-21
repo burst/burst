@@ -1,4 +1,6 @@
 import os, sys, time
+import socket
+
 import motion
 
 from naoqi import ALBroker, ALProxy
@@ -17,6 +19,17 @@ visionProxy = None
 class InitException(Exception):
     pass
     
+def get_first_available_tcp_port(start_number, host='127.0.0.1'):
+    number = start_number
+    s = socket.socket()
+    while number < 65535:
+        try:
+            s.bind((host, number))
+            s.close()
+            break
+        except:
+            number += 1
+    return number
 
 def init(ip = None, port = None):
     """ You must call this first. Technically, we could init everything
@@ -29,7 +42,8 @@ def init(ip = None, port = None):
     if _broker is None:
         if ip is not None: base.ip = host_to_ip(ip)
         if port is not None: base.port = port
-        _broker =  ALBroker("pybroker", LOCALHOST_IP, 10234, base.ip, base.port)
+        local_port = get_first_available_tcp_port(10234)
+        _broker =  ALBroker("pybroker", LOCALHOST_IP, local_port, base.ip, base.port)
 
 def getBroker():
     global _broker
