@@ -36,6 +36,27 @@ import sys
 sys.settrace(one)
 """
 
+stiffness_on="""
+import man.motion as motion
+motion.MotionInterface().sendStiffness(motion.StiffnessCommand(0.8))
+"""
+
+stiffness_off="""
+import man.motion as motion
+motion.MotionInterface().sendStiffness(motion.StiffnessCommand(0.0))
+"""
+
+walk="""
+import man.motion as motion
+motion.MotionInterface().setNextWalkCommand(motion.WalkCommand(1.5,0.0,0.0))
+"""
+
+stop_walk="""
+import man.motion as motion
+motion.MotionInterface().resetWalk()
+"""
+
+
 def execer(txt):
     exec(txt)
 
@@ -55,16 +76,26 @@ class Main:
         self.state_func = {'eval': self.man.pyEval,
             'exec': self.man.pyExec, 'local': execer
             }
-        self.cmds = {'trace': lambda: self.man.pyExec(install_tracer),
-            'traceoff': lambda: self.man.pyExec(uninstall_tracer)}
+        self.cmds = dict([(k, lambda txt=txt, self=self: self.man.pyExec(txt)) for k, txt in [
+            ('trace', install_tracer),
+            ('traceoff', uninstall_tracer),
+            ('walk', walk),
+            ('stop_walk', stop_walk),
+            ('stiffness_on', stiffness_on),
+            ('stiffness_off', stiffness_off)]])
         self.states = self.state_func.keys()
         try:
             self.mainloop()
+        except RuntimeError, e:
+            print e
+            print "You probably killed the naoqi at the other end of the rainbow. You should restart it"
         except (KeyboardInterrupt, EOFError):
-            print "writing readline history file to %s" % HISTORY_FILE
-            readline.write_history_file(HISTORY_FILE)
+            pass
+        print "writing readline history file to %s" % HISTORY_FILE
+        readline.write_history_file(HISTORY_FILE)
 
     def mainloop(self):
+
         while True:
             prompt = "%s>>" % self.state
             cmd = raw_input(prompt)
