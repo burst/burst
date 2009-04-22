@@ -59,8 +59,6 @@ variable points to it. See https://shwarma.cs.biu.ac.il/moin/NaoQi for OS specif
         raise SystemExit
 
 
-from getopt import gnu_getopt
-
 def get_default_ip():
     # on the nao the ip should be something that would work - since naoqi by default
     # doesn't listen to the loopback (why? WHY??), we need to find out the public address.
@@ -85,21 +83,20 @@ def host_to_ip(ip):
     return ip
 
 def parse_command_line_arguments():
-    global ip, port
-    opts, args = gnu_getopt(sys.argv[1:], '', ['ip=', 'port=', 'bodyposition'])
-    for k, v in opts:
-        if k == '--ip':
-            ip = host_to_ip(v)
-        elif k == '--port':
-            port = int(v)
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
+    parser.add_option('-p', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
+    parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
+    opts, args = parser.parse_args()
+    ip = opts.ip or get_default_ip()
+    ip = host_to_ip(ip)
+    port = opts.port or ((ip == '127.0.0.1' and 9560) or 9559)
+    port = int(port)
     globals()['ip'] = ip
     globals()['port'] = port
 
-try:
-    parse_command_line_arguments()
-except Exception, e:
-    if debug:
-        import pdb; pdb.set_trace()
+parse_command_line_arguments()
 
 # Set path only after reading command line arguments - we need them to know if we are connecting
 # to a simulator.
