@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOST=192.168.7.108
+HOST=192.168.7.156
 MODULE=crossbuild/src/libvisionmodule.so
 if [ ! -e $MODULE ]; then
 	echo you need to build the local version first

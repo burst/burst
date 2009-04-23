@@ -1,0 +1,456 @@
+# The Goal proto correspond to the goals used in the Robocup 2008
+# Standard Platform League, Nao division.
+# The color of the goal and the support polygons are paramters.
+#
+# Author: 15 FEB 2008: Çetin Meriçli <cetin.mericli@boun.edu.tr>
+# on behalf of SPL TC and OC <spl_tech@tzi.de>,<spl_orga@tzi.de>
+# Modified: 12 JUNE 2008: added a bounding object for the net
+
+PROTO Goal [
+  field SFVec3f translation 0 0 0
+  field SFRotation rotation 0 1 0 0
+  field SFColor postColor 1 1 0
+  field SFColor supportColor 1 1 1
+]
+{
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    Transform {
+      translation 0 0.775 0
+      rotation 1 0 0 1.57
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor IS postColor
+            }
+          }
+          geometry Cylinder {
+            bottom FALSE
+            height 1.42
+            radius 0.025
+            top FALSE
+          }
+        }
+      ]
+    }
+    Transform {
+      translation 0 0.4 -0.70
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor IS postColor
+            }
+          }
+          geometry Cylinder {
+            bottom FALSE
+            height 0.8
+            radius 0.05
+          }
+        }
+      ]
+    }
+    Transform {
+      translation 0 0.4 0.70
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+              diffuseColor IS postColor
+            }
+          }
+          geometry Cylinder {
+            bottom FALSE
+            height 0.8
+            radius 0.05
+          }
+        }
+      ]
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor IS supportColor
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.05 0.35 -0.697
+            0.05 0 -0.697
+            0.394 0 -0.697
+            0.394 0.0 -0.697
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor IS supportColor
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.40 0 -0.703
+            0.40 0 -0.703
+            0.05 0 -0.703
+            0.05 0.35 -0.703
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor IS supportColor
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.05 0.35 0.697
+            0.05 0 0.697
+            0.394 0 0.697
+            0.394 0.0 0.697
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor IS supportColor
+        }
+      }
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.40 0 0.703
+            0.40 0 0.703
+            0.05 0 0.703
+            0.05 0.35 0.703
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.40 0 -0.703
+            0.40 0 0.703
+            0.05 0.8 0.703
+            0.05 0.8 -0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            28 0
+            28 16
+            0 16
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+        texCoordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.05 0.8 -0.703
+            0.05 0.8 0.703
+            0.40 0 0.703
+            0.40 0 -0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            28 0
+            28 16
+            0 16
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+        texCoordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.40 0   0.703
+            0.05 0   0.703
+            0.05 0.8 0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            7 0
+            7 16
+          ]
+        }
+        coordIndex [
+          0, 1, 2
+        ]
+        texCoordIndex [
+        	0, 1, 2
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.05 0.8 0.703
+            0.05 0 0.703
+            0.40 0 0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            16 0
+            16 7
+          ]
+        }
+        coordIndex [
+          0, 1, 2
+        ]
+        texCoordIndex [
+          0, 1, 2
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.40 0 -0.703
+            0.05 0 -0.703
+            0.05 0.8 -0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            7 0
+            7 16
+          ]
+        }
+        coordIndex [
+          0, 1, 2
+        ]
+        texCoordIndex [
+          0, 1, 2
+        ]
+      }
+    }
+
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url "textures/net.png"
+        }
+        material Material {
+          diffuseColor 1 1 1
+          shininess 0.9
+          specularColor 0.7 0.7 0.7
+        }
+      }
+
+      geometry IndexedFaceSet {
+        coord Coordinate {
+          point [
+            0.05 0.8 -0.703
+            0.05 0 -0.703
+	          0.40 0 -0.703
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            16 0
+            16 7
+          ]
+        }
+        coordIndex [
+          0, 1, 2
+        ]
+        texCoordIndex [
+          0, 1, 2
+        ]
+      }
+    }
+  ]
+  boundingObject Group {
+    children [
+      Transform {
+        translation 0.2 0.4 -0.71
+        children [
+          DEF GOAL_SIDE_SHAPE Shape {
+            appearance Appearance {
+              material Material {
+              }
+            }
+            geometry Box {
+              size 0.4 0.8 0.026
+            }
+          }
+        ]
+      }
+      Transform {
+        translation 0.2 0.4 0.71
+        children [
+          USE GOAL_SIDE_SHAPE
+        ]
+      }
+      Transform {
+        translation 0.27 0.42 0
+        rotation 0 0 1 0.41
+        children [
+          Box {
+            size 0.1 0.85 1.5
+          }
+        ]
+      }
+      Transform {
+        translation 0 0.4 -0.70
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+              }
+            }
+            geometry Cylinder {
+              height 0.8
+              radius 0.05
+            }
+          }
+        ]
+      }
+      Transform {
+        translation 0 0.4 0.70
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+              }
+            }
+            geometry Cylinder {
+              height 0.8
+              radius 0.05
+            }
+          }
+        ]
+      }
+      Transform {
+        translation 0 0.775 0
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance Appearance {
+              material Material {
+              }
+            }
+            geometry Cylinder {
+              height 1.42
+              radius 0.025
+            }
+          }
+        ]
+      }
+    ]
+  }
+  locked TRUE
+}
+}

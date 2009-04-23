@@ -1,0 +1,41 @@
+# The Ball proto correspond to the soccer ball used in the Robocup 2008
+# Standard Platform League, Nao division.
+#
+# Author: Olivier Michel <Olivier.Michel@cyberbotics.com>
+# Date: 29 FEB 2008
+
+PROTO Ball [
+  field SFVec3f translation 0 0.043 0
+]
+{
+
+Solid {
+  translation IS translation
+  rotation 0 1 0 0.0427969
+  name "ball"
+  children [
+    DEF BALL_SHAPE Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.7
+          diffuseColor 1 0.392157 0
+          shininess 0.5
+          specularColor 1 0.392157 0
+        }
+      }
+      geometry Sphere {
+        radius 0.043
+      }
+    }
+  ]
+  boundingObject USE BALL_SHAPE
+  physics Physics {
+    density -1
+    mass 0.1
+    bounce 0.9
+    coulombFriction 0.5
+    forceDependentSlip 0.5
+  }
+}
+
+}
