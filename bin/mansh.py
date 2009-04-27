@@ -71,9 +71,9 @@ class Main:
 
         print self.man.getMethodList()
 
-        self.man_func = self.man.pyEval
+        self.man_func = self.evalOrExec
         self.state = 'eval'
-        self.state_func = {'eval': self.man.pyEval,
+        self.state_func = {'eval': self.evalOrExec,
             'exec': self.man.pyExec, 'local': execer
             }
         self.cmds = dict([(k, lambda txt=txt, self=self: self.man.pyExec(txt)) for k, txt in [
@@ -95,7 +95,7 @@ class Main:
         readline.write_history_file(HISTORY_FILE)
 
     def mainloop(self):
-
+        last = None
         while True:
             prompt = "%s>>" % self.state
             cmd = raw_input(prompt)
@@ -112,13 +112,17 @@ class Main:
             if res == 'error':
                 print "ERROR"
             else:
-                try:
-                    last = cPickle.loads(res)
-                except:
-                    print "Error unpickling, returning raw result"
-                    last = res
-                print last
+                last = res
+                print res
 
+    def evalOrExec(self, s):
+        try:
+            compile(s, 's', 'eval')
+            res = self.man.pyEval(s)
+            return res
+        except:
+            print "you meant exec?"
+            return self.man.pyExec(s)
 
 if __name__ == '__main__':
     Main().main()
