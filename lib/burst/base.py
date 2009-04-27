@@ -83,6 +83,9 @@ def host_to_ip(ip):
     return ip
 
 def parse_command_line_arguments():
+    import sys
+    if not hasattr(sys, 'argv'): # fix for bug when importing from within nao-man
+        sys.argv=['fake']
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
