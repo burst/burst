@@ -335,15 +335,17 @@ static void check_keyboard() {
     }
     break;
 
+//  case 'B':
+//    control_data.teams[TEAM_BLUE].score++;
+//    display();
+//    break;
+    
   case 'B':
-    //control_data.teams[TEAM_BLUE].score++;
-    printf("keypressed: B");
+    printf("keypressed: b");
     
-    move_ball_2d(
-                (double)rand() / (double)RAND_MAX * 0.25 - 0.125,
-                (double)rand() / (double)RAND_MAX * 0.25 - 0.125);
-    
-    
+    move_ball_2d( -0.5, 
+                  (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
+        
     display();
     break;
   }

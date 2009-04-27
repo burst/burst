@@ -1811,8 +1811,8 @@ CustomRobot {
     DEF HeadYaw Servo {
       name "HeadYaw"
       translation 0 0.16 -0.02
-      maxPosition 1.0472
-      minPosition -1.0472
+      maxPosition 2.0472
+      minPosition -2.0472
       physics Physics {
         mass 0.050
         density -1
