@@ -56,6 +56,31 @@ import man.motion as motion
 motion.MotionInterface().resetWalk()
 """
 
+kick="""
+import man.motion.SweetMoves as SweetMoves
+brain.player.executeMove(SweetMoves.KICK_STRAIGHT)
+"""
+
+sit="""
+import man.motion.SweetMoves as SweetMoves
+brain.player.executeMove(SweetMoves.SIT_POS)
+"""
+
+look_down="""
+import man.motion.SweetMoves as SweetMoves
+brain.player.executeMove(SweetMoves.NEUT_HEADS)
+"""
+
+stand_up_front="""
+import man.motion.SweetMoves as SweetMoves
+brain.player.executeMove(SweetMoves.STAND_UP_FRONT)
+"""
+
+stand_up_back="""
+import man.motion.SweetMoves as SweetMoves
+brain.player.executeMove(SweetMoves.STAND_UP_BACK)
+"""
+
 
 def execer(txt):
     exec(txt)
@@ -80,6 +105,11 @@ class Main:
             ('trace', install_tracer),
             ('traceoff', uninstall_tracer),
             ('walk', walk),
+            ('kick', kick),
+            ('stand_up_front', stand_up_front),
+            ('stand_up_back', stand_up_back),
+            ('sit', sit),
+            ('look_down', look_down),
             ('stop_walk', stop_walk),
             ('stiffness_on', stiffness_on),
             ('stiffness_off', stiffness_off)]])
