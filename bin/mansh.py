@@ -10,7 +10,7 @@ import readline
 import cPickle
 import os
 
-import burst
+from socket import socket
 
 HISTORY_FILE=os.path.join(os.getenv('HOME'), '.mansh_history')
 
@@ -89,17 +89,37 @@ class Main:
     def __init__(self):
         if os.path.exists(HISTORY_FILE):
             readline.read_history_file(HISTORY_FILE)
-        burst.init()
+        self.completer_cache = {}
+        #readline.set_completer(self.completer)
+
+    def completer(self, text, start):
+        print 'completer:', state
+        # look for the last part before a '.', including everything, in the globals
+        # locally first (cache), then across the socket.
+        parts = text.rsplit('.', 1)[-2]
+        if len(parts) == 1: # we can't complete without a comma to guide us (not right now)
+            return None
+        token, rest = parts[-1]
+        if token not in self.completer_cache:
+            # expensive path - roundtrip'ing
+            dir_result = self.evalOrExec('dir(%s)' % token)
+
+        return [x for x in self.completer_cache[token] if x.startswith(rest)]
 
     def main(self):
-        self.man = burst.ALProxy('Man')
-
-        print self.man.getMethodList()
+        host, port = 'localhost', 20000
+        print "connecting to debug shell on %s:%s" % (host, port)
+        self.s = socket()
+        try:
+            self.s.connect((host, port))
+        except Exception, e:
+            print "connection failed, quitting"
+            raise SystemExit
 
         self.man_func = self.evalOrExec
         self.state = 'eval'
         self.state_func = {'eval': self.evalOrExec,
-            'exec': self.man.pyExec, 'local': execer
+            'local': execer
             }
         self.cmds = dict([(k, lambda txt=txt, self=self: self.man.pyExec(txt)) for k, txt in [
             ('trace', install_tracer),
@@ -148,11 +168,22 @@ class Main:
     def evalOrExec(self, s):
         try:
             compile(s, 's', 'eval')
-            res = self.man.pyEval(s)
-            return res
         except:
-            print "you meant exec?"
-            return self.man.pyExec(s)
+            try:
+                compile(s, 's', 'exec')
+            except Exception, e:
+                print "compilation error as exec: %s" % e
+                return
+        if s[-1] != '\n': s = s + '\n'
+        self.s.send(s)
+        return self.getLine()
+
+    def getLine(self):
+        c = self.s.recv(1)
+        bytes = [c]
+        while bytes[-1] != '\n':
+            bytes.append(self.s.recv(1))
+        return ''.join(bytes[:-1])
 
 if __name__ == '__main__':
     Main().main()
