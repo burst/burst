@@ -252,7 +252,7 @@ Beacon {
   bottomColor 1 1 0
 }
 DEF BALL Solid {
-  translation 0 0.043 0
+  translation 0 0.200 0
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
