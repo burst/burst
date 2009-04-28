@@ -1,7 +1,8 @@
 import sys
 import readline
 import burst
-from burst_exceptions import *
+from burst import burst_exceptions
+from burst.burst_exceptions import *
 #import Util
 
 # TODO: If running on the robot, user 127.0.0.1 as the address?

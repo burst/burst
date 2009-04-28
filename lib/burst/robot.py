@@ -1,8 +1,6 @@
 import os, sys, time
 import socket
 
-import motion
-
 from naoqi import ALBroker, ALProxy
 from base import host_to_ip, LOCALHOST_IP
 import base

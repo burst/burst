@@ -2,7 +2,8 @@
 
 import os, sys, time, math
 import burst
-from burst_exceptions import *
+from burst import burst_exceptions
+from burst.burst_exceptions import *
 
 
 def clearPendingTasks():
