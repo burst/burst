@@ -90,21 +90,35 @@ class Main:
         if os.path.exists(HISTORY_FILE):
             readline.read_history_file(HISTORY_FILE)
         self.completer_cache = {}
-        #readline.set_completer(self.completer)
+        readline.parse_and_bind("tab: complete")
+        readline.set_completer(self.completer)
 
-    def completer(self, text, start):
-        print 'completer:', state
+    def completer(self, text, state):
         # look for the last part before a '.', including everything, in the globals
         # locally first (cache), then across the socket.
-        parts = text.rsplit('.', 1)[-2]
+        parts = text.rsplit('.', 1)
         if len(parts) == 1: # we can't complete without a comma to guide us (not right now)
-            return None
-        token, rest = parts[-1]
-        if token not in self.completer_cache:
+            base, rest = '', text
+        else:
+            assert(len(parts) == 2)
+            base, rest = parts[0], parts[1]
+        if base not in self.completer_cache:
             # expensive path - roundtrip'ing
-            dir_result = self.evalOrExec('dir(%s)' % token)
-
-        return [x for x in self.completer_cache[token] if x.startswith(rest)]
+            dir_result = self.evalOrExec('dir(%s)' % base)
+            try:
+                # Note: evaling random strings..
+                l = eval(dir_result)
+            except:
+                # no completions
+                l = []
+            self.completer_cache[base] = l
+        possibilities = [x for x in self.completer_cache[base] if x.startswith(rest)]
+        if len(possibilities) == 0 or state > len(possibilities):
+            return None # only if there was an error completing this
+        if len(parts) == 1: # simple case - just a word to complete
+            return possibilities[state]
+        # default case - we have some x.y.z.rest to complete (rest can be nothing)
+        return '%s.%s' % (base, possibilities[state])
 
     def main(self):
         host, port = 'localhost', 20000
@@ -121,7 +135,7 @@ class Main:
         self.state_func = {'eval': self.evalOrExec,
             'local': execer
             }
-        self.cmds = dict([(k, lambda txt=txt, self=self: self.man.pyExec(txt)) for k, txt in [
+        self.cmds = dict([(k, lambda txt=txt, self=self: self.execIt(txt)) for k, txt in [
             ('trace', install_tracer),
             ('traceoff', uninstall_tracer),
             ('walk', walk),
@@ -166,6 +180,7 @@ class Main:
                 print res
 
     def evalOrExec(self, s):
+        if len(s) == 0: return
         try:
             compile(s, 's', 'eval')
         except:
@@ -175,6 +190,10 @@ class Main:
                 print "compilation error as exec: %s" % e
                 return
         if s[-1] != '\n': s = s + '\n'
+        self.s.send(s)
+        return self.getLine()
+
+    def execIt(self, s):
         self.s.send(s)
         return self.getLine()
 
