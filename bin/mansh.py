@@ -63,8 +63,18 @@ class Main:
     def switchToEval(self):
         return self.evalOrExec
 
+    def parse_cl_args(self):
+        """ Parse Command line Arguments """
+        import optparse
+        parser = optparse.OptionParser()
+        parser.add_option('','--ip', dest='ip', default='localhost', help='ip to connect to (ok, host too, misnamed)')
+        parser.add_option('','--port',type=int, dest='port', default=20000, help='port to connect to')
+        options, rest = parser.parse_args()
+        self.options = options
+
     def main(self):
-        host, port = 'localhost', 20000
+        self.parse_cl_args()
+        host, port = self.options.ip, self.options.port
         print "connecting to debug shell on %s:%s" % (host, port)
         self.s = socket()
         try:
@@ -137,7 +147,6 @@ class Main:
                 self.command_so_far = ''
         if s[-1] != '\n': s = s + '\n'
         s = first_char + s
-        print "sending %r" % s
         self.s.send(s)
         return self.getLine()
 
@@ -146,7 +155,8 @@ class Main:
         to_send = '\n'.join('#%s' % l for l in lines) + '\n'
         print "sending", repr(to_send)
         self.s.send(to_send)
-        return self.getLine()
+        returned_lines = [self.getLine() for i in len(lines)]
+        return '%s - %s' % (len(returned_lines), ','.join(returned_lines))
 
     def getLine(self):
         c = self.s.recv(1)
