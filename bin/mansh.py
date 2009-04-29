@@ -24,22 +24,36 @@ class Main:
     def __init__(self):
         if os.path.exists(HISTORY_FILE):
             readline.read_history_file(HISTORY_FILE)
+        self.remote_dir_cache = {}
         self.completer_cache = {}
         self.command_so_far = ''
+        self.command_names = [x[0] for x in command_pairs]
         self.first_char = ''
         readline.parse_and_bind("tab: complete")
         readline.set_completer(self.completer)
 
     def completer(self, text, state):
-        # look for the last part before a '.', including everything, in the globals
-        # locally first (cache), then across the socket.
+        possibilities = self.get_completion_possibilities(text)
+        if len(possibilities) == 0 or state > len(possibilities):
+            return None # only if there was an error completing this
+        return possibilities[state]
+ 
+    def get_completion_possibilities(self, text):
+        """ find all completions for text. We currently look at two places:
+        commands - the macros defined in mansh_commands
+        dir() for the part before the rightmost dot remotely (cached)
+
+        The whole list itself is also cached (but the dir is cached seperately)
+        """
+        if text in self.completer_cache:
+            return self.completer_cache[text]
         parts = text.rsplit('.', 1)
-        if len(parts) == 1: # we can't complete without a comma to guide us (not right now)
+        if len(parts) == 1:
             base, rest = '', text
         else:
             assert(len(parts) == 2)
             base, rest = parts[0], parts[1]
-        if base not in self.completer_cache:
+        if base not in self.remote_dir_cache:
             # expensive path - roundtrip'ing
             dir_result = self.evalOrExec('dir(%s)' % base)
             try:
@@ -48,14 +62,15 @@ class Main:
             except:
                 # no completions
                 l = []
-            self.completer_cache[base] = l
-        possibilities = [x for x in self.completer_cache[base] if x.startswith(rest)]
-        if len(possibilities) == 0 or state > len(possibilities):
-            return None # only if there was an error completing this
-        if len(parts) == 1: # simple case - just a word to complete
-            return possibilities[state]
-        # default case - we have some x.y.z.rest to complete (rest can be nothing)
-        return '%s.%s' % (base, possibilities[state])
+            self.remote_dir_cache[base] = l
+        possibilities = [x for x in self.remote_dir_cache[base] if x.startswith(rest)]
+        if base == '':
+            possibilities += [x for x in self.command_names if x.startswith(rest)]
+        else:
+            # we have some x.y.z.rest to complete (rest can be nothing)
+            possibilities = ['%s.%s' % (base, p) for p in possibilities]
+        self.completer_cache[text] = possibilities
+        return possibilities
 
     def switchToExec(self):
         return self.execIt
@@ -89,7 +104,7 @@ class Main:
             'exec': self.switchToExec,
             'local': execer
             }
-        print [x[0] for x in command_pairs]
+        print self.command_names
         self.cmds = dict([(k, lambda txt=txt, self=self: self.execIt(txt)) for k, txt in command_pairs])
         self.states = self.state_func.keys()
         try:
@@ -155,7 +170,7 @@ class Main:
         to_send = '\n'.join('#%s' % l for l in lines) + '\n'
         print "sending", repr(to_send)
         self.s.send(to_send)
-        returned_lines = [self.getLine() for i in len(lines)]
+        returned_lines = [self.getLine() for i in xrange(len(lines))]
         return '%s - %s' % (len(returned_lines), ','.join(returned_lines))
 
     def getLine(self):
