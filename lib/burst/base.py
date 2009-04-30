@@ -116,5 +116,8 @@ except:
 if 'naoqi' not in sys.modules and 'aldebaran' not in sys.modules:
     fix_sys_path()
 
-from aldebaran import naoqi
+try:
+    from aldebaran import naoqi
+except:
+    import naoqi
 

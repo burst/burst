@@ -41,7 +41,12 @@ def init(ip = None, port = None):
         if ip is not None: base.ip = host_to_ip(ip)
         if port is not None: base.port = port
         local_port = get_first_available_tcp_port(10234)
-        _broker =  ALBroker('burst%s' % local_port, LOCALHOST_IP, local_port, base.ip, base.port)
+        try:
+            _broker =  ALBroker('burst%s' % local_port, LOCALHOST_IP, local_port, base.ip, base.port)
+        except Exception, e:
+            print "connection failed - burst not init"
+            _broker = None
+            raise
 
 def getBroker():
     global _broker
