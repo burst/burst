@@ -50,6 +50,11 @@ import man.motion.SweeterMoves as SweeterMoves
 brain.player.executeMove(SweeterMoves.HALF_KICK)
 """
 
+almost_kick="""
+import man.motion.SweeterMoves as SweeterMoves
+brain.player.executeMove(SweeterMoves.ALMOST_KICK)
+"""
+
 kick_right="""
 import man.motion.SweetMoves as SweetMoves
 brain.player.executeMove(SweetMoves.KICK_STRAIGHT_RIGHT)
@@ -97,6 +102,7 @@ command_pairs = [
     ('walk', walk),
     ('kick', kick),
     ('half_kick', half_kick),
+    ('almost_kick', almost_kick),
     ('kick_right', kick_right),
     ('kick_left', kick_left),
     ('stand_up_front', stand_up_front),
