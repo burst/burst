@@ -12,13 +12,15 @@ class Actions(object):
 
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
-        self._motion.setBalanceMode(BALANCE_MODE_OFF)
+        self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         self._motion.gotoAngle('HeadPitch', INITIAL_HEAD_PITCH, 1.0,
             INTERPOLATION_SMOOTH)
         self.executeMove(moves.STAND)
 
     def changeHeadAngles(self, delta_yaw, delta_pitch):
-        self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
+        #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
+        self._motion.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
+        
 
     def executeMove(self, moves):
         """ Go through a list of body angles, works like northern bites code:
