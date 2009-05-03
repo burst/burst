@@ -48,6 +48,13 @@ class EventManagerLoop(object):
             actions = self._actions)
 
     def run(self):
+        # a sanity check
+        import burst
+        try:
+            man = burst.ALProxy("Man")
+        except:
+            print "you are missing the Man proxy - run naoload and uncomment man"
+            raise SystemExit
         from time import sleep, time
         # TODO: this should be called from the gamecontroller, this is just
         # a temporary measure. The gamecontroller should keep track of the game state,
