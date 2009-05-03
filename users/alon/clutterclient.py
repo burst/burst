@@ -26,7 +26,7 @@ import cluttergst
 from cluttercairo import CairoTexture
 #import cluttergst
 
-from mysoap import NaoQiConnection
+from pynaoqi import NaoQiConnection
 
 class Main(object):
 

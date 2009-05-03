@@ -270,6 +270,7 @@ xsi_type_to_ctor = {
     'nil': lambda x: str(x.firstChild.nodeValue),
     'Array': arrayctor
 }
+
 missing_types = set()
 def get_xsi_type_to_ctor(typename):
     global missing_types
@@ -279,6 +280,8 @@ def get_xsi_type_to_ctor(typename):
         print "missing type: %s" % typename
         missing_types.add(typename)
     return str
+
+##################################################################
 
 class NaoQiReturn(object):
 
@@ -304,6 +307,8 @@ class NaoQiReturn(object):
         if self._rettype == ARRAY:
             return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
         return ret
+
+##################################################################
 
 class NaoQiMethod(object):
 
@@ -339,11 +344,15 @@ class NaoQiMethod(object):
                 raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
         return self._return.fromNaoQiCall(self._con.sendrecv(callNaoQiObject(self._mod._modname, self._name, *args)))
 
+##################################################################
+
 class ModulesHolder(object):
     pass
 
 class MethodHolder(object):
     pass
+
+##################################################################
 
 class NaoQiModule(object):
     def __init__(self, con, modname):
@@ -381,7 +390,7 @@ def getpairs(elem):
     return [(x.nodeName, x.firstChild.nodeValue) for x in elem.childNodes]
 
 class NaoQiConnection(object):
-    def __init__(self, url):
+    def __init__(self, url="http://localhost:9560/"):
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
