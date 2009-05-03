@@ -1,10 +1,6 @@
-import math
-
 import burst
-from burst.consts import BALANCE_MODE_OFF, INTERPOLATION_SMOOTH
+from burst.consts import BALANCE_MODE_OFF, INTERPOLATION_SMOOTH, DEG_TO_RAD
 import moves
-
-DEG_TO_RAD = math.pi / 180.0
 
 INITIAL_STIFFNESS = 0.85
 INITIAL_HEAD_PITCH = -20.0 * DEG_TO_RAD
@@ -20,6 +16,9 @@ class Actions(object):
         self._motion.gotoAngle('HeadPitch', INITIAL_HEAD_PITCH, 1.0,
             INTERPOLATION_SMOOTH)
         self.executeMove(moves.STAND)
+
+    def changeHeadAngles(self, delta_yaw, delta_pitch):
+        self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
 
     def executeMove(self, moves):
         """ Go through a list of body angles, works like northern bites code:
