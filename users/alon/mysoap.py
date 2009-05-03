@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import re
 import os
 import socket
@@ -6,20 +8,26 @@ from xml.dom import minidom
 from time import sleep
 import stat
 import datetime
+import urllib2
 
 import Image
 
-import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions.py
-import memory
+# finished with global imports
 
-#################################################################################################
+DEBUG=False
+
+import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions.py
+if DEBUG:
+    import memory
+
+#########################################################################
 # Constants
 
 CAMERA_WHICH_PARAM = 18
 CAMERA_WHICH_BOTTOM_CAMERA = 1
 CAMERA_WHICH_TOP_CAMERA = 0
 
-#################################################################################################
+#########################################################################
 # Utilities
 
 def getip():
@@ -30,7 +38,7 @@ def compresstoprint(s, first, last):
         return s
     return s[:first] + '\n...\n' + s[-last:]
 
-#################################################################################################
+########################################################################
 # totally minimal SOAP Implementation
 
 class XMLObject(object):
@@ -41,7 +49,7 @@ class XMLObject(object):
         self._children = list(children)
         self._d = {}
         for c in self._children:
-            if type(c) is str: continue
+            if type(c) in [str, unicode]: continue
             self._d[c._name] = c
 
     def attributes(self, attrs):
@@ -106,7 +114,7 @@ class SOAPObject(XMLObject):
 
 S = SOAPObject
 
-#################################################################################################
+#########################################################################
 # Aldebaran NaoQi protocol
 
 def getBrokerInfoObject():
@@ -179,6 +187,8 @@ def serializeToSoap(x):
     else:
         if isinstance(x, int):
             thetype = 'xsd:int'
+        elif isinstance(x, float):
+            thetype = 'xsd:float'
         else:
             thetype = 'xsd:string'
         x = str(x)
@@ -186,18 +196,23 @@ def serializeToSoap(x):
     return X('item', [('xsi:type', thetype)], children)
 
 def callNaoQiObject(mod, meth, *args):
-    """<albroker:callNaoqi>
-    <albroker:mod>NaoCam</albroker:mod>
-    <albroker:meth>register</albroker:meth>
-    <albroker:p>
-        <item xsi:type="Array">
-            <item xsi:type="xsd:string">testvision_GVM</item>
-            <item xsi:type="xsd:int">2</item>
-            <item xsi:type="xsd:int">11</item>
-            <item xsi:type="xsd:int">15</item>
-        </item>
-    </albroker:p></albroker:callNaoqi>
+    """ Call a method. Returns the xml
+    object, you need to actually use it, with con.sendrecv
     """
+    # Example
+    #"""
+    #<albroker:callNaoqi>
+    #<albroker:mod>NaoCam</albroker:mod>
+    #<albroker:meth>register</albroker:meth>
+    #<albroker:p>
+    #    <item xsi:type="Array">
+    #        <item xsi:type="xsd:string">testvision_GVM</item>
+    #        <item xsi:type="xsd:int">2</item>
+    #        <item xsi:type="xsd:int">11</item>
+    #        <item xsi:type="xsd:int">15</item>
+    #    </item>
+    #</albroker:p></albroker:callNaoqi>
+    #"""
     o = S()
     p = serializeToSoap(args) # note - this always creates an Array arround them
     o.body.C(X('albroker:callNaoqi', children=[
@@ -206,10 +221,164 @@ def callNaoQiObject(mod, meth, *args):
         X('albroker:p', [], [p])]))
     return o
 
-##########################################################################################
+##################################################################
+# NaoQiModule, NaoQiMethod (Top Level objects)
+
+class NaoQiParam(object):
+    
+    def __init__(self, ztype, zname, zdoc):
+        ztype = int(ztype)
+        self.__doc__ = zdoc
+        self._type = nao_type_to_py_type.get(ztype, ztype)
+        self._name = zname
+
+    def validate(self, v):
+        # TODO
+        if callable(self._type):
+            try:
+                self._type(v)
+            except:
+                return False
+        return True
+    
+    def docstring(self):
+        return '%s %s: %s' % (self._type, self._name, self.__doc__)
+
+    def __str__(self):
+        return str(self._type)
+
+ARRAY='array'
+VECTOR_STRING = 'vectorString'
+nao_type_to_py_type = {
+    1: None, # void
+    2: bool,
+    3: int,
+    4: float,
+    5: str,
+    6: ARRAY,
+    25: VECTOR_STRING,
+    }
+
+def arrayctor(node):
+    return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
+
+xsi_type_to_ctor = {
+    'xsd:int': lambda x: int(x.firstChild.nodeValue),
+    'xsd:float': lambda x: float(x.firstChild.nodeValue),
+    'xsd:string': lambda x: str(x.firstChild.nodeValue),
+    'xsd:base64Binary': lambda x: base64.decodestring(x.firstChild.nodeValue),
+    'nil': lambda x: str(x.firstChild.nodeValue),
+    'Array': arrayctor
+}
+missing_types = set()
+def get_xsi_type_to_ctor(typename):
+    global missing_types
+    if xsi_type_to_ctor.has_key(typename):
+        return xsi_type_to_ctor[typename]
+    if typename not in missing_types:
+        print "missing type: %s" % typename
+        missing_types.add(typename)
+    return str
+
+class NaoQiReturn(object):
+
+    def __init__(self, rettype, name, doc):
+        rettype = int(rettype)
+        self._rettype = nao_type_to_py_type.get(rettype, rettype)
+        self.__doc__ = doc
+        self._name = name
+
+    def __str__(self):
+        return str(self._rettype)
+
+    def __repr__(self):
+        return '<NQRet %s>' % str(self._rettype)
+
+    def fromNaoQiCall(self, obj):
+        # TODO - check error
+        ret = obj.firstChild.firstChild
+        if self._rettype == None:
+            return None
+        if self._rettype in set([bool, int, float, str]):
+            return self._rettype(ret.firstChild.firstChild.nodeValue)
+        if self._rettype == ARRAY:
+            return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
+        return ret
+
+class NaoQiMethod(object):
+
+    def __init__(self, mod, name):
+        self._mod = mod
+        self._con = mod._con
+        self._name = name
+        doc = self.getMethodHelp().firstChild.firstChild.firstChild
+        if doc == None:
+            self.__doc__ = 'no help supplied by module'
+            self._params = []
+            self._return = NaoQiReturn(rettype=1, name='', doc='') # 1 == void
+            return
+        # the return value is an array with:
+        # index 0    - help
+        # index 1   - return value
+        # index 2   - params
+        def nodevalues(arr):
+            return [q.firstChild.nodeValue for q in arr.childNodes]
+        self._params = [NaoQiParam(*nodevalues(t)) for t in doc.childNodes[2].childNodes]
+        self._return = NaoQiReturn(*nodevalues(doc.childNodes[1]))
+        name, docstring, module = [c.firstChild.nodeValue for c in doc.firstChild.childNodes]
+        self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (self._return, name, ','.join(map(str, self._params)), docstring, module, ''.join(' %s\n' % p.docstring() for p in self._params))
+
+    def getMethodHelp(self):
+        return self._con.sendrecv(callNaoQiObject(self._mod._modname, 'getMethodHelp', self._name))
+
+    def __call__(self, *args):
+        if len(args) != len(self._params):
+            raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
+        for i, (p, a) in enumerate(zip(self._params, args)):
+            if not p.validate(a):
+                raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
+        return self._return.fromNaoQiCall(self._con.sendrecv(callNaoQiObject(self._mod._modname, self._name, *args)))
+
+class ModulesHolder(object):
+    pass
+
+class MethodHolder(object):
+    pass
+
+class NaoQiModule(object):
+    def __init__(self, con, modname):
+        self._con = con
+        self._modname = modname
+        # async? nah, don't bother right now. (everything here
+        # should be twisted.. ok, it can be asynced some other way)
+        self.methods = MethodHolder()
+        self.method_names = self.getMethods()
+        for meth in self.method_names:
+            methobj = NaoQiMethod(self, meth)
+            setattr(self, meth, methobj)
+            setattr(self.methods, meth, methobj)
+        # this actually uses one of the methods above!
+        self.__doc__ = self.moduleHelp()[0]
+
+    def getName(self):
+        return self._modname
+
+    def getMethods(self):
+        """ returns the method names in unicode for the given module
+        """
+        result = self._con.sendrecv(callNaoQiObject(self._modname,
+                'getMethodList'))
+        return [e.firstChild.wholeText for e in result.firstChild.firstChild.firstChild.childNodes]
+
+    def justModuleHelp(self):
+        return self._con.sendrecv(callNaoQiObject(self._mod._modname, 'moduleHelp'))
+
+##################################################################
 # Connection (Top Level object)
 
-DEBUG=False
+def getpairs(elem):
+    """ helper method for parsing DOM Elements's """
+    return [(x.nodeName, x.firstChild.nodeValue) for x in elem.childNodes]
 
 class NaoQiConnection(object):
     def __init__(self, url):
@@ -221,6 +390,12 @@ class NaoQiConnection(object):
         self._brokername = "soaptest"
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
+        
+        self._modules = [self.getModule(modname) for modname in self.getModules()]
+        self.modules = ModulesHolder()
+        for m in self._modules:
+            self.__dict__[m.getName()] = m
+            self.modules.__dict__[m.getName()] = m
 
     def sendrecv(self, o):
         s = socket.socket()
@@ -245,30 +420,24 @@ class NaoQiConnection(object):
         while left > 0:
             rest.append(s.recv(content_length-1))
             left -= len(rest[-1])
-        print "memory = %s" % memory.memory()
+        if DEBUG:
+            print "memory = %s" % memory.memory()
         body = h[-1] + ''.join(rest)
         if DEBUG:
             print "***     Got:          ***\n%s" % compresstoprint(headers + body, 1000, 1000)
             print "*************************"
         xml = minidom.parseString(body)
-        soapbody = xml.documentElement.childNodes[0]
+        soapbody = xml.documentElement.firstChild
         return soapbody
 
     def getBrokerInfo(self):
         soapbody = self.sendrecv(self._getBrokerInfoObject)
-        return self.getpairs(soapbody.childNodes[0].childNodes[0])
+        return getpairs(soapbody.firstChild.firstChild)
 
     def getInfo(self, modulename):
         self._getInfoObject.body['albroker:getInfo']['albroker:pModuleName']._children[0] = modulename
         soapbody = self.sendrecv(self._getInfoObject)
-        return self.getpairs(soapbody.childNodes[0])
-
-    def getpairs(self, elem):
-        return [(x.nodeName, x.childNodes[0].nodeValue) for x in elem.childNodes]
-
-    def getitems(self, elem):
-        # like getpairs, but ignore the names - they will all be "item"
-        return [x.childNodes[0].nodeValue for x in elem.childNodes]
+        return getpairs(soapbody.firstChild)
 
     def registerBroker(self):
         """
@@ -277,33 +446,26 @@ class NaoQiConnection(object):
         """
         obj = registerBroker(name=self._brokername, ip=self._myip, port=self._myport, processId=os.getpid(), modulePointer=-1, isABroker=True, keepAlive=False, architecture=0)
         soapbody = self.sendrecv(obj)
-        return soapbody.childNodes[0].childNodes[0].childNodes[0].nodeValue
+        return soapbody.firstChild.firstChild.firstChild.nodeValue
 
     def exploreToGetModuleByName(self, modulename):
         obj = exploreToGetModuleByNameObject(moduleName=modulename, dontLookIntoBrokerName = self._brokername)
         soapbody = self.sendrecv(obj)
-        return self.getpairs(soapbody.childNodes[0].childNodes[0])
+        return getpairs(soapbody.firstChild.firstChild)
 
     def registerToCamera(self,
             resolution=vision_definitions.kQQVGA,
             colorspace=vision_definitions.kRGBColorSpace,
             fps=15):
-        obj = callNaoQiObject(self._camera_module, 'register', self._camera_name, resolution, colorspace, fps)
-        soapbody = self.sendrecv(obj)
-        # return value is a single string, the name to use for all further communication
-        self._camera_name = soapbody.childNodes[0].childNodes[0].childNodes[0].childNodes[0].nodeValue
+        self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
         return self._camera_name
 
     def getImageRemoteRGB(self):
         """
     <albroker:meth>getImageRemote</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">testvision_GVM</item></item></albroker:p>
         """
-        obj = callNaoQiObject(self._camera_module, 'getImageRemote', self._camera_name)
-        soapbody = self.sendrecv(obj)
         (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
-            encoded_image) = self.getitems(soapbody.childNodes[0].childNodes[0].childNodes[0])
-        width, height = int(width), int(height)
-        imageraw = base64.decodestring(encoded_image)
+            imageraw) = self.NaoCam.getImageRemote(self._camera_name)
         return imageraw, width, height
 
     def getImageRemote(self, debug_file_name = None):
@@ -319,9 +481,8 @@ class NaoQiConnection(object):
         return image
 
     def setCameraParameter(self, param, value):
-        obj = callNaoQiObject(self._camera_module, 'setParam', int(param), int(value))
-        soapbody = self.sendrecv(obj)
-        return self.getitems(soapbody.childNodes[0].childNodes[0])
+        ret = self.NaoCam.setParam(int(param), int(value))
+        return ret
 
     def switchToBottomCamera(self):
         self.setCameraParameter(CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA)
@@ -329,10 +490,31 @@ class NaoQiConnection(object):
     def switchToTopCamera(self):
         self.setCameraParameter(CAMERA_WHICH_PARAM, CAMERA_WHICH_TOP_CAMERA)
 
-#################################################################################################
+    # Reflection api - getMethods, getModules
+
+    def getModules(self):
+        """ get the modules list by parsing the http page for the broker -
+        probably there is another way, but who cares?! 8)
+        """
+        x = minidom.parse(urllib2.urlopen('http://localhost:9560/'))
+        modulesroot = x.firstChild.nextSibling.firstChild.firstChild.firstChild.nextSibling.nextSibling
+        return [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
+
+    def getModule(self, modname):
+        return NaoQiModule(self, modname)
+
+    # Helpers
+
+    def call(self, modname, meth, *args):
+        """ debugging helper call method. In general better to use
+            self.module_name.method_name(*args)
+        """
+        return self.sendrecv(callNaoQiObject(modname, meth, *args))
+
+#########################################################################
 # Main and Tests
 
-target_url = 'http://messi.local:9559/'
+target_url = 'http://localhost:9560/'
 
 def test():
     print X('SOAP-ENV:Envelope')
@@ -362,9 +544,11 @@ def main():
     con = NaoQiConnection(url)
     broker_info = dict(con.getBrokerInfo())
     print con.getInfo(broker_info['name'])
-    print con.registerBroker()
-    print con.exploreToGetModuleByName('NaoCam')
+    #print con.registerBroker()
+    #print con.exploreToGetModuleByName('NaoCam')
     print con.registerToCamera()
+    con.NaoCam.register('test_cam', vision_definitions.kQQVGA, vision_definitions.kRGBColorSpace, 15)
+
 
     c = 0
     meths = (lambda: (con.switchToBottomCamera(), con.getImageRemote('top.jpg')),
