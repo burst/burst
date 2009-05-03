@@ -24,17 +24,16 @@ class Kicker(Player):
         print "Ball Seen!"
 
     def onBallInFrame(self):
-        print self._world.ball.centerX, self._world.ball.centerY
-        print self._world.ball.bearing
-
-        xtodeg = (IMAGE_HALF_WIDTH-self._world.ball.centerX)/IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
-        print "xtodeg: %f" % xtodeg
+        xNormalized = (IMAGE_HALF_WIDTH-self._world.ball.centerX)/IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+        yNormalized = (IMAGE_HALF_HEIGHT-self._world.ball.centerY)/IMAGE_HALF_HEIGHT # between 1 (up) to -1 (down)
         
-        if (abs(xtodeg)>0.05):
+        if (abs(xNormalized)>0.05 or abs(yNormalized)>0.05):
             X_TO_DEG_FACTOR = 23.2/4 #46.4/2
-            deltaHeadYaw = xtodeg*X_TO_DEG_FACTOR
-            print "deltaHeadYaw: %f" % deltaHeadYaw
-            self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD, 0.0 * DEG_TO_RAD) # yaw (left-right) / pitch (up-down)
+            Y_TO_DEG_FACTOR = 17.4/4 #34.8/2
+            
+            deltaHeadYaw = xNormalized * X_TO_DEG_FACTOR
+            deltaHeadPitch = -yNormalized * Y_TO_DEG_FACTOR
+            self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD, deltaHeadPitch * DEG_TO_RAD) # yaw (left-right) / pitch (up-down)
 
 if __name__ == '__main__':
     import burst
