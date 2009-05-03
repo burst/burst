@@ -15,7 +15,7 @@ motion_proxy = burst.getMotionProxy()
 debug = False # set to False when checking in
 
 def init(**kw):
-    robot.init(**kw)
+    naoqi_extended.init(**kw)
 
 def default_help():
     return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]
@@ -40,7 +40,7 @@ from base import *
 from naoqi import *
 
 # import any submodules of burst (must happen last!)
-from robot import *
+from naoqi_extended import *
 
 if __name__ == '__main__':
     test()
