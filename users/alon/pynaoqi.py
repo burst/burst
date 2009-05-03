@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import math
 import re
 import os
 import sys
@@ -27,6 +28,10 @@ if DEBUG:
 CAMERA_WHICH_PARAM = 18
 CAMERA_WHICH_BOTTOM_CAMERA = 1
 CAMERA_WHICH_TOP_CAMERA = 0
+
+# ALMotion.gotoBodyAngles
+INTERPOLATION_LINEAR = 0
+INTERPOLATION_SMOOTH = 1
 
 #########################################################################
 # Utilities
@@ -384,17 +389,23 @@ class NaoQiModule(object):
     def justModuleHelp(self):
         return self._con.sendrecv(callNaoQiObject(self._mod._modname, 'moduleHelp'))
 
+DEG_TO_RAD = math.pi/180.0
+
 class ALMotionExtended(NaoQiModule):
 
     def __init__(self, con):
         NaoQiModule.__init__(self, con, 'ALMotion')
 
-    def executeMove(larm, lleg, rleg, rarm, interp_time, interp_type):
+    def executeMove(self, moves):
         """ Work like northern bites code:
         interpolation - TODO
         """
-        joints = []
-        self.setBodyAngles(joints)
+        for move in moves:
+            larm, lleg, rleg, rarm, interp_time, interp_type = move
+            curangles = self.getBodyAngles()
+            joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm) + [0.0, 0.0] +
+                                        list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]]
+            self.gotoBodyAngles(joints, interp_time, interp_type)
         
 ##################################################################
 # Connection (Top Level object)
@@ -597,6 +608,12 @@ def main():
     while True:
         meths[c]()
         c = 1 - c
+
+def asaf():
+    sys.path.append('/home/asaf/src/nao-man/motion')
+    import SweeterMoves
+    globals()['SweeterMoves'] = SweeterMoves
+    globals()['con'] = NaoQiConnection('http://maldini:9559')    
 
 if __name__ == '__main__':
     main()
