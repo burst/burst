@@ -2,6 +2,7 @@
 
 import re
 import os
+import sys
 import socket
 import base64 # for getRemoteImage
 from xml.dom import minidom
@@ -256,6 +257,7 @@ nao_type_to_py_type = {
     4: float,
     5: str,
     6: ARRAY,
+    24: ARRAY,
     25: VECTOR_STRING,
     }
 
@@ -304,7 +306,7 @@ class NaoQiReturn(object):
             return None
         if self._rettype in set([bool, int, float, str]):
             return self._rettype(ret.firstChild.firstChild.nodeValue)
-        if self._rettype == ARRAY:
+        if self._rettype in [ARRAY, VECTOR_STRING]:
             return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
         return ret
 
@@ -382,6 +384,18 @@ class NaoQiModule(object):
     def justModuleHelp(self):
         return self._con.sendrecv(callNaoQiObject(self._mod._modname, 'moduleHelp'))
 
+class ALMotionExtended(NaoQiModule):
+
+    def __init__(self, con):
+        NaoQiModule.__init__(self, con, 'ALMotion')
+
+    def executeMove(larm, lleg, rleg, rarm, interp_time, interp_type):
+        """ Work like northern bites code:
+        interpolation - TODO
+        """
+        joints = []
+        self.setBodyAngles(joints)
+        
 ##################################################################
 # Connection (Top Level object)
 
@@ -390,7 +404,10 @@ def getpairs(elem):
     return [(x.nodeName, x.firstChild.nodeValue) for x in elem.childNodes]
 
 class NaoQiConnection(object):
-    def __init__(self, url="http://localhost:9560/"):
+
+    def __init__(self, url="http://localhost:9560/", verbose = True):
+        self.verbose = True
+        self._url = url
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
@@ -400,7 +417,14 @@ class NaoQiConnection(object):
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
         
-        self._modules = [self.getModule(modname) for modname in self.getModules()]
+        self._modules = []
+        for i, modname in enumerate(self.getModules()):
+            if self.verbose:
+                print "(%s) %s.." % (i + 1, modname),
+                sys.stdout.flush()
+            mod = self.getModule(modname)
+            self._modules.append(mod)
+        if self.verbose: print
         self.modules = ModulesHolder()
         for m in self._modules:
             self.__dict__[m.getName()] = m
@@ -505,11 +529,19 @@ class NaoQiConnection(object):
         """ get the modules list by parsing the http page for the broker -
         probably there is another way, but who cares?! 8)
         """
-        x = minidom.parse(urllib2.urlopen('http://localhost:9560/'))
+        if self.verbose:
+            print "retrieving modules..",
+        x = minidom.parse(urllib2.urlopen(self._url))
         modulesroot = x.firstChild.nextSibling.firstChild.firstChild.firstChild.nextSibling.nextSibling
-        return [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
+        modules = [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
+        if self.verbose:
+            print "%s" % len(modules)
+        return modules
 
     def getModule(self, modname):
+        if modname == 'ALMotion':
+            # specializations
+            return ALMotionExtended(self)
         return NaoQiModule(self, modname)
 
     # Helpers
@@ -523,9 +555,9 @@ class NaoQiConnection(object):
 #########################################################################
 # Main and Tests
 
-target_url = 'http://localhost:9560/'
 
 def test():
+    target_url = 'http://localhost:9560/'
     print X('SOAP-ENV:Envelope')
     print X('SOAP-ENV:Envelope', attrs=namespaces)
     print getInfoBase
@@ -546,7 +578,7 @@ def test():
 
 def main():
     import sys
-    url = target_url
+    url = "http://localhost:9560"
     if len(sys.argv) > 1:
         url = sys.argv[-1]
     print "using target = %s" % url
