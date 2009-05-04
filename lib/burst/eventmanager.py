@@ -43,7 +43,7 @@ class EventManagerLoop(object):
         import world
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
-        self._actions = actions.Actions()
+        self._actions = actions.Actions(world = self._world)
         self._player = playerclass(world = self._world, eventmanager = self._eventmanager,
             actions = self._actions)
 

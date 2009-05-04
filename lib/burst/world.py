@@ -120,9 +120,12 @@ class World(object):
         self.yglp = GoalPost(self._memory, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
         self.ygrp = GoalPost(self._memory, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
         self._objects = [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp]
+        self.isWalkingActive = False
+        self.walkID = 0
 
     def update(self):
-        if self._motion.getRemainingFootStepCount() == 0:
+        if self.isWalkingActive and not self._motion.isRunning(self.walkID): #self._motion.getRemainingFootStepCount() == 0 doesn't work in webots
+            self.isWalkingActive = False
             self._events.add(EVENT_WALK_DONE)
         for obj in self._objects:
             self._events.update(obj.update())

@@ -1,5 +1,5 @@
 
-#constants file to store all our sweet ass-moves for the Nao
+#constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
 from burst.consts import DEG_TO_RAD
 
@@ -61,7 +61,7 @@ FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.016,                 # ZmpOffsetY 
-           0.8,                     # Distance
+           0.5,                     # Distance
            18]#,                    # Speed
            #,0.68]                  # Angle 0.68
 
@@ -79,9 +79,42 @@ FAST_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.015,                 # ZmpOffsetX
            0.018,                 # ZmpOffsetY 
-           0.8,                   # Distance
+           0.5,                   # Distance
            25]                    # Speed
 
+STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian 
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           2.5,                   # LHipRoll(degrees) 
+           -2.5,                  # RHipRoll(degrees)
+           0.23,                  # HipHeight(meters)
+           0.0,                   # TorsoYOrientation(degrees)
+           0.04,                  # StepLength
+           0.02,                  # StepHeight
+           0.03,                  # StepSide
+           0.3,                   # MaxTurn
+           0.01,                  # ZmpOffsetX
+           0.018,                 # ZmpOffsetY 
+           0.5,                   # Distance
+           25]                    # Speed
+
+SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian 
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) 
+           -4.5,                  # RHipRoll(degrees)
+           0.22,                  # HipHeight(meters)
+           2.0,                   # TorsoYOrientation(degrees)
+           0.05,                  # StepLength
+           0.04,                  # StepHeight
+           0.04,                  # StepSide
+           0.4,                   # MaxTurn
+           0.01,                  # ZmpOffsetX
+           0.00,                  # ZmpOffsetY 
+           0.05*4,                # Distance
+           80]                    # Speed
 
 #KICKS
 
