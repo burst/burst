@@ -35,15 +35,17 @@ class Actions(object):
 
         param = moves.FAST_WALK # FASTER_WALK / FAST_WALK
 
-        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
-        self._motion.setWalkArmsConfig( param[0], param[1], param[2], param[3] )
+        (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
+            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:14]
+
+        self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude )
         self._motion.setWalkArmsEnable(True)
 
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        self._motion.setWalkExtraConfig( param[4], param[5], param[6], param[7] )
+        self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation )
 
-        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
-        self._motion.setWalkConfig( param[8], param[9], param[10], param[11], param[12], param[13] )
+        self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
 
         if len(param) == 16:
             self._motion.addWalkStraight( param[14], param[15] )

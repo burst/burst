@@ -28,7 +28,6 @@ class Kicker(Player):
         self.isWalkingTowardsBall = False        
         self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
         self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, lambda: pr("Yellow goal seen"))
         
@@ -48,23 +47,23 @@ class Kicker(Player):
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         
     def onBallInFrame(self):
-        xNormalized = (IMAGE_HALF_WIDTH-self._world.ball.centerX)/IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
-        yNormalized = (IMAGE_HALF_HEIGHT-self._world.ball.centerY)/IMAGE_HALF_HEIGHT # between 1 (up) to -1 (down)
+        xNormalized = (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+        yNormalized = (IMAGE_HALF_HEIGHT - self._world.ball.centerY) / IMAGE_HALF_HEIGHT # between 1 (up) to -1 (down)
         
-        if (abs(xNormalized)>0.05 or abs(yNormalized)>0.05):
-            X_TO_DEG_FACTOR = 23.2/2 #46.4/2
-            Y_TO_DEG_FACTOR = 17.4/2 #34.8/2
+        if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
+            X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
+            Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
             
-            deltaHeadYaw = xNormalized * X_TO_DEG_FACTOR
-            deltaHeadPitch = -yNormalized * Y_TO_DEG_FACTOR
+            deltaHeadYaw = xNormalized * X_TO_RAD_FACTOR
+            deltaHeadPitch = -yNormalized * Y_TO_RAD_FACTOR
             #self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
-            self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD, deltaHeadPitch * DEG_TO_RAD) # yaw (left-right) / pitch (up-down)
-        elif (not self.isWalkingTowardsBall):
+            self._actions.changeHeadAngles(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
+        elif not self.isWalkingTowardsBall:
             #self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
             self.isWalkingTowardsBall = True
             
             print "Starting to walk!"
-            self._actions.changeLocation(0,0)
+            self._actions.changeLocation(0, 0)
             self._eventmanager.register(EVENT_WALK_DONE, self.onWalkDone)
 
 if __name__ == '__main__':
@@ -72,5 +71,4 @@ if __name__ == '__main__':
     from burst.eventmanager import EventManagerLoop
     burst.init()
     EventManagerLoop(Kicker).run()
-
 
