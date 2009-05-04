@@ -15,40 +15,20 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 
 import pynaoqi
+from burst_util import cached
 
+@cached('joint_data.pickle')
 def getJointData(con):
     joint_names = con.ALMotion.getBodyJointNames()
     joint_limits = dict([(joint_name, con.ALMotion.getJointLimits(joint_name)) for joint_name in joint_names])
     return (joint_names, joint_limits)
-
-pickle_file = 'joint_data.pickle'
-def cachedJointData(con):
-    import os, cPickle
-    if not os.path.exists(pickle_file):
-        # write pickle
-        failed, fd = False, None
-        try:
-            fd = open(pickle_file, 'w+')
-            cPickle.dump(getJointData(con), fd)
-        except Exception, e:
-            failed = True
-        finally:
-            if fd:
-                fd.close()
-        if failed:
-            os.unlink(pickle_file)
-    # read pickle
-    fd = open(pickle_file)
-    data = cPickle.load(fd)
-    fd.close()
-    return data
 
 class Main(object):
 
     def __init__(self):
         self.slides = slides = {}
         self.con = pynaoqi.NaoQiConnection()
-        self.joint_names, self.joint_limits = cachedJointData(self.con)
+        self.joint_names, self.joint_limits = getJointData(self.con)
         w = gtk.Window()
         c = gtk.HBox()
         w.add(c)
