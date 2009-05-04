@@ -7,7 +7,6 @@ MIN_DIST_CHANGE = 1e-3
 class Ball(object):
 
     def __init__(self, memory):
-
         self._memory = memory
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
@@ -51,10 +50,30 @@ class Ball(object):
         self.seen = new_seen
         return events
 
+class Robot(object):
+    def __init__(self, memory, motion):
+        self._memory = memory
+        self._motion = motion
+        self.isWalkingActive = False
+        self.isTurningActive = False
+        self.walkID = 0
+        self.turnID = 0
+        
+    def update(self):
+        """ get new values from proxy, return set of events """
+        events = set()
+        if self.isWalkingActive and not self._motion.isRunning(self.walkID): #self._motion.getRemainingFootStepCount() == 0 doesn't work in webots
+            self.isWalkingActive = False
+            events.add(EVENT_WALK_DONE)
+        if self.isTurningActive and not self._motion.isRunning(self.turnID):
+            self.isTurningActive = False
+            events.add(EVENT_TURN_DONE)
+        return events
+        
+
 class GoalPost(object):
 
     def __init__(self, memory, name, position_changed_event):
-
         self._memory = memory
         self._name = name
         self._position_changed_event = position_changed_event
@@ -119,14 +138,11 @@ class World(object):
         self.bgrp = GoalPost(self._memory, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
         self.yglp = GoalPost(self._memory, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
         self.ygrp = GoalPost(self._memory, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
-        self._objects = [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp]
-        self.isWalkingActive = False
-        self.walkID = 0
+        self.robot = Robot(self._memory, self._motion)
+        
+        self._objects = [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp, self.robot]
 
     def update(self):
-        if self.isWalkingActive and not self._motion.isRunning(self.walkID): #self._motion.getRemainingFootStepCount() == 0 doesn't work in webots
-            self.isWalkingActive = False
-            self._events.add(EVENT_WALK_DONE)
         for obj in self._objects:
             self._events.update(obj.update())
         if self.bglp.seen and self.bgrp.seen:
