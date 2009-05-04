@@ -3,7 +3,7 @@ from burst.consts import *
 import moves
 import world
 
-INITIAL_STIFFNESS = 0.85
+INITIAL_STIFFNESS = 0.85 # TODO: Check other stiffnessesm, as this might not be optimal.
 INITIAL_HEAD_PITCH = -20.0 * DEG_TO_RAD
 
 class Actions(object):

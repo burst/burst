@@ -24,5 +24,5 @@ class Player(object):
         Needs to take care of cleaning up: stop any action you were in the middle of,
         i.e. clearFootsteps.
         """
-        self.actions.clearFootsteps()
+        self._actions.clearFootsteps()
 
