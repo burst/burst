@@ -46,6 +46,14 @@ class Actions(object):
         if delta_theta != 0:
             self._motion.addTurn( delta_theta, 60) #25
         else:
+            # TODO
+            #if self._world.ball.dist > 40:
+                #fast walk
+            #else:
+                #slow walk
+            
+            distance = delta_x / 100 # convert cm to meter
+            
             param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
     
             (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
@@ -61,9 +69,9 @@ class Actions(object):
             self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
     
             if len(param) == 16:
-                self._motion.addWalkStraight( param[14], param[15] )
+                self._motion.addWalkStraight( distance, param[15] ) # param[14]
             elif len(param) == 17:
-                self._motion.addWalkArc( param[14], param[16], param[15] )
+                self._motion.addWalkArc( distance, param[16], param[15] ) # param[14]
             else:
                 print "ERROR: wrong number of parameters"
                 return

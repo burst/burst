@@ -68,12 +68,7 @@ class Kicker(Player):
             elif self._world.ball.dist > 40:
                 print "Starting to walk!"
                 self._eventmanager.register(EVENT_WALK_DONE, self.onWalkDone)
-                # TODO
-                #if self._world.ball.dist > 40:
-                    #fast walk
-                #else:
-                    #slow walk
-                self._actions.changeLocation(self._world.ball.dist, 0, 0)
+                self._actions.changeLocation(self._world.ball.dist - 20, 0, 0) # 20 = ball radius, update and re-position
             else:
                 self._actions.kick()
                 self._actions.sitPoseAndRelax()
