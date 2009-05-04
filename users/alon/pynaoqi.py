@@ -195,6 +195,8 @@ def serializeToSoap(x):
             thetype = 'xsd:int'
         elif isinstance(x, float):
             thetype = 'xsd:float'
+        elif isinstance(x, bool):
+            thetype = 'xsd:boolean'
         else:
             thetype = 'xsd:string'
         x = str(x)
@@ -273,6 +275,7 @@ xsi_type_to_ctor = {
     'xsd:int': lambda x: int(x.firstChild.nodeValue),
     'xsd:float': lambda x: float(x.firstChild.nodeValue),
     'xsd:string': lambda x: str(x.firstChild.nodeValue),
+    'xsd:boolean': lambda x: str(x.firstChild.nodeValue) != 'false',
     'xsd:base64Binary': lambda x: base64.decodestring(x.firstChild.nodeValue),
     'nil': lambda x: str(x.firstChild.nodeValue),
     'Array': arrayctor
