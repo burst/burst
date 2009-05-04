@@ -343,7 +343,9 @@ static void check_keyboard() {
   case 'B':
     printf("keypressed: b");
     
-    move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
+    move_ball_2d(1.2, 0.5);
+    
+    //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
 //                  (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
         
     display();
