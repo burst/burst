@@ -55,6 +55,7 @@ class World(object):
 
     def __init__(self):
         self._memory = burst.getMemoryProxy()
+        self._motion = burst.getMotionProxy()
         self._events = set()
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
@@ -62,6 +63,8 @@ class World(object):
 
     def update(self):
         self._events.update(self.ball.update())
+        if self._motion.getRemainingFootStepCount() == 0:
+            self._events.add(EVENT_WALK_DONE)
 
     def getEvents(self):
         events = self._events

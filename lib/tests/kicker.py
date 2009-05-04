@@ -15,14 +15,23 @@ class Kicker(Player):
     def onStart(self):
         self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        self.isWalkingTowardsBall = False        
         
     def onStop(self):
         super(Kicker, self).onStop()
 
     def onBallSeen(self):
         print "Ball Seen!"
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        print "Ball x: %f" % self._world.ball.centerX
+        print "Ball y: %f" % self._world.ball.centerY
 
+    def onWalkDone(self):
+        print "Walk Done!"
+        self.isWalkingTowardsBall = False
+        self._eventmanager.unregister(EVENT_WALK_DONE)
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        
     def onBallInFrame(self):
         xNormalized = (IMAGE_HALF_WIDTH-self._world.ball.centerX)/IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
         yNormalized = (IMAGE_HALF_HEIGHT-self._world.ball.centerY)/IMAGE_HALF_HEIGHT # between 1 (up) to -1 (down)
@@ -35,6 +44,13 @@ class Kicker(Player):
             deltaHeadPitch = -yNormalized * Y_TO_DEG_FACTOR
             #self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
             self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD, deltaHeadPitch * DEG_TO_RAD) # yaw (left-right) / pitch (up-down)
+        elif (not self.isWalkingTowardsBall):
+            #self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+            self.isWalkingTowardsBall = True
+            
+            print "Starting to walk!"
+            self._actions.changeLocation(0,0)
+            self._eventmanager.register(EVENT_WALK_DONE, self.onWalkDone)
 
 if __name__ == '__main__':
     import burst
@@ -42,3 +58,11 @@ if __name__ == '__main__':
     burst.init()
     EventManagerLoop(Kicker).run()
 
+# TODO:
+# Add world representation for robot? add "is walking" state (or is getRemainingFootStepCount enough?)
+# Replace self.isWalkingTowardsBall with a robot model replacement?
+# Add turn, walk according to distance
+# Add slower walk when approaching ball
+# Add movement around ball when near it (preparation for kick)
+# Kick!
+# Fix walk radius/arc issues

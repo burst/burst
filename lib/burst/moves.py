@@ -1,7 +1,7 @@
 
 #constants file to store all our sweet ass-moves for the Nao
 #import MotionConstants
-
+from burst.consts import DEG_TO_RAD
 
 def getMoveTime(move):
     totalTime = 0.0
@@ -45,6 +45,43 @@ ZERO_HEADS = (((0.0,0.0),1.0,1),)
 NEUT_HEADS = (((0.,20.),2.0,1),)
 
 PENALIZED_HEADS = (((0.0,25.0),0.5,1),)
+
+# WALKS
+FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           90.0 * DEG_TO_RAD,  # ElbowMedian 
+           0.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) (2.5 original)
+           -4.5,                  # RHipRoll(degrees) (-2.5 original)
+           0.23,                  # HipHeight(meters)
+           0.0,                   # TorsoYOrientation(degrees)
+           0.04,                  # StepLength
+           0.02,                  # StepHeight
+           0.02,                  # StepSide
+           0.3,                   # MaxTurn
+           0.01,                  # ZmpOffsetX
+           0.016,                 # ZmpOffsetY 
+           0.8,                     # Distance
+           18]#,                    # Speed
+           #,0.68]                  # Angle 0.68
+
+FAST_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian 
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           3.5,                   # LHipRoll(degrees) 
+           -3.5,                  # RHipRoll(degrees)
+           0.23,                  # HipHeight(meters)
+           3.0,                   # TorsoYOrientation(degrees)
+           0.04,                  # StepLength
+           0.02,                  # StepHeight
+           0.02,                  # StepSide
+           0.3,                   # MaxTurn
+           0.015,                 # ZmpOffsetX
+           0.018,                 # ZmpOffsetY 
+           0.8,                   # Distance
+           25]                    # Speed
+
 
 #KICKS
 
