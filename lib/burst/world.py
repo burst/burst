@@ -43,7 +43,6 @@ class Ball(object):
         # which may change while the ball is static.
         if (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
-            print self.bearing - new_bearing, self.dist - new_dist
             events.add(EVENT_BALL_POSITION_CHANGED)
         # store new values
         (self.bearing, self.centerX, self.centerY, self.confidence,
