@@ -1,0 +1,119 @@
+#VRML_SIM V5.0 utf8
+#000000
+#!mainWindow: 0.00238095 0.021 0.5 0.7
+
+WorldInfo {
+  info [
+    "Nao robots trying to find its way in a flat"
+    "Olivier Michel <Olivier.Michel@cyberbotics.com>"
+    "Date: 8 July 2008"
+  ]
+  title "Nao Robocup"
+  basicTimeStep 40
+  runRealTime TRUE
+}
+Viewpoint {
+  orientation -0.153986 0.941631 0.299364 2.13971
+  position 4.05114 4.2089 -3.32431
+}
+Background {
+  skyColor [
+    0.435294 0.4 0.317647
+  ]
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location 3 0.5 2
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location -3 0.5 0.4
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location 0 1 -2
+}
+DEF ground Solid {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 1
+          diffuseColor 1 1 1
+          emissiveColor 0.823529 0.6 0.34902
+          shininess 0
+          specularColor 0.196078 0.196078 0
+        }
+        texture ImageTexture {
+          url [
+            "textures/lightwood.png"
+          ]
+        }
+        textureTransform TextureTransform {
+          center 0.46 0
+          rotation -0.32
+          translation -1.01 0
+        }
+      }
+      geometry DEF ground_geo IndexedFaceSet {
+        coord Coordinate {
+          point [
+            -2 0 -2
+            -2 0 2
+            2 0 2
+            2 0 -2
+          ]
+        }
+        texCoord TextureCoordinate {
+          point [
+            0 0
+            0 5
+            5 5
+            5 0
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3, -1
+        ]
+        texCoordIndex [
+          0, 1, 2, 3, -1
+        ]
+      }
+    }
+  ]
+  boundingObject Group {
+    children [
+      IndexedFaceSet {
+        coord Coordinate {
+          point [
+            3 0 2
+            3 0 -2
+            -3 0 -2
+            -3 0 2
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+    ]
+  }
+  locked TRUE
+}
+DEF PLAYER_1 Nao {
+  translation 0 0.325 0
+  rotation 0 -1 0 1.57
+  controller "nao_in_webots"
+  name "red goal keeper"
+}
+Supervisor {
+ children [
+    Emitter {
+      name "emitter"
+    }
+  ]
+  controller "walk_supervisor"
+}
