@@ -19,33 +19,58 @@ class Actions(object):
         self.executeMove(moves.STAND)
         
     def sitPoseAndRelax(self):
+        self.clearFootsteps()
         self.executeMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 
     def changeHeadAngles(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
         self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
-    
+
+    def gotoHeadAngles(self, yaw, pitch):
+        self._motion.gotoChainAngles("Head", [yaw, pitch], 0.1, INTERPOLATION_SMOOTH)
+
+    def setHeadAngles(self, yaw, pitch):
+        self._motion.setChainAngles("Head", [yaw, pitch])
+
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
     
     def kick(self):
         self.executeMove(moves.ALMOST_KICK)
     
-    def changeLocation(self, delta_x, delta_y, delta_theta):
-        if self._world.isWalkingActive:
-            print "Still walking, can't change location for now"
+    def turn(self, delta_theta):
+        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
+            print "Still walking/turning, can't turn for now"
             return
+        print "delta_theta: %f" % delta_theta
         
-        self._world.isWalkingActive = True
+        self._world.robot.isTurningActive = True
         
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
         # just turn
+        self._motion.addTurn(delta_theta, 60) #25
+        
+        self._world.robot.turnID = self._motion.post.walk()
+        print "self._world.robot.turnID: %f" % self._world.robot.turnID
+        
+    
+    def changeLocation(self, delta_x, delta_y, delta_theta):
+        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
+            print "Still walking/turning, can't change location for now"
+            return
+        
+        # just turn
         if delta_theta != 0:
-            self._motion.addTurn( delta_theta, 60) #25
+            self.turn(delta_theta)
         else:
+            self._world.robot.isWalkingActive = True
+            
+            self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+            self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+            
             # TODO
             #if self._world.ball.dist > 40:
                 #fast walk
@@ -83,8 +108,8 @@ class Actions(object):
         #motionProxy.addWalkStraight( -0.05*3, 25)
         #motionProxy.addTurn( 0.4*4, 80 )
         #motionProxy.addWalkSideways(-0.04*4, 80)
-        self._world.walkID = self._motion.post.walk()   #Blocking Function
-        print "self._world.walkID: %f" % self._world.walkID
+        self._world.robot.walkID = self._motion.post.walk()
+        print "self._world.robot.walkID: %f" % self._world.robot.walkID
 
     def executeMove(self, moves):
         """ Go through a list of body angles, works like northern bites code:
@@ -107,6 +132,6 @@ class Actions(object):
  
     def clearFootsteps(self):
         """ NOTE: USER BEWARE. We had problems with clearFootsteps """
-        if self._motion.getRemainingFootStepCount() > 0:
-            self._motion.clearFootsteps()
+        #if self._motion.getRemainingFootStepCount() > 0:
+        self._motion.clearFootsteps()
 

@@ -4,6 +4,7 @@ FIRST_EVENT_NUM = counter = 1
 ################################################################################
 
 EVENT_WALK_DONE = counter; counter+=1
+EVENT_TURN_DONE = counter; counter+=1
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
 EVENT_BALL_SEEN = counter; counter+=1
 EVENT_BALL_LOST = counter; counter+=1
