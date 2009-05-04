@@ -280,12 +280,12 @@ DEF RED_GOAL_KEEPER Nao {
   controller "nao_in_webots"
   name "red goal keeper"
 }
-Supervisor {
- children [
-    Emitter {
-      name "emitter"
-    }
-  ]
-  controller "nao_man_visualizer"
-}
+#Supervisor {
+# children [
+#    Emitter {
+#      name "emitter"
+#    }
+#  ]
+#  controller "nao_man_visualizer"
+#}
 
