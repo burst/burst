@@ -10,6 +10,8 @@ def main():
     con=pynaoqi.NaoQiConnection()
     mylist = [x for x in con.ALMemory.getDataListName() if x[0] == '/']
     short = [x[-15:] for x in mylist]
+    print mylist
+    time.sleep(1)
     while True:
         res = con.ALMemory.getListData(mylist)
         for i in range(0,len(res) - 2,2):

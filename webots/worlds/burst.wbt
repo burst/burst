@@ -286,6 +286,6 @@ Supervisor {
       name "emitter"
     }
   ]
-  controller "nao_burst_supervisor"
+  controller "nao_man_visualizer"
 }
 

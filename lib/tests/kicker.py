@@ -1,3 +1,12 @@
+# TODO:
+# Add world representation for robot? add "is walking" state (or is getRemainingFootStepCount enough?)
+# Replace self.isWalkingTowardsBall with a robot model replacement?
+# Add turn, walk according to distance
+# Add slower walk when approaching ball
+# Add movement around ball when near it (preparation for kick)
+# Kick!
+# Fix walk radius/arc issues
+
 import os
 in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/tests')
 if os.getcwd() == in_tree_dir:
@@ -10,12 +19,18 @@ from burst.player import Player
 from burst.events import *
 from burst.consts import *
 
+def pr(s):
+    print s
+
 class Kicker(Player):
     
     def onStart(self):
+        self.isWalkingTowardsBall = False        
         self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self.isWalkingTowardsBall = False        
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
+        self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, lambda: pr("Yellow goal seen"))
         
     def onStop(self):
         super(Kicker, self).onStop()
@@ -58,11 +73,4 @@ if __name__ == '__main__':
     burst.init()
     EventManagerLoop(Kicker).run()
 
-# TODO:
-# Add world representation for robot? add "is walking" state (or is getRemainingFootStepCount enough?)
-# Replace self.isWalkingTowardsBall with a robot model replacement?
-# Add turn, walk according to distance
-# Add slower walk when approaching ball
-# Add movement around ball when near it (preparation for kick)
-# Kick!
-# Fix walk radius/arc issues
+
