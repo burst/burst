@@ -3,13 +3,20 @@
 FIRST_EVENT_NUM = counter = 1
 ################################################################################
 
+# I'm having a problem deciding how to sort this list. For now it is doubly sorted:
+# major: by object
+# minor: by order of computation (from basic to dependent)
+
 # Base events
 EVENT_WALK_DONE = counter; counter+=1
 EVENT_TURN_DONE = counter; counter+=1
+
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
 EVENT_BALL_SEEN = counter; counter+=1
 EVENT_BALL_LOST = counter; counter+=1
 EVENT_BALL_IN_FRAME = counter; counter+=1
+EVENT_BALL_BODY_X_ISECT_UPDATE = counter; counter+=1
+
 # TODO - events for all goal posts and crossbars
 EVENT_BGLP_POSITION_CHANGED = counter; counter+=1
 EVENT_BGRP_POSITION_CHANGED = counter; counter+=1
