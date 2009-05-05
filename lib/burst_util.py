@@ -25,3 +25,21 @@ def cached(filename):
         return wrapper
     return wrap
 
+# Some Math
+
+def dh_matrix(a, alpha, d, theta):
+    """ Denavit Hartenberg Parameters
+    a - link length
+    alpha - twist
+    d - offset
+    theta - angle
+    """
+    ct, st = cos(theta), sin(theta)
+    ca, sa = cos(alpha), sin(alpha)
+    return [
+        [ct, -st*ca, st*sa, a*ct],
+        [st, ct*ca, -ct*sa, a*st],
+        [0., sa, ca, d],
+        [0., 0., 0., 1.]
+    ]
+

@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # TODO:
 # Add slower walk when approaching ball (dynamic approach vs. static one)
 # Align with goal for kick (need "around ball" movement), do camera switch for goal tracking? or use last goal position?
@@ -25,12 +27,16 @@ class Kicker(Player):
     def onStart(self):
         self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
+        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
         
         #self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
         #self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, lambda: pr("Yellow goal seen"))
         
     def onStop(self):
         super(Kicker, self).onStop()
+
+    def onKickPointViable(self):
+        print "Kick point viable:", self._world.computed.kp
 
     def onBallSeen(self):
         print "Ball Seen!"
