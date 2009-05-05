@@ -261,7 +261,7 @@ DEF LARGER_YELLOW_GOAL Transform {
 
 
 DEF BALL Solid {
-  translation 0 0.043 0
+  translation 0 0.0 0
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -287,8 +287,9 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 2.4 0.325 0
-  rotation 0 1 0 -1.57
+  # Goalie initial position and rotation
+  translation 3.1 0.325 0
+  rotation 0 1 0 0 #-1.57
 #  rotation 0 0.5 0 0
   color 1 0 0
   texture [

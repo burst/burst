@@ -31,7 +31,7 @@ class MyController (Supervisor):
         player_rot = player.getField('rotation')
         ball = self.getFromDef('BALL')
         ball_trans = ball.getField('translation')
-        ball_trans.setSFVec3f([0.0, 0.0, 1.0])
+        #ball_trans.setSFVec3f([0.0, 0.0, 1.0])
         
         # Main loop
         while True:

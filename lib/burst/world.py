@@ -17,7 +17,12 @@ class Locatable(object):
     Because of the way the vision system we use (northern's) works, we keep things
     in polar coordinates - bearing in radians, distance in centimeters.
     """
-    def __init__(self):
+
+    REPORT_JUMP_ERRORS = True
+
+    def __init__(self, memory, motion):
+        self._memory = memory
+        self._motion = motion
         # This is the player body frame relative bearing. radians.
         self.bearing = 0.0
         self.elevation = 0.0
@@ -40,7 +45,11 @@ class Locatable(object):
         self.y = 0.0
 
         # upper barrier on speed, used to remove outliers. cm/sec
-        self.upper_v_limit = 200.0
+        self.upper_v_limit = 400.0
+
+    def compute_location_from_vision(self, vision_x, vision_y):
+        mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
+        raise NotImplementedError('compute_location_from_vision')
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
@@ -58,8 +67,9 @@ class Locatable(object):
         dx, dy = body_x - self.body_x, body_y - self.body_y
         if dx**2 + dy**2 > (dt * self.upper_v_limit)**2:
             # no way this body jumped that quickly
-            print "JUMP ERROR: %s - %s, %s -> %s, %s - bad new position value, not updating" % (
-                self.__class__.__name__, self.body_x, self.body_y, body_x, body_y)
+            if self.REPORT_JUMP_ERRORS:
+                print "JUMP ERROR: %s:%s - %s, %s -> %s, %s - bad new position value, not updating" % (
+                    self.__class__.__name__, self._name, self.body_x, self.body_y, body_x, body_y)
             return
             
         self.last_newness, self.last_dist, self.last_elevation, self.last_bearing = (
@@ -73,16 +83,17 @@ class Locatable(object):
         self.vx, self.vy = dx/dt, dy/dt
 
 class Movable(Locatable):
-    def __init__(self):
-        super(Movable, self).__init__()
+    def __init__(self, memory, motion):
+        super(Movable, self).__init__(memory, motion)
 
 class Ball(Movable):
+    
+    _name = 'Ball'
 
     DEBUG_INTERSECTION = False
 
-    def __init__(self, memory):
-        super(Ball, self).__init__()
-        self._memory = memory
+    def __init__(self, memory, motion):
+        super(Ball, self).__init__(memory, motion)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
         self.centerX = 0.0
@@ -125,12 +136,14 @@ class Ball(Movable):
         (new_bearing, new_centerX, new_centerY, new_confidence,
                 new_dist, new_elevation, new_focDist, new_height,
                     new_width) = ball_state = self._memory.getListData(self._ball_vars)
-        # convert degrees to radians
-        new_bearing *= DEG_TO_RAD
-        new_elevation *= DEG_TO_RAD
-        # calculate events
-        new_seen = (new_dist > 0.0)
+        # getListData returns 'None' for non existant values. - TODO: check once on startup, not every iteration
+        # calculate events.
+        new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
+            # convert degrees to radians
+            new_bearing *= DEG_TO_RAD
+            new_elevation *= DEG_TO_RAD
+            # add event
             events.add(EVENT_BALL_IN_FRAME)
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
             if self.compute_intersection_with_body_x():
@@ -154,8 +167,10 @@ class Ball(Movable):
         return events
 
 class Robot(Movable):
+    _name = 'Robot'
+
     def __init__(self, memory, motion):
-        super(Robot, self).__init__()
+        super(Robot, self).__init__(memory, motion)
         self._memory = memory
         self._motion = motion
         self.isWalkingActive = False
@@ -177,9 +192,8 @@ class Robot(Movable):
 
 class GoalPost(Locatable):
 
-    def __init__(self, memory, name, position_changed_event):
-        super(GoalPost, self).__init__()
-        self._memory = memory
+    def __init__(self, memory, motion, name, position_changed_event):
+        super(GoalPost, self).__init__(memory, motion)
         self._name = name
         self._position_changed_event = position_changed_event
         template = '/BURST/Vision/%s/%%s' % name
@@ -212,7 +226,7 @@ class GoalPost(Locatable):
                 new_leftOpening, new_rightOpening, new_x, new_y, new_shotAvailable,
                     new_width) = new_state = self._memory.getListData(self._vars)
         # calculate events
-        new_seen = (new_dist > 0.0)
+        new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen: # otherwise new_elevation is 'None'
             # convert to radians
             new_bearing *= DEG_TO_RAD
@@ -322,11 +336,11 @@ class World(object):
         self._events = set()
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
-        self.ball = Ball(self._memory)
-        self.bglp = GoalPost(self._memory, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost(self._memory, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost(self._memory, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost(self._memory, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
+        self.ball = Ball(self._memory, self._motion)
+        self.bglp = GoalPost(self._memory, self._motion, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
+        self.bgrp = GoalPost(self._memory, self._motion, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
+        self.yglp = GoalPost(self._memory, self._motion, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
+        self.ygrp = GoalPost(self._memory, self._motion, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
         self.robot = Robot(self._memory, self._motion)
         # construct team after all the posts are constructed, it keeps a reference to them.
         self.team = Team(self)
