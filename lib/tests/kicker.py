@@ -103,14 +103,11 @@ class Kicker(Player):
         
         if self._world.ball.dist > 33:
             # ball is away, turn and then approach ball
+            pass
+        #else:
             
-        else:
-            
-        
-        
-        
-                     
-        elif not self._world.robot.isWalkingActive and not self._world.robot.isTurningActive:
+        #elif
+	if not self._world.robot.isWalkingActive and not self._world.robot.isTurningActive:
             #self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
             
             if abs(self._world.ball.bearing) > 10:
