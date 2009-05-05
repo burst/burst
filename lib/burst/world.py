@@ -33,6 +33,8 @@ class Ball(object):
         (new_bearing, new_centerX, new_centerY, new_confidence,
                 new_dist, new_elevation, new_focDist, new_height,
                     new_width) = ball_state = self._memory.getListData(self._ball_vars)
+        # convert degrees to radians
+        new_bearing *= DEG_TO_RAD
         # calculate events
         new_seen = (new_dist > 0.0)
         if new_seen:
@@ -50,7 +52,9 @@ class Ball(object):
         # store new values
         (self.bearing, self.centerX, self.centerY, self.confidence,
                 self.dist, self.elevation, self.focDist, self.height,
-                    self.width) = ball_state
+                    self.width) = (new_bearing, new_centerX, new_centerY,
+         new_confidence, new_dist, new_elevation, new_focDist, new_height,
+                    new_width)
         self.seen = new_seen
         return events
 
