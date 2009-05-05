@@ -1,4 +1,5 @@
-from math import cos, sin, sqrt, pi
+from math import cos, sin, sqrt, pi, fabs
+from time import time
 
 import burst
 from events import *
@@ -8,22 +9,113 @@ MIN_DIST_CHANGE = 1e-3
 
 DEG_TO_RAD = pi / 180.0
 
-class Ball(object):
+class Locatable(object):
+    """ stupid name. It is short for "something that can be seen, holds a position,
+    has a limited velocity which can be estimated, and is also interesting to the
+    soccer game"
+
+    Because of the way the vision system we use (northern's) works, we keep things
+    in polar coordinates - bearing in radians, distance in centimeters.
+    """
+    def __init__(self):
+        # This is the player body frame relative bearing. radians.
+        self.bearing = 0.0
+        self.elevation = 0.0
+        # This is the player body frame relative distance. centimeters.
+        self.dist = 0.0
+        self.newness = 0.0 # time of current update
+        # previous non zero values
+        self.last_bearing = 0.0
+        self.last_dist = 0.0
+        self.last_elevation = 0.0
+        self.last_newness = 0.0 # time of previous update
+        # Body coordinate system: x is to the right (body is the torso, and generally
+        # the forward walk direction is along the y axis).
+        self.body_x = 0.0
+        self.body_y = 0.0
+        # This is the world x coordinate. Our x axis is to the right of our goal
+        # center, and our y is towards the enemy gate^H^H^Hoal. The enemy goal is up.
+        # (screw Ender)
+        self.x = 0.0
+        self.y = 0.0
+
+        # upper barrier on speed, used to remove outliers. cm/sec
+        self.upper_v_limit = 200.0
+
+    def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
+        """ We only update the values if the move looks plausible.
+        
+        TODO: This is a first order computation of velocity and position,
+        removing outright outliers only. To be upgraded to a real localization
+        system (i.e. reuse northern's code as a module, export variables).
+        """
+        newness = time()
+        dt = newness - self.newness
+        if dt < 0.0:
+            print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
+            raise SystemExit
+        body_x, body_y = new_dist * sin(new_bearing), new_dist * cos(new_bearing)
+        dx, dy = body_x - self.body_x, body_y - self.body_y
+        if dx**2 + dy**2 > (dt * self.upper_v_limit)**2:
+            # no way this body jumped that quickly
+            print "JUMP ERROR: %s - %s, %s -> %s, %s - bad new position value, not updating" % (
+                self.__class__.__name__, self.body_x, self.body_y, body_x, body_y)
+            return
+            
+        self.last_newness, self.last_dist, self.last_elevation, self.last_bearing = (
+            self.newness, self.dist, self.elevation, self.bearing)
+
+        self.bearing = new_bearing
+        self.dist = new_dist
+        self.elevation = new_elevation
+        self.newness = newness
+        self.body_x, self.body_y = body_x, body_y
+        self.vx, self.vy = dx/dt, dy/dt
+
+class Movable(Locatable):
+    def __init__(self):
+        super(Movable, self).__init__()
+
+class Ball(Movable):
+
+    DEBUG_INTERSECTION = False
 
     def __init__(self, memory):
+        super(Ball, self).__init__()
         self._memory = memory
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
-        self.bearing = 0.0
         self.centerX = 0.0
         self.centerY = 0.0
         self.confidence = 0.0
-        self.dist = 0.0
-        self.elevation = 0.0
         self.focDist = 0.0
         self.height = 0.0
         self.width = 0.0
         self.seen = False
+
+    def compute_intersection_with_body_x(self):
+        ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
+        dist, bearing = self.dist, self.bearing
+        last_dist, last_bearing = self.last_dist, self.last_bearing
+        x1 = dist * cos(bearing)
+        y1 = dist * sin(bearing)
+        x2 = last_dist * cos(last_bearing)
+        y2 = last_dist * sin(last_bearing)
+        if self.DEBUG_INTERSECTION:
+            print "------------------------------------------------"
+            print "x1=", x1, "  x2=", x2, "  y1=", y1, "  y2=", y2
+            print "bearing=" ,bearing,"  dist=",dist
+            print "last_bearing=", last_bearing, "  last_dist=", last_dist
+            print "------------------------------------------------"
+        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL
+            and y2 < y1 and dist < last_dist):
+            m = (y1 - y2) / (x1 - x2)
+            x = (-y1 + m * x1) / m
+            self.body_x_isect = x
+            #theta=atan(m)
+            print "INFO: ball intersection with body x: %s" % x
+            return True
+        return False
 
     def calc_events(self):
         """ get new values from proxy, return set of events """
@@ -35,10 +127,14 @@ class Ball(object):
                     new_width) = ball_state = self._memory.getListData(self._ball_vars)
         # convert degrees to radians
         new_bearing *= DEG_TO_RAD
+        new_elevation *= DEG_TO_RAD
         # calculate events
         new_seen = (new_dist > 0.0)
         if new_seen:
             events.add(EVENT_BALL_IN_FRAME)
+            self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
+            if self.compute_intersection_with_body_x():
+                events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
         if self.seen and not new_seen:
             events.add(EVENT_BALL_LOST)
         if not self.seen and new_seen:
@@ -50,16 +146,16 @@ class Ball(object):
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
             events.add(EVENT_BALL_POSITION_CHANGED)
         # store new values
-        (self.bearing, self.centerX, self.centerY, self.confidence,
-                self.dist, self.elevation, self.focDist, self.height,
-                    self.width) = (new_bearing, new_centerX, new_centerY,
-         new_confidence, new_dist, new_elevation, new_focDist, new_height,
-                    new_width)
+        (self.centerX, self.centerY, self.confidence,
+                self.elevation, self.focDist, self.height,
+                    self.width) = (new_centerX, new_centerY, new_confidence, 
+                        new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
         return events
 
-class Robot(object):
+class Robot(Movable):
     def __init__(self, memory, motion):
+        super(Robot, self).__init__()
         self._memory = memory
         self._motion = motion
         self.isWalkingActive = False
@@ -79,9 +175,10 @@ class Robot(object):
         return events
         
 
-class GoalPost(object):
+class GoalPost(Locatable):
 
     def __init__(self, memory, name, position_changed_event):
+        super(GoalPost, self).__init__()
         self._memory = memory
         self._name = name
         self._position_changed_event = position_changed_event
@@ -93,11 +190,8 @@ class GoalPost(object):
 
         self.angleX = 0.0
         self.angleY = 0.0
-        self.bearing = 0.0
         self.centerX = 0.0
         self.centerY = 0.0
-        self.dist = 0.0
-        self.elevation = 0.0
         self.focDist = 0.0
         self.height = 0.0
         self.leftOpening = 0.0
@@ -117,24 +211,31 @@ class GoalPost(object):
                 new_dist, new_elevation, new_focDist, new_height,
                 new_leftOpening, new_rightOpening, new_x, new_y, new_shotAvailable,
                     new_width) = new_state = self._memory.getListData(self._vars)
-        # convert to radians
-        new_bearing *= DEG_TO_RAD
         # calculate events
         new_seen = (new_dist > 0.0)
+        if new_seen: # otherwise new_elevation is 'None'
+            # convert to radians
+            new_bearing *= DEG_TO_RAD
+            if isinstance(new_elevation, float):
+                new_elevation *= DEG_TO_RAD
+            else:
+                #print "%s - new_elevation == %r" % (self.__class__.__name__, new_elevation)
+                pass
         # TODO: we should only look at the localization supplied ball position,
         # and not the position in frame (image coordinates) or the relative position,
         # which may change while the ball is static.
         if new_seen and (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
+            self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
             events.add(self._position_changed_event)
         # store new values
-        (self.angleX, self.angleY, self.bearing, self.centerX, self.centerY,
-                self.dist, self.elevation, self.focDist, self.height,
-                self.leftOpening, self.rightOpening, self.x, self.y, self.shotAvailable,
-                  self.width) = (new_angleX, new_angleY, new_bearing, new_centerX,
-                  new_centerY, new_dist, new_elevation, new_focDist, new_height,
-                  new_leftOpening, new_rightOpening, new_x, new_y, new_shotAvailable,
-                  new_width)
+        (self.angleX, self.angleY, self.centerX, self.centerY,
+                self.focDist, self.height, self.leftOpening, self.rightOpening,
+                self.x, self.y, self.shotAvailable, self.width) = (
+                  new_angleX, new_angleY, new_centerX,
+                  new_centerY, new_focDist, new_height,
+                  new_leftOpening, new_rightOpening, new_x, new_y,
+                  new_shotAvailable, new_width)
         self.seen = new_seen
         return events
 
@@ -158,6 +259,9 @@ class Computed(object):
     """ place holder for any computed value, currently just the kicking point, that
     doesn't naturally belong to any other object, like ball speed etc
     """
+
+    DEBUG_KP = False
+
     def __init__(self, world):
         self._world = world
         self._team = world.team
@@ -167,8 +271,13 @@ class Computed(object):
         self.kp_k = 30.0
 
     def calc_events(self):
+        """
+        we calculate:
+          kick point
+        """
         events = set()
-        if self._team.target_goal_seen_event in self._world._events:
+        if (self._team.target_goal_seen_event in self._world._events
+            and EVENT_BALL_IN_FRAME in self._world._events):
             new_kp = self.calculate_kp()
             if not self.kp_valid or (new_kp[0] - self.kp[0] > 1e-5 or new_kp[1] - self.kp[1] > 1e-5):
                 events.add(EVENT_KP_CHANGED)
@@ -201,7 +310,8 @@ class Computed(object):
         nnorm = sqrt(nx**2 + ny**2)
         nx, ny = nx / nnorm, ny / nnorm
         kpx, kpy = bx + k * nx, by + k * ny
-        print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f)" % (bx, by, cx, cy, nx, ny, kpx, kpy)
+        if self.DEBUG_KP:
+            print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f)" % (bx, by, cx, cy, nx, ny, kpx, kpy)
         return kpx, kpy
 
 class World(object):
@@ -257,7 +367,6 @@ class World(object):
         for objlist in self._objects:
             for obj in objlist:
                 self._events.update(obj.calc_events())
-
 
     def getEvents(self):
         events = self._events
