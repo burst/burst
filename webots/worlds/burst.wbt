@@ -247,12 +247,12 @@ DEF LARGER_YELLOW_GOAL Transform {
   scale 1.07 1.07 1.07
   children [
     DEF YELLOW_GOAL Goal {
-      translation 3.11 0 0
+      translation -3.11 0 0
+      rotation 0 1 0 3.14159
       postColor 1 1 0
     }
     DEF BLUE_GOAL Goal {
-      translation -3.11 0 0
-      rotation 0 1 0 3.14159
+      translation 3.11 0 0
       postColor 0 0.5 1
     }
   ]
