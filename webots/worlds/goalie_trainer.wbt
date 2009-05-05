@@ -13,6 +13,7 @@ WorldInfo {
   title "Nao Robocup"
   basicTimeStep 40
   runRealTime TRUE
+  physics "ball"
 }
 Viewpoint {
   orientation 0.0535888 0.994049 0.0948366 3.99358
@@ -302,6 +303,6 @@ Supervisor {
       name "emitter"
     }
   ]
-  controller "nao_burst_supervisor"
+  controller "goalie_trainer"
 }
 
