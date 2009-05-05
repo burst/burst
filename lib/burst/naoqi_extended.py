@@ -8,12 +8,13 @@ import base
 __all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'shutdown']
 
 _broker = None
-proxies = []
+proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
 motionProxy = None
 speechProxy = None
 memoryProxy = None
 visionProxy = None
 
+# TODO: Move to burst_exceptions
 class InitException(Exception):
     pass
     

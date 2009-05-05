@@ -31,6 +31,15 @@ class Main:
         self.first_char = ''
         readline.parse_and_bind("tab: complete")
         readline.set_completer(self.completer)
+        self.man_func = self.evalOrExec
+        self.state = 'eval'
+        self.state_func = {'eval': self.switchToEval,
+            'exec': self.switchToExec,
+            'local': execer
+            }
+        print self.command_names
+        self.cmds = dict([(k, lambda txt=txt, self=self: self.execIt(txt)) for k, txt in command_pairs])
+        self.states = self.state_func.keys()
 
     def completer(self, text, state):
         possibilities = self.get_completion_possibilities(text)
@@ -98,15 +107,6 @@ class Main:
             print "connection failed, quitting"
             raise SystemExit
 
-        self.man_func = self.evalOrExec
-        self.state = 'eval'
-        self.state_func = {'eval': self.switchToEval,
-            'exec': self.switchToExec,
-            'local': execer
-            }
-        print self.command_names
-        self.cmds = dict([(k, lambda txt=txt, self=self: self.execIt(txt)) for k, txt in command_pairs])
-        self.states = self.state_func.keys()
         try:
             self.mainloop()
         except RuntimeError, e:
@@ -121,7 +121,9 @@ class Main:
         last = None
         while True:
             prompt = "%s>>" % self.state
-            cmd = raw_input(prompt)
+            cmd = raw_input(prompt).strip()
+            if len(cmd) == 0:
+                continue
             if cmd in self.states:
                 self.man_func = self.state_func[cmd]()
                 self.state = cmd

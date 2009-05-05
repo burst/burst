@@ -3,7 +3,7 @@
 # TODO: Compound commands don't release the command prompt immediately, but simple commands do. They should behave the same.
 
 import burst
-from burst_exceptions import *
+from burst.burst_exceptions import *
 import Util
 #from Util import *
 import BasicMotion # TODO: Should be accessible through Robot, probably.

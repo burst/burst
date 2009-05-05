@@ -28,9 +28,9 @@ else:
   import motion
 
 
-IP = "192.168.2.101" # Put here the IP address of your robot
+IP = "127.0.0.1" # Put here the IP address of your robot
 
-PORT = 9559
+PORT = 9560
 
 if (IP == ""):
   print "IP address not defined, aborting"

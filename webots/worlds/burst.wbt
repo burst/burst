@@ -1,9 +1,4 @@
-#VRML_SIM V5.0 utf8
-#000000
-#!mainWindow: 0.266667 0.0174014 0.558333 0.822506
-#!logWindow: 0.00138889 0.701856 0.7625 0.212297
-#!robotView: ""
-
+#VRML_SIM V6.0 utf8
 WorldInfo {
   info [
     "Nao robots playing the Robocup standard league"
@@ -243,15 +238,8 @@ DEF BLUE_GOAL Goal {
   translation -2.7 0 0
   rotation 0 1 0 3.14159
 }
-Beacon {
-  translation 0 0 -1.95
-}
-Beacon {
-  translation 0 0 1.95
-  topColor 0 1 1
-  bottomColor 1 1 0
-}
 DEF BALL Solid {
+  #translation 2.25 0.043 0
   translation 0 0.043 0
   children [
     DEF BALL_SHAPE Shape {
@@ -280,7 +268,6 @@ DEF BALL Solid {
 DEF RED_GOAL_KEEPER Nao {
   translation 2.4 0.325 0
   rotation 0 1 0 -1.57
-#  rotation 0 0.5 0 0
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -289,40 +276,10 @@ DEF RED_GOAL_KEEPER Nao {
   name "red goal keeper"
 }
 Supervisor {
- children [
+  children [
     Emitter {
       name "emitter"
     }
   ]
   controller "nao_burst_supervisor"
 }
-Solid {
-  translation 0 -1.3 0
-  children [
-    DEF BUMPS Group {
-      children [
-        Transform {
-          translation -0.7 1 0
-          rotation 0 1 -1 0.5236
-          children [
-            Shape {
-              appearance Appearance {
-		    material Material {
-		      transparency 0.75
-		    }
-              }
-              geometry Box {
-                size 1 0.1 1
-              }
-              geometry Sphere {
-                radius 0.5
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
-  boundingObject USE BUMPS
-}
-
