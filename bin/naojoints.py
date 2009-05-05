@@ -27,7 +27,9 @@ class Main(object):
 
     def __init__(self):
         self.slides = slides = {}
-        self.con = pynaoqi.NaoQiConnection()
+        options = pynaoqi.getDefaultOptions()
+        url = 'http://%s:%s/' % (options.ip, options.port)
+        self.con = pynaoqi.NaoQiConnection(url)
         self.joint_names, self.joint_limits = getJointData(self.con)
         w = gtk.Window()
         c = gtk.HBox()

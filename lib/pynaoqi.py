@@ -618,6 +618,16 @@ def asaf():
     globals()['SweeterMoves'] = SweeterMoves
     globals()['con'] = NaoQiConnection('http://maldini:9559')    
 
+# helper function - exactly the same as in burst, handle --ip and --port
+def getDefaultOptions():
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option('--ip', action='store', dest='ip', default='localhost')
+    parser.add_option('--port', action='store', dest='port', default=None)
+    options, rest = parser.parse_args()
+    options.port = options.port or ((options.ip == 'localhost' and 9560) or 9559) 
+    return options
+
 if __name__ == '__main__':
     main()
 

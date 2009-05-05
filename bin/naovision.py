@@ -33,7 +33,9 @@ AREA_WIDTH    = REAL_AREA_WIDTH * F
 DIST_BETWEEN_POSTS = 1400 * F
 POST_DIAMETER = 100 * F
 
-@cached('vision_names.pickle')
+home = os.environ['HOME']
+
+@cached('%s/.naovision.vision_names.pickle' % home)
 def getVisionDataNames(con):
     names = [x for x in con.ALMemory.getDataListName() if x[0] == '/']
     return names
@@ -53,7 +55,9 @@ def make_rect(root, side, color, **kw):
 class Main(object):
 
     def __init__(self):
-        self.con = pynaoqi.NaoQiConnection()
+        options = pynaoqi.getDefaultOptions()
+        url = 'http://%s:%s/' % (options.ip, options.port)
+        self.con = pynaoqi.NaoQiConnection(url)
         self.names = getVisionDataNames(self.con)
         self.createFieldAndObjects()
         w = gtk.Window()
