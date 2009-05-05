@@ -323,9 +323,13 @@ static void check_keyboard() {
     }
     break;
 
+  case 'L':
+    move_ball_2d(1.2, 0.5);
+    //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
+    // (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
+    break;
   case 'R':
-    control_data.teams[TEAM_RED].score++;
-    display();
+    move_ball_2d(1.2, -0.5);
     break;
 
   case WB_ROBOT_KEYBOARD_SHIFT + 'B':
@@ -333,22 +337,6 @@ static void check_keyboard() {
       control_data.teams[TEAM_BLUE].score--;
       display();
     }
-    break;
-
-//  case 'B':
-//    control_data.teams[TEAM_BLUE].score++;
-//    display();
-//    break;
-    
-  case 'B':
-    printf("keypressed: b");
-    
-    move_ball_2d(1.2, 0.5);
-    
-    //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
-//                  (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
-        
-    display();
     break;
   }
 }

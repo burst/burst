@@ -302,6 +302,6 @@ Supervisor {
       name "emitter"
     }
   ]
-  controller "nao_burst_supervisor"
+  controller "void"
 }
 
