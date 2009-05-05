@@ -11,8 +11,10 @@ import pynaoqi
 # parse command line arguments
 parser = optparse.OptionParser()
 parser.add_option('', '--ip', action='store', dest='ip', default='localhost')
-parser.add_option('', '--port', action='store', dest='port', default='9560')
+parser.add_option('', '--port', action='store', dest='port', default=None)
 options, rest = parser.parse_args()
+options.port = options.port or ((options.ip == 'localhost' and 9560) or 9559)
+sys.argv = [sys.argv[0]] + rest
 
 # connect to naoqi
 url = 'http://%s:%s/' % (options.ip, options.port)
