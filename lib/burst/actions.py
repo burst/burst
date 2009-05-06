@@ -6,7 +6,7 @@ import moves
 import world
 from math import atan2
 
-INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnessesm, as this might not be optimal.
+INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 INITIAL_HEAD_PITCH = -20.0 * DEG_TO_RAD
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
@@ -85,6 +85,7 @@ class Actions(object):
         then final turn to wanted angle.
         """
         
+        # TODO: No sense in setting the stiffness unless it is not yet set.
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
@@ -101,14 +102,16 @@ class Actions(object):
         
         print "Straight walk: StepLength: %f distance: %f" % (StepLength, distance)
         # Vova trick - start with slower walk, then do the faster walk.
-        self._motion.addWalkStraight( StepLength*2, DEFAULT_STEPS_FOR_WALK )
-        self._motion.addWalkStraight( distance - StepLength*2, steps )
+        slow_walk_distance = min(distance, StepLength*2)
+        self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+        self._motion.addWalkStraight( distance - slow_walk_distance, steps )
 
         if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
             self._motion.addTurn(delta_theta - bearing, DEFAULT_STEPS_FOR_TURN)
         
         postid = self._motion.post.walk()
         self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE)
+
 
     def executeMove(self, moves):
         """ Go through a list of body angles, works like northern bites code:
@@ -133,4 +136,31 @@ class Actions(object):
         """ NOTE: USER BEWARE. We had problems with clearFootsteps """
         #if self._motion.getRemainingFootStepCount() > 0:
         self._motion.clearFootsteps()
+
+    def getToGoalieInitPosition(self):
+        ids = []
+        ids.append(self._motion.post.turn(90*DEG_TO_RAD, 70))
+        ids.append(self._motion.post.gotoChainAngles('Head', [-90*DEG_TO_RAD, -20*DEG_TO_RAD], 1, 1))
+        for x in ids:
+            self._motion.wait(x, 0)
+
+
+    def moveHead(self, x, y):
+        self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
+
+    def blockingStraightWalk(self, distance):
+        if self._world.robot.isMotionInProgress():
+            return False
+
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+
+        param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
+
+        self.setWalkConfig(param)
+        self._motion.addWalkStraight( float(distance), 100 )
+
+        postid = self._motion.post.walk()
+        self._motion.wait(postid, 0)
+        return True
 
