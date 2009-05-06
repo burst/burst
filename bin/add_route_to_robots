@@ -1,0 +1,2 @@
+#!/bin/bash
+sudo ip route add 192.168.7.0/24 via 132.70.7.78

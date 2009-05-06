@@ -12,8 +12,10 @@ EVENT_WALK_DONE = counter; counter+=1
 EVENT_TURN_DONE = counter; counter+=1
 
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
+# Seen / Lost - raised once if the previous time step is different then the current.
 EVENT_BALL_SEEN = counter; counter+=1
 EVENT_BALL_LOST = counter; counter+=1
+# Raised every time the ball is actually visible to the robot. (frame = vision device)
 EVENT_BALL_IN_FRAME = counter; counter+=1
 EVENT_BALL_BODY_X_ISECT_UPDATE = counter; counter+=1
 

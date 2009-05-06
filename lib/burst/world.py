@@ -1,3 +1,9 @@
+"""
+Units:
+ Angles - radians
+ Lengths - cm
+"""
+
 from math import cos, sin, sqrt, pi, fabs
 from time import time
 
@@ -8,6 +14,17 @@ MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
 
 DEG_TO_RAD = pi / 180.0
+
+BALL_REAL_DIAMETER = 8.7 # cm
+ROBOT_DIAMETER = 58.0 # this is from Appendix A of Getting Started - also, doesn't hands raised into account
+GOAL_POST_HEIGHT = 80.0
+GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it is the diameter in the sense of longest line across an image of the post.
+
+#### Vision constants
+FOV_X_DEG =  46.4
+FOV_Y_DEG          34.8f
+IMAGE_WIDTH = 0.236 # cm - i.e 2.36 mm
+IMAGE_HEIGHT = 0.176 # cm
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -20,9 +37,16 @@ class Locatable(object):
 
     REPORT_JUMP_ERRORS = True
 
-    def __init__(self, memory, motion):
+    def __init__(self, memory, motion, real_length):
+        """
+        real_length - [cm] real world largest diameter of object.
+        memory, motion - proxies to ALMemory and ALMotion respectively.
+        """
+        # cached proxies
         self._memory = memory
         self._motion = motion
+        # longest arc across the object, i.e. a diagonal.
+        self._real_length = real_length
         # This is the player body frame relative bearing. radians.
         self.bearing = 0.0
         self.elevation = 0.0
@@ -47,9 +71,12 @@ class Locatable(object):
         # upper barrier on speed, used to remove outliers. cm/sec
         self.upper_v_limit = 400.0
 
-    def compute_location_from_vision(self, vision_x, vision_y):
+    def compute_location_from_vision(self, vision_x, vision_y, width, height):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
-        raise NotImplementedError('compute_location_from_vision')
+        radius = max(width, height)
+        radius / self._real_length
+
+        import pdb; pdb.set_trace()
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
@@ -83,8 +110,8 @@ class Locatable(object):
         self.vx, self.vy = dx/dt, dy/dt
 
 class Movable(Locatable):
-    def __init__(self, memory, motion):
-        super(Movable, self).__init__(memory, motion)
+    def __init__(self, memory, motion, real_length):
+        super(Movable, self).__init__(memory, motion, real_length)
 
 class Ball(Movable):
     
@@ -93,7 +120,8 @@ class Ball(Movable):
     DEBUG_INTERSECTION = False
 
     def __init__(self, memory, motion):
-        super(Ball, self).__init__(memory, motion)
+        super(Ball, self).__init__(memory=memory, motion=motion,
+            real_length=BALL_REAL_DIAMETER)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
         self.centerX = 0.0
@@ -146,6 +174,7 @@ class Ball(Movable):
             # add event
             events.add(EVENT_BALL_IN_FRAME)
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
+            self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
             if self.compute_intersection_with_body_x():
                 events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
         if self.seen and not new_seen:
@@ -170,7 +199,8 @@ class Robot(Movable):
     _name = 'Robot'
 
     def __init__(self, memory, motion):
-        super(Robot, self).__init__(memory, motion)
+        super(Robot, self).__init__(memory=memory, motion=motion,
+            real_length=ROBOT_DIAMETER)
         self._memory = memory
         self._motion = motion
         self.isWalkingActive = False
@@ -193,7 +223,8 @@ class Robot(Movable):
 class GoalPost(Locatable):
 
     def __init__(self, memory, motion, name, position_changed_event):
-        super(GoalPost, self).__init__(memory, motion)
+        super(GoalPost, self).__init__(memory=memory, motion=motion,
+            real_length=GOAL_POST_DIAMETER)
         self._name = name
         self._position_changed_event = position_changed_event
         template = '/BURST/Vision/%s/%%s' % name
