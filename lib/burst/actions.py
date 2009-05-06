@@ -13,10 +13,11 @@ class Actions(object):
         self._motion = burst.getMotionProxy()
 
     def initPoseAndStiffness(self):
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        self._motion.setBodyStiffness(1.0)
         self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         self._motion.gotoAngle('HeadPitch', INITIAL_HEAD_PITCH, 1.0, INTERPOLATION_SMOOTH)
         self.executeMove(moves.STAND)
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         
     def sitPoseAndRelax(self):
         self.clearFootsteps()
@@ -51,7 +52,7 @@ class Actions(object):
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
         # just turn
-        self._motion.addTurn(delta_theta, 60) #25
+        self._motion.addTurn(delta_theta, 150) #25
         
         self._world.robot.turnID = self._motion.post.walk()
         print "self._world.robot.turnID: %f" % self._world.robot.turnID
@@ -94,7 +95,9 @@ class Actions(object):
             self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
     
             if len(param) == 16:
-                self._motion.addWalkStraight( distance, param[15] ) # param[14]
+		print "StepLength: %f distance: %f" % (StepLength, distance)
+                self._motion.addWalkStraight( StepLength*2,150 ) # param[14]
+                self._motion.addWalkStraight( distance-StepLength*2, param[15] ) # param[14]
             elif len(param) == 17:
                 self._motion.addWalkArc( distance, param[16], param[15] ) # param[14]
             else:
