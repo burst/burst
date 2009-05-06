@@ -95,7 +95,7 @@ class Actions(object):
             self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
     
             if len(param) == 16:
-		print "StepLength: %f distance: %f" % (StepLength, distance)
+                print "StepLength: %f distance: %f" % (StepLength, distance)
                 self._motion.addWalkStraight( StepLength*2,150 ) # param[14]
                 self._motion.addWalkStraight( distance-StepLength*2, param[15] ) # param[14]
             elif len(param) == 17:

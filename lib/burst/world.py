@@ -22,9 +22,21 @@ GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it 
 
 #### Vision constants
 FOV_X_DEG =  46.4
-FOV_Y_DEG          34.8f
+FOV_Y_DEG = 34.8
 IMAGE_WIDTH = 0.236 # cm - i.e 2.36 mm
 IMAGE_HEIGHT = 0.176 # cm
+
+# TODO - ask the V.I.M.
+IMAGE_PIXELS_HEIGHT = 320
+
+def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
+    """ TODO: This is the actual Height, i.e. z axis. This will work fine
+    as long as the camera is actually level, i.e. pitch is zero. But that is not
+    the general case - so to fix this, this method needs to take that into account,
+    either by getting the pitch or getting a real_heigh_in_cm that is times the sin(pitch)
+    or something like that/
+    """
+    return height_in_pixels / IMAGE_PIXELS_HEIGHT
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -76,7 +88,7 @@ class Locatable(object):
         radius = max(width, height)
         radius / self._real_length
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
