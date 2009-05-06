@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from time import time
+
 from twisted.internet import gtk2reactor
 
 gtk2reactor.install()
@@ -26,45 +28,76 @@ def getJointData(con):
 class Main(object):
 
     def __init__(self):
-        self.slides = slides = {}
+        start_time = time()
+
+        def color(i):
+            if i < 2: return 'green'
+            if i < 8: return 'red'
+            if i < 14: return 'blue'
+            if i < 20: return 'purple'
+            return 'red'
+        class Scale(object):
+
+            def __init__(self, i, name, min_val, max_val, init_pos):
+                self.last_sent_value = min_val
+                self.last_sent_time = start_time
+                self.name = name
+                range_val = max_val - min_val
+                step = range_val / 1000.0
+                page_step = range_val / 10.0
+                page_size = page_step
+                adj = gtk.Adjustment(init_pos, min_val, max_val, step, page_step, page_size)
+                self.set_scale = gtk.VScale(adj)
+                self.set_scale.connect("change-value", self.onChanged)
+                adj = gtk.Adjustment(min_val, min_val, max_val, step, page_step, page_size)
+                self.state_scale = gtk.VScale(adj)
+                self.toplabel = gtk.Label()
+                self.toplabel.set_markup('<span foreground="%s">%s</span>' % (color(i), i))
+                self.label = gtk.Label(self.name)
+                self.label.set_property('angle', 90)
+                self.lowbox = gtk.HBox()
+                self.lowbox.add(self.set_scale)
+                self.lowbox.add(self.state_scale)
+                self.col = [self.toplabel, self.label, self.lowbox]
+                #self.box.pack_start(self.toplabel, False, False, 0)
+
+            def onChanged(self, w, scroll_type, val):
+                s = self.set_scale
+                # TODO: throtlling?
+                print "joint, %s, value %s %s" % (joint_name, s.get_value(), val)
+                con.ALMotion.setAngle(self.name, val)
+                
+        self.scales = scales = {}
         options = pynaoqi.getDefaultOptions()
         url = 'http://%s:%s/' % (options.ip, options.port)
         self.con = pynaoqi.NaoQiConnection(url)
+        con = self.con
         self.joint_names, self.joint_limits = getJointData(self.con)
         w = gtk.Window()
-        c = gtk.HBox()
+        c = gtk.Table(rows=3, columns=len(self.joint_names), homogeneous=False)
         w.add(c)
-        for joint_name in self.joint_names:
+        cur_angles = self.con.ALMotion.getBodyAngles()
+        for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
             min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
-            range_val = max_val - min_val
-            step = range_val / 100.0
-            page_step = range_val / 10.0
-            page_size = page_step
-            adj = gtk.Adjustment(min_val, min_val, max_val, step, page_step, page_size)
-            s = gtk.VScale(adj)
-            c.add(s)
-            slides[joint_name] = s
+            s = Scale(i, joint_name, min_val, max_val, cur_a)
+            scales[joint_name] = s
+            both = gtk.FILL | gtk.EXPAND
+            for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), [(0, 0), (0, 0), (both, both)]):
+                c.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
             # value-changed is raised also when set_value is called
-            # move-slider - nothing?
-            s.connect("change-value", lambda w, scroll_type, val, self=self, joint_name=joint_name: self.onSlideChanged(joint_name))
+            # move-scaler - nothing?
         w.resize(600, 400)
         w.show_all()
         w.connect("destroy", gtk.main_quit)
         self.updater = task.LoopingCall(self.getAngles)
         self.updater.start(0.2)
 
-    def onSlideChanged(self, joint_name):
-        s = self.slides[joint_name]
-        # TODO: throtlling?
-        print "joint, %s, value %s" % (joint_name, s.get_value())
-        self.con.ALMotion.setAngle(joint_name, s.get_value())
-
     def getAngles(self):
         """ TODO: callback from twisted
         """
         new_angles = self.con.ALMotion.getBodyAngles()
         for joint, angle in zip(self.joint_names, new_angles):
-            self.slides[joint].set_value(angle)
+            self.scales[joint].state_scale.set_value(angle)
 
 if __name__ == '__main__':
     main = Main()
