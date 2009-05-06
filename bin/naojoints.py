@@ -37,6 +37,8 @@ class Main(object):
             if i < 20: return 'purple'
             return 'red'
         class Scale(object):
+            
+            MIN_TIME_BETWEEN_CHANGES = 0.1 # throtelling - seems I make nao's stuck? naoqi problem?
 
             def __init__(self, i, name, min_val, max_val, init_pos):
                 self.last_sent_value = min_val
@@ -62,6 +64,10 @@ class Main(object):
                 #self.box.pack_start(self.toplabel, False, False, 0)
 
             def onChanged(self, w, scroll_type, val):
+                cur = time()
+                if cur - self.last_sent_time < Scale.MIN_TIME_BETWEEN_CHANGES:
+                    return
+                self.last_sent_value = cur
                 s = self.set_scale
                 # TODO: throtlling?
                 print "joint, %s, value %s %s" % (joint_name, s.get_value(), val)
