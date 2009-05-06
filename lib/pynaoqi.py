@@ -315,6 +315,8 @@ class NaoQiReturn(object):
         if self._rettype in set([bool, int, float, str]):
             return self._rettype(ret.firstChild.firstChild.nodeValue)
         if self._rettype in [ARRAY, VECTOR_STRING]:
+            if ret.firstChild is None:
+                return []
             return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
         return ret
 
@@ -326,6 +328,18 @@ class NaoQiMethod(object):
         self._mod = mod
         self._con = mod._con
         self._name = name
+        self._hasdocs = False
+        self.__doc__ = 'call con.%s.%s.makeHelp() to get real help.' % (self._mod._modname, self._name)
+
+    def makeHelp(self):
+        if self._hasdocs:
+            return
+        self._getDocs()
+        self._hasdocs = True
+
+    def _getDocs(self):
+        """ when first time someone accesses the doc of the method we go and get it
+        also for the "hidden" parameters _params and _return """
         doc = self.getMethodHelp().firstChild.firstChild.firstChild
         if doc == None:
             self.__doc__ = 'no help supplied by module'
@@ -343,10 +357,26 @@ class NaoQiMethod(object):
         name, docstring, module = [c.firstChild.nodeValue for c in doc.firstChild.childNodes]
         self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (self._return, name, ','.join(map(str, self._params)), docstring, module, ''.join(' %s\n' % p.docstring() for p in self._params))
 
+    def _getDocParam(self):
+        self._getDocs()
+        return self._param
+
+    def _getDocReturn(self):
+        self._getDocs()
+        return self._return
+
+    def _getDocDoc(self):
+        self._getDocs()
+        return self.__doc__
+
     def getMethodHelp(self):
         return self._con.sendrecv(callNaoQiObject(self._mod._modname, 'getMethodHelp', self._name))
 
     def __call__(self, *args):
+        if not self._hasdocs:
+            print "going to get help..",
+            self.makeHelp()
+            print "done"
         if len(args) != len(self._params):
             raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
         for i, (p, a) in enumerate(zip(self._params, args)):
@@ -377,7 +407,22 @@ class NaoQiModule(object):
             setattr(self, meth, methobj)
             setattr(self.methods, meth, methobj)
         # this actually uses one of the methods above!
+        self._hasdocs = False
+        self.__doc__ = """ Call con.%s.makeHelp() to generate help for this module and it's methods """ % self._modname
+
+    def makeHelp(self):
+        print "going to get help..",
+        self._getDoc()
+        for meth in self.methods.__dict__.values():
+            if hasattr(meth, 'makeHelp'):
+                meth.makeHelp()
+        print "done"
+        self._hasdocs = True
+
+    def _getDoc(self):
+        """ self annihilating method """
         self.__doc__ = self.moduleHelp()[0]
+        return self.__doc__
 
     def getName(self):
         return self._modname

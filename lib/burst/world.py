@@ -4,7 +4,7 @@ Units:
  Lengths - cm
 """
 
-from math import cos, sin, sqrt, pi, fabs
+from math import cos, sin, sqrt, pi, fabs, atan
 from time import time
 
 import burst
@@ -21,13 +21,16 @@ GOAL_POST_HEIGHT = 80.0
 GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it is the diameter in the sense of longest line across an image of the post.
 
 #### Vision constants
-FOV_X_DEG =  46.4
-FOV_Y_DEG = 34.8
-IMAGE_WIDTH = 0.236 # cm - i.e 2.36 mm
+FOV_X = 46.4 * DEG_TO_RAD
+FOV_Y = 34.8 * DEG_TO_RAD
+IMAGE_WIDTH  = 0.236 # cm - i.e 2.36 mm
 IMAGE_HEIGHT = 0.176 # cm
+FOCAL_LENGTH = IMAGE_HEIGHT / 2.0 / atan(FOV_Y / 2)
 
 # TODO - ask the V.I.M.
 IMAGE_PIXELS_HEIGHT = 320
+
+DISTANCE_FACTOR = IMAGE_PIXELS_HEIGHT * IMAGE_HEIGHT / FOCAL_LENGTH
 
 def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
     """ TODO: This is the actual Height, i.e. z axis. This will work fine
@@ -36,7 +39,7 @@ def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
     either by getting the pitch or getting a real_heigh_in_cm that is times the sin(pitch)
     or something like that/
     """
-    return height_in_pixels / IMAGE_PIXELS_HEIGHT
+    return DISTANCE_FACTOR / height_in_pixels * real_height_in_cm
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -189,6 +192,8 @@ class Ball(Movable):
             self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
             if self.compute_intersection_with_body_x():
                 events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
+            #print "distance: man = %s, computed = %s" % (new_dist,
+            #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
         if self.seen and not new_seen:
             events.add(EVENT_BALL_LOST)
         if not self.seen and new_seen:
@@ -230,7 +235,6 @@ class Robot(Movable):
             self.isTurningActive = False
             events.add(EVENT_TURN_DONE)
         return events
-        
 
 class GoalPost(Locatable):
 
