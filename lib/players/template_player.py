@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/tests')
+in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
 if os.getcwd() == in_tree_dir:
     # for debugging only - use the local and not the installed burst
     print "DEBUG - using in tree burst.py"

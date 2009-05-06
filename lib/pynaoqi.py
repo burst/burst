@@ -670,7 +670,8 @@ def getDefaultOptions():
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
     options, rest = parser.parse_args()
-    options.port = options.port or ((options.ip == 'localhost' and 9560) or 9559) 
+    on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
+    options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
     return options
 
 if __name__ == '__main__':
