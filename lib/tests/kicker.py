@@ -26,11 +26,20 @@ class Kicker(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
-        self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
         
-        #self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
+
+	#self._actions.changeLocation(200.0, 0, 0) # ball radius - update and re-position
+        #self._actions.turn(0.1) # ball radius - update and re-position
+        #self._actions.turn(-1) # ball radius - update and re-position
+
+        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
+
+        self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
+
+
+        #self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
+        
         #EVENT_BGLP_POSITION_CHANGED = counter; counter+=1
         #EVENT_BGRP_POSITION_CHANGED = counter; counter+=1
         #EVENT_YGLP_POSITION_CHANGED = counter; counter+=1
@@ -41,13 +50,16 @@ class Kicker(Player):
 
     def onKickPointViable(self):
         print "Kick point viable:", self._world.computed.kp
+        self._actions.kick()
+        self._actions.sitPoseAndRelax()
+        
 
     def onGoalSeen(self):
-        #print "Yellow goal seen"
+        print "Yellow goal seen"
         pass
 
     def onBallSeen(self):
-        #print "Ball Seen!"
+        print "Ball Seen!"
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         #print "Ball x: %f" % self._world.ball.centerX
         #print "Ball y: %f" % self._world.ball.centerY
@@ -55,20 +67,26 @@ class Kicker(Player):
     def onWalkDone(self):
         print "Walk Done!"
         self._eventmanager.unregister(EVENT_WALK_DONE)
+        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 20:
+            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+            self.onKickPointViable()
+
+
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
 
     def onTurnDone(self):
         print "Turn Done!"
         self._eventmanager.unregister(EVENT_TURN_DONE)
         
-        if self._world.ball.dist > 33:
+        if self._world.ball.dist > 20:
             print "Starting to walk!"
             self._eventmanager.register(EVENT_WALK_DONE, self.onWalkDone)
-            self._actions.changeLocation(self._world.ball.dist - 33, 0, 0) # ball radius - update and re-position
+            self._actions.changeLocation(self._world.ball.dist - 10, 0, 0) # ball radius - update and re-position
         else:
-            self._actions.kick()
-            self._actions.sitPoseAndRelax()
-            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+            if abs(self._world.ball.bearing) <= 0.1745:
+                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                self.onKickPointViable()
+
         
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         
@@ -92,16 +110,22 @@ class Kicker(Player):
             #    self._actions.sitPoseAndRelax()
             #    self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
             #    self._eventmanager.unregister(EVENT_WALK_DONE)
-            return
-        
-        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
-            # robot is still walking / turning, return without doing anything
-            return
 
+            # return
         print "self._world.ball.bearing: %f" % self._world.ball.bearing
         print "self._world.ball.dist: %f" % self._world.ball.dist
         
-        if self._world.ball.dist > 33:
+        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
+            # robot is still walking / turning, return without doing anything
+            print "is walking: %f is turning: %f" % (self._world.robot.isWalkingActive, self._world.robot.isTurningActive)
+            return
+
+#         print "self._world.ball.bearing: %f" % self._world.ball.bearing
+#         print "self._world.ball.dist: %f" % self._world.ball.dist
+        
+
+
+        if self._world.ball.dist > 20:
             # ball is away, turn and then approach ball
             pass
         #else:
@@ -109,8 +133,8 @@ class Kicker(Player):
         #elif
 	if not self._world.robot.isWalkingActive and not self._world.robot.isTurningActive:
             #self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-            
-            if abs(self._world.ball.bearing) > 10:
+            print "ball bearing: %f" % self._world.ball.bearing
+            if abs(self._world.ball.bearing) > 0.1745: # 10: --  bearing is radians (Vova)
                 print "Starting to turn!"
                 self._eventmanager.register(EVENT_TURN_DONE, self.onTurnDone)
                 
@@ -139,7 +163,7 @@ class Kicker(Player):
                 targetBearing = self._world.ball.bearing
                 if bearingProd > 0:
                     # ball and goal on same side
-                    if bearingSumAbs < 10:
+                    if bearingSumAbs <  0.1745: # 10: --  bearing is radians (Vova)
                         # ball and goal on same line (same sign, small sum)
                         pass #targetBearing = self._world.ball.bearing
                     else:
@@ -150,7 +174,7 @@ class Kicker(Player):
                             targetBearing *= 0.7
                 else:
                     # ball and goal on different sides
-                    if bearingSumAbs < 10:
+                    if bearingSumAbs < 0.1745: # 10: --  bearing is radians (Vova)
                         # ball and goal on roughly same line (different sign, small sum)
                         if abs(self._world.ball.bearing) > abs(midGoalBearing):
                             targetBearing *= 1.2
@@ -170,7 +194,7 @@ class Kicker(Player):
                 print "midGoalBearing: %f" % midGoalBearing
                 print "targetBearing: %f" % targetBearing
                 
-                self._actions.turn(targetBearing * DEG_TO_RAD)
+                self._actions.turn(targetBearing)
             else:
                 self.onTurnDone()
 

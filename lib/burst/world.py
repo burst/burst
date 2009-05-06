@@ -152,7 +152,7 @@ class Ball(Movable):
             x = (-y1 + m * x1) / m
             self.body_x_isect = x
             #theta=atan(m)
-            print "INFO: ball intersection with body x: %s" % x
+            # print "INFO: ball intersection with body x: %s" % x
             return True
         return False
 
