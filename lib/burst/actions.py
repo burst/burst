@@ -1,10 +1,20 @@
 import burst
 from burst.consts import *
+from events import (EVENT_HEAD_ANGLES_DONE,
+        EVENT_TURN_DONE, EVENT_CHANGE_LOCATION_DONE)
 import moves
 import world
+from math import atan2
 
-INITIAL_STIFFNESS = 0.85 # TODO: Check other stiffnessesm, as this might not be optimal.
+INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnessesm, as this might not be optimal.
 INITIAL_HEAD_PITCH = -20.0 * DEG_TO_RAD
+
+#25 - TODO - This is "the number of 20ms cycles per step". What should it be?
+DEFAULT_STEPS_FOR_TURN = 150
+# Same TODO
+DEFAULT_STEPS_FOR_WALK = 150
+
+MINIMAL_CHANGELOCATION_TURN = 1e-3
 
 class Actions(object):
 
@@ -26,7 +36,8 @@ class Actions(object):
 
     def changeHeadAngles(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
-        self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
+        postid = self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
+        self._world.robot.add_expected_head_post(postid, EVENT_HEAD_ANGLES_DONE)
 
     def gotoHeadAngles(self, yaw, pitch):
         self._motion.gotoChainAngles("Head", [yaw, pitch], 0.1, INTERPOLATION_SMOOTH)
@@ -39,80 +50,65 @@ class Actions(object):
     
     def kick(self):
         self.executeMove(moves.ALMOST_KICK)
-    
+
     def turn(self, delta_theta):
-        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
-            print "Still walking/turning, can't turn for now"
-            return
-        print "delta_theta: %f" % delta_theta
-        
-        self._world.robot.isTurningActive = True
-        
+        """ Add a turn to ALMotion's queue. Will fire EVENT_TURN_DONE once finished. 
+        """
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
-        # just turn
-        self._motion.addTurn(delta_theta, 150) #25
+        self._motion.addTurn(delta_theta, DEFAULT_STEPS_FOR_TURN)
         
-        self._world.robot.turnID = self._motion.post.walk()
-        print "self._world.robot.turnID: %f" % self._world.robot.turnID
+        postid = self._motion.post.walk()
+        self._world.robot.add_expected_motion_post(postid, EVENT_TURN_DONE)
+
+    def setWalkConfig(self, param):
+        """ param should be one of the moves.WALK_X """
+        (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
+            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:14]
+
+        self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude )
+        self._motion.setWalkArmsEnable(True)
+
+        # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
+        self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation )
+
+        self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
+    
+    def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0):
+        """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
+         Will fire EVENT_WALK_DONE once finished.
+         
+        What kind of walk is this: for simplicity (until projectants come
+        up with something better. yeah right. ok, maybe) we do a turn, walk,
+        then final turn to wanted angle.
+        """
         
-    
-    def changeLocation(self, delta_x, delta_y, delta_theta):
-        if self._world.robot.isWalkingActive or self._world.robot.isTurningActive:
-            print "Still walking/turning, can't change location for now"
-            return
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
-        # just turn
-        if delta_theta != 0:
-            self.turn(delta_theta)
-        else:
-            self._world.robot.isWalkingActive = True
-            
-            self._motion.setBodyStiffness(INITIAL_STIFFNESS)
-            self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
-            
-            # TODO
-            #if self._world.ball.dist > 40:
-                #fast walk
-            #else:
-                #slow walk
-            
-            distance = delta_x / 100 # convert cm to meter
-            
-            param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
-    
-            (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-                LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
-                StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:14]
-    
-            self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude )
-            self._motion.setWalkArmsEnable(True)
-    
-            # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-            self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation )
-    
-            self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
-    
-            if len(param) == 16:
-                print "StepLength: %f distance: %f" % (StepLength, distance)
-                self._motion.addWalkStraight( StepLength*2,150 ) # param[14]
-                self._motion.addWalkStraight( distance-StepLength*2, param[15] ) # param[14]
-            elif len(param) == 17:
-                self._motion.addWalkArc( distance, param[16], param[15] ) # param[14]
-            else:
-                print "ERROR: wrong number of parameters"
-                return
-          
-        #motionProxy.addTurn( 0.3*5, 25 )
-        #motionProxy.addWalkSideways(0.02*8, 25)
-        #motionProxy.addWalkArc( 0.3*4, 0.3, 25 )
-        #motionProxy.addWalkSideways(-0.02*8, 25)
-        #motionProxy.addWalkStraight( -0.05*3, 25)
-        #motionProxy.addTurn( 0.4*4, 80 )
-        #motionProxy.addWalkSideways(-0.04*4, 80)
-        self._world.robot.walkID = self._motion.post.walk()
-        print "self._world.robot.walkID: %f" % self._world.robot.walkID
+        distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
+        bearing = atan2(delta_y, delta_x)
+        # Avoid turns
+        if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
+            self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
+        
+        param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
+        self.setWalkConfig(param)
+        steps = param[14]
+        StepLength = param[8] # TODO: encapsulate walk params
+        
+        print "Straight walk: StepLength: %f distance: %f" % (StepLength, distance)
+        # Vova trick - start with slower walk, then do the faster walk.
+        self._motion.addWalkStraight( StepLength*2, DEFAULT_STEPS_FOR_WALK )
+        self._motion.addWalkStraight( distance - StepLength*2, steps )
+
+        if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
+            self._motion.addTurn(delta_theta - bearing, DEFAULT_STEPS_FOR_TURN)
+        
+        postid = self._motion.post.walk()
+        self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE)
 
     def executeMove(self, moves):
         """ Go through a list of body angles, works like northern bites code:

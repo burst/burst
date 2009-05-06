@@ -11,6 +11,7 @@ if os.getcwd() == in_tree_dir:
 from burst.player import Player
 from burst.events import *
 from burst.consts import *
+from burst.eventmanager import AndEvent, SerialEvent
 
 def pr(s):
     print s
@@ -18,13 +19,26 @@ def pr(s):
 class Template(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness()
+        # uncomment this for real work - but for just getting events you probably want to keep it commented.
+        #self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        # Serial event example: do one, then the other, call a cb on each
+        #self._actions.turn(0.2)
+        #self._actions.changeLocation(20, 0, 0)
+        #SerialEvent(self._eventmanager, [EVENT_TURN_DONE, EVENT_WALK_DONE], [self.onSerialExampleWalkDone, self.onSerialExampleTurnDone])
         
-        self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
+        self._eventmanager.register(EVENT_YGLP_POSITION_CHANGED,   lambda: pr("Yellow left seen"))
+        self._eventmanager.register(EVENT_YGRP_POSITION_CHANGED, lambda: pr("Yellow right seen"))
+        self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN,   lambda: pr("Blue goal seen"))
         self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, lambda: pr("Yellow goal seen"))
+
+    def onSerialExampleTurnDone(self):
+        print "1"
+
+    def onSerialExampleWalkDone(self):
+        print "2"
         
     def onStop(self):
         super(Template, self).onStop()
@@ -38,8 +52,8 @@ class Template(Player):
         print "Ball y: %f" % self._world.ball.centerY
 
     def onBallInFrame(self):
-        print "ball bearing, dist %3.3f %3.3f" % (self._world.ball.bearing, self._world.ball.dist)
-
+        #print "ball bearing, dist %3.3f %3.3f" % (self._world.ball.bearing, self._world.ball.dist)
+        pass
 
 if __name__ == '__main__':
     import burst

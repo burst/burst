@@ -4,6 +4,44 @@
 
 from events import FIRST_EVENT_NUM, LAST_EVENT_NUM, EVENT_STEP
 
+class SuperEvent(object):
+    
+    def __init__(self, eventmanager, events):
+        self._events = events
+        self._waiting = set(events)
+        self._eventmanager = eventmanager
+
+class AndEvent(SuperEvent):
+
+    def __init__(self, eventmanager, events, cb):
+        super(AndEvent, self).__init__(eventmanager, events, cb)
+        self._cb = cb
+        for event in events:
+            eventmanager.register(event, lambda self=self, event=event: self.onEvent(event))
+            
+    def onEvent(self, event):
+        self._waiting.remove(event)
+        if len(self._waiting) == 0:
+            for event in self.events:
+                self._eventmanager.unregister(event)
+            self._cb()
+
+class SerialEvent(SuperEvent):
+    
+    def __init__(self, eventmanager, events, callbacks):
+        super(SerialEvent, self).__init__(eventmanager, events)
+        self._callbacks = callbacks
+        self._i = 0
+        eventmanager.register(self._events[0], self.onEvent)
+            
+    def onEvent(self, event):
+        self._eventmanager.unregister(self._events[self._i])
+        self._callbacks[self._i]()
+        self._i += 1
+        if len(self._events) == self._i:
+            return
+        self._eventmanager.register(self._events[self._i], self.onEvent)
+
 class EventManager(object):
 
     def __init__(self, world):

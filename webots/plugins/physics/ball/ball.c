@@ -22,7 +22,7 @@ int kick = 0;                               // counter for kicks
 float kick_angles[NUM_KICK_ANGLES];         // angles of kicks
 
 const float steps_between_kicks = 100;      // steps between kicks
-const float KICK_FORCE = 10.0;              // force to kick - 5.0 is already pretty high.
+const float KICK_FORCE = 5.0;              // force to kick - 5.0 is already pretty high.
 
 // webots_physics_init
 // ===================

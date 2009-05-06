@@ -65,22 +65,22 @@ FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            18]#,                    # Speed
            #,0.68]                  # Angle 0.68
 
-FAST_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
-           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           3.5,                   # LHipRoll(degrees) 
-           -3.5,                  # RHipRoll(degrees)
-           0.23,                  # HipHeight(meters)
-           3.0,                   # TorsoYOrientation(degrees)
-           0.04,                  # StepLength
-           0.02,                  # StepHeight
-           0.02,                  # StepSide
-           0.3,                   # MaxTurn
-           0.015,                 # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
-           0.5,                   # Distance
-           25]                    # Speed
+FAST_WALK = [100.0 * DEG_TO_RAD, # 0 ShoulderMedian
+           10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
+           30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
+           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
+           3.5,                  # 4 LHipRoll(degrees) 
+           -3.5,                 # 5 RHipRoll(degrees)
+           0.23,                 # 6 HipHeight(meters)
+           3.0,                  # 7 TorsoYOrientation(degrees)
+           0.04,                 # 8 StepLength
+           0.02,                 # 9 StepHeight
+           0.02,                 # 10 StepSide
+           0.3,                  # 11 MaxTurn
+           0.015,                # 12 ZmpOffsetX
+           0.018,                # 13 ZmpOffsetY 
+           # Not walk parameters proper.
+           25]                   # 15 Speed
 
 STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -96,7 +96,6 @@ STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.018,                 # ZmpOffsetY 
-           0.5,                   # Distance
            25]                    # Speed
 
 SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
@@ -113,8 +112,8 @@ SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.015,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           0.05*4,                # Distance
            100]                    # Speed
+
 SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -129,7 +128,6 @@ SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           0.05*4,                # Distance
            80]                    # Speed
 
 #KICKS

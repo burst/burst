@@ -4,7 +4,7 @@ Units:
  Lengths - cm
 """
 
-from math import cos, sin, sqrt, pi, fabs, atan
+from math import cos, sin, sqrt, pi, fabs, atan, acos
 from time import time
 
 import burst
@@ -50,7 +50,7 @@ class Locatable(object):
     in polar coordinates - bearing in radians, distance in centimeters.
     """
 
-    REPORT_JUMP_ERRORS = True
+    REPORT_JUMP_ERRORS = False
 
     def __init__(self, memory, motion, real_length):
         """
@@ -146,6 +146,7 @@ class Ball(Movable):
         self.height = 0.0
         self.width = 0.0
         self.seen = False
+        self.body_x_isect = None
 
     def compute_intersection_with_body_x(self):
         ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
@@ -212,6 +213,8 @@ class Ball(Movable):
         self.seen = new_seen
         return events
 
+###############################################################################
+
 class Robot(Movable):
     _name = 'Robot'
 
@@ -220,20 +223,36 @@ class Robot(Movable):
             real_length=ROBOT_DIAMETER)
         self._memory = memory
         self._motion = motion
-        self.isWalkingActive = False
-        self.isTurningActive = False
-        self.walkID = 0
-        self.turnID = 0
+        self._motion_posts = {}
+        self._head_posts = {}
+    
+    def add_expected_motion_post(self, postid, event):
+        self._motion_posts[postid] = event
+
+    def add_expected_head_post(self, postid, event):
+        self._head_posts[postid] = event
+        
+    def isMotionInProgress(self):
+        return len(self._motion_posts) > 0
+    
+    def isHeadMotionInProgress(self):
+        return len(self._head_posts) > 0
         
     def calc_events(self):
-        """ get new values from proxy, return set of events """
+        """ check if any of the motions are complete, return corresponding events
+        from self._motion_posts and self._ """
         events = set()
-        if self.isWalkingActive and not self._motion.isRunning(self.walkID): #self._motion.getRemainingFootStepCount() == 0 doesn't work in webots
-            self.isWalkingActive = False
-            events.add(EVENT_WALK_DONE)
-        if self.isTurningActive and not self._motion.isRunning(self.turnID):
-            self.isTurningActive = False
-            events.add(EVENT_TURN_DONE)
+        def filter(dictionary, visitor):
+            deleted_posts = [postid for postid, event in dictionary.items() if visitor(postid, event)]
+            for postid in deleted_posts:
+                del dictionary[postid]
+        def checkisrunning(postid, event):
+            if not self._motion.isRunning(postid):
+                events.add(event)
+                return True
+            return False
+        filter(self._motion_posts, checkisrunning)
+        filter(self._head_posts, checkisrunning)
         return events
 
 class GoalPost(Locatable):
@@ -356,6 +375,13 @@ class Computed(object):
 
         The coordinate system is not standard: the x axis is to the right of the robot,
         the y axis is to the front. The bearing is measured from the y axis ccw.
+        
+        computation:
+         c - goal center
+         b - ball position
+         r - robot 
+         n - normal pointing from goal center to ball
+         kp - kicking point (x, y, bearing)
         """
         # left - l, right - r, bearing - b, dist - d
         team = self._team
@@ -371,9 +397,13 @@ class Computed(object):
         nnorm = sqrt(nx**2 + ny**2)
         nx, ny = nx / nnorm, ny / nnorm
         kpx, kpy = bx + k * nx, by + k * ny
+        kp_norm = (kpx**2 + kpy**2)**0.5
+        kpbearing = acos((kpx * (-nx) + kpy * (-ny)) / kp_norm)
         if self.DEBUG_KP:
-            print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f)" % (bx, by, cx, cy, nx, ny, kpx, kpy)
-        return kpx, kpy
+            print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f, %3.3f)" % (bx, by, cx, cy, nx, ny, kpx, kpy, kpbearing)
+        return kpx, kpy, kpbearing
+
+###############################################################################
 
 class World(object):
 

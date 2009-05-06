@@ -8,9 +8,13 @@ FIRST_EVENT_NUM = counter = 1
 # minor: by order of computation (from basic to dependent)
 
 # Base events
-EVENT_WALK_DONE = counter; counter+=1
-EVENT_TURN_DONE = counter; counter+=1
 
+##### Movement, Joint movement.
+EVENT_CHANGE_LOCATION_DONE = counter; counter+=1
+EVENT_TURN_DONE = counter; counter+=1
+EVENT_HEAD_ANGLES_DONE = counter; counter+=1
+
+##### Vision events
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
 # Seen / Lost - raised once if the previous time step is different then the current.
 EVENT_BALL_SEEN = counter; counter+=1
@@ -28,9 +32,10 @@ EVENT_YGRP_POSITION_CHANGED = counter; counter+=1
 EVENT_ALL_BLUE_GOAL_SEEN = counter; counter+=1
 EVENT_ALL_YELLOW_GOAL_SEEN = counter; counter+=1
 
-# Computed events
+##### Computed events
 EVENT_KP_CHANGED = counter; counter+=1
 
+##### Time based events
 # Please don't use these! it makes puppies cry.
 EVENT_STEP = counter; counter+=1
 EVENT_TIME_EVENT = counter; counter+=1
