@@ -39,10 +39,12 @@ class Goalie(Player):
         print "Ball y: %f" % self._world.ball.centerY
 
     def onBallInFrame(self):
-        print "ball bearing, dist %3.3f %3.3f" % (self._world.ball.bearing, self._world.ball.dist)
+        print "ball width %3.3f height %3.3f" % (self._world.ball.width,
+                self._world.ball.height)
     
     def onBallApproachingMaybe(self):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
+        print "Ball is approaching??"
 
 if __name__ == '__main__':
     import burst
