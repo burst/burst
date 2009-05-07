@@ -17,6 +17,7 @@ import Image
 # finished with global imports
 
 DEBUG=False
+DEBUG_CLOSE = DEBUG and True
 
 import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions.py
 if DEBUG:
@@ -470,6 +471,7 @@ class NaoQiConnection(object):
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
+        self.s = None # socket to connect to broker. reusing - will it work?
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
         self._brokername = "soaptest"
@@ -490,8 +492,10 @@ class NaoQiConnection(object):
             self.modules.__dict__[m.getName()] = m
 
     def sendrecv(self, o):
-        s = socket.socket()
-        s.connect((self._req._host, self._req._port))
+        if self.s is None:
+            self.s = socket.socket()
+            self.s.connect((self._req._host, self._req._port))
+        s = self.s
         tosend = self._req.make(o)
         if DEBUG:
             print "***     Sending:     ***\n%s" % tosend
@@ -499,11 +503,22 @@ class NaoQiConnection(object):
         # get headers, read size, read the rest
         h = []
         c = None
+        if DEBUG:
+            print "receiving:"
         while c != '<':
             c = s.recv(1)
+            if DEBUG:
+                sys.stdout.write(c)
+                sys.stdout.flush()
             h.append(c)
+        if DEBUG:
+            print
         headers = ''.join(h[:-1])
         content_length = int(re.search('Content-Length: ([0-9]+)', headers).groups()[0])
+        # Connection: close
+        close_socket = re.search('Connection: (.*)', headers).groups()[0].strip() == 'close'
+        if close_socket and DEBUG_CLOSE:
+            print "Will close socket"
         if DEBUG:
             print "expecting %s" % content_length
         # this loop is required for getting large stuff, like getRemoteImage (1200000~ bytes for 640x480 RGB)
@@ -518,6 +533,9 @@ class NaoQiConnection(object):
         if DEBUG:
             print "***     Got:          ***\n%s" % compresstoprint(headers + body, 1000, 1000)
             print "*************************"
+        if close_socket:
+            self.s.close()
+            self.s = None
         xml = minidom.parseString(body)
         soapbody = xml.documentElement.firstChild
         return soapbody
@@ -673,6 +691,20 @@ def getDefaultOptions():
     on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
     options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
     return options
+
+default_connection = None
+def getDefaultConnection():
+    """ Returns a singleton connection object to the parameters provided on the command
+    line, defaulting to localhost webots connection. Suitable for most uses, except
+    for writing apps that connect to multiple robots, where you'll want to instantiate
+    the NaoQiConnection objects yourself.
+    """
+    global default_connection
+    if default_connection is None:
+        options = getDefaultOptions()
+        url = 'http://%s:%s/' % (options.ip, options.port)
+        default_connection = NaoQiConnection(url)
+    return default_connection
 
 if __name__ == '__main__':
     main()

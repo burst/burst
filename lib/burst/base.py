@@ -29,7 +29,8 @@ except:
 
 def connecting_to_webots():
     global ip
-    is_nao = os.popen("uname -m").read().strip() == 'i586'
+    #is_nao = os.popen("uname -m").read().strip() == 'i586'
+    is_nao = os.path.exists('/opt/naoqi/bin/naoqi')
     return not is_nao and ip == LOCALHOST_IP
 
 def fix_sys_path():
@@ -94,7 +95,7 @@ def parse_command_line_arguments():
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)
-    port = opts.port or ((ip == '127.0.0.1' and 9560) or 9559)
+    port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)
     port = int(port)
     globals()['ip'] = ip
     globals()['port'] = port

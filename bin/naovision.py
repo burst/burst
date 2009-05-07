@@ -1,7 +1,10 @@
 #!/usr/bin/python
 from twisted.internet import gtk2reactor
 
-gtk2reactor.install()
+try:
+    gtk2reactor.install()
+except:
+    pass
 
 from twisted.internet import reactor, task
 from twisted.internet.threads import deferToThread
@@ -51,16 +54,15 @@ def make_rect(root, side, color, **kw):
     x = 0, y = 0, width = side, height = side,
     fill_color = color, **kw)
 
+DT_VISION_QUERY=1.0
 
 class Main(object):
 
-    def __init__(self):
-        options = pynaoqi.getDefaultOptions()
-        url = 'http://%s:%s/' % (options.ip, options.port)
-        self.con = pynaoqi.NaoQiConnection(url)
+    def __init__(self, con):
+        self.con = con
         self.names = getVisionDataNames(self.con)
         self.createFieldAndObjects()
-        w = gtk.Window()
+        self.w = w = gtk.Window()
         c = gtk.HBox()
         w.add(c)
         c.add(self.field)
@@ -68,7 +70,7 @@ class Main(object):
         w.show_all()
         w.connect("destroy", gtk.main_quit)
         self.updater = task.LoopingCall(self.getVision)
-        self.updater.start(0.5)
+        self.updater.start(DT_VISION_QUERY)
 
     def createFieldAndObjects(self):
         self.field = goocanvas.Canvas()
@@ -81,12 +83,6 @@ class Main(object):
         for attr, color in [('bglp', 'blue'), ('bgrp', 'blue'),
             ('yglp', 'yellow'), ('ygrp', 'yellow')]:
             setattr(self, attr, make_rect(root, POST_DIAMETER, color))
-
-    def onSlideChanged(self, joint_name):
-        s = self.slides[joint_name]
-        # TODO: throtlling?
-        print "joint, %s, value %s" % (joint_name, s.get_value())
-        self.con.ALMotion.setAngle(joint_name, s.get_value())
 
     def getVision(self):
         """ TODO: callback from twisted
@@ -122,6 +118,6 @@ class Main(object):
         # compute bearing my self, then set myball to that position
 
 if __name__ == '__main__':
-    main = Main()
+    main = Main(pynaoqi.getDefaultConnection())
     reactor.run()
 

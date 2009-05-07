@@ -60,6 +60,10 @@ class EventManager(object):
     def unregister(self, event):
         self._events[event] = None
 
+    def unregister_all(self):
+        for k in self._events.keys():
+            self._events[k] = None
+
     def runonce(self):
         """ Call all callbacks registered based on the new events
         stored in self._world
