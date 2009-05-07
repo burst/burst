@@ -32,7 +32,7 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeHeadMove(moves.BOTTOM_CENTER_H_MAX_V_FAR)
+        self.executeHeadMove(moves.BOTTOM_INIT_FAR)
         return self.executeMove(moves.STAND)
     
     def sitPoseAndRelax(self):
@@ -40,17 +40,11 @@ class Actions(object):
         self.executeMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 
-    def changeHeadAngles(self, delta_yaw, delta_pitch):
+    def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
         #postid = self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
         #self._world.robot.add_expected_head_post(postid, EVENT_HEAD_ANGLES_DONE)
-        self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1,INTERPOLATION_SMOOTH),) )
-
-    def gotoHeadAngles(self, yaw, pitch):
-        self._motion.gotoChainAngles("Head", [yaw, pitch], 0.1, INTERPOLATION_SMOOTH)
-
-    def setHeadAngles(self, yaw, pitch):
-        self._motion.setChainAngles("Head", [yaw, pitch])
+        self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1),),INTERPOLATION_SMOOTH)
 
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
@@ -108,7 +102,7 @@ class Actions(object):
         if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
             self._motion.addTurn(delta_theta - bearing, DEFAULT_STEPS_FOR_TURN)
         
-        duration = (DEFAULT_STEPS_FOR_WALK * + DEFAULT_STEPS_FOR_TURN * ) * 0.020
+        duration = 1.0 #(DEFAULT_STEPS_FOR_WALK * + DEFAULT_STEPS_FOR_TURN * ) * 0.020
         postid = self._motion.post.walk()
         self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 

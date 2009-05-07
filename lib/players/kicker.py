@@ -49,24 +49,21 @@ class Kicker(Player):
         #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         self.kp = None
         
-        deferred = self._actions.scanFront()
-        deferred.onDone(self.onScanFrontDone)
-    
-    def onScanFrontDone(self, postid):
-        print "scan front done! %s" % postid
+        #self._actions.scanFront().onDone(
+        #     self.onScanFrontDone
+        #     )
         #import pdb; pdb.set_trace()
+        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        #self.doBallTracking()
+        
+        self._actions.executeHeadMove(moves.BOTTOM_CENTER_H_MIN_V)
+        
         
     def onStop(self):
         super(Kicker, self).onStop()
 
-    def onBallSeen(self):
-        print "Ball Seen!"
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.centerOnBall)
-        self._eventmanager.unregister(EVENT_BALL_SEEN)
-        #print "Ball x: %f" % self._world.ball.centerX
-        #print "Ball y: %f" % self._world.ball.centerY
-
-        #test()
+    def onScanFrontDone(self):
+        print "ScanFrontDone!"
 
     def onKickingPointChanged(self):
         """ We can reach here either:
@@ -75,7 +72,7 @@ class Kicker(Player):
         hence we actually look at the kp_valid parameter (otherwise
         we already set the kp before in pitchUpToFindGoal)
         """
-        self._eventmanager.unregister_all()
+        #self._eventmanager.unregister_all()
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
         computed = self._world.computed
         if computed.kp_valid:
@@ -107,7 +104,7 @@ class Kicker(Player):
         if not self._world.yglp.dist > 0.0 or not self._world.yglp.dist > 0.0:
             # haven't seen either yglp or ygrp yet, move head up to find them.
             print "pitch up to find goal"
-            self._actions.changeHeadAngles(0, -0.05)
+            self._actions.changeHeadAnglesRelative(0, -0.05)
         else:
             print "so we have goal, even if not both posts at the same time - compute kp using best values"
             self.kp = self._world.computed.calculate_kp()
@@ -141,10 +138,10 @@ class Kicker(Player):
             
             deltaHeadYaw = xNormalized * X_TO_RAD_FACTOR
             deltaHeadPitch = -yNormalized * Y_TO_RAD_FACTOR
-            #self._actions.changeHeadAngles(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
+            #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
             # TODO: what happens when we give a new angle without waiting for the previous to be done?
             if not self._world.robot.isHeadMotionInProgress():
-                self._actions.changeHeadAngles(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
+                self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
             else:
                 print "doBallTracking: head still moving, not updating"
 
@@ -273,7 +270,7 @@ class Kicker(Player):
         return (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
 
     def ball_frame_y(self):
-        return (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+        return (IMAGE_HALF_HEIGHT - self._world.ball.centerY) / IMAGE_HALF_HEIGHT # between 1 (top) to -1 (bottom)
  
     def getTargetBearing(self):
         # TODO: Move to world data?
