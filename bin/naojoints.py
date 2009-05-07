@@ -3,7 +3,10 @@ from time import time
 
 from twisted.internet import gtk2reactor
 
-gtk2reactor.install()
+try:
+    gtk2reactor.install()
+except:
+    pass
 
 from twisted.internet import reactor, task
 from twisted.internet.threads import deferToThread
@@ -18,6 +21,8 @@ sys.path.append(burst_lib)
 
 import pynaoqi
 from burst_util import cached
+
+DT_CHECK_FOR_NEW_ANGLES = 0.2 # seconds between socket calls
 
 @cached('joint_data.pickle')
 def getJointData(con):
@@ -75,21 +80,31 @@ class Main(object):
                 con.ALMotion.setAngle(self.name, val)
                 
         self.scales = scales = {}
-        options = pynaoqi.getDefaultOptions()
-        url = 'http://%s:%s/' % (options.ip, options.port)
-        self.con = pynaoqi.NaoQiConnection(url)
+        self.con = pynaoqi.getDefaultConnection()
         con = self.con
+        self.vision = None
         self.joint_names, self.joint_limits = getJointData(self.con)
         w = gtk.Window()
         c = gtk.VBox()
         table = gtk.Table(rows=3, columns=len(self.joint_names), homogeneous=False)
         w.add(c)
+
+        # Create top buttons
+
         button_box = gtk.HBox()
-        for label, cb in [('stiffness on', self.setStiffnessOn), ('stiffness off', self.setStiffnessOff)]:
+        for label, cb in [
+            ('print angles', self.printAngles),
+            ('stiffness on', self.setStiffnessOn),
+            ('stiffness off', self.setStiffnessOff),
+            ('vision', self.toggleVision),
+            ]:
             b = gtk.Button(label)
             b.connect('clicked', cb)
             button_box.add(b)
         c.pack_start(button_box, False, False, 0)
+
+        # Create the joint controlling and displaying slides
+
         c.add(table)
         cur_angles = self.con.ALMotion.getBodyAngles()
         for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
@@ -105,12 +120,26 @@ class Main(object):
         w.show_all()
         w.connect("destroy", gtk.main_quit)
         self.updater = task.LoopingCall(self.getAngles)
-        self.updater.start(0.2)
+        self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
+
+    def toggleVision(self, w):
+        if self.vision is None:
+            import naovision
+            self.vision = naovision.Main(self.con)
+            self.vision_visible = True
+            return
+        if self.vision_visible:
+            self.vision.w.hide()
+            self.vision_visible = False
+        else:
+            self.vision.w.show()
+            self.vision_visible = True
 
     def getAngles(self):
         """ TODO: callback from twisted
         """
         new_angles = self.con.ALMotion.getBodyAngles()
+        self.cur_read_angles = new_angles
         for joint, angle in zip(self.joint_names, new_angles):
             self.scales[joint].state_scale.set_value(angle)
 
@@ -119,6 +148,10 @@ class Main(object):
 
     def setStiffnessOff(self, w):
         self.con.ALMotion.setBodyStiffness(0.0)
+
+    def printAngles(self, w):
+        j = self.cur_read_angles
+        print repr([j[2:6], j[8:14], j[14:20], j[20:24]])
 
 if __name__ == '__main__':
     main = Main()

@@ -22,6 +22,15 @@ from burst.consts import *
 
 import time
 
+"""
+Logic for Kicker:
+
+search for ball in current frame
+found ball -> center on ball
+ball centered -> pitch up until goal is seen
+compute kp by hand: use 
+"""
+
 class Kicker(Player):
     
     def onStart(self):
@@ -30,23 +39,71 @@ class Kicker(Player):
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
         self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+        self.kp = None
         
     def onStop(self):
         super(Kicker, self).onStop()
+
+    def onBallSeen(self):
+        print "Ball Seen!"
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.centerOnBall)
+        self._eventmanager.unregister(EVENT_BALL_SEEN)
+        #print "Ball x: %f" % self._world.ball.centerX
+        #print "Ball y: %f" % self._world.ball.centerY
+
+        #test()
+
+    def onKickingPointChanged(self):
+        """ We can reach here either:
+        via the EVENT_KP_CHANGED
+        via pitchUpToFindGoal
+        hence we actually look at the kp_valid parameter (otherwise
+        we already set the kp before in pitchUpToFindGoal)
+        """
+        self._eventmanager.unregister_all()
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        computed = self._world.computed
+        if computed.kp_valid:
+            self.kp = computed.kp
+        if self.kp is None:
+            print "Oops, kp not set - please debug me!"
+            raise SystemExit
+        print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+        print "self._world.ball.bearing: %f" % self._world.ball.bearing
+        print "self._world.ball.dist: %f" % self._world.ball.dist
+        
+        self.gotoBall()
+        
+    def centerOnBall(self):
+        """ look for a ball, when we have it move on to find the posts. no moving
+        the robot, just the head """
+        ball_frame_x = self.ball_frame_x()
+        if (self._world.yglp.dist == 0.0 or self._world.ygrp.dist == 0.0
+                and abs(ball_frame_x) < 0.05):
+            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.pitchUpToFindGoal)
+        else:
+            self.doBallTracking()
+#        if self._world.robot.isMotionInProgress():
+#            # robot is still walking / turning, return without doing anything
+#            print "is walking: %f is turning: %f" % (self._world.robot.isWalkingActive, self._world.robot.isTurningActive)
+#            return
+
+    def pitchUpToFindGoal(self):
+        if not self._world.yglp.dist > 0.0 or not self._world.yglp.dist > 0.0:
+            # haven't seen either yglp or ygrp yet, move head up to find them.
+            print "pitch up to find goal"
+            self._actions.changeHeadAngles(0, -0.05)
+        else:
+            print "so we have goal, even if not both posts at the same time - compute kp using best values"
+            self.kp = self._world.computed.calculate_kp()
+            print "kp = (%3.3f, %3.3f, %3.3f)" % self.kp
+            self.onKickingPointChanged()
 
     def onKickPointViable(self):
         print "Kick point viable:", self._world.computed.kp
         self._actions.kick()
         self._actions.sitPoseAndRelax()
-
-    def onBallSeen(self):
-        print "Ball Seen!"
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-        #print "Ball x: %f" % self._world.ball.centerX
-        #print "Ball y: %f" % self._world.ball.centerY
-        
-        self.test()
-
+       
     def onChangeLocationDone(self):
         print "Change Location Done!"
         self._eventmanager.unregister(EVENT_CHANGE_LOCATION_DONE)
@@ -55,14 +112,14 @@ class Kicker(Player):
             self.onKickPointViable()
         else:
             print "we are still too far to kick the ball, advance towards ball again"
-            #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
-            self.test()
+            self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+            #self.test()
 
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
 
     def doBallTracking(self):
-        xNormalized = (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
-        yNormalized = (IMAGE_HALF_HEIGHT - self._world.ball.centerY) / IMAGE_HALF_HEIGHT # between 1 (up) to -1 (down)
+        xNormalized = self.ball_frame_x()
+        yNormalized = self.ball_frame_y()
         if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
             X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
             Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
@@ -76,29 +133,15 @@ class Kicker(Player):
             else:
                 print "doBallTracking: head still moving, not updating"
 
-    def gotoAndKickBall(self):
+    def gotoBall(self):
         MINIMAL_KICKER_TURN = 0.1745
         print "goto ball and kick"
+        print "not"
+        return
         # ball is away, first turn and then approach ball
         delta_y, delta_x, delta_bearing = self.kp # TODO: fix x,y issues
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
         self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing)
-
-    def onKickingPointChanged(self):
-        self._eventmanager.unregister(EVENT_KP_CHANGED)
-        self.kp = self._world.computed.kp
-        print "KP: %3.3f, %3.3f, %3.3f" % self.kp
-        print "self._world.ball.bearing: %f" % self._world.ball.bearing
-        print "self._world.ball.dist: %f" % self._world.ball.dist
-        
-        self.gotoAndKickBall()
-        
-    def onBallInFrame(self):
-        self.doBallTracking()
-#        if self._world.robot.isMotionInProgress():
-#            # robot is still walking / turning, return without doing anything
-#            print "is walking: %f is turning: %f" % (self._world.robot.isWalkingActive, self._world.robot.isTurningActive)
-#            return
 
 
     ##################### Debug Methods #########################
@@ -112,9 +155,6 @@ class Kicker(Player):
         print "KP: %3.3f, %3.3f, %3.3f" % self.kp
         print "self._world.ball.bearing: %f" % self._world.ball.bearing
         print "self._world.ball.dist: %f" % self._world.ball.dist
-        
-        self.gotoAndKickBall()
-        
         
     def onGoalSeen(self):
         #print "Yellow goal seen"
@@ -205,7 +245,7 @@ class Kicker(Player):
         
         print "midGoalBearing: %f" % midGoalBearing
         print "targetBearing: %f" % targetBearing
-        print "targetDistance: %f" % targetBearing
+        print "targetDistance: %f" % targetDistance
 
         kpx = 0
         kpy = 0
@@ -215,7 +255,13 @@ class Kicker(Player):
 
     
     ##################### Computational Methods #########################
-    
+   
+    def ball_frame_x(self):
+        return (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+
+    def ball_frame_y(self):
+        return (IMAGE_HALF_WIDTH - self._world.ball.centerX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+ 
     def getTargetBearing(self):
         # TODO: Move to world data?
         # compute goal center bearing
