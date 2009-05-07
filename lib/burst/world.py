@@ -9,7 +9,7 @@ from time import time
 
 import burst
 from events import *
-from eventmanager import Deferred
+from eventmanager import Deferred, EVENT_MANAGER_DT
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -32,6 +32,10 @@ FOCAL_LENGTH = IMAGE_HEIGHT / 2.0 / atan(FOV_Y / 2)
 IMAGE_PIXELS_HEIGHT = 320
 
 DISTANCE_FACTOR = IMAGE_PIXELS_HEIGHT * IMAGE_HEIGHT / FOCAL_LENGTH
+
+# Robot constants
+MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
+
 
 def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
     """ TODO: This is the actual Height, i.e. z axis. This will work fine
@@ -215,6 +219,15 @@ class Ball(Movable):
 
 ###############################################################################
 
+class Motion(object):
+    
+    def __init__(self, event, deferred, start_time, duration):
+        self.event = event
+        self.deferred = deferred
+        self.has_started = False
+        self.start_time = start_time
+        self.duration = duration
+
 class Robot(Movable):
     _name = 'Robot'
 
@@ -222,16 +235,20 @@ class Robot(Movable):
         super(Robot, self).__init__(world=world,
             real_length=ROBOT_DIAMETER)
         self._motion_posts = {}
-        self._head_posts = {}
+        self._head_posts   = []
+        self._head_post_start_time = None
     
-    def add_expected_motion_post(self, postid, event):
+    def add_expected_motion_post(self, postid, event, duration):
         deferred = Deferred(data=postid)
-        self._motion_posts[postid] = (event, deferred)
+        self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
         return deferred
 
-    def add_expected_head_post(self, postid, event):
+    def add_expected_head_post(self, postid, event, duration):
         deferred = Deferred(data=postid)
-        self._head_posts[postid] = (event, deferred)
+        # we keep for each move: postid -> (event code, deferred, start time, duration)
+        if self._head_post_start_time is None:
+            self._head_post_start_time = self._world.time
+        self._head_posts.append([postid, event, deferred, duration])
         return deferred
         
     def isMotionInProgress(self):
@@ -245,21 +262,48 @@ class Robot(Movable):
         from self._motion_posts and self._
         
         we check first that the actions have started, and then that they are done.
+        we use the duration - each move must be passed the duration, and not isRunning, to fire
+        
+        currently we treat the motion and head differently:
+         motion - assume parallel, doesn't work if we check isRunning before motion started. (missing isFinished..)
+         head   - only check the first event in the list 
         """
         def filter(dictionary, visitor):
-            deleted_posts = [postid for postid, (event, deferred) in dictionary.items() if visitor(postid, event)]
-            for postid in deleted_posts:
+            deleted_posts = [(postid, motion) for postid, motion
+                        in dictionary.items() if visitor(postid, motion)]
+            for postid, motion in deleted_posts:
                 del dictionary[postid]
-                deferreds.append(deferred) # Note: order of deferred callbacks is determined here.. bugs expected
                 
-        def checkisrunning(postid, event):
-            if not self._motion.isRunning(postid):
-                events.add(event)
+        def isMotionFinished(postid, motion):
+            m = motion
+            if m.duration > MOTION_FINISHED_MIN_DURATION:
+                if not m.has_started and self._motion.isRunning(postid):
+                    print "DEBUG: motion <postid=%s> has started" % postid
+                    m.has_started = True
+                    m.start_time = self._world.time
+                    return False
+            if self._world.time >= m.start_time + m.duration and not self._motion.isRunning(postid):
+                events.add(m.event)
+                deferreds.append(m.deferred) # Note: order of deferred callbacks is determined here.. bugs expected
                 return True
             return False
         
-        filter(self._motion_posts, checkisrunning)
-        filter(self._head_posts, checkisrunning)
+        filter(self._motion_posts, isMotionFinished)
+        self.calc_head_post_events(events, deferreds)
+
+    def calc_head_post_events(self, events, deferreds):
+        if len(self._head_posts) == 0: return
+        postid, event, deferred, duration = self._head_posts[0]
+    
+        if self._world.time >= self._head_post_start_time + duration and not self._motion.isRunning(postid):
+            events.add(event)
+            deferreds.append(deferred)
+            del self._head_posts[0]
+            if len(self._head_posts) == 0:
+                self._head_post_start_time = None
+            else:
+                 # DANGEROUS: We assume next head move starts immediately after the last.
+                self._head_post_start_time = self._world.time
 
 class GoalPost(Locatable):
 
@@ -414,6 +458,8 @@ class World(object):
         self._motion = burst.getMotionProxy()
         self._events = set()
         self._deferreds = []
+        
+        self.time = time()
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
         self.ball = Ball(self)

@@ -14,22 +14,37 @@ DEFAULT_STEPS_FOR_WALK = 150
 
 MINIMAL_CHANGELOCATION_TURN = 1e-3
 
+##### Utils
+def cumsum(iter):
+    """ cumulative summation over an iterator """
+    s = 0.0
+    for t in iter:
+        s += t
+        yield s
+
+def transpose(m):
+    n_inner = len(m[0])
+    return [[inner[i] for inner in m] for i in xrange(n_inner)]
+    
+#######
+
 class Actions(object):
 
     def __init__(self, world):
         self._world = world
         self._motion = burst.getMotionProxy()
+        self._joint_names = self._motion.getBodyJointNames()
 
     def scanFront(self):
         # TODO: Stop move when both ball and goal found? 
         return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
 
     def initPoseAndStiffness(self):
-        self._motion.setBodyStiffness(1.0)
-        self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
-        self.executeHeadMove(moves.BOTTOM_CENTER_H_MAX_V_FAR)
-        self.executeMove(moves.STAND)
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
+        # we ignore this deferred because the STAND move takes longer
+        self.executeHeadMove(moves.BOTTOM_CENTER_H_MAX_V_FAR)
+        return self.executeMove(moves.STAND)
     
     def sitPoseAndRelax(self):
         self.clearFootsteps()
@@ -52,7 +67,7 @@ class Actions(object):
         return self._motion.getAngle(joint_name)
     
     def kick(self):
-        self.executeMove(moves.ALMOST_KICK)
+        return self.executeMove(moves.ALMOST_KICK)
 
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
@@ -68,7 +83,6 @@ class Actions(object):
 
         self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
     
-    param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk_param=moves.SLOW_WALK):
         """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
@@ -106,7 +120,7 @@ class Actions(object):
         self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE)
 
 
-    def executeMove(self, moves):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
          larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time, interp_type
@@ -117,14 +131,16 @@ class Actions(object):
         NOTE: currently this is SYNCHRONOUS - it takes at least
         sum(interp_time) to execute.
         """
-        for move in moves:
-            larm, lleg, rleg, rarm, interp_time, interp_type = move
-            curangles = self._motion.getBodyAngles()
-            joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm)
+        joints = self._joint_names[2:]
+        n_joints = len(joints)
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
                     + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
-                    + [0.0, 0.0]]
-            postid = self._motion.post.gotoBodyAngles(joints, interp_time, interp_type)
-        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE)
+                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
+        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        duration = max(col[-1] for col in durations_matrix)
+        #print repr((joints, angles_matrix, durations_matrix))
+        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
 
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of head angles
@@ -136,18 +152,15 @@ class Actions(object):
 
         NOTE: this is ASYNCHRONOUS
         """
-        joints = ["HeadYaw", "HeadPitch"]
+        joints = self._joint_names[:2]
         n_joints = len(joints)
         angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
-        def cumsum(iter):
-            s = 0.0
-            for t in iter:
-                s += t
-                yield s
         durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
-        print repr((joints, angles_matrix, durations_matrix))
+        #print repr((joints, angles_matrix, durations_matrix))
         postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self._world.robot.add_expected_head_post(postid, EVENT_HEAD_MOVE_DONE)
+        duration = max(col[-1] for col in durations_matrix)
+        #print "executeHeadMove: duration = %s" % duration
+        return self._world.robot.add_expected_head_post(postid, EVENT_HEAD_MOVE_DONE, duration)
  
     def clearFootsteps(self):
         """ NOTE: USER BEWARE. We had problems with clearFootsteps """

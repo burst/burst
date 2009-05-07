@@ -4,6 +4,8 @@
 
 from events import FIRST_EVENT_NUM, LAST_EVENT_NUM, EVENT_STEP
 
+EVENT_MANAGER_DT = 0.1
+
 class SuperEvent(object):
     
     def __init__(self, eventmanager, events):
@@ -127,7 +129,7 @@ class EventManagerLoop(object):
         # and when it is changed call the player.
         self._player.onStart()
         while True:
-            sleep(0.1)
+            sleep(EVENT_MANAGER_DT)
             self._world.update()
             self._eventmanager.runonce()
 
