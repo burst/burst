@@ -472,7 +472,7 @@ class ALMotionExtended(NaoQiModule):
 
     def executeMoveByGoto(self, moves, interp_type = INTERPOLATION_SMOOTH):
         for move in moves:
-            larm, lleg, rleg, rarm, interp_time, interp_type = move
+            larm, lleg, rleg, rarm, interp_time = move
             curangles = self.getBodyAngles()
             joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm)
                 + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)

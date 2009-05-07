@@ -36,6 +36,7 @@ class Inertial(object):
     def __init__(self, con):
         self.con = con
         self.w = w =gtk.Window()
+        w.set_title(con.host)
         c = gtk.HBox()
         w.add(c)
         self.l = []
