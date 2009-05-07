@@ -102,7 +102,8 @@ class Main(object):
                 s = self.set_scale
                 # TODO: throtlling?
                 print "joint, %s, value %s %s" % (joint_name, s.get_value(), val)
-                con.ALMotion.setAngle(self.name, val)
+                # name, value, speed percent [0-100], interpolation (1 = smooth)
+                con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
                 
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection()
