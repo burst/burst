@@ -53,14 +53,15 @@ class Locatable(object):
 
     REPORT_JUMP_ERRORS = False
 
-    def __init__(self, memory, motion, real_length):
+    def __init__(self, world, real_length):
         """
         real_length - [cm] real world largest diameter of object.
         memory, motion - proxies to ALMemory and ALMotion respectively.
         """
+        self._world = world
         # cached proxies
-        self._memory = memory
-        self._motion = motion
+        self._memory = world._memory
+        self._motion = world._motion
         # longest arc across the object, i.e. a diagonal.
         self._real_length = real_length
         # This is the player body frame relative bearing. radians.
@@ -101,7 +102,7 @@ class Locatable(object):
         removing outright outliers only. To be upgraded to a real localization
         system (i.e. reuse northern's code as a module, export variables).
         """
-        newness = time()
+        newness = self._world.time
         dt = newness - self.newness
         if dt < 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
@@ -126,8 +127,8 @@ class Locatable(object):
         self.vx, self.vy = dx/dt, dy/dt
 
 class Movable(Locatable):
-    def __init__(self, memory, motion, real_length):
-        super(Movable, self).__init__(memory, motion, real_length)
+    def __init__(self, world, real_length):
+        super(Movable, self).__init__(world, real_length)
 
 class Ball(Movable):
     
@@ -135,8 +136,8 @@ class Ball(Movable):
 
     DEBUG_INTERSECTION = False
 
-    def __init__(self, memory, motion):
-        super(Ball, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world):
+        super(Ball, self).__init__(world,
             real_length=BALL_REAL_DIAMETER)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
@@ -217,11 +218,9 @@ class Ball(Movable):
 class Robot(Movable):
     _name = 'Robot'
 
-    def __init__(self, memory, motion):
-        super(Robot, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world):
+        super(Robot, self).__init__(world=world,
             real_length=ROBOT_DIAMETER)
-        self._memory = memory
-        self._motion = motion
         self._motion_posts = {}
         self._head_posts = {}
     
@@ -252,18 +251,20 @@ class Robot(Movable):
             for postid in deleted_posts:
                 del dictionary[postid]
                 deferreds.append(deferred) # Note: order of deferred callbacks is determined here.. bugs expected
+                
         def checkisrunning(postid, event):
             if not self._motion.isRunning(postid):
                 events.add(event)
                 return True
             return False
+        
         filter(self._motion_posts, checkisrunning)
         filter(self._head_posts, checkisrunning)
 
 class GoalPost(Locatable):
 
-    def __init__(self, memory, motion, name, position_changed_event):
-        super(GoalPost, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world, name, position_changed_event):
+        super(GoalPost, self).__init__(world,
             real_length=GOAL_POST_DIAMETER)
         self._name = name
         self._position_changed_event = position_changed_event
@@ -415,12 +416,12 @@ class World(object):
         self._deferreds = []
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
-        self.ball = Ball(self._memory, self._motion)
-        self.bglp = GoalPost(self._memory, self._motion, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost(self._memory, self._motion, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost(self._memory, self._motion, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost(self._memory, self._motion, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
-        self.robot = Robot(self._memory, self._motion)
+        self.ball = Ball(self)
+        self.bglp = GoalPost(self, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
+        self.bgrp = GoalPost(self, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
+        self.yglp = GoalPost(self, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
+        self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
+        self.robot = Robot(self)
         # construct team after all the posts are constructed, it keeps a reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
@@ -454,6 +455,7 @@ class World(object):
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
 
     def update(self):
+        self.time = time()
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
             for obj in objlist:
