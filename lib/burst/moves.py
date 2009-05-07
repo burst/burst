@@ -12,9 +12,6 @@ def getMoveTime(move):
             totalTime += target[1]
     return totalTime
 
-OFF = None #OFF means the joint chain doesnt get enqueued during this motion
-
-
 INITIAL_POS = (((80.,40.,-50.,-70.),(0.,0.,-50.,100.,-50.,0.),(0.,0.,-50.,100.,-50.,0.),(80.,-40.,50.,70.),4.0),)
 
 #Angles measured pretty exactly from the robot w/gains off.

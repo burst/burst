@@ -51,19 +51,35 @@ def expected_argument_count(f):
 
 class Deferred(object):
     
+    """ A Deferred is a promise to call you when some operation is complete.
+    It is also concatenatable. What that means for implementation, is that
+    when the operation is done we need to call a deferred we stored and gave
+    the user when he gave us a callback. That deferred 
+    """
+
     def __init__(self, data):
         self._data = data
         self._ondone = None
+        self._completed = False # we need this for concatenation to work
     
     def onDone(self, cb):
-        self._ondone = cb
+        # will be called by cb's return deferred, if any
+        deferred = Deferred(data = None)
+        self._ondone = (cb, deferred)
+        return deferred
 
     def callOnDone(self):
+        self._completed = True
         if self._ondone:
-            if expected_argument_count(self._ondone) == 0:
-                self._ondone()
+            cb, chain_deferred = self._ondone
+            if expected_argument_count(cb) == 0:
+                ret = cb()
             else:
-                self._ondone(self._data)
+                ret = cb(self._data)
+            # is it a deferred? if so tell it to execute the deferred
+            # we handed out once it is done.
+            if isinstance(ret, Deferred):
+                ret.onDone(deferred.callOnDone)
 
 class EventManager(object):
 

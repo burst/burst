@@ -62,20 +62,23 @@ class Actions(object):
         """ param should be one of the moves.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
-            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:14]
+            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
+            ) = param[:14]
 
-        self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude )
+        self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
+                                            ElbowMedian, ElbowAmplitude )
         self._motion.setWalkArmsEnable(True)
 
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
         self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation )
 
-        self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
+        self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
+                                                    ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk_param=moves.SLOW_WALK):
         """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
-         Will fire EVENT_WALK_DONE once finished.
+         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
          
         What kind of walk is this: for simplicity (until projectants come
         up with something better. yeah right. ok, maybe) we do a turn, walk,
@@ -87,7 +90,7 @@ class Actions(object):
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
-        bearing = atan2(delta_y, delta_x)
+        bearing  = atan2(delta_y, delta_x)
         # Avoid turns
         if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
             self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
@@ -105,9 +108,9 @@ class Actions(object):
         if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
             self._motion.addTurn(delta_theta - bearing, DEFAULT_STEPS_FOR_TURN)
         
+        duration = (DEFAULT_STEPS_FOR_WALK * + DEFAULT_STEPS_FOR_TURN * ) * 0.020
         postid = self._motion.post.walk()
-        self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE)
-
+        self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
