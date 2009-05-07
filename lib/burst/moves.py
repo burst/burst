@@ -62,7 +62,7 @@ FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            0.01,                  # ZmpOffsetX
            0.016,                 # ZmpOffsetY 
            0.5,                     # Distance
-           18]#,                    # Speed
+           18]#,                    # 20ms count per step
            #,0.68]                  # Angle 0.68
 
 FAST_WALK = [100.0 * DEG_TO_RAD, # 0 ShoulderMedian
@@ -80,7 +80,7 @@ FAST_WALK = [100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            0.015,                # 12 ZmpOffsetX
            0.018,                # 13 ZmpOffsetY 
            # Not walk parameters proper.
-           25]                   # 15 Speed
+           25]                   # 15 20ms count per step
 
 STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -96,7 +96,7 @@ STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.018,                 # ZmpOffsetY 
-           25]                    # Speed
+           25]                    # 20ms count per step
 
 SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -112,7 +112,7 @@ SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.015,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           100]                    # Speed
+           100]                    # 20ms count per step
 
 SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -128,7 +128,26 @@ SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           80]                    # Speed
+           80]                    # 20ms count per step
+
+# Alon is looking for a walk that DOESN'T FALL!!!
+
+KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+           15.0 * DEG_TO_RAD,      # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,      # ElbowMedian 
+           10.0 * DEG_TO_RAD,      # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) 
+           -4.5,                  # RHipRoll(degrees)
+           0.22,                  # HipHeight(meters)
+           3.4,                   # TorsoYOrientation(degrees)
+           0.070,                  # StepLength
+           0.043,                  # StepHeight
+           0.03,                  # StepSide
+           0.3,                   # MaxTurn
+           0.01,                  # ZmpOffsetX
+           0.00,                  # ZmpOffsetY 
+           120]                    # 20ms count per step
+
 
 #KICKS
 

@@ -54,6 +54,7 @@ def make_rect(root, side, color, **kw):
     x = 0, y = 0, width = side, height = side,
     fill_color = color, **kw)
 
+DT_VISION_QUERY=1.0
 
 class Main(object):
 
@@ -69,7 +70,7 @@ class Main(object):
         w.show_all()
         w.connect("destroy", gtk.main_quit)
         self.updater = task.LoopingCall(self.getVision)
-        self.updater.start(0.5)
+        self.updater.start(DT_VISION_QUERY)
 
     def createFieldAndObjects(self):
         self.field = goocanvas.Canvas()

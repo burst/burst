@@ -76,7 +76,9 @@ class Actions(object):
 
         self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY )
     
-    def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0):
+    param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
+    def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
+        walk_param=moves.SLOW_WALK):
         """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_WALK_DONE once finished.
          
@@ -95,10 +97,9 @@ class Actions(object):
         if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
             self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
         
-        param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
-        self.setWalkConfig(param)
-        steps = param[14]
-        StepLength = param[8] # TODO: encapsulate walk params
+        self.setWalkConfig(walk_param)
+        steps = walk_param[14]
+        StepLength = walk_param[8] # TODO: encapsulate walk params
         
         print "Straight walk: StepLength: %f distance: %f" % (StepLength, distance)
         # Vova trick - start with slower walk, then do the faster walk.

@@ -22,13 +22,38 @@ sys.path.append(burst_lib)
 import pynaoqi
 from burst_util import cached
 
-DT_CHECK_FOR_NEW_ANGLES = 0.2 # seconds between socket calls
+DT_CHECK_FOR_NEW_ANGLES = 0.5 # seconds between socket calls
+DT_CHECK_FOR_NEW_INERTIAL = 0.5
 
 @cached('joint_data.pickle')
 def getJointData(con):
     joint_names = con.ALMotion.getBodyJointNames()
     joint_limits = dict([(joint_name, con.ALMotion.getJointLimits(joint_name)) for joint_name in joint_names])
     return (joint_names, joint_limits)
+
+class Inertial(object):
+
+    def __init__(self, con):
+        self.con = con
+        self.w = w =gtk.Window()
+        c = gtk.HBox()
+        w.add(c)
+        self.l = []
+        self.values = [(k, 'Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % k) for
+            k in ['AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY', 'GyrX', 'GyrY']]
+        self.vars = [v for k,v in self.values]
+        for k, v in self.values:
+            self.l.append(gtk.Label())
+            c.add(self.l[-1])
+
+        w.show_all()
+        self.updater = task.LoopingCall(self.getInertial)
+        self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
+
+    def getInertial(self):
+        vals = self.con.ALMemory.getListData(self.vars)
+        for l, new_val in zip(self.l, vals):
+            l.set_label('%3.3f' % new_val)
 
 class Main(object):
 
@@ -83,6 +108,7 @@ class Main(object):
         self.con = pynaoqi.getDefaultConnection()
         con = self.con
         self.vision = None
+        self.inertial = None
         self.joint_names, self.joint_limits = getJointData(self.con)
         w = gtk.Window()
         c = gtk.VBox()
@@ -97,6 +123,7 @@ class Main(object):
             ('stiffness on', self.setStiffnessOn),
             ('stiffness off', self.setStiffnessOff),
             ('vision', self.toggleVision),
+            ('inertial', self.toggleInertial),
             ]:
             b = gtk.Button(label)
             b.connect('clicked', cb)
@@ -122,18 +149,28 @@ class Main(object):
         self.updater = task.LoopingCall(self.getAngles)
         self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
 
+    def toggleit(self, what, attrname):
+        if getattr(self, attrname):
+            what.hide()
+            setattr(self, attrname, False)
+        else:
+            what.show()
+            setattr(self, attrname, True)
+
     def toggleVision(self, w):
         if self.vision is None:
             import naovision
             self.vision = naovision.Main(self.con)
             self.vision_visible = True
             return
-        if self.vision_visible:
-            self.vision.w.hide()
-            self.vision_visible = False
-        else:
-            self.vision.w.show()
-            self.vision_visible = True
+        self.toggleit(self.vision.w, 'vision_visible')
+
+    def toggleInertial(self, w):
+        if self.inertial is None:
+            self.inertial = Inertial(self.con)
+            self.inertial_visible = True
+            return
+        self.toggleit(self.inertial.w, 'inertial_visible')
 
     def getAngles(self):
         """ TODO: callback from twisted

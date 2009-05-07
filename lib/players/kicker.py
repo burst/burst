@@ -19,6 +19,7 @@ if os.getcwd() == in_tree_dir:
 from burst.player import Player
 from burst.events import *
 from burst.consts import *
+import burst.moves as moves
 
 import time
 
@@ -28,7 +29,15 @@ Logic for Kicker:
 search for ball in current frame
 found ball -> center on ball
 ball centered -> pitch up until goal is seen
-compute kp by hand: use 
+goal is seen -> compute kp by hand (we have all three things - ball + both posts)
+ -> gotoBall
+
+alternatively, if KP_CHANGED is fired all registered cbs are cleared (unregister_all),
+ proceed to gotoBall
+
+gotoBall ->
+ close enough to kick -> kick (not good right now - won't really hit ball)
+ not close enough -> approach for kick (not implmeneted yet)
 """
 
 class Kicker(Player):
@@ -134,14 +143,12 @@ class Kicker(Player):
                 print "doBallTracking: head still moving, not updating"
 
     def gotoBall(self):
-        MINIMAL_KICKER_TURN = 0.1745
         print "goto ball and kick"
-        print "not"
-        return
         # ball is away, first turn and then approach ball
         delta_y, delta_x, delta_bearing = self.kp # TODO: fix x,y issues
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-        self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing)
+        self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
+            walk_param = moves.KICKER_WALK)
 
 
     ##################### Debug Methods #########################
