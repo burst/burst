@@ -228,6 +228,53 @@ class Motion(object):
         self.start_time = start_time
         self.duration = duration
 
+class SerialPostQueue(object):
+
+    """ Queue of serial events for Robot.
+    
+    Why this is here:
+     Workaround for missing isFinished on ALMotion proxy.
+    There is a isRunning, but if we call it before the motion has started, it
+    will also say "False", so we need to know when the motion is supposed to
+    have been already done. This is a specialization for the case of multiple
+    consecutive motions, like head moves and walks. We just remember the time
+    of the last finished move, and the expected duration of the move after that,
+    etc.
+    """
+
+    def __init__(self, name, world):
+        self._name = name
+        self._posts = []
+        self._world = world
+        self._motion = world._motion
+        self._start_time = None
+
+    def add(self, postid, event, duration):
+        deferred = Deferred(data=postid)
+        # we keep for each move: postid -> (event code, deferred, start time, duration)
+        if self._start_time is None:
+            self._start_time = self._world.time
+        self._posts.append([postid, event, deferred, duration])
+        return deferred
+
+    def calc_events(self, events, deferreds):
+        if len(self._posts) == 0: return
+        postid, event, deferred, duration = self._posts[0]
+    
+        #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
+        #    self._name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
+        #)
+        if self._world.time >= self._start_time + duration and not self._motion.isRunning(postid):
+            print "DEBUG: %s: deleting %s, left %s" % (self._name, postid, len(self._posts) - 1)
+            events.add(event)
+            deferreds.append(deferred)
+            del self._posts[0]
+            if len(self._posts) == 0:
+                self._start_time = None
+            else:
+                # DANGEROUS: We assume next head move starts immediately after the last.
+                self._start_time = self._world.time
+
 class Robot(Movable):
     _name = 'Robot'
 
@@ -235,8 +282,8 @@ class Robot(Movable):
         super(Robot, self).__init__(world=world,
             real_length=ROBOT_DIAMETER)
         self._motion_posts = {}
-        self._head_posts   = []
-        self._head_post_start_time = None
+        self._head_posts   = SerialPostQueue('head', world)
+        self._walk_posts   = SerialPostQueue('walk', world)
     
     def add_expected_motion_post(self, postid, event, duration):
         deferred = Deferred(data=postid)
@@ -244,13 +291,12 @@ class Robot(Movable):
         return deferred
 
     def add_expected_head_post(self, postid, event, duration):
-        deferred = Deferred(data=postid)
-        # we keep for each move: postid -> (event code, deferred, start time, duration)
-        if self._head_post_start_time is None:
-            self._head_post_start_time = self._world.time
-        self._head_posts.append([postid, event, deferred, duration])
-        return deferred
-        
+        return self._head_posts.add(postid, event, duration)
+
+    def add_expected_walk_post(self, postid, event, duration):
+        print "DEBUG: adding walk %s, duration %s" % (postid, duration)
+        return self._walk_posts.add(postid, event, duration)
+
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
     
@@ -289,21 +335,8 @@ class Robot(Movable):
             return False
         
         filter(self._motion_posts, isMotionFinished)
-        self.calc_head_post_events(events, deferreds)
-
-    def calc_head_post_events(self, events, deferreds):
-        if len(self._head_posts) == 0: return
-        postid, event, deferred, duration = self._head_posts[0]
-    
-        if self._world.time >= self._head_post_start_time + duration and not self._motion.isRunning(postid):
-            events.add(event)
-            deferreds.append(deferred)
-            del self._head_posts[0]
-            if len(self._head_posts) == 0:
-                self._head_post_start_time = None
-            else:
-                 # DANGEROUS: We assume next head move starts immediately after the last.
-                self._head_post_start_time = self._world.time
+        self._head_posts.calc_events(events, deferreds)
+        self._walk_posts.calc_events(events, deferreds)
 
 class GoalPost(Locatable):
 

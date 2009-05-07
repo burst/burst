@@ -2,6 +2,7 @@ import burst
 from burst.consts import *
 from burst_util import transpose, cumsum
 from events import *
+from eventmanager import EVENT_MANAGER_DT
 import moves
 import world
 from math import atan2
@@ -40,11 +41,8 @@ class Actions(object):
         self.executeMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 
-    def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
-        #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
-        #postid = self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
-        #self._world.robot.add_expected_head_post(postid, EVENT_HEAD_ANGLES_DONE)
-        self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1),),INTERPOLATION_SMOOTH)
+    def changeHeadAngles(self, delta_yaw, delta_pitch):
+        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1,INTERPOLATION_SMOOTH),) )
 
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
@@ -85,26 +83,34 @@ class Actions(object):
         
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
         bearing  = atan2(delta_y, delta_x)
+        did_a_turn = False # for duration estimation
         # Avoid turns
-        if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
+        if abs(bearing) >= MINIMAL_CHANGELOCATION_TURN:
+            did_a_turn = True
+            print "DEBUG: addTurn %3.3f" % bearing
             self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
         
         self.setWalkConfig(walk_param)
         steps = walk_param[14]
         StepLength = walk_param[8] # TODO: encapsulate walk params
         
-        print "Straight walk: StepLength: %f distance: %f" % (StepLength, distance)
         # Vova trick - start with slower walk, then do the faster walk.
         slow_walk_distance = min(distance, StepLength*2)
         self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
         self._motion.addWalkStraight( distance - slow_walk_distance, steps )
 
-        if abs(bearing) < MINIMAL_CHANGELOCATION_TURN:
-            self._motion.addTurn(delta_theta - bearing, DEFAULT_STEPS_FOR_TURN)
+        # Now turn to the final angle, taking into account the turn we already did
+        final_turn = delta_theta - bearing
+        if abs(final_turn) >= MINIMAL_CHANGELOCATION_TURN:
+            did_a_turn = True
+            print "DEBUG: addTurn %3.3f" % final_turn
+            self._motion.addTurn(final_turn, DEFAULT_STEPS_FOR_TURN)
         
-        duration = 1.0 #(DEFAULT_STEPS_FOR_WALK * + DEFAULT_STEPS_FOR_TURN * ) * 0.020
+        duration = (DEFAULT_STEPS_FOR_WALK * distance / StepLength +
+                    (did_a_turn and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+        print "DEBUG: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (StepLength, distance, duration)
         postid = self._motion.post.walk()
-        self._world.robot.add_expected_motion_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
+        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:

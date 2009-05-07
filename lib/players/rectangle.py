@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from math import pi
+from math import pi, sqrt
 
 import os
 in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
@@ -22,20 +22,32 @@ class Rectangle(Player):
     
     def onStart(self):
 
-        # Serial event example: do one, then the other, call a cb on each
-        #self._actions.turn(0.2)
-        #self._actions.changeLocation(20, 0, 0)
-        self.rect_i = 0
         # rectangle, meant to check actions.ChangeLocation
         # expected behavior: (in logo style)
-        #  rt 90 fw 40 lt 90 fw 40 lt 90 fw 40 lt 45 lt 45 fw 40 rt 45 rt 135
+        #  lt 90 fw 40 rt 90 fw 40 rt 90 fw 40 rt 45 rt 45 fw 40 lt 45 lt 135
         clr = self._actions.changeLocationRelative
 
+        #self._actions.initPoseAndStiffness().onDone(
+        #    lambda: self._actions.initPoseAndStiffness()).onDone(
+        #    lambda: pr('deferred chain test done')
+        #    )
+        #return
+        side = 10
+
+        def first():
+            return clr(side, 0.0)
+
+        def second():
+            return clr(0.0, 0.0, 0.1)
+
+        bla = self._actions.initPoseAndStiffness().onDone(first).onDone(second)
+
+        return
         self._actions.initPoseAndStiffness().onDone(
-            lambda: clr(0, 40, 0.0)).onDone(
-            lambda: clr(40, 0, pi/2)).onDone(
-            lambda: clr(40, 0, pi/4)).onDone(
-            lambda: clr(40/sqrt(2), 40/sqrt(2), -3*pi/4)).onDone(
+            lambda: clr(0.0, side, 0.0)).onDone(
+            lambda: clr(side, 0, pi/2)).onDone(
+            lambda: clr(side, 0, pi/4)).onDone(
+            lambda: clr(side/sqrt(2), side/sqrt(2), -3*pi/4)).onDone(
             lambda: pr('rectangle done')
             )
 

@@ -56,17 +56,23 @@ class Deferred(object):
     when the operation is done we need to call a deferred we stored and gave
     the user when he gave us a callback. That deferred 
     """
+    we_the_people = []
 
-    def __init__(self, data):
+    def __init__(self, data, parent=None):
         self._data = data
         self._ondone = None
         self._completed = False # we need this for concatenation to work
+        self._parent = parent # DEBUG only
+        Deferred.we_the_people.append(self)
     
     def onDone(self, cb):
+        # TODO: shortcutting. How the fuck do I call the cb immediately without
+        # giving a chance to the caller to use the chain_deferred??
+
         # will be called by cb's return deferred, if any
-        deferred = Deferred(data = None)
-        self._ondone = (cb, deferred)
-        return deferred
+        chain_deferred = Deferred(data = None, parent=self)
+        self._ondone = (cb, chain_deferred)
+        return chain_deferred
 
     def callOnDone(self):
         self._completed = True
@@ -79,7 +85,7 @@ class Deferred(object):
             # is it a deferred? if so tell it to execute the deferred
             # we handed out once it is done.
             if isinstance(ret, Deferred):
-                ret.onDone(deferred.callOnDone)
+                ret.onDone(chain_deferred.callOnDone)
 
 class EventManager(object):
 
@@ -90,18 +96,25 @@ class EventManager(object):
         self._events = dict([(event, None) for event in
                 xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
         self._world = world
+        self.unregister_all()
 
     def register(self, event, callback):
         """ set a callback on an event.
         """
+        if not self._events[event]:
+            self._num_registered += 1
+            print "WARNING: overwriting register for event %s with %s" % (event, callback)
         self._events[event] = callback
 
     def unregister(self, event):
-        self._events[event] = None
+        if self._events[event]:
+            self._num_registered -= 1
+            self._events[event] = None
 
     def unregister_all(self):
         for k in self._events.keys():
             self._events[k] = None
+        self._num_registered = 0
 
     def runonce(self):
         """ Call all callbacks registered based on the new events
