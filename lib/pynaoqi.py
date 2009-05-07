@@ -469,7 +469,16 @@ class ALMotionExtended(NaoQiModule):
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         self.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        
+
+    def executeMoveByGoto(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        for move in moves:
+            larm, lleg, rleg, rarm, interp_time, interp_type = move
+            curangles = self.getBodyAngles()
+            joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm)
+                + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
+                + [0.0, 0.0]]
+            self.gotoBodyAngles(joints, interp_time, interp_type)
+  
 ##################################################################
 # Connection (Top Level object)
 
