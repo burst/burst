@@ -41,7 +41,7 @@ class Actions(object):
         self.executeMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 
-    def changeHeadAngles(self, delta_yaw, delta_pitch):
+    def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
         return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1,INTERPOLATION_SMOOTH),) )
 
     def getAngle(self, joint_name):
