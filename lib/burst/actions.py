@@ -68,6 +68,8 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
+        """ Coordinate frame for robot is same as world: x forward, y left (z up)
+        """
         walk_param=moves.SLOW_WALK):
         """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -83,11 +85,10 @@ class Actions(object):
         
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
         bearing  = atan2(delta_y, delta_x)
-        did_a_turn = False # for duration estimation
+        did_a_turn = [None, None] # for duration estimation
         # Avoid turns
         if abs(bearing) >= MINIMAL_CHANGELOCATION_TURN:
-            did_a_turn = True
-            print "DEBUG: addTurn %3.3f" % bearing
+            did_a_turn[0] = bearing
             self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
         
         self.setWalkConfig(walk_param)
@@ -102,13 +103,16 @@ class Actions(object):
         # Now turn to the final angle, taking into account the turn we already did
         final_turn = delta_theta - bearing
         if abs(final_turn) >= MINIMAL_CHANGELOCATION_TURN:
-            did_a_turn = True
-            print "DEBUG: addTurn %3.3f" % final_turn
+            did_a_turn[1] = final_turn
             self._motion.addTurn(final_turn, DEFAULT_STEPS_FOR_TURN)
         
         duration = (DEFAULT_STEPS_FOR_WALK * distance / StepLength +
                     (did_a_turn and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+        if did_a_turn[0]:
+            print "DEBUG: addTurn %3.3f" % bearing
         print "DEBUG: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (StepLength, distance, duration)
+        if did_a_turn[1]:
+            print "DEBUG: addTurn %3.3f" % final_turn
         postid = self._motion.post.walk()
         return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 

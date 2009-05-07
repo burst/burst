@@ -14,6 +14,7 @@ from burst.player import Player
 from burst.events import *
 from burst.consts import *
 from burst.eventmanager import AndEvent, SerialEvent
+import burst.moves as moves
 
 def pr(s):
     print s
@@ -25,29 +26,30 @@ class Rectangle(Player):
         # rectangle, meant to check actions.ChangeLocation
         # expected behavior: (in logo style)
         #  lt 90 fw 40 rt 90 fw 40 rt 90 fw 40 rt 45 rt 45 fw 40 lt 45 lt 135
-        clr = self._actions.changeLocationRelative
 
         #self._actions.initPoseAndStiffness().onDone(
         #    lambda: self._actions.initPoseAndStiffness()).onDone(
         #    lambda: pr('deferred chain test done')
         #    )
         #return
-        side = 10
 
-        def first():
-            return clr(side, 0.0)
+        #def first():
+        #    return clr(side, 0.0)
+        #
+        #def second():
+        #    return clr(0.0, 0.0, 0.1)
+        #
+        #bla = self._actions.initPoseAndStiffness().onDone(first).onDone(second)
 
-        def second():
-            return clr(0.0, 0.0, 0.1)
+        side = 40
+        clr = lambda x, y, t: self._actions.changeLocationRelative(
+                    x, y, t, walk_param=moves.KICKER_WALK)
 
-        bla = self._actions.initPoseAndStiffness().onDone(first).onDone(second)
-
-        return
         self._actions.initPoseAndStiffness().onDone(
-            lambda: clr(0.0, side, 0.0)).onDone(
+            lambda: clr(0.0, side, pi)).onDone(
             lambda: clr(side, 0, pi/2)).onDone(
             lambda: clr(side, 0, pi/4)).onDone(
-            lambda: clr(side/sqrt(2), side/sqrt(2), -3*pi/4)).onDone(
+            lambda: clr(side/sqrt(2), side/sqrt(2), pi/4)).onDone(
             lambda: pr('rectangle done')
             )
 
