@@ -1,5 +1,6 @@
 import burst
 from burst.consts import *
+from burst_util import transpose, cumsum
 from events import *
 import moves
 import world
@@ -14,18 +15,6 @@ DEFAULT_STEPS_FOR_WALK = 150
 
 MINIMAL_CHANGELOCATION_TURN = 1e-3
 
-##### Utils
-def cumsum(iter):
-    """ cumulative summation over an iterator """
-    s = 0.0
-    for t in iter:
-        s += t
-        yield s
-
-def transpose(m):
-    n_inner = len(m[0])
-    return [[inner[i] for inner in m] for i in xrange(n_inner)]
-    
 #######
 
 class Actions(object):
