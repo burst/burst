@@ -44,11 +44,21 @@ class Kicker(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
-        
-        self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
-        self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+        #self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
+        #self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
+        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         self.kp = None
+        
+        deferred = self._actions.scanFront()
+        deferred.onDone(self.onScanFrontDone)
+        self._eventmanager.register(EVENT_HEAD_MOVE_DONE, self.headMoveDone)
+        
+    def onScanFrontDone(self, postids):
+        print "scan front done! %s" % (postids,)
+        #import pdb; pdb.set_trace()
+        
+    def headMoveDone(self):
+        print "EVENT_HEAD_MOVE_DONE!"
         
     def onStop(self):
         super(Kicker, self).onStop()

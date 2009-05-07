@@ -40,11 +40,46 @@ SET_POS = INITIAL_POS
 
 READY_POS = INITIAL_POS
 
-ZERO_HEADS = (((0.0,0.0),1.0,1),)
 
-NEUT_HEADS = (((0.,20.),2.0,1),)
+# HEAD SCANS
+CAM_MAXIMUM_V = 45. * DEG_TO_RAD
+CAM_MAXIMUM_H = 90. * DEG_TO_RAD # TODO: check if can be changed to 120 (mainly for goalie, via DCM)
+CAM_FRONTAL_H = CAM_MAXIMUM_H * 2 / 3 # can be useful to scan front area and not entire possible area
+CAM_FRONTAL_V = CAM_MAXIMUM_V * 2 / 3 # ""
 
-PENALIZED_HEADS = (((0.0,25.0),0.5,1),)
+BOTTOM_CENTER_H_MAX_V_FAR = (((0., -CAM_MAXIMUM_V * 2 / 3), 0.2),) # minimize top part seen - allow keeper to see top of goal bar
+BOTTOM_CENTER_H_MAX_V_CLOSE = (((0., -CAM_MAXIMUM_V), 0.2),) # maximize top part seen - better when close to opponent goal
+
+# Start from bottom part (closer is probably more important), continue with middle, finish with top
+BOTTOM_FRONT_SCAN = (
+    BOTTOM_CENTER_H_MAX_V_FAR[0],
+    ((-CAM_FRONTAL_H, 0), 0.2),
+    ((CAM_FRONTAL_H, 0), 3.0),
+    ((CAM_FRONTAL_H, -CAM_FRONTAL_V), 0.2),
+    ((-CAM_FRONTAL_H, -CAM_FRONTAL_V), 3.0),
+    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 2.0),
+    BOTTOM_CENTER_H_MAX_V_FAR[0],
+    )
+
+
+LOC_PANS = (
+    (( 65.0, 10.0),1.5, 1),
+    ((65.,-25.),1.0,  1),
+    ((-65.,-25.),2.5, 1),
+    ((-65.0, 10.0) ,1., 1),
+    (( 0.0, 10.0),1.5,  1),)
+
+SCAN_BALL= (
+    (( 65.0, 20.0),1.0, 1),
+    ((65.,-30.),0.75,  1),
+    ((-65.,-30.),2.0, 1),
+    ((-65.0, 20.0) ,0.75, 1),
+    (( 0.0, 20.0),1.0,  1),)
+
+#ZERO_HEADS = (((0.0,0.0),1.0,1),)
+#NEUT_HEADS = (((0.,20.),2.0,1),)
+#PENALIZED_HEADS = (((0.0,25.0),0.5,1),)
 
 # WALKS
 FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
@@ -360,8 +395,7 @@ KICK_STRAIGHT_RIGHT = (
      (80.,-40.,50.,70.),2.0,1))
 
 
-#HEAD SCANS
-
+#HEAD SCANS - From nao-man
 LOC_PANS = (
     (( 65.0, 10.0),1.5, 1),
     ((65.,-25.),1.0,  1),

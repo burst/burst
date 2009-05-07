@@ -42,6 +42,27 @@ class SerialEvent(SuperEvent):
             return
         self._eventmanager.register(self._events[self._i], self.onEvent)
 
+def expected_argument_count(f):
+    if hasattr(f, 'im_func'):
+        return f.im_func.func_code.co_argcount - 1 # to account for self
+    return f.func_code.co_argcount
+
+class Deferred(object):
+    
+    def __init__(self, data):
+        self._data = data
+        self._ondone = None
+    
+    def onDone(self, cb):
+        self._ondone = cb
+
+    def callOnDone(self):
+        if self._ondone:
+            if expected_argument_count(self._ondone) == 0:
+                self._ondone()
+            else:
+                self._ondone(self._data)
+
 class EventManager(object):
 
     def __init__(self, world):
@@ -68,12 +89,15 @@ class EventManager(object):
         """ Call all callbacks registered based on the new events
         stored in self._world
         """
-        for event in self._world.getEvents():
+        events, deferreds = self._world.getEventsAndDeferreds()
+        for event in events:
             if self._events[event] != None:
                 self._events[event]()
         if self._events[EVENT_STEP]:
             self._events[EVENT_STEP]()
         # TODO: EVENT_TIME_EVENT
+        for deferred in deferreds:
+            deferred.callOnDone()
 
 class EventManagerLoop(object):
     

@@ -1,13 +1,11 @@
 import burst
 from burst.consts import *
-from events import (EVENT_HEAD_ANGLES_DONE,
-        EVENT_TURN_DONE, EVENT_CHANGE_LOCATION_DONE)
+from events import *
 import moves
 import world
 from math import atan2
 
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
-INITIAL_HEAD_PITCH = -20.0 * DEG_TO_RAD
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 DEFAULT_STEPS_FOR_TURN = 150
@@ -22,13 +20,17 @@ class Actions(object):
         self._world = world
         self._motion = burst.getMotionProxy()
 
+    def scanFront(self):
+        # TODO: Stop move when both ball and goal found? 
+        return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
+
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(1.0)
         self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
-        self._motion.gotoAngle('HeadPitch', INITIAL_HEAD_PITCH, 1.0, INTERPOLATION_SMOOTH)
+        self.executeHeadMove(moves.BOTTOM_CENTER_H_MAX_V_FAR)
         self.executeMove(moves.STAND)
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
-        
+    
     def sitPoseAndRelax(self):
         self.clearFootsteps()
         self.executeMove(moves.SIT_POS)
@@ -36,8 +38,9 @@ class Actions(object):
 
     def changeHeadAngles(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [delta_yaw, delta_pitch])
-        postid = self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
-        self._world.robot.add_expected_head_post(postid, EVENT_HEAD_ANGLES_DONE)
+        #postid = self._motion.post.gotoChainAngles("Head", [self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch], 0.1, INTERPOLATION_SMOOTH)
+        #self._world.robot.add_expected_head_post(postid, EVENT_HEAD_ANGLES_DONE)
+        self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1,INTERPOLATION_SMOOTH),) )
 
     def gotoHeadAngles(self, yaw, pitch):
         self._motion.gotoChainAngles("Head", [yaw, pitch], 0.1, INTERPOLATION_SMOOTH)
@@ -50,17 +53,6 @@ class Actions(object):
     
     def kick(self):
         self.executeMove(moves.ALMOST_KICK)
-
-    def turn(self, delta_theta):
-        """ Add a turn to ALMotion's queue. Will fire EVENT_TURN_DONE once finished. 
-        """
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
-        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
-
-        self._motion.addTurn(delta_theta, DEFAULT_STEPS_FOR_TURN)
-        
-        postid = self._motion.post.walk()
-        self._world.robot.add_expected_motion_post(postid, EVENT_TURN_DONE)
 
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
@@ -131,7 +123,31 @@ class Actions(object):
             joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm)
                     + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
                     + [0.0, 0.0]]
-            self._motion.gotoBodyAngles(joints, interp_time, interp_type)
+            postid = self._motion.post.gotoBodyAngles(joints, interp_time, interp_type)
+        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE)
+
+    def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        """ Go through a list of head angles
+        moves is a list, each item contains:
+        head (tuple of 2), interp_time, interp_type
+
+        interp_type - 1 for SMOOTH, 0 for Linear
+        interp_time - time in seconds for interpolation
+
+        NOTE: this is ASYNCHRONOUS
+        """
+        joints = ["HeadYaw", "HeadPitch"]
+        n_joints = len(joints)
+        angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
+        def cumsum(iter):
+            s = 0.0
+            for t in iter:
+                s += t
+                yield s
+        durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
+        print repr((joints, angles_matrix, durations_matrix))
+        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        return self._world.robot.add_expected_head_post(postid, EVENT_HEAD_MOVE_DONE)
  
     def clearFootsteps(self):
         """ NOTE: USER BEWARE. We had problems with clearFootsteps """

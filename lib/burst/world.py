@@ -9,6 +9,7 @@ from time import time
 
 import burst
 from events import *
+from eventmanager import Deferred
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -172,9 +173,8 @@ class Ball(Movable):
             return True
         return False
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
-        events = set()
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_bearing, new_centerX, new_centerY, new_confidence,
@@ -211,7 +211,6 @@ class Ball(Movable):
                     self.width) = (new_centerX, new_centerY, new_confidence, 
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
-        return events
 
 ###############################################################################
 
@@ -227,10 +226,14 @@ class Robot(Movable):
         self._head_posts = {}
     
     def add_expected_motion_post(self, postid, event):
-        self._motion_posts[postid] = event
+        deferred = Deferred(data=postid)
+        self._motion_posts[postid] = (event, deferred)
+        return deferred
 
     def add_expected_head_post(self, postid, event):
-        self._head_posts[postid] = event
+        deferred = Deferred(data=postid)
+        self._head_posts[postid] = (event, deferred)
+        return deferred
         
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
@@ -238,14 +241,17 @@ class Robot(Movable):
     def isHeadMotionInProgress(self):
         return len(self._head_posts) > 0
         
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
-        from self._motion_posts and self._ """
-        events = set()
+        from self._motion_posts and self._
+        
+        we check first that the actions have started, and then that they are done.
+        """
         def filter(dictionary, visitor):
-            deleted_posts = [postid for postid, event in dictionary.items() if visitor(postid, event)]
+            deleted_posts = [postid for postid, (event, deferred) in dictionary.items() if visitor(postid, event)]
             for postid in deleted_posts:
                 del dictionary[postid]
+                deferreds.append(deferred) # Note: order of deferred callbacks is determined here.. bugs expected
         def checkisrunning(postid, event):
             if not self._motion.isRunning(postid):
                 events.add(event)
@@ -253,7 +259,6 @@ class Robot(Movable):
             return False
         filter(self._motion_posts, checkisrunning)
         filter(self._head_posts, checkisrunning)
-        return events
 
 class GoalPost(Locatable):
 
@@ -282,9 +287,8 @@ class GoalPost(Locatable):
         self.shotAvailable = 0.0
         self.seen = False
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
-        events = set()
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
@@ -317,7 +321,6 @@ class GoalPost(Locatable):
                   new_leftOpening, new_rightOpening, new_x, new_y,
                   new_shotAvailable, new_width)
         self.seen = new_seen
-        return events
 
 BLUE_GOAL, YELLOW_GOAL = 1, 2
 
@@ -350,12 +353,11 @@ class Computed(object):
         self.kp_valid = False
         self.kp_k = 30.0
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """
         we calculate:
           kick point
         """
-        events = set()
         if (self._team.target_goal_seen_event in self._world._events
             and EVENT_BALL_IN_FRAME in self._world._events):
             new_kp = self.calculate_kp()
@@ -366,7 +368,6 @@ class Computed(object):
         else:
             # cache the kp value it self until a new one comes
             self.kp_valid = False
-        return events
 
     def calculate_kp(self):
         """ Our kicking point, first iteration, is a point k distant from the ball
@@ -411,6 +412,7 @@ class World(object):
         self._memory = burst.getMemoryProxy()
         self._motion = burst.getMotionProxy()
         self._events = set()
+        self._deferreds = []
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
         self.ball = Ball(self._memory, self._motion)
@@ -441,26 +443,24 @@ class World(object):
             [self.computed],
         ]
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ World treats itself as a regular object by having an update function,
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
-        events = set()
         if self.bglp.seen and self.bgrp.seen:
             events.add(EVENT_ALL_BLUE_GOAL_SEEN)
         if self.yglp.seen and self.ygrp.seen:
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
-        return events
 
     def update(self):
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
             for obj in objlist:
-                self._events.update(obj.calc_events())
+                obj.calc_events(self._events, self._deferreds)
 
-    def getEvents(self):
-        events = self._events
+    def getEventsAndDeferreds(self):
+        events, deferreds = self._events, self._deferreds
         self._events = set()
-        return events
-
+        self._deferreds = []
+        return events, deferreds
