@@ -45,6 +45,17 @@ def compresstoprint(s, first, last):
         return s
     return s[:first] + '\n...\n' + s[-last:]
 
+def cumsum(iter):
+    """ cumulative summation over an iterator """
+    s = 0.0
+    for t in iter:
+        s += t
+        yield s
+
+def transpose(m):
+    n_inner = len(m[0])
+    return [[inner[i] for inner in m] for i in xrange(n_inner)]
+    
 ########################################################################
 # totally minimal SOAP Implementation
 
@@ -444,17 +455,20 @@ class ALMotionExtended(NaoQiModule):
 
     def __init__(self, con):
         NaoQiModule.__init__(self, con, 'ALMotion')
+        self._joint_names = self.getBodyJointNames()
 
-    def executeMove(self, moves):
-        """ Work like northern bites code:
-        interpolation - TODO
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        """ Work like northern bites code using ALMotion.doMove
         """
-        for move in moves:
-            larm, lleg, rleg, rarm, interp_time, interp_type = move
-            curangles = self.getBodyAngles()
-            joints = curangles[:2] + [x*DEG_TO_RAD for x in list(larm) + [0.0, 0.0] +
-                                        list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]]
-            self.gotoBodyAngles(joints, interp_time, interp_type)
+        joints = self._joint_names[2:]
+        n_joints = len(joints)
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
+                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
+                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
+        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        duration = max(col[-1] for col in durations_matrix)
+        #print repr((joints, angles_matrix, durations_matrix))
+        self.doMove(joints, angles_matrix, durations_matrix, interp_type)
         
 ##################################################################
 # Connection (Top Level object)

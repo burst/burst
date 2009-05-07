@@ -43,3 +43,24 @@ def dh_matrix(a, alpha, d, theta):
         [0., 0., 0., 1.]
     ]
 
+# Stuff
+
+def getip():
+    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+
+def compresstoprint(s, first, last):
+    if len(s) < first + last + 3:
+        return s
+    return s[:first] + '\n...\n' + s[-last:]
+
+def cumsum(iter):
+    """ cumulative summation over an iterator """
+    s = 0.0
+    for t in iter:
+        s += t
+        yield s
+
+def transpose(m):
+    n_inner = len(m[0])
+    return [[inner[i] for inner in m] for i in xrange(n_inner)]
+ 

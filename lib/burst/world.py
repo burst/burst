@@ -9,6 +9,7 @@ from time import time
 
 import burst
 from events import *
+from eventmanager import Deferred, EVENT_MANAGER_DT
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -32,6 +33,10 @@ IMAGE_PIXELS_HEIGHT = 320
 
 DISTANCE_FACTOR = IMAGE_PIXELS_HEIGHT * IMAGE_HEIGHT / FOCAL_LENGTH
 
+# Robot constants
+MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
+
+
 def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
     """ TODO: This is the actual Height, i.e. z axis. This will work fine
     as long as the camera is actually level, i.e. pitch is zero. But that is not
@@ -52,14 +57,15 @@ class Locatable(object):
 
     REPORT_JUMP_ERRORS = False
 
-    def __init__(self, memory, motion, real_length):
+    def __init__(self, world, real_length):
         """
         real_length - [cm] real world largest diameter of object.
         memory, motion - proxies to ALMemory and ALMotion respectively.
         """
+        self._world = world
         # cached proxies
-        self._memory = memory
-        self._motion = motion
+        self._memory = world._memory
+        self._motion = world._motion
         # longest arc across the object, i.e. a diagonal.
         self._real_length = real_length
         # This is the player body frame relative bearing. radians.
@@ -100,7 +106,7 @@ class Locatable(object):
         removing outright outliers only. To be upgraded to a real localization
         system (i.e. reuse northern's code as a module, export variables).
         """
-        newness = time()
+        newness = self._world.time
         dt = newness - self.newness
         if dt < 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
@@ -125,8 +131,8 @@ class Locatable(object):
         self.vx, self.vy = dx/dt, dy/dt
 
 class Movable(Locatable):
-    def __init__(self, memory, motion, real_length):
-        super(Movable, self).__init__(memory, motion, real_length)
+    def __init__(self, world, real_length):
+        super(Movable, self).__init__(world, real_length)
 
 class Ball(Movable):
     
@@ -134,8 +140,8 @@ class Ball(Movable):
 
     DEBUG_INTERSECTION = False
 
-    def __init__(self, memory, motion):
-        super(Ball, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world):
+        super(Ball, self).__init__(world,
             real_length=BALL_REAL_DIAMETER)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
 
@@ -172,9 +178,8 @@ class Ball(Movable):
             return True
         return False
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
-        events = set()
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_bearing, new_centerX, new_centerY, new_confidence,
@@ -211,26 +216,40 @@ class Ball(Movable):
                     self.width) = (new_centerX, new_centerY, new_confidence, 
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
-        return events
 
 ###############################################################################
+
+class Motion(object):
+    
+    def __init__(self, event, deferred, start_time, duration):
+        self.event = event
+        self.deferred = deferred
+        self.has_started = False
+        self.start_time = start_time
+        self.duration = duration
 
 class Robot(Movable):
     _name = 'Robot'
 
-    def __init__(self, memory, motion):
-        super(Robot, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world):
+        super(Robot, self).__init__(world=world,
             real_length=ROBOT_DIAMETER)
-        self._memory = memory
-        self._motion = motion
         self._motion_posts = {}
-        self._head_posts = {}
+        self._head_posts   = []
+        self._head_post_start_time = None
     
-    def add_expected_motion_post(self, postid, event):
-        self._motion_posts[postid] = event
+    def add_expected_motion_post(self, postid, event, duration):
+        deferred = Deferred(data=postid)
+        self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
+        return deferred
 
-    def add_expected_head_post(self, postid, event):
-        self._head_posts[postid] = event
+    def add_expected_head_post(self, postid, event, duration):
+        deferred = Deferred(data=postid)
+        # we keep for each move: postid -> (event code, deferred, start time, duration)
+        if self._head_post_start_time is None:
+            self._head_post_start_time = self._world.time
+        self._head_posts.append([postid, event, deferred, duration])
+        return deferred
         
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
@@ -238,27 +257,58 @@ class Robot(Movable):
     def isHeadMotionInProgress(self):
         return len(self._head_posts) > 0
         
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
-        from self._motion_posts and self._ """
-        events = set()
+        from self._motion_posts and self._
+        
+        we check first that the actions have started, and then that they are done.
+        we use the duration - each move must be passed the duration, and not isRunning, to fire
+        
+        currently we treat the motion and head differently:
+         motion - assume parallel, doesn't work if we check isRunning before motion started. (missing isFinished..)
+         head   - only check the first event in the list 
+        """
         def filter(dictionary, visitor):
-            deleted_posts = [postid for postid, event in dictionary.items() if visitor(postid, event)]
-            for postid in deleted_posts:
+            deleted_posts = [(postid, motion) for postid, motion
+                        in dictionary.items() if visitor(postid, motion)]
+            for postid, motion in deleted_posts:
                 del dictionary[postid]
-        def checkisrunning(postid, event):
-            if not self._motion.isRunning(postid):
-                events.add(event)
+                
+        def isMotionFinished(postid, motion):
+            m = motion
+            if m.duration > MOTION_FINISHED_MIN_DURATION:
+                if not m.has_started and self._motion.isRunning(postid):
+                    print "DEBUG: motion <postid=%s> has started" % postid
+                    m.has_started = True
+                    m.start_time = self._world.time
+                    return False
+            if self._world.time >= m.start_time + m.duration and not self._motion.isRunning(postid):
+                events.add(m.event)
+                deferreds.append(m.deferred) # Note: order of deferred callbacks is determined here.. bugs expected
                 return True
             return False
-        filter(self._motion_posts, checkisrunning)
-        filter(self._head_posts, checkisrunning)
-        return events
+        
+        filter(self._motion_posts, isMotionFinished)
+        self.calc_head_post_events(events, deferreds)
+
+    def calc_head_post_events(self, events, deferreds):
+        if len(self._head_posts) == 0: return
+        postid, event, deferred, duration = self._head_posts[0]
+    
+        if self._world.time >= self._head_post_start_time + duration and not self._motion.isRunning(postid):
+            events.add(event)
+            deferreds.append(deferred)
+            del self._head_posts[0]
+            if len(self._head_posts) == 0:
+                self._head_post_start_time = None
+            else:
+                 # DANGEROUS: We assume next head move starts immediately after the last.
+                self._head_post_start_time = self._world.time
 
 class GoalPost(Locatable):
 
-    def __init__(self, memory, motion, name, position_changed_event):
-        super(GoalPost, self).__init__(memory=memory, motion=motion,
+    def __init__(self, world, name, position_changed_event):
+        super(GoalPost, self).__init__(world,
             real_length=GOAL_POST_DIAMETER)
         self._name = name
         self._position_changed_event = position_changed_event
@@ -282,9 +332,8 @@ class GoalPost(Locatable):
         self.shotAvailable = 0.0
         self.seen = False
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
-        events = set()
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
@@ -317,7 +366,6 @@ class GoalPost(Locatable):
                   new_leftOpening, new_rightOpening, new_x, new_y,
                   new_shotAvailable, new_width)
         self.seen = new_seen
-        return events
 
 BLUE_GOAL, YELLOW_GOAL = 1, 2
 
@@ -350,12 +398,11 @@ class Computed(object):
         self.kp_valid = False
         self.kp_k = 30.0
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """
         we calculate:
           kick point
         """
-        events = set()
         if (self._team.target_goal_seen_event in self._world._events
             and EVENT_BALL_IN_FRAME in self._world._events):
             new_kp = self.calculate_kp()
@@ -366,7 +413,6 @@ class Computed(object):
         else:
             # cache the kp value it self until a new one comes
             self.kp_valid = False
-        return events
 
     def calculate_kp(self):
         """ Our kicking point, first iteration, is a point k distant from the ball
@@ -411,14 +457,17 @@ class World(object):
         self._memory = burst.getMemoryProxy()
         self._motion = burst.getMotionProxy()
         self._events = set()
+        self._deferreds = []
+        
+        self.time = time()
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
-        self.ball = Ball(self._memory, self._motion)
-        self.bglp = GoalPost(self._memory, self._motion, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost(self._memory, self._motion, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost(self._memory, self._motion, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost(self._memory, self._motion, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
-        self.robot = Robot(self._memory, self._motion)
+        self.ball = Ball(self)
+        self.bglp = GoalPost(self, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
+        self.bgrp = GoalPost(self, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
+        self.yglp = GoalPost(self, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
+        self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
+        self.robot = Robot(self)
         # construct team after all the posts are constructed, it keeps a reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
@@ -441,26 +490,25 @@ class World(object):
             [self.computed],
         ]
 
-    def calc_events(self):
+    def calc_events(self, events, deferreds):
         """ World treats itself as a regular object by having an update function,
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
-        events = set()
         if self.bglp.seen and self.bgrp.seen:
             events.add(EVENT_ALL_BLUE_GOAL_SEEN)
         if self.yglp.seen and self.ygrp.seen:
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
-        return events
 
     def update(self):
+        self.time = time()
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
             for obj in objlist:
-                self._events.update(obj.calc_events())
+                obj.calc_events(self._events, self._deferreds)
 
-    def getEvents(self):
-        events = self._events
+    def getEventsAndDeferreds(self):
+        events, deferreds = self._events, self._deferreds
         self._events = set()
-        return events
-
+        self._deferreds = []
+        return events, deferreds

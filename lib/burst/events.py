@@ -11,8 +11,9 @@ FIRST_EVENT_NUM = counter = 1
 
 ##### Movement, Joint movement.
 EVENT_CHANGE_LOCATION_DONE = counter; counter+=1
-EVENT_TURN_DONE = counter; counter+=1
-EVENT_HEAD_ANGLES_DONE = counter; counter+=1
+
+EVENT_HEAD_MOVE_DONE = counter; counter+=1
+EVENT_BODY_MOVE_DONE = counter; counter+=1
 
 ##### Vision events
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
