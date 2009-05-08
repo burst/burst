@@ -42,7 +42,7 @@ class Actions(object):
         self._motion.setBodyStiffness(0)
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
-        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1,INTERPOLATION_SMOOTH),) )
+        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1),) )
 
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
@@ -68,11 +68,12 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        """ Coordinate frame for robot is same as world: x forward, y left (z up)
-        """
         walk_param=moves.SLOW_WALK):
-        """ Add an optinoal addTurn and StraightWalk to ALMotion's queue.
+        """
+        Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
+         
+        Coordinate frame for robot is same as world: x forward, y left (z up)
          
         What kind of walk is this: for simplicity (until projectants come
         up with something better. yeah right. ok, maybe) we do a turn, walk,
@@ -141,7 +142,7 @@ class Actions(object):
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of head angles
         moves is a list, each item contains:
-        head (tuple of 2), interp_time, interp_type
+        head (tuple of 2), interp_time
 
         interp_type - 1 for SMOOTH, 0 for Linear
         interp_time - time in seconds for interpolation

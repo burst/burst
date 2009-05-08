@@ -20,7 +20,7 @@ class Template(Player):
     
     def onStart(self):
         # uncomment this for real work - but for just getting events you probably want to keep it commented.
-        #self._actions.initPoseAndStiffness()
+        self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)

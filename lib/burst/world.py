@@ -4,7 +4,7 @@ Units:
  Lengths - cm
 """
 
-from math import cos, sin, sqrt, pi, fabs, atan, acos
+from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from time import time
 
 import burst
@@ -249,6 +249,9 @@ class SerialPostQueue(object):
         self._motion = world._motion
         self._start_time = None
 
+    def isNotEmpty(self):
+        return len(self._posts) > 0
+
     def add(self, postid, event, duration):
         deferred = Deferred(data=postid)
         # we keep for each move: postid -> (event code, deferred, start time, duration)
@@ -265,7 +268,7 @@ class SerialPostQueue(object):
         #    self._name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
         #)
         if self._world.time >= self._start_time + duration and not self._motion.isRunning(postid):
-            print "DEBUG: %s: deleting %s, left %s" % (self._name, postid, len(self._posts) - 1)
+            #print "DEBUG: %s: deleting %s, left %s" % (self._name, postid, len(self._posts) - 1)
             events.add(event)
             deferreds.append(deferred)
             del self._posts[0]
@@ -301,7 +304,7 @@ class Robot(Movable):
         return len(self._motion_posts) > 0
     
     def isHeadMotionInProgress(self):
-        return len(self._head_posts) > 0
+        return self._head_posts.isNotEmpty()
         
     def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
@@ -324,7 +327,7 @@ class Robot(Movable):
             m = motion
             if m.duration > MOTION_FINISHED_MIN_DURATION:
                 if not m.has_started and self._motion.isRunning(postid):
-                    print "DEBUG: motion <postid=%s> has started" % postid
+                    #print "DEBUG: motion <postid=%s> has started" % postid
                     m.has_started = True
                     m.start_time = self._world.time
                     return False
@@ -421,7 +424,7 @@ class Computed(object):
     doesn't naturally belong to any other object, like ball speed etc
     """
 
-    DEBUG_KP = False
+    DEBUG_KP = True
 
     def __init__(self, world):
         self._world = world
@@ -452,8 +455,8 @@ class Computed(object):
         along the line connecting the point in the middle of the target goal
         and the ball in the outward direction.
 
-        The coordinate system is not standard: the x axis is to the right of the robot,
-        the y axis is to the front. The bearing is measured from the y axis ccw.
+        The coordinate system is the standard: the x axis is to the front,
+        the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
         
         computation:
          c - goal center
@@ -465,22 +468,26 @@ class Computed(object):
         # left - l, right - r, bearing - b, dist - d
         team = self._team
         left_post, right_post, ball = team.left_post, team.right_post, self._world.ball
-        lb, ld, rb, rd = (left_post.bearing, left_post.dist,
-                right_post.bearing, right_post.dist)
-        bb, bd = ball.bearing, ball.dist
-        bx, by = bd * sin(bb), bd * cos(bd)
+        left_alpha, left_dist, right_alpha, right_dist = (
+            left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
+        ball_alpha, ball_dist = ball.bearing, ball.dist
+        ball_x, ball_y = ball_dist * cos(ball_alpha), ball_dist * sin(ball_alpha)
         k = self.kp_k
-        cx = (rd * sin(rb) + ld * sin(lb)) / 2.0
-        cy = (rd * cos(rb) + ld * cos(lb)) / 2.0
-        nx, ny = bx - cx, by - cy
-        nnorm = sqrt(nx**2 + ny**2)
-        nx, ny = nx / nnorm, ny / nnorm
-        kpx, kpy = bx + k * nx, by + k * ny
-        kp_norm = (kpx**2 + kpy**2)**0.5
-        kpbearing = acos((kpx * (-nx) + kpy * (-ny)) / kp_norm)
+        center_x = (right_dist * cos(right_alpha) + left_dist * cos(left_alpha)) / 2.0
+        center_y = (right_dist * sin(right_alpha) + left_dist * sin(left_alpha)) / 2.0
+        normal_x, normal_y = ball_x - center_x, ball_y - center_y # normal is a vector pointing from center to ball
+        normal_norm = sqrt(normal_x**2 + normal_y**2)
+        normal_x, normal_y = normal_x / normal_norm, normal_y / normal_norm
+        kick_point_x, kick_point_y = ball_x + k * normal_x, ball_y + k * normal_y
+        kick_point_norm = (kick_point_x**2 + kick_point_y**2)**0.5
+        kick_point_bearing = atan2(-normal_y, -normal_x)
         if self.DEBUG_KP:
-            print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f, %3.3f)" % (bx, by, cx, cy, nx, ny, kpx, kpy, kpbearing)
-        return kpx, kpy, kpbearing
+            print "KP: left post bearing/dist (%3.3f, %3.3f), right post bearing/dist (%3.3f, %3.3f)" % (
+                left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
+            print "KP: b (%3.3f, %3.3f), c(%3.3f, %3.3f), n(%3.3f, %3.3f), kp(%3.3f, %3.3f, %3.3f)" % (
+                ball_x, ball_y, center_x, center_y, normal_x, normal_y,
+                            kick_point_x, kick_point_y, kick_point_bearing)
+        return kick_point_x, kick_point_y, kick_point_bearing
 
 ###############################################################################
 

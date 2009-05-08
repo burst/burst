@@ -2,7 +2,6 @@
 #constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
 from burst.consts import DEG_TO_RAD
-from burst_util import not_on_nao
 
 def getMoveTime(move):
     totalTime = 0.0
@@ -40,33 +39,26 @@ READY_POS = INITIAL_POS
 
 
 # HEAD SCANS
-if not_on_nao: # 30 in Webots, 45 in real nao
-    CAM_MAXIMUM_V = 30. * DEG_TO_RAD
-else:
-    CAM_MAXIMUM_V = 45. * DEG_TO_RAD
+CAM_MAXIMUM_V = 45. * DEG_TO_RAD
 CAM_MAXIMUM_H = 90. * DEG_TO_RAD # TODO: check if can be changed to 120 (mainly for goalie, via DCM)
 CAM_FRONTAL_H = CAM_MAXIMUM_H * 2 / 3 # can be useful to scan front area and not entire possible area
 CAM_FRONTAL_V = CAM_MAXIMUM_V * 2 / 3 # ""
 
-BOTTOM_CENTER_H_MAX_V_FAR = (0., -CAM_MAXIMUM_V * 2 / 3) # minimize top part seen - allow keeper to see top of goal bar
-BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
-BOTTOM_CENTER_H_MIN_V = (0., CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
+BOTTOM_CENTER_H_MAX_V_FAR = (((0., -CAM_MAXIMUM_V * 2 / 3), 0.2),) # minimize top part seen - allow keeper to see top of goal bar
+BOTTOM_CENTER_H_MAX_V_CLOSE = (((0., -CAM_MAXIMUM_V), 0.2),) # maximize top part seen - better when close to opponent goal
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
 BOTTOM_FRONT_SCAN = (
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
+    BOTTOM_CENTER_H_MAX_V_FAR[0],
     ((-CAM_FRONTAL_H, 0), 0.2),
     ((CAM_FRONTAL_H, 0), 3.0),
     ((CAM_FRONTAL_H, -CAM_FRONTAL_V), 0.2),
     ((-CAM_FRONTAL_H, -CAM_FRONTAL_V), 3.0),
     ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
     ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 2.0),
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
+    BOTTOM_CENTER_H_MAX_V_FAR[0],
     )
 
-BOTTOM_INIT_FAR = ((BOTTOM_CENTER_H_MAX_V_FAR, 0.2),)
-BOTTOM_INIT_CLOSE = ((BOTTOM_CENTER_H_MAX_V_CLOSE, 0.2),)
-BOTTOM_CENTER_H_MIN_V = ((BOTTOM_CENTER_H_MIN_V, 0.2),)
 
 LOC_PANS = (
     (( 65.0, 10.0),1.5),
@@ -190,6 +182,11 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
 
 
 #KICKS
+
+KICK_STR_OFFSET_FROM_BODY = 4 # in cm
+
+KICK_STR_DISTANCE = 17 # in cm
+
 
 KICK_STRAIGHT = (
     #Stand up more fully
@@ -342,6 +339,23 @@ HALF_KICK = (
      (0.,30.,-20.,120.,-40.,0.),
      (-10.,30.,-10.,10.,-10.,-20.),
      (80.,-40.,50.,70.),1.2))
+
+NEW_MOVE = (
+    #Stand up more fully
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (80.,-40.,50.,70.),1.0),
+    #left
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-20.,20.,0.,0.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (80.,-40.,50.,70.),1.0),
+    #right
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (0.,0.,-20.,20.,0.,0.),
+     (80.,-40.,50.,70.),1.0))
 
 KICK_OFF = (
     #Stand up more fully
