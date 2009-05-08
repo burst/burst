@@ -20,7 +20,7 @@ from burst.player import Player
 from burst.events import *
 from burst.consts import *
 import burst.moves as moves
-
+from math import cos, sin
 """
 Logic for Kicker:
 
@@ -28,12 +28,12 @@ search for ball in current frame
 found ball -> center on ball
 ball centered -> pitch up until goal is seen
 goal is seen -> compute kp by hand (we have all three things - ball + both posts)
- -> gotoBall
+ -> gotoLocation(kickpoint)
 
 alternatively, if KP_CHANGED is fired all registered cbs are cleared (unregister_all),
- proceed to gotoBall
+ proceed to gotoLocation(kickpoint)
 
-gotoBall ->
+gotoLocation(kickpoint) ->
  close enough to kick -> kick (not good right now - won't really hit ball)
  not close enough -> approach for kick (not implmeneted yet)
 """
@@ -45,56 +45,159 @@ class Kicker(Player):
 
     def onStart(self):
         self.kp = None
-        self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         
         self._actions.initPoseAndStiffness()
+        
+        self.doNextAction()
+        
+#        if self.kp is None:
+#            
+#        else:
+#            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+#            self.gotoLocation(self.kp)
+        
         #self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         #self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
         
-#        self._actions.scanFront().onDone(
-#             self.onScanFrontDone
-#             )
         #import pdb; pdb.set_trace()
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
         #self._actions.changeHeadAnglesRelative(0.1, 0.3) # yaw (left-right) / pitch (up-down)
         #self.doBallTracking()
 
-    def onScanFrontDone(self):
-        print "ScanFrontDone!"
-        # if we didn't get a "kicking point changed" event, try to compute it using just 1 goal post
+    def doNextAction(self):
+        print "\nDeciding on next move:"
         
-        self.kp = None
+        # if ball isn't visible, search for it
+        if self._world.ball.dist <= 0:
+            print "ball isn't visible, searching for it"
+            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+            self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+            self._actions.scanFront().onDone(self.onScanFrontDone)
+            return
         
+        print "self._world.ball.dist: %f" % self._world.ball.dist
+        print "self._world.ball.bearing: %f" % self._world.ball.bearing
+        if self.kp is None:
+            print "KP: NONE"
+        else:
+            print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+        
+        # ball is visible, let's do something about it
+        # if ball close enough, just kick it
+        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 50:
+            if self._world.ball.dist > 35.0:
+                print "close to ball, but not enough, try to advance slowly"
+                close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
+                self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+                self.gotoLocation(close_kp)
+            else:
+                print "Kicking!"
+                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                # TODO: add final positioning
+                self.doKick()
+            return
+        
+        # ball is visible and far, try to get closer to it
+        # TODO: following is a patch, to be removed later (and probably calculated in World)
         if self.kp is None:
             print "kp is none, trying to calculate it..."
             if self._world.yglp.dist > 0.0 and self._world.ygrp.dist > 0.0:
                 self.kp = self._world.computed.calculate_kp()
                 print "KP: %3.3f, %3.3f, %3.3f" % self.kp
             else:
-                # TODO add further scanning
+                # TODO add further scanning (turn around?)
                 print "Error! Couldn't find ball!"
+                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+                self._actions.scanFront().onDone(self.onScanFrontDone)
                 return
         else:
             print "kp was calculated already!"
-            
-        #self.gotoBall()
-        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+
+        # get closer to ball
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        self.gotoLocation(self.kp)
+        self.kp = None
+
+    def onScanFrontDone(self):
+        print "ScanFrontDone!"
+        self.doNextAction()
     
     def onKickingPointChanged(self):
-        #print "Kicking Point Changed!"
-        
+        print "Kicking Point Changed!"
+        # save first KP encountered
         computed = self._world.computed
         if computed.kp_valid:
-            #self._eventmanager.unregister(EVENT_KP_CHANGED)
+            self._eventmanager.unregister(EVENT_KP_CHANGED)
             self.kp = computed.kp
+            print "KP: %3.3f, %3.3f, %3.3f" % self.kp
 
-            #print "self._world.ball.bearing: %f" % self._world.ball.bearing
-            #print "self._world.ball.dist: %f" % self._world.ball.dist
-            #print "self._world.yglp.dist: %f" % self._world.yglp.dist
-            #print "self._world.ygrp.dist: %f" % self._world.ygrp.dist
-            #print "self._world.yglp.bearing: %f" % self._world.yglp.bearing
-            #print "self._world.ygrp.bearing: %f" % self._world.ygrp.bearing
-            #print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+    def doKick(self):
+        self._actions.kick()
+        #self._actions.sitPoseAndRelax()
+    
+    def convertBallPosToFinalKickPoint(self, dist, bearing):
+        KICK_DIST_FROM_BALL = 28
+        KICK_OFFSET_MID_BODY = 4
+        
+        bx = dist*cos(bearing)
+        by = dist*sin(bearing)
+        
+        target_x = bx - KICK_DIST_FROM_BALL * cos(bearing) + KICK_OFFSET_MID_BODY * sin(bearing)
+        target_y = by - KICK_DIST_FROM_BALL * sin(bearing) + KICK_OFFSET_MID_BODY * cos(bearing)
+        return target_x, target_y, 0.0
+    
+    def onChangeLocationDone(self):
+        print "Change Location Done!"
+        self.doNextAction()
+        
+        
+#        self._eventmanager.unregister(EVENT_CHANGE_LOCATION_DONE)
+#        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 30:
+#            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+#            self.doKick()
+#        else:
+#            print "we are still too far to kick the ball, advance towards ball again"
+#            if self._world.ball.dist > 0.0:
+#                close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
+#                self.gotoLocation(close_kp)
+#            else:
+#                # TODO add further scanning (turn around?)
+#                print "Error! Couldn't find ball!"
+#                self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+#                self._actions.scanFront().onDone(self.onScanFrontDone)
+                
+
+    def doBallTracking(self):
+        xNormalized = self.ball_frame_x()
+        yNormalized = self.ball_frame_y()
+        if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
+            X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
+            Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
+            
+            deltaHeadYaw = xNormalized * X_TO_RAD_FACTOR
+            deltaHeadPitch = -yNormalized * Y_TO_RAD_FACTOR
+            #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
+            # TODO: what happens when we give a new angle without waiting for the previous to be done?
+            if not self._world.robot.isHeadMotionInProgress():
+                self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
+            else:
+                print "doBallTracking: head still moving, not updating"
+
+    def gotoLocation(self, target_location):
+        print "Going to target location: %3.3f, %3.3f, %3.3f" % target_location 
+        # ball is away, first turn and then approach ball
+        delta_x, delta_y, delta_bearing = target_location
+        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
+        self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
+            walk_param = moves.KICKER_WALK)
+
+
+    ##################### Debug Methods #########################
+
+#    def onGoalSeen(self):
+#        print "Yellow goal seen"
+#        pass
 
 #    def onKickingPointChanged(self):
 #        """ We can reach here either:
@@ -115,7 +218,7 @@ class Kicker(Player):
 #        print "self._world.ball.bearing: %f" % self._world.ball.bearing
 #        print "self._world.ball.dist: %f" % self._world.ball.dist
 #        
-#        self.gotoBall()
+#        self.gotoLocation(kickpoint)
         
 #    def centerOnBall(self):
 #        """ look for a ball, when we have it move on to find the posts. no moving
@@ -142,54 +245,6 @@ class Kicker(Player):
 #            print "kp = (%3.3f, %3.3f, %3.3f)" % self.kp
 #            self.onKickingPointChanged()
 
-    def onKickPointViable(self):
-        print "Kick point viable:", self._world.computed.kp
-        self._actions.kick()
-        self._actions.sitPoseAndRelax()
-       
-    def onChangeLocationDone(self):
-        print "Change Location Done!"
-        self._eventmanager.unregister(EVENT_CHANGE_LOCATION_DONE)
-        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 20:
-            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-            self.onKickPointViable()
-        else:
-            print "we are still too far to kick the ball, advance towards ball again"
-            self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
-            #self.test()
-
-        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-
-    def doBallTracking(self):
-        xNormalized = self.ball_frame_x()
-        yNormalized = self.ball_frame_y()
-        if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
-            X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
-            Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
-            
-            deltaHeadYaw = xNormalized * X_TO_RAD_FACTOR
-            deltaHeadPitch = -yNormalized * Y_TO_RAD_FACTOR
-            #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
-            # TODO: what happens when we give a new angle without waiting for the previous to be done?
-            if not self._world.robot.isHeadMotionInProgress():
-                self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
-            else:
-                print "doBallTracking: head still moving, not updating"
-
-    def gotoBall(self):
-        print "goto ball and kick"
-        # ball is away, first turn and then approach ball
-        delta_y, delta_x, delta_bearing = self.kp # TODO: fix x,y issues
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-        self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
-            walk_param = moves.KICKER_WALK)
-
-
-    ##################### Debug Methods #########################
-
-#    def onGoalSeen(self):
-#        print "Yellow goal seen"
-#        pass
 
     def test(self):
         if self._world.robot.isHeadMotionInProgress():
@@ -224,7 +279,7 @@ class Kicker(Player):
             # ball is close, align with it carefully
             if abs(self._world.ball.bearing) <= 0.1745:
                 self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-                self.onKickPointViable()
+                self.doKick()
             else:
                 # TODO do something meaningful
                 pass

@@ -14,7 +14,7 @@ DEFAULT_STEPS_FOR_TURN = 150
 # Same TODO
 DEFAULT_STEPS_FOR_WALK = 150
 
-MINIMAL_CHANGELOCATION_TURN = 1e-3
+MINIMAL_CHANGELOCATION_TURN = 0.15
 
 #######
 
@@ -48,7 +48,7 @@ class Actions(object):
         return self._motion.getAngle(joint_name)
     
     def kick(self):
-        return self.executeMove(moves.ALMOST_KICK)
+        return self.executeMove(moves.GREAT_KICK_RIGHT)
 
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """

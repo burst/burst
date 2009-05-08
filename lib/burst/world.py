@@ -424,7 +424,7 @@ class Computed(object):
     doesn't naturally belong to any other object, like ball speed etc
     """
 
-    DEBUG_KP = True
+    DEBUG_KP = False
 
     def __init__(self, world):
         self._world = world
@@ -470,7 +470,8 @@ class Computed(object):
         left_post, right_post, ball = team.left_post, team.right_post, self._world.ball
         left_alpha, left_dist, right_alpha, right_dist = (
             left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
-        ball_alpha, ball_dist = ball.bearing, ball.dist
+        
+        ball_alpha, ball_dist = ball.bearing, ball.dist - BALL_REAL_DIAMETER
         ball_x, ball_y = ball_dist * cos(ball_alpha), ball_dist * sin(ball_alpha)
         k = self.kp_k
         center_x = (right_dist * cos(right_alpha) + left_dist * cos(left_alpha)) / 2.0
