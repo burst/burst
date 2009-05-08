@@ -40,27 +40,24 @@ READY_POS = INITIAL_POS
 
 
 # HEAD SCANS
-if not_on_nao: # 30 in Webots, 45 in real nao
-    CAM_MAXIMUM_V = 30. * DEG_TO_RAD
-else:
-    CAM_MAXIMUM_V = 45. * DEG_TO_RAD
+CAM_MAXIMUM_V = 30. * DEG_TO_RAD # NOTE: should have been 45 according to specs
+CAM_MINIMUM_V = -45. * DEG_TO_RAD
 CAM_MAXIMUM_H = 90. * DEG_TO_RAD # TODO: check if can be changed to 120 (mainly for goalie, via DCM)
 CAM_FRONTAL_H = CAM_MAXIMUM_H * 2 / 3 # can be useful to scan front area and not entire possible area
-CAM_FRONTAL_V = CAM_MAXIMUM_V * 2 / 3 # ""
 
-BOTTOM_CENTER_H_MAX_V_FAR = (0., -CAM_MAXIMUM_V * 2 / 3) # minimize top part seen - allow keeper to see top of goal bar
-BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
+BOTTOM_CENTER_H_MAX_V_FAR = (0., -CAM_MAXIMUM_V) # minimize top part seen - allow keeper to see top of goal bar
+BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V * 3 / 2) # maximize top part seen - better when close to opponent goal
 BOTTOM_CENTER_H_MIN_V = (0., CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
 BOTTOM_FRONT_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     ((-CAM_FRONTAL_H, 0), 0.2),
-    ((CAM_FRONTAL_H, 0), 3.0),
-    ((CAM_FRONTAL_H, -CAM_FRONTAL_V), 0.2),
-    ((-CAM_FRONTAL_H, -CAM_FRONTAL_V), 3.0),
-    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
-    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 2.0),
+    ((CAM_FRONTAL_H, 0), 4.0),
+    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
+    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 5.0),
+    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 4.0),
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
 

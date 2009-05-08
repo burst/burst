@@ -21,8 +21,6 @@ from burst.events import *
 from burst.consts import *
 import burst.moves as moves
 
-import time
-
 """
 Logic for Kicker:
 
@@ -42,74 +40,107 @@ gotoBall ->
 
 class Kicker(Player):
     
+#    def onStop(self):
+#        super(Kicker, self).onStop()
+
     def onStart(self):
+        self.kp = None
+        self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+        
         self._actions.initPoseAndStiffness()
         #self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         #self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
-        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
-        self.kp = None
         
-        #self._actions.scanFront().onDone(
-        #     self.onScanFrontDone
-        #     )
+#        self._actions.scanFront().onDone(
+#             self.onScanFrontDone
+#             )
         #import pdb; pdb.set_trace()
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        #self._actions.changeHeadAnglesRelative(0.1, 0.3) # yaw (left-right) / pitch (up-down)
         #self.doBallTracking()
-        
-        self._actions.executeHeadMove(moves.BOTTOM_CENTER_H_MIN_V)
-        
-        
-    def onStop(self):
-        super(Kicker, self).onStop()
 
     def onScanFrontDone(self):
         print "ScanFrontDone!"
-
+        # if we didn't get a "kicking point changed" event, try to compute it using just 1 goal post
+        
+        self.kp = None
+        
+        if self.kp is None:
+            print "kp is none, trying to calculate it..."
+            if self._world.yglp.dist > 0.0 and self._world.ygrp.dist > 0.0:
+                self.kp = self._world.computed.calculate_kp()
+                print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+            else:
+                # TODO add further scanning
+                print "Error! Couldn't find ball!"
+                return
+        else:
+            print "kp was calculated already!"
+            
+        #self.gotoBall()
+        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+    
     def onKickingPointChanged(self):
-        """ We can reach here either:
-        via the EVENT_KP_CHANGED
-        via pitchUpToFindGoal
-        hence we actually look at the kp_valid parameter (otherwise
-        we already set the kp before in pitchUpToFindGoal)
-        """
-        #self._eventmanager.unregister_all()
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        #print "Kicking Point Changed!"
+        
         computed = self._world.computed
         if computed.kp_valid:
+            #self._eventmanager.unregister(EVENT_KP_CHANGED)
             self.kp = computed.kp
-        if self.kp is None:
-            print "Oops, kp not set - please debug me!"
-            raise SystemExit
-        print "KP: %3.3f, %3.3f, %3.3f" % self.kp
-        print "self._world.ball.bearing: %f" % self._world.ball.bearing
-        print "self._world.ball.dist: %f" % self._world.ball.dist
-        
-        self.gotoBall()
-        
-    def centerOnBall(self):
-        """ look for a ball, when we have it move on to find the posts. no moving
-        the robot, just the head """
-        ball_frame_x = self.ball_frame_x()
-        if (self._world.yglp.dist == 0.0 or self._world.ygrp.dist == 0.0
-                and abs(ball_frame_x) < 0.05):
-            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.pitchUpToFindGoal)
-        else:
-            self.doBallTracking()
-#        if self._world.robot.isMotionInProgress():
-#            # robot is still walking / turning, return without doing anything
-#            print "is walking: %f is turning: %f" % (self._world.robot.isWalkingActive, self._world.robot.isTurningActive)
-#            return
 
-    def pitchUpToFindGoal(self):
-        if not self._world.yglp.dist > 0.0 or not self._world.yglp.dist > 0.0:
-            # haven't seen either yglp or ygrp yet, move head up to find them.
-            print "pitch up to find goal"
-            self._actions.changeHeadAnglesRelative(0, -0.05)
-        else:
-            print "so we have goal, even if not both posts at the same time - compute kp using best values"
-            self.kp = self._world.computed.calculate_kp()
-            print "kp = (%3.3f, %3.3f, %3.3f)" % self.kp
-            self.onKickingPointChanged()
+            #print "self._world.ball.bearing: %f" % self._world.ball.bearing
+            #print "self._world.ball.dist: %f" % self._world.ball.dist
+            #print "self._world.yglp.dist: %f" % self._world.yglp.dist
+            #print "self._world.ygrp.dist: %f" % self._world.ygrp.dist
+            #print "self._world.yglp.bearing: %f" % self._world.yglp.bearing
+            #print "self._world.ygrp.bearing: %f" % self._world.ygrp.bearing
+            #print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+
+#    def onKickingPointChanged(self):
+#        """ We can reach here either:
+#        via the EVENT_KP_CHANGED
+#        via pitchUpToFindGoal
+#        hence we actually look at the kp_valid parameter (otherwise
+#        we already set the kp before in pitchUpToFindGoal)
+#        """
+#        self._eventmanager.unregister_all()
+#        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+#        computed = self._world.computed
+#        if computed.kp_valid:
+#            self.kp = computed.kp
+#        if self.kp is None:
+#            print "Oops, kp not set - please debug me!"
+#            raise SystemExit
+#        print "KP: %3.3f, %3.3f, %3.3f" % self.kp
+#        print "self._world.ball.bearing: %f" % self._world.ball.bearing
+#        print "self._world.ball.dist: %f" % self._world.ball.dist
+#        
+#        self.gotoBall()
+        
+#    def centerOnBall(self):
+#        """ look for a ball, when we have it move on to find the posts. no moving
+#        the robot, just the head """
+#        ball_frame_x = self.ball_frame_x()
+#        if (self._world.yglp.dist == 0.0 or self._world.ygrp.dist == 0.0
+#                and abs(ball_frame_x) < 0.05):
+#            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.pitchUpToFindGoal)
+#        else:
+#            self.doBallTracking()
+##        if self._world.robot.isMotionInProgress():
+##            # robot is still walking / turning, return without doing anything
+##            print "is walking: %f is turning: %f" % (self._world.robot.isWalkingActive, self._world.robot.isTurningActive)
+##            return
+#
+#    def pitchUpToFindGoal(self):
+#        if not self._world.yglp.dist > 0.0 or not self._world.yglp.dist > 0.0:
+#            # haven't seen either yglp or ygrp yet, move head up to find them.
+#            print "pitch up to find goal"
+#            self._actions.changeHeadAnglesRelative(0, -0.05)
+#        else:
+#            print "so we have goal, even if not both posts at the same time - compute kp using best values"
+#            self.kp = self._world.computed.calculate_kp()
+#            print "kp = (%3.3f, %3.3f, %3.3f)" % self.kp
+#            self.onKickingPointChanged()
 
     def onKickPointViable(self):
         print "Kick point viable:", self._world.computed.kp
@@ -156,6 +187,10 @@ class Kicker(Player):
 
     ##################### Debug Methods #########################
 
+#    def onGoalSeen(self):
+#        print "Yellow goal seen"
+#        pass
+
     def test(self):
         if self._world.robot.isHeadMotionInProgress():
             return
@@ -166,10 +201,6 @@ class Kicker(Player):
         print "self._world.ball.bearing: %f" % self._world.ball.bearing
         print "self._world.ball.dist: %f" % self._world.ball.dist
         
-    def onGoalSeen(self):
-        #print "Yellow goal seen"
-        pass
-
     def onYetToBeCalledTurnDone(self):
         print "Turn Done!"
         self._eventmanager.unregister(EVENT_TURN_DONE)
