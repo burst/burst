@@ -15,6 +15,10 @@ except urllib2.URLError, e:
     print "error connecting: %s" % e
     raise SystemExit
 
+if con.options.video:
+    sys.argv.append('-gthread')
+    con.retrieveImages()
+
 # start ipython shell
 my_ns = dict(
     con = con,

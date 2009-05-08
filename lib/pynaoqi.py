@@ -488,8 +488,9 @@ def getpairs(elem):
 
 class NaoQiConnection(object):
 
-    def __init__(self, url="http://localhost:9560/", verbose = True):
+    def __init__(self, url="http://localhost:9560/", verbose = True, options=None):
         self.verbose = True
+        self.options = options # the parsed command line options, convenient place to store them
         self._url = url
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
@@ -637,7 +638,7 @@ class NaoQiConnection(object):
             gtkim.set_from_pixbuf(pixbuf)
             return True
         
-        gobject.timeout_add(500.0, getNew)
+        gobject.timeout_add(500, getNew)
 
     def getRGBRemoteFromYUV422(self):
         yuv, width, height = self.getImageRemoteRaw()
@@ -649,7 +650,7 @@ class NaoQiConnection(object):
     def getImageRemoteFromYUV422(self):
         ret = self.getRGBRemoteFromYUV422()
         if ret is None: return None
-        rgb, width, height = ret
+        width, height, rgb = ret
         return self.imageFromRGB(width, height, rgb)
 
     def getImageRemoteRaw(self):
@@ -769,6 +770,7 @@ def getDefaultOptions():
     parser = OptionParser()
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
+    parser.add_option('--video', action='store_true', dest='video', default=None)
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # the next part is brain dead, but I don't know how to remove *just*
@@ -777,6 +779,8 @@ def getDefaultOptions():
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
+        if arg in ['--video']:
+            todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):
             print "bad arguments.. go home"
@@ -797,7 +801,7 @@ def getDefaultConnection():
     if default_connection is None:
         options = getDefaultOptions()
         url = 'http://%s:%s/' % (options.ip, options.port)
-        default_connection = NaoQiConnection(url)
+        default_connection = NaoQiConnection(url, options=options)
     return default_connection
 
 if __name__ == '__main__':
