@@ -55,7 +55,7 @@ def cumsum(iter):
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
-    
+
 ########################################################################
 # totally minimal SOAP Implementation
 
@@ -500,6 +500,7 @@ class NaoQiConnection(object):
         self._brokername = "soaptest"
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
+        self._registered_to_camera = False
         
         self._modules = []
         for i, modname in enumerate(self.getModules()):
@@ -593,8 +594,63 @@ class NaoQiConnection(object):
         """ Default parameters are exactly what nao-man (northern bites) use:
         YUV422 color space, 320x240 (Quarter VGA), and 15 fps
         """
+        if self._registered_to_camera: return self._camera_name
         self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
+        vd = vision_definitions
+        self._camera_param_dimensions_d = {vd.kQVGA:(320, 240)} # TODO - fill it
+        self._camera_param_length_factor_d = {vd.kYUV422InterlacedColorSpace: 2}
+        width, height = self._camera_param_dimensions_d[resolution]
+        length = self._camera_param_length_factor_d[colorspace] * width * height
+        self._camera_param = (width, height, length)
+        self.registered_to_camera = True
         return self._camera_name
+
+    def get_imops(self):
+        if hasattr(self, '_image_convertion'):
+            return self._image_convertion
+        import ctypes
+        try:
+            imops = ctypes.CDLL('imops.so')
+        except:
+            print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+            self._image_convertion = (None, None)
+            return
+        width, height, length = self._camera_param
+        self._image_convertion = (imops, ' '*(length*3/2))
+        return self._image_convertion
+
+    def retrieveImages(self):
+        """ Debugging helper - you need to run pynaoqi with the -gthread argument
+        for this to work """
+        
+        import gtk, gobject
+
+        self.registerToCamera()
+        w=gtk.Window()
+        gtkim=gtk.Image()
+        w.add(gtkim)
+        w.show_all()
+
+        def getNew():
+            width, height, rgb = self.getRGBRemoteFromYUV422()
+            pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
+            gtkim.set_from_pixbuf(pixbuf)
+            return True
+        
+        gobject.timeout_add(500.0, getNew)
+
+    def getRGBRemoteFromYUV422(self):
+        yuv, width, height = self.getImageRemoteRaw()
+        imops, rgb = self.get_imops()
+        if not imops: return None
+        imops.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
+        return width, height, rgb
+
+    def getImageRemoteFromYUV422(self):
+        ret = self.getRGBRemoteFromYUV422()
+        if ret is None: return None
+        rgb, width, height = ret
+        return self.imageFromRGB(width, height, rgb)
 
     def getImageRemoteRaw(self):
         (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
@@ -602,8 +658,11 @@ class NaoQiConnection(object):
         return imageraw, width, height
 
     def getImageRemoteFromRGB(self, debug_file_name = None):
-        imageraw, width, height = self.getImageRemoteRaw()
-        image = Image.fromstring('RGB', (width, height), imageraw)
+        rgb, width, height = self.getImageRemoteRaw()
+        return self.imageFromRGB(width, height, rgb, debug_file_name = debug_file_name)
+
+    def imageFromRGB(self, width, height, rgb, debug_file_name = None):
+        image = Image.fromstring('RGB', (width, height), rgb)
         if debug_file_name:
             if debug_file_name[:1] != '/':
                 debug_file_name = os.path.join(os.getcwd(), debug_file_name)
