@@ -9,18 +9,8 @@ sys.path.append(burst_lib)
 import pynaoqi
 
 # parse command line arguments
-parser = optparse.OptionParser()
-parser.add_option('', '--ip', action='store', dest='ip', default='localhost')
-parser.add_option('', '--port', action='store', dest='port', default=None)
-options, rest = parser.parse_args()
-options.port = options.port or ((options.ip == 'localhost' and 9560) or 9559)
-sys.argv = [sys.argv[0]] + rest
-
-# connect to naoqi
-url = 'http://%s:%s/' % (options.ip, options.port)
-print "connecting to", url
 try:
-    con = pynaoqi.NaoQiConnection(url)
+    con = pynaoqi.getDefaultConnection()
 except urllib2.URLError, e:
     print "error connecting: %s" % e
     raise SystemExit

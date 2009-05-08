@@ -596,13 +596,13 @@ class NaoQiConnection(object):
         self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
         return self._camera_name
 
-    def getImageRemoteRGB(self):
+    def getImageRemoteRaw(self):
         (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
             imageraw) = self.NaoCam.getImageRemote(self._camera_name)
         return imageraw, width, height
 
-    def getImageRemote(self, debug_file_name = None):
-        imageraw, width, height = self.getImageRemoteRGB()
+    def getImageRemoteFromRGB(self, debug_file_name = None):
+        imageraw, width, height = self.getImageRemoteRaw()
         image = Image.fromstring('RGB', (width, height), imageraw)
         if debug_file_name:
             if debug_file_name[:1] != '/':
@@ -710,7 +710,19 @@ def getDefaultOptions():
     parser = OptionParser()
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
+    parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
+    # the next part is brain dead, but I don't know how to remove *just*
+    # the parameters I used with OptionParser.. delegated option parsers anyone?
+    todelete = []
+    for i, arg in enumerate(sys.argv):
+        if arg in ['--ip', '--port']:
+            todelete.extend([i, i+1])
+    for i in reversed(todelete):
+        if i >= len(sys.argv):
+            print "bad arguments.. go home"
+            raise SystemExit
+        del sys.argv[i]
     on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
     options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
     return options
