@@ -2,7 +2,6 @@
 #constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
 from burst.consts import DEG_TO_RAD
-from burst_util import not_on_nao
 
 def getMoveTime(move):
     totalTime = 0.0
@@ -188,6 +187,11 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
 
 #KICKS
 
+KICK_STR_OFFSET_FROM_BODY = 4 # in cm
+
+KICK_STR_DISTANCE = 17 # in cm
+
+
 KICK_STRAIGHT = (
     #Stand up more fully
     ((80.,40.,-50.,-70.),
@@ -339,6 +343,23 @@ HALF_KICK = (
      (0.,30.,-20.,120.,-40.,0.),
      (-10.,30.,-10.,10.,-10.,-20.),
      (80.,-40.,50.,70.),1.2))
+
+NEW_MOVE = (
+    #Stand up more fully
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (80.,-40.,50.,70.),1.0),
+    #left
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-20.,20.,0.,0.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (80.,-40.,50.,70.),1.0),
+    #right
+    ((80.,40.,-50.,-70.),
+     (0.,0.,-10.,20.,-10.,0.),
+     (0.,0.,-20.,20.,0.,0.),
+     (80.,-40.,50.,70.),1.0))
 
 KICK_OFF = (
     #Stand up more fully

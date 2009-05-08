@@ -587,16 +587,16 @@ class NaoQiConnection(object):
         return getpairs(soapbody.firstChild.firstChild)
 
     def registerToCamera(self,
-            resolution=vision_definitions.kQQVGA,
-            colorspace=vision_definitions.kRGBColorSpace,
+            resolution=vision_definitions.kQVGA,
+            colorspace=vision_definitions.kYUV422InterlacedColorSpace,
             fps=15):
+        """ Default parameters are exactly what nao-man (northern bites) use:
+        YUV422 color space, 320x240 (Quarter VGA), and 15 fps
+        """
         self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
         return self._camera_name
 
     def getImageRemoteRGB(self):
-        """
-    <albroker:meth>getImageRemote</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">testvision_GVM</item></item></albroker:p>
-        """
         (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
             imageraw) = self.NaoCam.getImageRemote(self._camera_name)
         return imageraw, width, height
