@@ -4,13 +4,18 @@ from burst_util import transpose, cumsum
 from events import *
 from eventmanager import EVENT_MANAGER_DT
 import moves
-import world
+from world import World
 from math import atan2
 
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
-DEFAULT_STEPS_FOR_TURN = 54
+if not World.isRealNao:
+    DEFAULT_STEPS_FOR_TURN = 54
+else:
+    DEFAULT_STEPS_FOR_TURN = 150
+    DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
+
 
 MINIMAL_CHANGELOCATION_TURN = 0.15
 
@@ -31,12 +36,12 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeHeadMove(moves.BOTTOM_INIT_FAR)
-        return self.executeMove(moves.STAND)
+        self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR)
+        self.executeSyncMove(moves.STAND)
     
     def sitPoseAndRelax(self):
         self.clearFootsteps()
-        self.executeMove(moves.SIT_POS)
+        self.executeSyncMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
@@ -96,8 +101,12 @@ class Actions(object):
         
         # Vova trick - start with slower walk, then do the faster walk.
         slow_walk_distance = min(distance, StepLength*2)
-        self._motion.addWalkStraight( slow_walk_distance, steps )
-        self._motion.addWalkStraight( distance - slow_walk_distance, steps )
+        if not World.isRealNao:
+            self._motion.addWalkStraight( distance, steps )
+        else:
+            self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+            self._motion.addWalkStraight( distance - slow_walk_distance, steps )
+            
 
         # Now turn to the final angle, taking into account the turn we already did
         final_turn = delta_theta - bearing
@@ -156,6 +165,44 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         #print "executeHeadMove: duration = %s" % duration
         return self._world.robot.add_expected_head_post(postid, EVENT_HEAD_MOVE_DONE, duration)
+
+    def executeSyncMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        """ Go through a list of body angles, works like northern bites code:
+        moves is a list, each item contains:
+         larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time, interp_type
+
+        interp_type - 1 for SMOOTH, 0 for Linear
+        interp_time - time in seconds for interpolation
+
+        NOTE: currently this is SYNCHRONOUS - it takes at least
+        sum(interp_time) to execute.
+        """
+        joints = self._joint_names[2:]
+        n_joints = len(joints)
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
+                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
+                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
+        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        duration = max(col[-1] for col in durations_matrix)
+        #print repr((joints, angles_matrix, durations_matrix))
+        self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
+
+    def executeSyncHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        """ Go through a list of head angles
+        moves is a list, each item contains:
+        head (tuple of 2), interp_time
+
+        interp_type - 1 for SMOOTH, 0 for Linear
+        interp_time - time in seconds for interpolation
+
+        NOTE: this is ASYNCHRONOUS
+        """
+        joints = self._joint_names[:2]
+        n_joints = len(joints)
+        angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
+        durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
+        #print repr((joints, angles_matrix, durations_matrix))
+        self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
  
     def clearFootsteps(self):
         """ NOTE: USER BEWARE. We had problems with clearFootsteps """

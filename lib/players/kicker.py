@@ -46,7 +46,8 @@ class Kicker(Player):
     def onStart(self):
         self.kp = None
         
-        self._actions.initPoseAndStiffness().onDone(self.doNextAction)
+        self._actions.initPoseAndStiffness()
+        self.doNextAction()
         
         #self.doNextAction()
         
@@ -84,7 +85,7 @@ class Kicker(Player):
         
         # ball is visible, let's do something about it
         # if ball close enough, just kick it
-        if abs(self._world.ball.bearing) <= 0.25 and self._world.ball.dist <= 50:
+        if self._world.ball.dist <= 50: #and abs(self._world.ball.bearing) <= 0.25
             if self._world.ball.dist > 35.0:
                 print "close to ball, but not enough, try to advance slowly"
                 close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
