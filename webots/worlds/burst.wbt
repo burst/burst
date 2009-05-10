@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.241379 0.939995 0.241136 4.60159
-  position -5.12702 2.05211 -0.00612997
+  orientation -0.566053 0.599012 0.566365 2.06127
+  position -1.28769 5.75255 0.0151983
 }
 Background {
   skyColor [
@@ -21,17 +21,17 @@ Background {
 PointLight {
   ambientIntensity 0.2
   attenuation 0.2 0.2 0.2
-  location 3 0.5 2
+  location 3 1.5 0
 }
 PointLight {
   ambientIntensity 0.2
   attenuation 0.2 0.2 0.2
-  location -3 0.5 0.4
+  location -3 1.5 0
 }
 PointLight {
   ambientIntensity 0.2
   attenuation 0.2 0.2 0.2
-  location 0 1 -2
+  location 0 1.5 0
 }
 DEF GROUND Solid {
   children [

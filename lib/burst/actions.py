@@ -11,13 +11,13 @@ INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be 
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 if not World.isRealNao:
-    DEFAULT_STEPS_FOR_TURN = 54
+    DEFAULT_STEPS_FOR_TURN = 60
 else:
     DEFAULT_STEPS_FOR_TURN = 150
     DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
 
 
-MINIMAL_CHANGELOCATION_TURN = 0.15
+MINIMAL_CHANGELOCATION_TURN = 0.20
 
 #######
 
@@ -29,8 +29,11 @@ class Actions(object):
         self._joint_names = self._motion.getBodyJointNames()
 
     def scanFront(self):
-        # TODO: Stop move when both ball and goal found? 
+        # TODO: Stop moving when both ball and goal found? 
         return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
+
+    def scanQuick(self):
+        return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
 
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)

@@ -472,7 +472,7 @@ class Computed(object):
         left_alpha, left_dist, right_alpha, right_dist = (
             left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
         
-        ball_alpha, ball_dist = ball.bearing, ball.dist - BALL_REAL_DIAMETER
+        ball_alpha, ball_dist = ball.bearing, ball.dist
         ball_x, ball_y = ball_dist * cos(ball_alpha), ball_dist * sin(ball_alpha)
         k = self.kp_k
         center_x = (right_dist * cos(right_alpha) + left_dist * cos(left_alpha)) / 2.0
