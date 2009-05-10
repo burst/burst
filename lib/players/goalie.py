@@ -29,7 +29,7 @@ class EladGoalie(Player):
         self._headX, self._headY = -90*DEG_TO_RAD, -20*DEG_TO_RAD
         self._actions.getToGoalieInitPosition()
 #        self._eventmanager.register(EVENT_BALL_LOST, self.searchForBall)
-        self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
+#        self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.getInFrontOfBall)
 
 
