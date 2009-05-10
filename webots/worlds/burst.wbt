@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.124266 0.969453 0.211471 4.10452
-  position 0.42383 1.27723 -1.31345
+  orientation 0.130402 0.959309 0.250444 4.00884
+  position -0.888223 2.09097 -2.10159
 }
 Background {
   skyColor [

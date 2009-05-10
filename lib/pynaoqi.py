@@ -55,7 +55,7 @@ def cumsum(iter):
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
-    
+
 ########################################################################
 # totally minimal SOAP Implementation
 
@@ -488,8 +488,9 @@ def getpairs(elem):
 
 class NaoQiConnection(object):
 
-    def __init__(self, url="http://localhost:9560/", verbose = True):
+    def __init__(self, url="http://localhost:9560/", verbose = True, options=None):
         self.verbose = True
+        self.options = options # the parsed command line options, convenient place to store them
         self._url = url
         self._req = Requester(url)
         self._getInfoObject = getInfoObject('NaoQi')
@@ -500,6 +501,7 @@ class NaoQiConnection(object):
         self._brokername = "soaptest"
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
+        self._registered_to_camera = False
         
         self._modules = []
         for i, modname in enumerate(self.getModules()):
@@ -593,17 +595,75 @@ class NaoQiConnection(object):
         """ Default parameters are exactly what nao-man (northern bites) use:
         YUV422 color space, 320x240 (Quarter VGA), and 15 fps
         """
+        if self._registered_to_camera: return self._camera_name
         self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
+        vd = vision_definitions
+        self._camera_param_dimensions_d = {vd.kQVGA:(320, 240)} # TODO - fill it
+        self._camera_param_length_factor_d = {vd.kYUV422InterlacedColorSpace: 2}
+        width, height = self._camera_param_dimensions_d[resolution]
+        length = self._camera_param_length_factor_d[colorspace] * width * height
+        self._camera_param = (width, height, length)
+        self.registered_to_camera = True
         return self._camera_name
 
-    def getImageRemoteRGB(self):
+    def get_imops(self):
+        if hasattr(self, '_image_convertion'):
+            return self._image_convertion
+        import ctypes
+        try:
+            imops = ctypes.CDLL('imops.so')
+        except:
+            print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+            self._image_convertion = (None, None)
+            return
+        width, height, length = self._camera_param
+        self._image_convertion = (imops, ' '*(length*3/2))
+        return self._image_convertion
+
+    def retrieveImages(self):
+        """ Debugging helper - you need to run pynaoqi with the -gthread argument
+        for this to work """
+        
+        import gtk, gobject
+
+        self.registerToCamera()
+        w=gtk.Window()
+        gtkim=gtk.Image()
+        w.add(gtkim)
+        w.show_all()
+
+        def getNew():
+            width, height, rgb = self.getRGBRemoteFromYUV422()
+            pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
+            gtkim.set_from_pixbuf(pixbuf)
+            return True
+        
+        gobject.timeout_add(500, getNew)
+
+    def getRGBRemoteFromYUV422(self):
+        yuv, width, height = self.getImageRemoteRaw()
+        imops, rgb = self.get_imops()
+        if not imops: return None
+        imops.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
+        return width, height, rgb
+
+    def getImageRemoteFromYUV422(self):
+        ret = self.getRGBRemoteFromYUV422()
+        if ret is None: return None
+        width, height, rgb = ret
+        return self.imageFromRGB(width, height, rgb)
+
+    def getImageRemoteRaw(self):
         (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
             imageraw) = self.NaoCam.getImageRemote(self._camera_name)
         return imageraw, width, height
 
-    def getImageRemote(self, debug_file_name = None):
-        imageraw, width, height = self.getImageRemoteRGB()
-        image = Image.fromstring('RGB', (width, height), imageraw)
+    def getImageRemoteFromRGB(self, debug_file_name = None):
+        rgb, width, height = self.getImageRemoteRaw()
+        return self.imageFromRGB(width, height, rgb, debug_file_name = debug_file_name)
+
+    def imageFromRGB(self, width, height, rgb, debug_file_name = None):
+        image = Image.fromstring('RGB', (width, height), rgb)
         if debug_file_name:
             if debug_file_name[:1] != '/':
                 debug_file_name = os.path.join(os.getcwd(), debug_file_name)
@@ -710,7 +770,22 @@ def getDefaultOptions():
     parser = OptionParser()
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
+    parser.add_option('--video', action='store_true', dest='video', default=None)
+    parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
+    # the next part is brain dead, but I don't know how to remove *just*
+    # the parameters I used with OptionParser.. delegated option parsers anyone?
+    todelete = []
+    for i, arg in enumerate(sys.argv):
+        if arg in ['--ip', '--port']:
+            todelete.extend([i, i+1])
+        if arg in ['--video']:
+            todelete.append(i)
+    for i in reversed(todelete):
+        if i >= len(sys.argv):
+            print "bad arguments.. go home"
+            raise SystemExit
+        del sys.argv[i]
     on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
     options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
     return options
@@ -726,7 +801,7 @@ def getDefaultConnection():
     if default_connection is None:
         options = getDefaultOptions()
         url = 'http://%s:%s/' % (options.ip, options.port)
-        default_connection = NaoQiConnection(url)
+        default_connection = NaoQiConnection(url, options=options)
     return default_connection
 
 if __name__ == '__main__':
