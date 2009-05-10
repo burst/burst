@@ -4,7 +4,7 @@
 
 from events import FIRST_EVENT_NUM, LAST_EVENT_NUM, EVENT_STEP
 
-EVENT_MANAGER_DT = 0.1
+EVENT_MANAGER_DT = 0.05
 
 class SuperEvent(object):
     
@@ -152,6 +152,7 @@ class EventManagerLoop(object):
         except:
             print "you are missing the Man proxy - run naoload and uncomment man"
             raise SystemExit
+        print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from time import sleep, time
         # TODO: this should be called from the gamecontroller, this is just
         # a temporary measure. The gamecontroller should keep track of the game state,

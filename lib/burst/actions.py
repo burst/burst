@@ -41,6 +41,7 @@ class Actions(object):
     
     def sitPoseAndRelax(self):
         self.clearFootsteps()
+        self.executeSyncMove(moves.STAND)
         self.executeSyncMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
 

@@ -493,6 +493,15 @@ class Computed(object):
 
 ###############################################################################
 
+def cross(*args):
+    if len(args) == 1:
+        for x in args[0]:
+            yield tuple([x])
+        raise StopIteration
+    for x in args[0]:
+        for rest in cross(*args[1:]):
+            yield tuple([x] + list(rest))
+
 class World(object):
 
     isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
@@ -504,6 +513,50 @@ class World(object):
         self._deferreds = []
         
         self.time = time()
+
+        joints = self._motion.getBodyJointNames()
+        chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
+        self.jointnames = joints
+        self.chainnames = chains
+
+        # Recording of joints / sensors
+        dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
+        self._record_file = self._record_csv = None
+        # Center of mass (computed)
+        com = ['Motion/Spaces/World/Com/%s/%s' % args for args in cross(
+            ['Sensor', 'Command'], 'XYZ')] + ['Motion/BodyCommandAngles']
+        # various dcm stuff
+        dcm = ['DCM/Realtime', 'DCM/Time', 'DCM/TargetCycleTime',
+           'DCM/CycleTime', 'DCM/Simulation', 'DCM/hardnessMode',
+           'DCM/CycleTimeWarning']
+        # Joint positions
+        jsense = ['Device/SubDeviceList/%s/Position/Sensor/Value' % j for j in
+            joints]
+        # Actuator commanded position
+        actsense = ['Device/SubDeviceList/%s/%s/Value' % args for args in cross(
+            joints, ['ElectricCurrent/Sensor',
+                'Hardness/Actuator', 'Position/Actuator'])]
+        # inertial sensors
+        inert = ['Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % sense
+            for sense in [
+                'AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY',
+                'GyrRef', 'GyrX', 'GyrY']]
+        # Force SensoR
+        force = ['Device/SubDeviceList/%s/FSR/%s/Sensor/Value' % args for args in
+            cross(['RFoot', 'LFoot'],
+            ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'])]
+        # position of chains and __?
+        poschains = ['Motion/Spaces/Body/%s/Sensor/Position/%s' % args
+            for args in cross(chains, ['WX', 'WY', 'WZ', 'X', 'Y', 'Z'])]
+        transform = ['Motion/Spaces/World/Transform/%s' % coord for coord in
+            ['WX', 'WY', 'WZ', 'X', 'Y', 'Z']]
+        # Various other stuff
+        various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
+               'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
+        self._recorded_vars = (com + dcm + jsense + actsense + inert + force +
+                poschains + transform + various)
+        print "world will record (if asked) %s vars" % len(self._recorded_vars)
+        self._recorded_header = self._recorded_vars
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
         self.ball = Ball(self)
@@ -546,6 +599,7 @@ class World(object):
 
     def update(self):
         self.time = time()
+        self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
             for obj in objlist:
@@ -556,3 +610,28 @@ class World(object):
         self._events = set()
         self._deferreds = []
         return events, deferreds
+
+    # record robot state 
+    def startRecordAll(self, filename):
+        import csv
+        import gzip
+        self._record_file_name = '/media/userdata/%s' % filename
+        self._record_file = gzip.open(self._record_file_name, 'a+')
+        self._record_csv = csv.writer(self._record_file)
+        self._record_csv.writerow(self._recorded_header)
+    
+    def _doRecord(self):
+        if not self._record_csv: return
+        # actuators and sensors for all dcm values
+        self._record_csv.writerow(self._memory.getListData(self._recorded_vars))
+
+    def stopRecord(self):
+        if self._record_file:
+            print "file stored in %s, writing to disk (closing file).." % self._record_file_name
+            sys.stdout.flush()
+            self._record_file.close()
+            print "done"
+            sys.stdout.flush()
+        self._record_file = None
+        self._record_csv = None
+
