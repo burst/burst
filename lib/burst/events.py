@@ -15,6 +15,11 @@ EVENT_CHANGE_LOCATION_DONE = counter; counter+=1
 EVENT_HEAD_MOVE_DONE = counter; counter+=1
 EVENT_BODY_MOVE_DONE = counter; counter+=1
 
+# Fall Detection
+EVENT_FALLEN_DOWN = counter; counter+=1
+EVENT_ON_BELLY = counter; counter+=1
+EVENT_ON_BACK = counter; counter+=1
+
 ##### Vision events
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
 # Seen / Lost - raised once if the previous time step is different then the current.

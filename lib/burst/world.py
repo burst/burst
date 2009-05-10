@@ -12,6 +12,7 @@ import sys
 import burst
 from events import *
 from eventmanager import Deferred, EVENT_MANAGER_DT
+import sensing
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -311,6 +312,8 @@ class Robot(Movable):
     def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
         from self._motion_posts and self._
+
+        Check if the robot has fallen down. If it has, fire the appropriate event.
         
         we check first that the actions have started, and then that they are done.
         we use the duration - each move must be passed the duration, and not isRunning, to fire
@@ -342,6 +345,15 @@ class Robot(Movable):
         filter(self._motion_posts, isMotionFinished)
         self._head_posts.calc_events(events, deferreds)
         self._walk_posts.calc_events(events, deferreds)
+        
+        # Check if the robot has fallen down. If it has, fire the appropriate event.
+        # TODO: Maybe I should fire FALLEN_DOWN only the first time around (but keep ON_BELLY and ON_BACK as they are)?
+        if sensing.hasFallenDown():
+            events.add(EVENT_FALLEN_DOWN) # 
+            if sensing.isOnBelly():
+                events.add(EVENT_ON_BELLY)
+            if sensing.isOnBack():
+                events.add(EVENT_ON_BACK)
 
 class GoalPost(Locatable):
 
@@ -473,7 +485,7 @@ class Computed(object):
         left_alpha, left_dist, right_alpha, right_dist = (
             left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
         
-        ball_alpha, ball_dist = ball.bearing, ball.dist - BALL_REAL_DIAMETER
+        ball_alpha, ball_dist = ball.bearing, ball.dist
         ball_x, ball_y = ball_dist * cos(ball_alpha), ball_dist * sin(ball_alpha)
         k = self.kp_k
         center_x = (right_dist * cos(right_alpha) + left_dist * cos(left_alpha)) / 2.0

@@ -50,20 +50,17 @@ def expected_argument_count(f):
     return f.func_code.co_argcount
 
 class Deferred(object):
-    
     """ A Deferred is a promise to call you when some operation is complete.
     It is also concatenatable. What that means for implementation, is that
     when the operation is done we need to call a deferred we stored and gave
     the user when he gave us a callback. That deferred 
     """
-    we_the_people = []
 
     def __init__(self, data, parent=None):
         self._data = data
         self._ondone = None
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
-        Deferred.we_the_people.append(self)
     
     def onDone(self, cb):
         # TODO: shortcutting. How the fuck do I call the cb immediately without
