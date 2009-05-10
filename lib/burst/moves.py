@@ -223,7 +223,6 @@ if not World.isRealNao:
 else:
     FASTEST_WALK = SLOW_WALK
 
-
 #KICKS
 
 KICK_STR_OFFSET_FROM_BODY = 4 # in cm

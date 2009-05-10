@@ -46,9 +46,9 @@ class Kicker(Player):
     def onStart(self):
         self.kp = None
         
-        self._actions.initPoseAndStiffness()
+        self._actions.initPoseAndStiffness().onDone(self.doNextAction)
         
-        self.doNextAction()
+        #self.doNextAction()
         
 #        if self.kp is None:
 #            
@@ -84,7 +84,7 @@ class Kicker(Player):
         
         # ball is visible, let's do something about it
         # if ball close enough, just kick it
-        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 50:
+        if abs(self._world.ball.bearing) <= 0.25 and self._world.ball.dist <= 50:
             if self._world.ball.dist > 35.0:
                 print "close to ball, but not enough, try to advance slowly"
                 close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
@@ -93,8 +93,12 @@ class Kicker(Player):
             else:
                 print "Kicking!"
                 self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                
+                if self._world.ball.dist >= 32.0:
+                    self.gotoLocation((35-self._world.ball.dist, 0.0, 0.0))
+                else:
+                    self.doKick()
                 # TODO: add final positioning
-                self.doKick()
             return
         
         # ball is visible and far, try to get closer to it
@@ -189,8 +193,8 @@ class Kicker(Player):
         # ball is away, first turn and then approach ball
         delta_x, delta_y, delta_bearing = target_location
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-        self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
-            walk_param = moves.KICKER_WALK)
+        return self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
+            walk_param = moves.FASTEST_WALK)
 
 
     ##################### Debug Methods #########################
