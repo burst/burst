@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
+from math import pi
+
 import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/tests')
+in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
 if os.getcwd() == in_tree_dir:
     # for debugging only - use the local and not the installed burst
     print "DEBUG - using in tree burst.py"
@@ -15,40 +17,44 @@ from burst.consts import *
 def pr(s):
     print s
 
-class Goalie(Player):
+BEARING_THRESHOLD = 0.15
+BASE_BEARING = -1.50 # TODO
+
+
+class EladGoalie(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness()
+#        self._actions.initPoseAndStiffness()
+        self._world.robot._motion.setBodyStiffness(1.0)
+        self._headX, self._headY = -90*DEG_TO_RAD, -20*DEG_TO_RAD
+        self._actions.getToGoalieInitPosition()
+#        self._eventmanager.register(EVENT_BALL_LOST, self.searchForBall)
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-        self._eventmanager.register(EVENT_BALL_BODY_X_ISECT_UPDATE, self.onBallApproachingMaybe)
-        
-        self._eventmanager.register(EVENT_ALL_BLUE_GOAL_SEEN, lambda: pr("Blue goal seen"))
-        self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, lambda: pr("Yellow goal seen"))
-        
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.getInFrontOfBall)
+
+
     def onStop(self):
-        super(Goalie, self).onStop()
+        self._actions.clearFootsteps()
 
-    def onKickPointViable(self):
-        print "Kick point viable:", self._world.computed.kp
 
-    def onBallSeen(self):
-        print "Ball Seen!"
-        print "Ball x: %f" % self._world.ball.centerX
-        print "Ball y: %f" % self._world.ball.centerY
+    def searchForBall(self):
+        pass
 
-    def onBallInFrame(self):
-        print "ball width %3.3f height %3.3f" % (self._world.ball.width,
-                self._world.ball.height)
-    
-    def onBallApproachingMaybe(self):
-        #import pdb; pdb.set_trace()
-        print "Ball is approaching??"
+
+    def trackBall(self):
+        pass        
+
+
+    def getInFrontOfBall(self):
+        if self._world.ball.bearing > BASE_BEARING + BEARING_THRESHOLD: # TODO: Make sure this works well for close as well as far balls.
+            self._actions.blockingStraightWalk(0.05)
+        elif self._world.ball.bearing < BASE_BEARING - BEARING_THRESHOLD:
+            self._actions.blockingStraightWalk(-0.05)
+
 
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import EventManagerLoop
     burst.init()
-    EventManagerLoop(Goalie).run()
+    EventManagerLoop(EladGoalie).run()
 
