@@ -11,8 +11,6 @@ INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be 
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 DEFAULT_STEPS_FOR_TURN = 150
-# Same TODO
-DEFAULT_STEPS_FOR_WALK = 150
 
 MINIMAL_CHANGELOCATION_TURN = 0.15
 
@@ -68,7 +66,7 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk_param=moves.SLOW_WALK):
+        walk_param=moves.FASTEST_WALK):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -98,7 +96,7 @@ class Actions(object):
         
         # Vova trick - start with slower walk, then do the faster walk.
         slow_walk_distance = min(distance, StepLength*2)
-        self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+        self._motion.addWalkStraight( slow_walk_distance, steps )
         self._motion.addWalkStraight( distance - slow_walk_distance, steps )
 
         # Now turn to the final angle, taking into account the turn we already did
@@ -107,7 +105,7 @@ class Actions(object):
             did_a_turn[1] = final_turn
             self._motion.addTurn(final_turn, DEFAULT_STEPS_FOR_TURN)
         
-        duration = (DEFAULT_STEPS_FOR_WALK * distance / StepLength +
+        duration = (steps * distance / StepLength +
                     (did_a_turn and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
         if did_a_turn[0]:
             print "DEBUG: addTurn %3.3f" % bearing

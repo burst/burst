@@ -2,6 +2,7 @@
 #constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
 from burst.consts import DEG_TO_RAD
+from world import World
 
 def getMoveTime(move):
     totalTime = 0.0
@@ -83,6 +84,40 @@ SCAN_BALL= (
 #PENALIZED_HEADS = (((0.0,25.0),0.5),)
 
 # WALKS
+FASTEST_WALK_WEBOTS = [
+           100.0 * DEG_TO_RAD, # 0 ShoulderMedian
+           10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
+           30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
+           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
+           3.5,                  # 4 LHipRoll(degrees) 
+           -3.5,                 # 5 RHipRoll(degrees)
+           0.23,                 # 6 HipHeight(meters)
+           3.0,                  # 7 TorsoYOrientation(degrees)
+           0.07,                 # 8 StepLength
+           0.042,                 # 9 StepHeight
+           0.02,                 # 10 StepSide
+           0.3,                  # 11 MaxTurn
+           0.015,                # 12 ZmpOffsetX
+           0.018,                # 13 ZmpOffsetY 
+           18]                   # 15 20ms count per step
+
+FAST_WALK_WEBOTS = [
+           110.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           90.0 * DEG_TO_RAD,  # ElbowMedian 
+           0.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) (2.5 original)
+           -4.5,                  # RHipRoll(degrees) (-2.5 original)
+           0.23,                  # HipHeight(meters) MAX
+           0.0,                   # TorsoYOrientation(degrees)
+           0.04,                  # StepLength MAX
+           0.025,                  # StepHeight MAX
+           0.02,                  # StepSide
+           0.3,                   # MaxTurn
+           0.06,                  # ZmpOffsetX MAX
+           0.016,                 # ZmpOffsetY 
+           18]
+
 FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            90.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -97,7 +132,6 @@ FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.016,                 # ZmpOffsetY 
-           0.5,                     # Distance
            18]#,                    # 20ms count per step
            #,0.68]                  # Angle 0.68
 
@@ -183,6 +217,11 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
            120]                    # 20ms count per step
+
+if not World.isRealNao:
+    FASTEST_WALK = FASTEST_WALK_WEBOTS
+else:
+    FASTEST_WALK = SLOW_WALK
 
 
 #KICKS

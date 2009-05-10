@@ -6,6 +6,7 @@ Units:
 
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from time import time
+import os
 
 import burst
 from events import *
@@ -493,6 +494,8 @@ class Computed(object):
 ###############################################################################
 
 class World(object):
+
+    isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
 
     def __init__(self):
         self._memory = burst.getMemoryProxy()
