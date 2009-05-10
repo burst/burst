@@ -286,7 +286,7 @@ static void move_robot_3d(int robot, double tx, double ty, double tz, double alp
 
 // place robot in upright position, feet on the floor
 static void move_robot_2d(int robot, double tx, double tz, double alpha) {
-  move_robot_3d(robot, tx, 0.325, tz, alpha);
+  move_robot_3d(robot, tx, 0.330261, tz, alpha);
 }
 
 // move ball to 3d position
@@ -336,6 +336,12 @@ static void check_keyboard() {
   case 'R': // Right - still visible from robot initial position
     move_ball_2d(2.1, -0.5);
     break;
+
+  case 'Z':
+    move_robot_2d(0, 0.0, 0.0, -1.57);
+    break;
+
+
 
   case WB_ROBOT_KEYBOARD_SHIFT + 'B':
     if (control_data.teams[TEAM_BLUE].score > 0) {
