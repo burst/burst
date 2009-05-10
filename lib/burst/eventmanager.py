@@ -96,6 +96,7 @@ class EventManager(object):
         self._events = dict([(event, None) for event in
                 xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
         self._world = world
+        self._should_quit = False
         self.unregister_all()
 
     def register(self, event, callback):
@@ -115,6 +116,9 @@ class EventManager(object):
         for k in self._events.keys():
             self._events[k] = None
         self._num_registered = 0
+
+    def quit(self):
+        self._should_quit = True
 
     def runonce(self):
         """ Call all callbacks registered based on the new events
@@ -138,6 +142,8 @@ class EventManagerLoop(object):
         """
         import actions
         import world
+
+        # main objects: world, eventmanager, actions and player
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
         self._actions = actions.Actions(world = self._world)
@@ -145,6 +151,21 @@ class EventManagerLoop(object):
             actions = self._actions)
 
     def run(self):
+        """ wrap the actual run in _run to allow profiling - from the command line
+        use --profile
+        """
+        import burst.base
+        if burst.base.options.profile:
+            print "running via hotshot"
+            import hotshot
+            filename = "pythongrind.prof"
+            prof = hotshot.Profile(filename, lineevents=1)
+            prof.runcall(self._run)
+            prof.close()
+        else:
+            self._run()
+
+    def _run(self):
         # a sanity check
         import burst
         try:
@@ -158,8 +179,19 @@ class EventManagerLoop(object):
         # a temporary measure. The gamecontroller should keep track of the game state,
         # and when it is changed call the player.
         self._player.onStart()
+        self.main_start_time = time()
+        cur_time = self.main_start_time
+        next_loop = cur_time
         while True:
-            sleep(EVENT_MANAGER_DT)
-            self._world.update()
+            self._world.update(cur_time)
             self._eventmanager.runonce()
+            if self._eventmanager._should_quit:
+                break
+            next_loop += EVENT_MANAGER_DT
+            cur_time = time()
+            if cur_time > next_loop:
+                print "WARNING: loop took %s time" % (cur_time - next_loop - EVENT_MANAGER_DT)
+                next_loop = cur_time
+            else:
+                sleep(next_loop - cur_time)
 

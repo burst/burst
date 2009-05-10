@@ -7,6 +7,7 @@ Units:
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from time import time
 import os
+import sys
 
 import burst
 from events import *
@@ -513,6 +514,7 @@ class World(object):
         self._deferreds = []
         
         self.time = time()
+        self.const_time = self.time
 
         joints = self._motion.getBodyJointNames()
         chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
@@ -597,8 +599,8 @@ class World(object):
         if self.yglp.seen and self.ygrp.seen:
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
 
-    def update(self):
-        self.time = time()
+    def update(self, cur_time):
+        self.time = cur_time
         self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
@@ -615,15 +617,19 @@ class World(object):
     def startRecordAll(self, filename):
         import csv
         import gzip
-        self._record_file_name = '/media/userdata/%s' % filename
+        self._record_file_name = '/media/userdata/%s.csv.gz' % filename
         self._record_file = gzip.open(self._record_file_name, 'a+')
         self._record_csv = csv.writer(self._record_file)
         self._record_csv.writerow(self._recorded_header)
+        self._record_line_num = 0
     
     def _doRecord(self):
         if not self._record_csv: return
         # actuators and sensors for all dcm values
         self._record_csv.writerow(self._memory.getListData(self._recorded_vars))
+        self._record_line_num += 1
+        if self._record_line_num % 10 == 0:
+            print "(%3.3f) written csv line %s" % (self.time - self.const_time, self._record_line_num)
 
     def stopRecord(self):
         if self._record_file:

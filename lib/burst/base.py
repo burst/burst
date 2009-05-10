@@ -92,6 +92,7 @@ def parse_command_line_arguments():
     parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
     parser.add_option('-p', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
+    parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)
@@ -99,6 +100,7 @@ def parse_command_line_arguments():
     port = int(port)
     globals()['ip'] = ip
     globals()['port'] = port
+    globals()['options'] = opts
 
 parse_command_line_arguments()
 

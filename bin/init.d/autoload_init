@@ -1,0 +1,7 @@
+#!/bin/sh
+AUTOLOAD=/opt/naoqi/modules/lib/autoload.ini
+TMP=/tmp/autoload.tmp
+
+sed 's/^man/#man/' $AUTOLOAD > $TMP
+cp $AUTOLOAD /home/root/autoload.ini.bak
+cp $TMP $AUTOLOAD
