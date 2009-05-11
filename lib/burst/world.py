@@ -519,19 +519,9 @@ class World(object):
 
     isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
 
-    def __init__(self):
-        self._memory = burst.getMemoryProxy()
-        self._motion = burst.getMotionProxy()
-        self._events = set()
-        self._deferreds = []
-        
-        self.time = time()
-        self.const_time = self.time
-
-        joints = self._motion.getBodyJointNames()
-        chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
-        self.jointnames = joints
-        self.chainnames = chains
+    def getRecorderVariableNames(self):
+        joints = self.jointnames
+        chains = self.chainnames
 
         # Recording of joints / sensors
         dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
@@ -567,8 +557,25 @@ class World(object):
         # Various other stuff
         various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
                'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
-        self._recorded_vars = (com + dcm + jsense + actsense + inert + force +
+        return (com + dcm + jsense + actsense + inert + force +
                 poschains + transform + various)
+
+    def __init__(self):
+        self._memory = burst.getMemoryProxy()
+        self._motion = burst.getMotionProxy()
+        self._events = set()
+        self._deferreds = []
+        
+        self.time = time()
+        self.const_time = self.time
+
+        joints = self._motion.getBodyJointNames()
+        chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
+        self.jointnames = joints
+        self.chainnames = chains
+
+        self._recorded_vars = self.getRecorderVariableNames()
+
         print "world will record (if asked) %s vars" % len(self._recorded_vars)
         self._recorded_header = self._recorded_vars
 

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ "$CTC_DIR" == "" ]; then
+	echo you need to define CTC_DIR to point to where you unpacked ctc-1.1.0
+	exit -1
+fi
+
+BUILD=crossbuild
+
+if [ ! -e $BUILD ]; then
+	echo running cmake and ccmake
+	mkdir $BUILD
+	cd $BUILD
+	../../../bin/crosscompile.sh $CTC_DIR ..
+	ccmake .
+	cd ..
+fi
+cd $BUILD
+make
+

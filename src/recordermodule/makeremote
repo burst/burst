@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if [ ! -e build ]; then
+	echo running cmake and ccmake
+	mkdir build
+	cd build
+	cmake ..
+	ccmake .
+	cd ..
+fi
+cd build
+make
+

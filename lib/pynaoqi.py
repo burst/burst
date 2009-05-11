@@ -322,6 +322,8 @@ class NaoQiReturn(object):
     def fromNaoQiCall(self, obj):
         # TODO - check error
         ret = obj.firstChild.firstChild
+        if ret.nodeName == 'faultcode':
+            return ret.toprettyxml()
         if self._rettype == None:
             return None
         if self._rettype in set([bool, int, float, str]):
@@ -329,6 +331,9 @@ class NaoQiReturn(object):
         if self._rettype in [ARRAY, VECTOR_STRING]:
             if ret.firstChild is None:
                 return []
+            first_child_type = ret.firstChild.attributes['xsi:type'].value
+            if first_child_type in ['xsd:float', 'xsd:int', 'xsd:string']: # some sort of exception
+                return get_xsi_type_to_ctor(ret.firstChild.attributes['xsi:type'].value)(ret.firstChild)
             return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
         return ret
 
