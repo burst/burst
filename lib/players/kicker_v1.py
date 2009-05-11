@@ -49,10 +49,6 @@ class Kicker(Player):
         self._actions.initPoseAndStiffness()
         self.doNextAction()
         
-        self._eventmanager.register(EVENT_FALLEN_DOWN, self.onFallenDown)
-        self._eventmanager.register(EVENT_ON_BELLY, self.onOnBack)
-        self._eventmanager.register(EVENT_ON_BACK, self.onOnBelly)
-
         #self.doNextAction()
         
 #        if self.kp is None:
@@ -68,15 +64,6 @@ class Kicker(Player):
         #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
         #self._actions.changeHeadAnglesRelative(0.1, 0.3) # yaw (left-right) / pitch (up-down)
         #self.doBallTracking()
-
-    def onFallenDown(self):
-        print "I'm down!"
-
-    def onOnBack(self):
-        print "I'm on my back."
-
-    def onOnBelly(self):
-        print "I'm on my belly."
 
     def doNextAction(self):
         print "\nDeciding on next move:"
