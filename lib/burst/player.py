@@ -1,9 +1,15 @@
+from burst.events import *
+from events import EVENT_ON_BACK
+
 class Player(object):
 
     def __init__(self, world, eventmanager, actions):
         self._world = world
         self._eventmanager = eventmanager
         self._actions = actions
+        self._eventmanager.register(EVENT_FALLEN_DOWN, self.onFallenDown)
+        self._eventmanager.register(EVENT_ON_BELLY, self.onOnBelly)
+        self._eventmanager.register(EVENT_ON_BACK, self.onOnBack)
     
     def onGCPlaying(self):
         """ only state player needs to deal with, the rest are done
@@ -26,3 +32,14 @@ class Player(object):
         """
         self._actions.clearFootsteps()
 
+    def onFallenDown(self):
+        self._eventmanager.unregister(EVENT_FALLEN_DOWN)
+        print "I'm down!"
+
+    def onOnBack(self):
+        self._eventmanager.unregister(EVENT_ON_BACK)
+        print "I'm on my back."
+
+    def onOnBelly(self):
+        self._eventmanager.unregister(EVENT_ON_BELLY)
+        print "I'm on my belly."
