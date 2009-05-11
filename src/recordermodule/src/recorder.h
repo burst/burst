@@ -21,68 +21,75 @@
 using namespace AL;
 
 class recorder:public
-  AL::ALModule
+    AL::ALModule
 {
-public:
+  public:
     /**
      * Default Constructor.
      */
-  recorder (ALPtr < ALBroker > pBroker, std::string pName);
+    recorder (ALPtr < ALBroker > pBroker, std::string pName);
 
     /**
      * Destructor.
      */
-  virtual ~
-  recorder ();
+    virtual ~
+    recorder ();
 
     // External module interface
-    void startRecording();
+    void
+    startRecording ();
 
-    void stopRecording();
+    void
+    stopRecording ();
 
-    int getRowNumber();
-  
+    int
+    getRowNumber ();
+
     /**
      * version
      * @return The version number of recorder
      */
-  std::string
-  version ();
+    std::string
+    version ();
 
 
     /**
      * innerTest
      * @return True if all the tests passed
      */
-  bool
-  innerTest ()
-  {
-    return true;
-  };
+    bool
+    innerTest ()
+    {
+        return true;
+    };
 
 
-  void
-  dataChanged (const std::string & pDataName, const ALValue & pValue,
-	       const std::string & pMessage);
+    void
+    dataChanged (const std::string & pDataName, const ALValue & pValue,
+                 const std::string & pMessage);
 
-private:
-    
-    ogzstream                     m_file_out;
-    std::string                   m_filename;
-    bool                          m_file_init;   // true if m_fileout is open, false otherwise
-    bool                          m_recording;   // are we recording
-    int                           m_row;         // which row of the csv file has been recorded
+  private:
 
-    AL::ALPtr<AL::ALBroker>       m_broker;      // needed for ConnectToVariables
-    std::vector<std::string>      m_varnames;
-    std::vector<float>            m_values;
-    AL::ALPtr<ALMemoryFastAccess> m_memoryfastaccess;
+    void readVariablesFile();
 
-  //proxy to the logger module
-  ALPtr < AL::ALLoggerProxy > m_log;
+    ogzstream m_file_out;
+    std::string m_filename;
+    bool m_file_init;           // true if m_fileout is open, false otherwise
+    bool m_recording;           // are we recording
+    int
+        m_row;                  // which row of the csv file has been recorded
 
-  //proxy to the memory module
-  ALPtr < AL::ALMemoryProxy > m_memory;
+    AL::ALPtr < AL::ALBroker > m_broker;        // needed for ConnectToVariables
+    std::vector < std::string > m_varnames;
+    std::vector < float >
+        m_values;
+    AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
+
+    //proxy to the logger module
+    ALPtr < AL::ALLoggerProxy > m_log;
+
+    //proxy to the memory module
+    ALPtr < AL::ALMemoryProxy > m_memory;
 
 
 };
