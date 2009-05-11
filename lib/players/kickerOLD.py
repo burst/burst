@@ -22,7 +22,7 @@ from burst.consts import *
 import burst.moves as moves
 from math import cos, sin
 """
-Logic for Kicker:
+Logic for KickerOLD:
 
 search for ball in current frame
 found ball -> center on ball
@@ -38,10 +38,10 @@ gotoLocation(kickpoint) ->
  not close enough -> approach for kick (not implmeneted yet)
 """
 
-class Kicker(Player):
+class KickerOLD(Player):
     
 #    def onStop(self):
-#        super(Kicker, self).onStop()
+#        super(KickerOLD, self).onStop()
 
     def onStart(self):
         self.kp = None
@@ -426,5 +426,5 @@ if __name__ == '__main__':
     import burst
     from burst.eventmanager import EventManagerLoop
     burst.init()
-    EventManagerLoop(Kicker).run()
+    EventManagerLoop(KickerOLD).run()
 

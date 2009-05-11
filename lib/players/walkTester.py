@@ -1,6 +1,4 @@
 #!/usr/bin/python
-from events import EVENT_CHANGE_LOCATION_DONE
-
 import os
 in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
 if os.getcwd() == in_tree_dir:
@@ -25,17 +23,20 @@ class walkTester(Player):
         self.kp = None
 
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        #self._actions.initPoseAndStiffness()
+        self._actions.initPoseAndStiffness()
         self.walkStartTime = time.time()
         self.test()
 
     def test(self):
         self._actions.changeLocationRelative(100.0)
+#        self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)
+#        self._actions.executeSyncMove(moves.GREAT_KICK_LEFT)
+#        self._actions.sitPoseAndRelax()
+#        self._eventmanager.quit()
     
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()
-        print "Walk Done! - tool approximately %f" % (self.walkEndTime - self.walkStartTime)
-        exit(0)
+        print "Walk Done! - took approximately %f" % (self.walkEndTime - self.walkStartTime)
 
 if __name__ == '__main__':
     import burst

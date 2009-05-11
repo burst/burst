@@ -339,6 +339,8 @@ static void check_keyboard() {
 
   case 'Z':
     move_robot_2d(0, 0.0, 0.0, -1.57);
+    move_ball_2d(-1.32302, 0.00305675);
+    //move_ball_2d(-0.23134, -0.0536347);
     break;
 
 

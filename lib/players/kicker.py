@@ -14,7 +14,7 @@ from burst.consts import *
 import burst.moves as moves
 from math import cos, sin
 """
-    Logic for Dynamic Kicker:
+    Logic for Kicker:
 
 1. Scan for goal & ball
 2. Calculate kicking-point (correct angle towards opponent goal), go as quickly as possible towards it (turn-walk-turn) - open loop
@@ -25,11 +25,12 @@ Keep using head to track once ball is found? will interfere with closed-loop
 
 TODO:
 What to do when near ball and k-p wasn't calculated?
+Handle case where ball isn't seen after front scan (add full scan inc. turning around) - hopefully will be overridden with ball from comm.
 When calculating k-p, take into account the kicking leg (use the one closer to opponent goal)
 
 """
 
-class kickerDynamic(Player):
+class kicker(Player):
     
     def onStart(self):
         self.kp = None
@@ -38,7 +39,7 @@ class kickerDynamic(Player):
         self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         self._actions.initPoseAndStiffness()
         
-        # do a short search for kicking point
+        # do a quick search for kicking point
         self._actions.scanQuick().onDone(self.doNextAction)
         
         # self._actions.scanFront().onDone(self.onScanFrontDone)
@@ -144,5 +145,5 @@ if __name__ == '__main__':
     import burst
     from burst.eventmanager import EventManagerLoop
     burst.init()
-    EventManagerLoop(kickerDynamic).run()
+    EventManagerLoop(kicker).run()
 
