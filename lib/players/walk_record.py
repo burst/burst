@@ -27,19 +27,37 @@ def debugme():
 
 class Rectangle(Player):
     
+    def _recordWithWorld(self):
+        self._world.startRecordAll('walk_%04d%02d%02d_%02d%02d%02d' % (
+            now.year, now.month, now.day, now.hour, now.minute, now.second))
+
+    def _recordWithRecorder(self):
+        self.recorder = burst.ALProxy('recorder')
+        self.recorder.startRecording()
+
+    def _stopRecordWithWorld(self):
+        self._world.stopRecord()
+
+    def _stopRecordWithRecorder(self):
+        self.recorder.stopRecording()
+        rows = self.recorder.getRowNumber()
+        print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.const_time))
+
+    startRecord = _recordWithRecorder
+    stopRecord = _stopRecordWithRecorder
+
     def onStart(self):
 
         now = datetime.now()
-        self._world.startRecordAll('walk_%04d%02d%02d_%02d%02d%02d' % (
-            now.year, now.month, now.day, now.hour, now.minute, now.second))
+        self.startRecord()
         self._actions.initPoseAndStiffness()
         self._actions.changeLocationRelative(
-                    200.0, 0.0, 0.0, walk_param=moves.SLOW_WALK).onDone(
+                    40.0, 0.0, 0.0, walk_param=moves.SLOW_WALK).onDone(
                       self.stopRecord)
 
     def stopRecord(self):
         print "done - stopping recording"
-        self._world.stopRecord()
+        self.stopRecord()
         self._actions.sitPoseAndRelax()
         self._eventmanager.quit()
 

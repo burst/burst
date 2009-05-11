@@ -12,7 +12,7 @@ import sys
 import burst
 from events import *
 from eventmanager import Deferred, EVENT_MANAGER_DT
-import sensing
+from sensing import FalldownDetector
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -24,30 +24,8 @@ ROBOT_DIAMETER = 58.0 # this is from Appendix A of Getting Started - also, doesn
 GOAL_POST_HEIGHT = 80.0
 GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it is the diameter in the sense of longest line across an image of the post.
 
-#### Vision constants
-FOV_X = 46.4 * DEG_TO_RAD
-FOV_Y = 34.8 * DEG_TO_RAD
-IMAGE_WIDTH  = 0.236 # cm - i.e 2.36 mm
-IMAGE_HEIGHT = 0.176 # cm
-FOCAL_LENGTH = IMAGE_HEIGHT / 2.0 / atan(FOV_Y / 2)
-
-# TODO - ask the V.I.M.
-IMAGE_PIXELS_HEIGHT = 320
-
-DISTANCE_FACTOR = IMAGE_PIXELS_HEIGHT * IMAGE_HEIGHT / FOCAL_LENGTH
-
 # Robot constants
 MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
-
-
-def getObjectDistanceFromHeight(height_in_pixels, real_height_in_cm):
-    """ TODO: This is the actual Height, i.e. z axis. This will work fine
-    as long as the camera is actually level, i.e. pitch is zero. But that is not
-    the general case - so to fix this, this method needs to take that into account,
-    either by getting the pitch or getting a real_heigh_in_cm that is times the sin(pitch)
-    or something like that/
-    """
-    return DISTANCE_FACTOR / height_in_pixels * real_height_in_cm
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -99,7 +77,7 @@ class Locatable(object):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
         radius = max(width, height)
         radius / self._real_length
-
+        # TODO - NOT FINISHED
         #import pdb; pdb.set_trace()
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
@@ -147,6 +125,7 @@ class Ball(Movable):
         super(Ball, self).__init__(world,
             real_length=BALL_REAL_DIAMETER)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
+        self._world.addMemoryVars(self._ball_vars)
 
         self.centerX = 0.0
         self.centerY = 0.0
@@ -187,8 +166,8 @@ class Ball(Movable):
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_bearing, new_centerX, new_centerY, new_confidence,
                 new_dist, new_elevation, new_focDist, new_height,
-                    new_width) = ball_state = self._memory.getListData(self._ball_vars)
-        # getListData returns 'None' for non existant values. - TODO: check once on startup, not every iteration
+                    new_width) = ball_state = self._world.getVars(self._ball_vars)
+        # getVars returns 'None' for non existant values. - TODO: check once on startup, not every iteration
         # calculate events.
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
@@ -346,15 +325,6 @@ class Robot(Movable):
         self._head_posts.calc_events(events, deferreds)
         self._walk_posts.calc_events(events, deferreds)
         
-        # Check if the robot has fallen down. If it has, fire the appropriate event.
-        # TODO: Maybe I should fire FALLEN_DOWN only the first time around (but keep ON_BELLY and ON_BACK as they are)?
-        if sensing.hasFallenDown():
-            events.add(EVENT_FALLEN_DOWN) # 
-            if sensing.isOnBelly():
-                events.add(EVENT_ON_BELLY)
-            if sensing.isOnBack():
-                events.add(EVENT_ON_BACK)
-
 class GoalPost(Locatable):
 
     def __init__(self, world, name, position_changed_event):
@@ -367,6 +337,7 @@ class GoalPost(Locatable):
             'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
          'FocDist', 'Height', 'LeftOpening', 'RightOpening', 'Width', 'X', 'Y',
          'shotAvailable']]
+        self._world.addMemoryVars(self._vars)
 
         self.angleX = 0.0
         self.angleY = 0.0
@@ -389,7 +360,7 @@ class GoalPost(Locatable):
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
                 new_dist, new_elevation, new_focDist, new_height,
                 new_leftOpening, new_rightOpening, new_x, new_y, new_shotAvailable,
-                    new_width) = new_state = self._memory.getListData(self._vars)
+                    new_width) = new_state = self._world.getVars(self._vars)
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen: # otherwise new_elevation is 'None'
@@ -566,8 +537,15 @@ class World(object):
         self._events = set()
         self._deferreds = []
         
+        # we do memory.getListData once per self.update, in one go.
+        # later when this is done with shared memory, it will be changed here.
+        # initialize these before initializing objects that use them (Ball etc.)
+        self._vars_to_getlist_set = set()
+        self._vars_to_getlist = []
+        self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
+
         self.time = time()
-        self.const_time = self.time
+        self.const_time = self.time     # construction time
 
         joints = self._motion.getBodyJointNames()
         chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
@@ -578,6 +556,7 @@ class World(object):
 
         print "world will record (if asked) %s vars" % len(self._recorded_vars)
         self._recorded_header = self._recorded_vars
+        self._record_basename = World.isRealNao and '/media/userdata' or '/tmp'
 
         # Stuff that we prefer the users use directly doesn't get a leading underscore
         self.ball = Ball(self)
@@ -586,6 +565,7 @@ class World(object):
         self.yglp = GoalPost(self, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
         self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
         self.robot = Robot(self)
+        self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
@@ -601,7 +581,8 @@ class World(object):
         # each run).
         self._objects = [
             # All basic objects that rely on just naoproxies should be in the first list
-            [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp, self.robot],
+            [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
+             self.robot, self.falldetector],
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
@@ -618,8 +599,44 @@ class World(object):
         if self.yglp.seen and self.ygrp.seen:
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
 
+    def addMemoryVars(self, vars):
+        # slow? but keeps the order of that of the registration
+        for v in vars:
+            if v not in self._vars_to_getlist_set:
+                self._vars_to_getlist.append(v)
+                self._vars_to_getlist_set.add(v)
+                self.vars[v] = None
+
+    def removeMemoryVars(self, vars):
+        """ IMPORTANT NOTICE: you must make sure you don't remove variables that
+        another object has added before, or you will probably break it
+        """
+        for v in vars:
+            if v in self._vars_to_getlist_set:
+                self._vars_to_getlist.remove(v)
+                self._vars_to_getlist_set.remove(v)
+                del self.vars[v]
+
+    def getVars(self, vars, returnNoneOnMissing=True):
+        """ quick access to multiple vars (like memory.getListData, only doesn't go to the
+        network or anything). notice the returnNoneOnMissing bit
+        """
+        if returnNoneOnMissing:
+            return [self.vars.get(k, None) for k in vars]
+        return [self.vars[k] for k in vars]
+
+    def _updateMemoryVariables(self):
+        # TODO: optmize the heck out of this. Options include:
+        #  * subscribeOnData / subscribeOnDataChange
+        #  * module with alfastmemoryaccess, and shared memory with python
+        vars = self._vars_to_getlist
+        values = self._memory.getListData(vars)
+        for k, v in zip(vars, values):
+            self.vars[k] = v
+
     def update(self, cur_time):
         self.time = cur_time
+        self._updateMemoryVariables() # must be first in update
         self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)
         for objlist in self._objects:
@@ -636,7 +653,9 @@ class World(object):
     def startRecordAll(self, filename):
         import csv
         import gzip
-        self._record_file_name = '/media/userdata/%s.csv.gz' % filename
+
+        self.addMemoryVars(self._recorded_vars)
+        self._record_file_name = '%s/%s.csv.gz' % (self._record_basename, filename)
         self._record_file = gzip.open(self._record_file_name, 'a+')
         self._record_csv = csv.writer(self._record_file)
         self._record_csv.writerow(self._recorded_header)
@@ -645,7 +664,7 @@ class World(object):
     def _doRecord(self):
         if not self._record_csv: return
         # actuators and sensors for all dcm values
-        self._record_csv.writerow(self._memory.getListData(self._recorded_vars))
+        self._record_csv.writerow(self.getVars(self._recorded_vars))
         self._record_line_num += 1
         if self._record_line_num % 10 == 0:
             print "(%3.3f) written csv line %s" % (self.time - self.const_time, self._record_line_num)
@@ -659,4 +678,5 @@ class World(object):
             sys.stdout.flush()
         self._record_file = None
         self._record_csv = None
+        self.removeMemoryVars(self._recorded_vars)
 

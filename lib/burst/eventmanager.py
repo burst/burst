@@ -101,7 +101,8 @@ class EventManager(object):
         """
         if not self._events[event]:
             self._num_registered += 1
-            print "WARNING: overwriting register for event %s with %s" % (event, callback)
+        else:
+            print "WARNING: overwriting register for event %s with %s (old was %s)" % (event, callback, self._events[event])
         self._events[event] = callback
 
     def unregister(self, event):
@@ -187,7 +188,8 @@ class EventManagerLoop(object):
             next_loop += EVENT_MANAGER_DT
             cur_time = time()
             if cur_time > next_loop:
-                print "WARNING: loop took %s time" % (cur_time - next_loop - EVENT_MANAGER_DT)
+                print "WARNING: loop took %0.3f ms" % (
+                    (cur_time - next_loop - EVENT_MANAGER_DT) * 1000)
                 next_loop = cur_time
             else:
                 sleep(next_loop - cur_time)

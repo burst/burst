@@ -1,31 +1,34 @@
-import burst
-from burst.consts import *
+from events import EVENT_FALLEN_DOWN, EVENT_ON_BELLY, EVENT_ON_BACK
 
+class FalldownDetector(object):
+    """ Detecting / Storing robot fall down state
+    """
+    
+    def __init__(self, world):
+        self._world = world
+        self._var = "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
+        self._world.addMemoryVars([self._var])
 
-# Cached values. They serve to use the memory module less, as it might be a bit slow.
-cachedY = None
+    def hasFallenDown(self):
+        return self.isOnBack() or self.isOnBelly()
 
-# TODO: Should I cache memory, or is that just a splendid way to create a pitfall where people
-# accidentally import this module before they import the /burst/ module, and so an error is fired when memory is first accessed?
+    def calc_events(self, events, deferreds):
+        self.y = self._world.vars[self._var]
+        self._on_back = self.y < -1.0
+        self._on_belly = self.y > 1.0
 
+        # Check if the robot has fallen down. If it has, fire the appropriate event.
+        # TODO: Maybe I should fire FALLEN_DOWN only the first time around (but keep ON_BELLY and ON_BACK as they are)?
+        if self.hasFallenDown():
+            events.add(EVENT_FALLEN_DOWN)
+            if self.isOnBelly():
+                events.add(EVENT_ON_BELLY)
+            if self.isOnBack():
+                events.add(EVENT_ON_BACK)
 
-def hasFallenDown():
-    return isOnBack() or isOnBelly()
+    def isOnBack(self):
+        return self._on_back
 
+    def isOnBelly(self):
+        return self._on_belly
 
-def isOnBack(useCachedValue=False):
-    if useCachedValue and not cachedY == None:
-        y = cachedY
-    else:
-        memory = burst.getMemoryProxy()
-        y = memory.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",0)
-    return y < -1.0
-
-
-def isOnBelly(useCachedValue=False):
-    if useCachedValue and not cachedY == None:
-        y = cachedY
-    else:
-        memory = burst.getMemoryProxy()
-        y = memory.getData("Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",0)
-    return y > 1.0
