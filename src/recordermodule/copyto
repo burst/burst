@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOST=192.168.7.110
+HOST=192.168.7.109
 MODULE=crossbuild/src/librecordermodule.so
 if [ ! -e $MODULE ]; then
 	echo you need to build the local version first

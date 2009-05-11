@@ -13,8 +13,8 @@
 using namespace std;
 using namespace AL;
 
-const char* VARNAMES_FILENAME =           "/home/root/recorder_vars.txt";
-const char* DEFAULT_OUT_CSV_GZ_FILENAME = "/media/userdata/new.csv.gz"  ;
+const char* VARNAMES_FILENAME = "/home/root/recorder_vars.txt";
+const char* RESULTS_DIRECTORY = "/media/userdata/"  ;
 
 //______________________________________________
 // constructor
@@ -91,6 +91,14 @@ recorder::recorder (ALPtr < ALBroker > pBroker, std::string pName):ALModule (pBr
 
 }
 
+std::string get_date() {
+   time_t t = time(0);
+   struct tm* lt = localtime(&t);
+   char time_str[15];
+   sprintf(time_str, "%04d%02d%02d_%02d%02d%02d", lt->tm_year + 1900, lt->tm_mon+ 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
+   return std::string(time_str);
+}
+
 
 //______________________________________________
 // startRecording
@@ -100,9 +108,11 @@ void recorder::startRecording ()
   this->m_recording = true;
   this->m_row = 0;
     if (!m_file_init) {
-        std::cout << "recorder: opening file " << DEFAULT_OUT_CSV_GZ_FILENAME << std::endl;
+
+        m_filename = std::string(RESULTS_DIRECTORY) + "/recorder_" + get_date() + ".csv.gz";
+        std::cout << "recorder: opening file " << m_filename << std::endl;
         // open the file
-        m_file_out.open(DEFAULT_OUT_CSV_GZ_FILENAME);
+        m_file_out.open(m_filename.c_str());
         m_file_init = true;
     }
 
@@ -127,13 +137,9 @@ void recorder::startRecording ()
 
     m_memoryfastaccess =
         AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
-    // test which variable breaks
-    std::vector<std::string> vars;
-    for (i = 0 ; i < m_varnames.size() ; ++i) {
-        vars.push_back(m_varnames[i]);
-        std::cout << "adding " << m_varnames[i] << std::endl;
-        m_memoryfastaccess->ConnectToVariables(m_broker, vars);
-    }
+
+    m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+    m_values.resize(m_varnames.size(), 0.0); // init m_values
 
     std::cout << "recorder task started." << std::endl;
 

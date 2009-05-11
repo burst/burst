@@ -68,6 +68,7 @@ public:
 private:
     
     ogzstream                     m_file_out;
+    std::string                   m_filename;
     bool                          m_file_init;   // true if m_fileout is open, false otherwise
     bool                          m_recording;   // are we recording
     int                           m_row;         // which row of the csv file has been recorded
