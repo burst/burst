@@ -89,7 +89,10 @@ class Main(object):
     def getVision(self):
         """ TODO: callback from twisted
         """
-        new_data = dict(zip(self.names, self.con.ALMemory.getListData(self.names)))
+        self.con.ALMemory.getListData(self.names).addCallback(self._onListData)
+
+    def _onListData(self, list_data):
+        new_data = dict(zip(self.names, list_data))
         def get(part, attr):
             return new_data['/BURST/Vision/%s/%s/' % (part, attr)]
         def get_many(part, attrs):

@@ -20,16 +20,29 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 
 import pynaoqi
-from burst_util import cached
+from burst_util import cached, cached_deferred, Deferred
 
-DT_CHECK_FOR_NEW_ANGLES = 0.5 # seconds between socket calls
+DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
 
-@cached('joint_data.pickle')
+@cached_deferred('%s/.burst_joint_data.pickle' % os.environ['HOME'])
 def getJointData(con):
-    joint_names = con.ALMotion.getBodyJointNames()
-    joint_limits = dict([(joint_name, con.ALMotion.getJointLimits(joint_name)) for joint_name in joint_names])
-    return (joint_names, joint_limits)
+
+    results = {}
+    collecting = Deferred()
+
+    def collect_callback(joint_names):
+        def store_one(jointname, result):
+            results[jointname] = result
+            if len(results) == len(joint_names):
+                # finally!
+                collecting.callback((joint_names, results))
+        for joint_name in joint_names:
+            con.ALMotion.getJointLimits(joint_name).addCallback(lambda result: store_one(joint_name, result))
+
+    con.ALMotion.getBodyJointNames().addCallback(collect_callback)
+
+    return collecting
 
 class Inertial(object):
 
@@ -52,7 +65,9 @@ class Inertial(object):
         self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
 
     def getInertial(self):
-        vals = self.con.ALMemory.getListData(self.vars)
+        self.con.ALMemory.getListData(self.vars).addCallback(self.updateLists)
+
+    def updateLists(self, vals):
         for l, new_val in zip(self.l, vals):
             l.set_label('%3.3f' % new_val)
 
@@ -102,7 +117,7 @@ class Main(object):
                 self.last_sent_value = cur
                 s = self.set_scale
                 # TODO: throtlling?
-                print "joint, %s, value %s %s" % (joint_name, s.get_value(), val)
+                print "joint, %s, value %s %s" % (self.name, s.get_value(), val)
                 # name, value, speed percent [0-100], interpolation (1 = smooth)
                 con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
                 
@@ -111,7 +126,9 @@ class Main(object):
         con = self.con
         self.vision = None
         self.inertial = None
-        self.joint_names, self.joint_limits = getJointData(self.con)
+        def onJointData(results):
+            self.joint_names, self.joint_limits = results
+        getJointData(self.con).addCallback(onJointData)
         w = gtk.Window()
         c = gtk.VBox()
         table = gtk.Table(rows=3, columns=len(self.joint_names), homogeneous=False)
@@ -135,21 +152,23 @@ class Main(object):
         # Create the joint controlling and displaying slides
 
         c.add(table)
-        cur_angles = self.con.ALMotion.getBodyAngles()
-        for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
-            min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
-            s = Scale(i, joint_name, min_val, max_val, cur_a)
-            scales[joint_name] = s
-            both = gtk.FILL | gtk.EXPAND
-            for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), [(0, 0), (0, 0), (both, both)]):
-                table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
-            # value-changed is raised also when set_value is called
-            # move-scaler - nothing?
+        def onBodyAngles(cur_angles):
+            for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
+                min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
+                s = Scale(i, joint_name, min_val, max_val, cur_a)
+                scales[joint_name] = s
+                both = gtk.FILL | gtk.EXPAND
+                for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), [(0, 0), (0, 0), (both, both)]):
+                    table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
+                # value-changed is raised also when set_value is called
+                # move-scaler - nothing?
+            self.updater = task.LoopingCall(self.getAngles)
+            self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
+
+        self.con.ALMotion.getBodyAngles().addCallback(onBodyAngles)
         w.resize(700, 400)
         w.show_all()
         w.connect("destroy", gtk.main_quit)
-        self.updater = task.LoopingCall(self.getAngles)
-        self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):
