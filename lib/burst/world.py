@@ -486,9 +486,17 @@ def cross(*args):
         for rest in cross(*args[1:]):
             yield tuple([x] + list(rest))
 
+def gethostname():
+    fd = open('/etc/hostname')
+    hostname = fd.read().strip().lower() # all hostnames should be lower, we just enforce it..
+    fd.close()
+    return hostname
+
 class World(object):
 
+    # TODO - move this to __init__?
     isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
+    hostname = gethostname()
 
     def getRecorderVariableNames(self):
         joints = self.jointnames
