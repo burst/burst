@@ -36,6 +36,12 @@ class burstmem:public
 
     // External module interface
 
+    void        startMemoryMap();
+    void        stopMemoryMap();
+    bool        isMemoryMapRunning();
+    int         getNumberOfVariables();
+    std::string getVarNameByIndex(int i);
+
     /**
      * version
      * @return The version number of recorder
@@ -55,16 +61,19 @@ class burstmem:public
     };
 
     void dataChanged (const std::string & pDataName, const ALValue & pValue,
-                 const std::string & pMessage) { }
+                 const std::string & pMessage);
 
   private:
 
-    //RecordingThread* m_thread; // not implemented currently - trying a process instead
+    bool                            m_copying;
+    bool                            m_memory_mapped;
+
+    int                             m_mmap_fd;
 
     AL::ALPtr < AL::ALBroker >      m_broker;        // needed for ConnectToVariables
     std::vector < std::string >     m_varnames;
-    std::vector < float >           m_values;
-    int                             m_values_size;
+    std::vector < float >           m_values;       // TODO - use a smart pointer. need to get me one of those.
+    float*                          m_mmap;         // memory mapped pointer
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
 
     //proxy to the logger module
