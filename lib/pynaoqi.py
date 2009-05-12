@@ -427,7 +427,7 @@ class NaoQiModule(object):
         self._modname = modname
         # async? nah, don't bother right now. (everything here
         # should be twisted.. ok, it can be asynced some other way)
-        self.bodyInitDeferred = Deferred() # hook for inheriting classes
+        self.initDeferred = Deferred() # hook for inheriting classes, will be called when init is done
         self.methods = MethodHolder()
         self.getMethods().addCallback(self.onMethodsAvailable)
 
@@ -440,7 +440,7 @@ class NaoQiModule(object):
         # this actually uses one of the methods above!
         self._has_docs = False
         self.__doc__ = """ Call con.%s.makeHelp() to generate help for this module and it's methods """ % self._modname
-        self.bodyInitDeferred.callback(None)
+        self.initDeferred.callback(None)
 
     def makeHelp(self):
         if self.VERBOSE:
@@ -481,7 +481,7 @@ class ALMotionExtended(NaoQiModule):
 
     def __init__(self, con):
         NaoQiModule.__init__(self, con, 'ALMotion')
-        self.bodyInitDeferred.addCallback(self.onModuleInited)
+        self.initDeferred.addCallback(self.onModuleInited)
 
     def onModuleInited(self, result):
         self.getBodyJointNames().addCallback(self.onBodyJointNames)
