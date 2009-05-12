@@ -538,6 +538,8 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
+                from pynaoqi_twisted import SoapRequestFactory
+                self.SoapRequestFactory = SoapRequestFactory
                 NaoQiModule.VERBOSE = False
 
         self._initModules()
@@ -624,70 +626,10 @@ class BaseNaoQiConnection(object):
         """ send a request for object o, return deferred to be called with result as soapbody
         instance
         """
-
-        deferred = Deferred()
-        tosend = self._req.make(o)
-        con = self
-        from twisted.internet.protocol import Protocol, ClientFactory
         from twisted.internet import reactor
-        import twisted.internet.error
-
-        class SoapProtocol(Protocol):
-
-            def __init__(self):
-                self._got = []
-
-            def connectionMade(self):
-                #print "sending %s" % tosend
-                self.transport.write(tosend)
-
-            def dataReceivedHeaders(self, data):
-                #print "YAY DATA", data[:10]
-                # at some point we will be done, then we call our deferred
-                self._got.append(data)
-                self._headers = ''.join(self._got)
-                left_bracket_pos = data.find('<')
-                if left_bracket_pos == -1: return # still more headers
-                self._content_length = con.contentLengthFromHeaders(self._headers)
-
-                self._got = []
-                self._got_len = 0
-                self.dataReceived = self.dataReceivedContent
-                self.dataReceived(data[left_bracket_pos:])
-
-            def dataReceivedContent(self, data):
-                self._got_len += len(data)
-                self._got.append(data)
-                if self._got_len >= self._content_length:
-                    body = ''.join(self._got)
-                    xml = minidom.parseString(body)
-                    soapbody = xml.documentElement.firstChild
-                    deferred.callback(soapbody)
-                    self.transport.loseConnection()
-                else:
-                    print "YAY DATA, but still missing: %s < %s" % (self._got_len, self._content_length)
-
-            dataReceived = dataReceivedHeaders
-
-        class Factory(ClientFactory):
-            
-            def startedConnecting(self, connector):
-                #print "YAY CONNECTING", connector
-                pass
-
-            def buildProtocol(self, addr):
-                return SoapProtocol()
-
-            def clientConnectionLost(self, connector, reason):
-                if reason.type != twisted.internet.error.ConnectionDone:
-                    print "BOO CONNECTION LOST", connector, reason
-
-            def clientConnectionFailed(self, connector, reason):
-                print "BOO CONNECTION FAILED", connector, reason
-
-        # we need to return a deferred - cause we want compatibility
-        # between the with twisted and without versions
-        reactor.connectTCP(self._req._host, self._req._port, Factory())
+        deferred = Deferred()
+        reactor.connectTCP(host=self._req._host, port=self._req._port,
+            factory=self.SoapRequestFactory(con=self, tosend=self._req.make(o), deferred=deferred))
         return deferred
 
     # Reflection api - getMethods, getModules
