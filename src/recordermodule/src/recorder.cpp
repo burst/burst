@@ -4,13 +4,16 @@
 #include <fstream>
 #include <vector>
 
+#include <cstdio>
+
 #include "alproxy.h"
 #include "almemoryproxy.h"
 
+#include "gzlog.h"
 #include "recorder.h"
 
 // Turn on for verbose debug logs - read with nao log
-#define DEBUG_RECORDING
+//#define DEBUG_RECORDING
 
 using namespace std;
 using namespace AL;
@@ -26,7 +29,7 @@ recorder::recorder (ALPtr < ALBroker > pBroker, std::string pName):ALModule (pBr
 m_file_init (false), m_row (-42)
 {
 
-    std::cout << "recorder::recorder: Hello" << std::endl;
+    std::cout << "recorder: Module starting" << std::endl;
     // Describe the module here
     setModuleDescription
         ("This is the recorder module - designed to record a lot of stuff to a csv file, that's all.");
@@ -102,6 +105,7 @@ void recorder::readVariablesFile()
         " variable names" << std::endl;
 
     m_values.resize (m_varnames.size (), 0.0);      // init m_values
+    m_values_size = m_values.size();
 }
 
 std::string get_date ()
@@ -115,6 +119,45 @@ std::string get_date ()
     return std::string (time_str);
 }
 
+#ifdef USE_ZLIB_DIRECTLY
+void recorder::openZlibFile()
+{
+    // open the regular file too
+    m_file_out = fopen(m_filename.c_str(), "w+");
+
+    // init the zlib stream (actually, this function is misnamed)
+    int level = Z_DEFAULT_COMPRESSION; // compression level
+    /* allocate deflate state */
+    m_strm.zalloc = Z_NULL;
+    m_strm.zfree = Z_NULL;
+    m_strm.opaque = Z_NULL;
+    ret = deflateInit2(&m_strm, level); // deflateInit2 creates a gzip file, not zlib headers
+    if (ret != Z_OK) {} // TODO -report error
+}
+
+void recorder::writeSingleStringToFile(const std::string& inp)
+{
+#define CHUNK 16384
+    static char out[CHUNK];
+    int len = inp.size();
+    strm.avail_out = CHUNK;
+    strm.next_out = out;
+    strm.next_in = inp.c_str();
+    do {
+        deflate(&m_strm, Z_NO_FLUSH); // Z_FINISH?
+        int have = CHUNK - strm.avail_out;
+        fwrite(out, 1, have, m_file_out);
+    } while (strm.avail_out == 0);
+#undef CHUNK
+}
+
+void recorder::closeZlibFile()
+{
+    deflateEnd(&m_strm);
+
+}
+
+#endif // USE_ZLIB_DIRECTLY
 
 //______________________________________________
 // startRecording - Can be called multiple times
@@ -135,7 +178,7 @@ recorder::startRecording ()
 
     readVariablesFile();
 
-    if (this->m_values.size() == 0) {
+    if (this->m_values_size == 0) {
         std::cout << "recorder: not starting, number of values to record is zero" << std::endl;
         return;
     }
@@ -147,9 +190,21 @@ recorder::startRecording ()
         m_filename =
             std::string (RESULTS_DIRECTORY) + "/recorder_" + get_date () +
             ".csv.gz";
-        std::cout << "recorder: opening file " << m_filename << std::endl;
+#ifdef USE_PROCESS
+        // create the process
+        std::cout << "recorder: creating subprocess gzip > " << m_filename << std::endl;
+        std::string cmd = std::string("gzip > ") + m_filename;
+        this->m_file_out = popen(cmd.c_str(), "w");
+#else
         // open the file
-        m_file_out.open (m_filename.c_str ());
+        std::cout << "recorder: opening file " << m_filename << std::endl;
+# ifdef USE_ZLIB_DIRECTLY
+        this->openZlibFile();
+# else
+        //m_file_out = gzlog_open(.open (m_filename.c_str ());
+        m_file_out.open(m_filename.c_str());
+# endif
+#endif // USE_PROCESS
         m_file_init = true;
     }
 
@@ -210,9 +265,18 @@ recorder::stopRecording ()
     }
 
     if (m_file_init) {
+#ifdef USE_PROCESS
+        std::cout << "recorder: closing gzip process" << std::endl;
+        pclose(m_file_out);
+#else
         std::cout << "recorder: closing file" << std::endl;
         // close the file
+# ifdef USE_ZLIB_DIRECTLY
+        this->closeZlibFile();
+# else
         m_file_out.close ();
+# endif
+#endif // USE_PROCESS
         m_file_init = false;
     }
     std::cout << "recorder: file closed" << std::endl;
@@ -246,6 +310,29 @@ recorder::~recorder ()
 
 }
 
+#ifdef USE_PROCESS
+void recorder::writeToFile()
+{
+#ifndef RECORDER_DO_NOTHING
+        for (int i = 0; i < m_values_size; i++) {
+            fprintf(m_file_out, "%f,", m_values[i]);
+        }
+        fprintf(m_file_out, "\n");
+#endif // RECORDER_DO_NOTHING
+}
+
+#else
+void recorder::writeToFile()
+{
+#ifndef RECORDER_DO_NOTHING
+        for (int i = 0; i < m_values_size; i++) {
+            m_file_out << m_values[i] << ",";
+        }
+        m_file_out << "\n";
+#endif
+}
+#endif // USE_PROCESS
+
 /**
  * dataChanged. Called by ALMemory when subcription
  * has been modified.
@@ -267,17 +354,14 @@ recorder::dataChanged (const std::string & pDataName, const ALValue & pValue,
         }
 
         m_memoryfastaccess->GetValues (m_values);
-        int size = m_values.size ();
+
         if (m_row % PRINT_DECIMATION == 0) {
-            std::cout << "recorder: m_values.size() == " << size <<
+            std::cout << "recorder: m_values.size() == " << m_values_size <<
                 std::endl;
         }
-        for (int i = 0; i < size; i++) {
-            m_file_out << m_values[i] << ",";
-        }
-        m_file_out << "\n";
+        this->writeToFile();
 #ifdef DEBUG_RECORDING
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < m_values_size; i++) {
             if (m_row % PRINT_DECIMATION == 0) {
                 std::cout << m_values[i] << ", ";
             }

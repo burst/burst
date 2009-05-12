@@ -189,7 +189,7 @@ class EventManagerLoop(object):
             cur_time = time()
             if cur_time > next_loop:
                 print "WARNING: loop took %0.3f ms" % (
-                    (cur_time - next_loop - EVENT_MANAGER_DT) * 1000)
+                    (cur_time - next_loop + EVENT_MANAGER_DT) * 1000)
                 next_loop = cur_time
             else:
                 sleep(next_loop - cur_time)
