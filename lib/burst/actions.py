@@ -128,6 +128,12 @@ class Actions(object):
         postid = self._motion.post.walk()
         return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
+    def executeMoveChoreograph(self, (jointCodes, angles, times)):
+        duration = max(col[-1] for col in times)
+        postid = self._motion.post.doMove(jointCodes, angles, times, 1)
+        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+
+
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
@@ -240,3 +246,8 @@ class Actions(object):
         self._motion.wait(postid, 0)
         return True
 
+    def executeGettingUpBelly(self):
+        return self.executeMoveChoreograph(moves.GET_UP_BELLY)
+
+    def executeGettingUpBack(self):
+        return self.executeMoveChoreograph(moves.GET_UP_BACK)

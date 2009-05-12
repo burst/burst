@@ -33,13 +33,24 @@ class Player(object):
         self._actions.clearFootsteps()
 
     def onFallenDown(self):
-        self._eventmanager.unregister(EVENT_FALLEN_DOWN)
         print "I'm down!"
+        self._eventmanager.unregister(EVENT_FALLEN_DOWN)
 
     def onOnBack(self):
-        self._eventmanager.unregister(EVENT_ON_BACK)
         print "I'm on my back."
+        self._eventmanager.unregister(EVENT_ON_BACK)
+        self._actions.executeGettingUpBack().onDone(self.gettingUpDoneBack)
+    
+    def gettingUpDoneBack(self):
+        print "Getting up done!"
+        self._eventmanager.register(EVENT_ON_BACK, self.onOnBack)
 
     def onOnBelly(self):
-        self._eventmanager.unregister(EVENT_ON_BELLY)
         print "I'm on my belly."
+        self._eventmanager.unregister(EVENT_ON_BELLY)
+        self._actions.executeGettingUpBelly().onDone(self.gettingUpDoneBelly)
+        
+    def gettingUpDoneBelly(self):
+        print "Getting up done!"
+        self._eventmanager.register(EVENT_ON_BELLY, self.onOnBelly)
+
