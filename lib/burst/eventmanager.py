@@ -169,8 +169,8 @@ class EventManagerLoop(object):
         try:
             man = burst.ALProxy("Man")
         except:
-            print "you are missing the Man proxy - run naoload and uncomment man"
-            raise SystemExit
+            print "BIG FAT WARNING: you are missing the Man proxy - run naoload and uncomment man"
+            print "                 Continue at your own risk"
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from time import sleep, time
         # TODO: this should be called from the gamecontroller, this is just
