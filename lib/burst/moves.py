@@ -50,20 +50,23 @@ BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V * 3 / 2) # maximize top part s
 BOTTOM_CENTER_H_MIN_V = (0., CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
+# TODO: check what's the fastest time for scanning where ball/goal is still detected (can save lots of time)
 BOTTOM_FRONT_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((-CAM_FRONTAL_H, 0), 0.2),
-    ((CAM_FRONTAL_H, 0), 4.0),
-    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
-    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 5.0),
-    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
-    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 4.0),
+    ((-CAM_FRONTAL_H, CAM_MAXIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, CAM_MAXIMUM_V), 3.0),
+    ((CAM_FRONTAL_H, 0), 0.2),
+    ((-CAM_FRONTAL_H, 0), 3.0),
+    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 4.0),
+    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
+    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 3.0),
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
 
 BOTTOM_QUICK_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((0.0, 0.0), 1.0),
+    ((0.0, CAM_MAXIMUM_V), 1.0),
     ((0.0, CAM_MINIMUM_V), 2.0),
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
