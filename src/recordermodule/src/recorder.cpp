@@ -222,9 +222,9 @@ recorder::startRecording ()
                                          string ("CycleChangedNotification"),   // the name of the notification
                                          string ("dataChanged"));       // the method to use for the callback
 
-        // make sure we get notifications every change of value. The default would have been every 50ms
-        m_memory->subscribeOnDataSetTimePolicy
-            (memoryKeyNameValueChangesEveryCycle, strModuleName, 0);
+        // Following two lines cause us to be called 50Hz. Without them it is more like 16Hz (60ms)
+        //m_memory->subscribeOnDataSetTimePolicy
+        //    (memoryKeyNameValueChangesEveryCycle, strModuleName, 0);
 
         m_memoryfastaccess =
             AL::ALPtr < ALMemoryFastAccess > (new ALMemoryFastAccess ());

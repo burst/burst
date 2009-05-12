@@ -44,9 +44,14 @@ class Rectangle(Player):
         print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.const_time))
 
     startRecord = _recordWithRecorder
-    stopRecord = _stopRecordWithRecorder
+    stopRecord_helper = _stopRecordWithRecorder
 
     def onStart(self):
+
+        # hack to avoid moving arms with raul's broken RShoulderPitch joint
+        if self._world.hostname == 'raul':
+            print "on raul - arms will not be moved during walk"
+            self._world._motion.setWalkArmsEnable(False)
 
         now = datetime.now()
         self.startRecord()
@@ -57,7 +62,7 @@ class Rectangle(Player):
 
     def stopRecord(self):
         print "done - stopping recording"
-        self.stopRecord()
+        self.stopRecord_helper()
         self._actions.sitPoseAndRelax()
         self._eventmanager.quit()
 
