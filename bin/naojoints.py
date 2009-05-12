@@ -122,7 +122,7 @@ class Main(object):
                 con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
                 
         self.scales = scales = {}
-        self.con = pynaoqi.getDefaultConnection()
+        self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
         self.vision = None
         self.inertial = None
@@ -164,11 +164,17 @@ class Main(object):
                 # move-scaler - nothing?
             self.updater = task.LoopingCall(self.getAngles)
             self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
+            # we added a bunch of widgets, show them (this is async to __init__)
+            w.show_all()
 
-        self.con.ALMotion.getBodyAngles().addCallback(onBodyAngles)
+        self.con.ALMotion.bodyInitDeferred.addCallback(lambda result: self.con.ALMotion.getBodyAngles().addCallback(onBodyAngles))
         w.resize(700, 400)
         w.show_all()
-        w.connect("destroy", gtk.main_quit)
+        w.connect("destroy", self.onDestroy)
+    
+    def onDestroy(self, *args):
+        print "quitting.."
+        reactor.stop()
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):
@@ -196,7 +202,9 @@ class Main(object):
     def getAngles(self):
         """ TODO: callback from twisted
         """
-        new_angles = self.con.ALMotion.getBodyAngles()
+        self.con.ALMotion.getBodyAngles().addCallback(self.onNewAngles)
+
+    def onNewAngles(self, new_angles):
         self.cur_read_angles = new_angles
         for joint, angle in zip(self.joint_names, new_angles):
             self.scales[joint].state_scale.set_value(angle)
@@ -214,4 +222,5 @@ class Main(object):
 if __name__ == '__main__':
     main = Main()
     reactor.run()
+    #import pdb; pdb.set_trace()
 

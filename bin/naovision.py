@@ -123,6 +123,6 @@ class Main(object):
         # compute bearing my self, then set myball to that position
 
 if __name__ == '__main__':
-    main = Main(pynaoqi.getDefaultConnection())
+    main = Main(pynaoqi.getDefaultConnection(with_twisted=True))
     reactor.run()
 

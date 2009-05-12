@@ -350,21 +350,24 @@ class NaoQiMethod(object):
         self._mod = mod
         self._con = mod._con
         self._name = name
-        self._hasdocs = False
+        self._has_docs = False
+        self._getting_docs = False
         self.__doc__ = 'call con.%s.%s.makeHelp() to get real help.' % (self._mod._modname, self._name)
 
     def makeHelp(self):
-        if self._hasdocs:
-            return
-        self._getDocs()
-        self._hasdocs = True
+        if self._has_docs:
+            return succeed(None)
+        d = self._getDocs()
+        self._getting_docs = True
+        return d
 
     def _getDocs(self):
         """ when first time someone accesses the doc of the method we go and get it
         also for the "hidden" parameters _params and _return """
-        self.getMethodHelp().addCallback(self._getDocs_onResponse)
+        return self.getMethodHelp().addCallback(self._getDocs_onResponse)
 
     def _getDocs_onResponse(self, soapbody):
+        self._has_docs = True
         doc = soapbody.firstChild.firstChild.firstChild
         if doc == None:
             self.__doc__ = 'no help supplied by module'
@@ -382,32 +385,25 @@ class NaoQiMethod(object):
         name, docstring, module = [c.firstChild.nodeValue for c in doc.firstChild.childNodes]
         self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (self._return, name, ','.join(map(str, self._params)), docstring, module, ''.join(' %s\n' % p.docstring() for p in self._params))
 
-    def _getDocParam(self):
-        self._getDocs()
-        return self._param
-
-    def _getDocReturn(self):
-        self._getDocs()
-        return self._return
-
-    def _getDocDoc(self):
-        self._getDocs()
-        return self.__doc__
-
     def getMethodHelp(self):
         return self._con._sendRequest(callNaoQiObject(self._mod._modname, 'getMethodHelp', self._name))
 
     def __call__(self, *args):
-        if not self._hasdocs:
-            print "going to get help..",
-            self.makeHelp()
-            print "done"
-        if len(args) != len(self._params):
-            raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
-        for i, (p, a) in enumerate(zip(self._params, args)):
-            if not p.validate(a):
-                raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
-        return self._con._sendRequest(callNaoQiObject(self._mod._modname, self._name, *args)).addCallback(self._call_onResponse)
+        ret = Deferred()
+
+        def realcall(result=None):
+            if len(args) != len(self._params):
+                raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
+            for i, (p, a) in enumerate(zip(self._params, args)):
+                if not p.validate(a):
+                    raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
+            self._con._sendRequest(callNaoQiObject(self._mod._modname, self._name, *args)).addCallback(self._call_onResponse).addCallback(lambda result: ret.callback(result))
+
+        if not self._has_docs:
+            self.makeHelp().addCallback(realcall)
+        else:
+            realcall()
+        return ret
 
     def _call_onResponse(self, soapbody):
         return self._return.fromNaoQiCall(soapbody)
@@ -423,12 +419,15 @@ class MethodHolder(object):
 ##################################################################
 
 class NaoQiModule(object):
+
+    VERBOSE = True # mainly here so I can shut it down when using twisted
+
     def __init__(self, con, modname):
         self._con = con
         self._modname = modname
         # async? nah, don't bother right now. (everything here
         # should be twisted.. ok, it can be asynced some other way)
-        self._module_init_deferred = Deferred() # hook for inheriting classes
+        self.bodyInitDeferred = Deferred() # hook for inheriting classes
         self.methods = MethodHolder()
         self.getMethods().addCallback(self.onMethodsAvailable)
 
@@ -439,18 +438,20 @@ class NaoQiModule(object):
             setattr(self, meth, methobj)
             setattr(self.methods, meth, methobj)
         # this actually uses one of the methods above!
-        self._hasdocs = False
+        self._has_docs = False
         self.__doc__ = """ Call con.%s.makeHelp() to generate help for this module and it's methods """ % self._modname
-        self._module_init_deferred.callback(None)
+        self.bodyInitDeferred.callback(None)
 
     def makeHelp(self):
-        print "going to get help..",
+        if self.VERBOSE:
+            print "going to get help..",
         self._getDoc()
         for meth in self.methods.__dict__.values():
             if hasattr(meth, 'makeHelp'):
                 meth.makeHelp()
-        print "done"
-        self._hasdocs = True
+        if self.VERBOSE:
+            print "done"
+        self._has_docs = True
 
     def _getDoc(self):
         """ self annihilating method """
@@ -480,7 +481,7 @@ class ALMotionExtended(NaoQiModule):
 
     def __init__(self, con):
         NaoQiModule.__init__(self, con, 'ALMotion')
-        self._module_init_deferred.addCallback(self.onModuleInited)
+        self.bodyInitDeferred.addCallback(self.onModuleInited)
 
     def onModuleInited(self, result):
         self.getBodyJointNames().addCallback(self.onBodyJointNames)
@@ -537,6 +538,7 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
+                NaoQiModule.VERBOSE = False
 
         self._initModules()
     
@@ -558,6 +560,12 @@ class BaseNaoQiConnection(object):
         for m in self._modules:
             self.__dict__[m.getName()] = m
             self.modules.__dict__[m.getName()] = m
+
+    def contentLengthFromHeaders(self, headers):
+        return int(re.search('Content-Length: ([0-9]+)', headers).groups()[0])
+
+    def closeSocketFromHeaders(self, headers):
+        return  re.search('Connection: (.*)', headers).groups()[0].strip() == 'close'
 
     def _sendRequest(self, o):
         """ sends a request, returns a Deferred, which you can do addCallback on.
@@ -586,9 +594,9 @@ class BaseNaoQiConnection(object):
         if DEBUG:
             print
         headers = ''.join(h[:-1])
-        content_length = int(re.search('Content-Length: ([0-9]+)', headers).groups()[0])
+        content_length = self.contentLengthFromHeaders(headers)
         # Connection: close
-        close_socket = re.search('Connection: (.*)', headers).groups()[0].strip() == 'close'
+        close_socket = self.closeSocketFromHeaders(headers)
         if close_socket and DEBUG_CLOSE:
             print "Will close socket"
         if DEBUG:
@@ -618,28 +626,61 @@ class BaseNaoQiConnection(object):
         """
 
         deferred = Deferred()
-
+        tosend = self._req.make(o)
+        con = self
         from twisted.internet.protocol import Protocol, ClientFactory
         from twisted.internet import reactor
+        import twisted.internet.error
+
         class SoapProtocol(Protocol):
 
-            def dataReceived(self, data):
-                print "YAY DATA", data[:10]
+            def __init__(self):
+                self._got = []
+
+            def connectionMade(self):
+                #print "sending %s" % tosend
+                self.transport.write(tosend)
+
+            def dataReceivedHeaders(self, data):
+                #print "YAY DATA", data[:10]
                 # at some point we will be done, then we call our deferred
-                import pdb; pdb.set_trace()
-                deferred.callback(result)
+                self._got.append(data)
+                self._headers = ''.join(self._got)
+                left_bracket_pos = data.find('<')
+                if left_bracket_pos == -1: return # still more headers
+                self._content_length = con.contentLengthFromHeaders(self._headers)
+
+                self._got = []
+                self._got_len = 0
+                self.dataReceived = self.dataReceivedContent
+                self.dataReceived(data[left_bracket_pos:])
+
+            def dataReceivedContent(self, data):
+                self._got_len += len(data)
+                self._got.append(data)
+                if self._got_len >= self._content_length:
+                    body = ''.join(self._got)
+                    xml = minidom.parseString(body)
+                    soapbody = xml.documentElement.firstChild
+                    deferred.callback(soapbody)
+                    self.transport.loseConnection()
+                else:
+                    print "YAY DATA, but still missing: %s < %s" % (self._got_len, self._content_length)
+
+            dataReceived = dataReceivedHeaders
 
         class Factory(ClientFactory):
             
             def startedConnecting(self, connector):
-                print "YAY CONNECTING", connector
+                #print "YAY CONNECTING", connector
+                pass
 
             def buildProtocol(self, addr):
-                print "YAY PROTOCOL", addr
                 return SoapProtocol()
 
             def clientConnectionLost(self, connector, reason):
-                print "BOO CONNECTION LOST", connector, reason
+                if reason.type != twisted.internet.error.ConnectionDone:
+                    print "BOO CONNECTION LOST", connector, reason
 
             def clientConnectionFailed(self, connector, reason):
                 print "BOO CONNECTION FAILED", connector, reason
@@ -670,6 +711,10 @@ class BaseNaoQiConnection(object):
             return ALMotionExtended(self)
         return NaoQiModule(self, modname)
 
+    def makeHelp(self):
+        for m in self._modules:
+            m.makeHelp()
+
     # Helpers
 
     def call(self, modname, meth, *args):
@@ -697,7 +742,6 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
         self._registered_to_camera = False
- 
 
     def getBrokerInfo(self):
         def onResponse(self, soapbody):
@@ -855,7 +899,7 @@ def main():
     con = NaoQiConnection(url)
     broker_info = dict(con.getBrokerInfo())
     print con.getInfo(broker_info['name'])
-    #print con.registerBroker() 
+    #print con.registerBroker()
     #print con.exploreToGetModuleByName('NaoCam')
     print con.registerToCamera()
     con.NaoCam.register('test_cam', vision_definitions.kQQVGA, vision_definitions.kRGBColorSpace, 15)
@@ -874,24 +918,28 @@ def asaf():
     globals()['SweeterMoves'] = SweeterMoves
     globals()['con'] = NaoQiConnection('http://maldini:9559')    
 
+options = None
+
 # helper function - exactly the same as in burst, handle --ip and --port
 def getDefaultOptions():
+    global options
+    if options is not None: return options
     from optparse import OptionParser
     parser = OptionParser()
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
     parser.add_option('--video', action='store_true', dest='video', default=None)
     parser.add_option('--twisted', action='store_true', dest='twisted', default=False)
-    parser.add_option('--notwisted', action='store_false', dest='twisted')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
-    # the next part is brain dead, but I don't know how to remove *just*
+    # TODO: UNBRAIN DEAD THIS
+    # The next part is brain dead, but I don't know how to remove *just*
     # the parameters I used with OptionParser.. delegated option parsers anyone?
     todelete = []
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
-        if arg in ['--video']:
+        if arg in ['--video', '--twisted']:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):
@@ -903,7 +951,7 @@ def getDefaultOptions():
     return options
 
 default_connection = None
-def getDefaultConnection():
+def getDefaultConnection(with_twisted=None):
     """ Returns a singleton connection object to the parameters provided on the command
     line, defaulting to localhost webots connection. Suitable for most uses, except
     for writing apps that connect to multiple robots, where you'll want to instantiate
@@ -912,6 +960,8 @@ def getDefaultConnection():
     global default_connection
     if default_connection is None:
         options = getDefaultOptions()
+        if with_twisted is not None:
+            options.twisted = with_twisted
         url = 'http://%s:%s/' % (options.ip, options.port)
         default_connection = NaoQiConnection(url, options=options)
     return default_connection

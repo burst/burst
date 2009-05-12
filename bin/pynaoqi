@@ -33,6 +33,11 @@ if con.options.video:
 my_ns = dict(
     con = con,
     pynaoqi = pynaoqi)
+
 print "Pynaoqi shell - con object holds all the modules, methods, help!"
-shellclass(my_ns)
+shell = shellclass(my_ns)
+
+# If in twisted, start the mainloop
+if options.twisted:
+    shell.mainloop()
 
