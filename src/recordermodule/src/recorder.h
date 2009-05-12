@@ -20,13 +20,21 @@
 
 // call gzip in a process, let the os handle the buffer in between. no mutex, no ring buffer, nothing.
 #define USE_PROCESS
-
+// use gzlog (old way - left here just in case
 //#define USE_ZLIB_DIRECTLY
 
+#ifdef USE_PROCESS
+# ifdef USE_ZLIB_DIRECTLY
+# error "You can't have USE_PROCESS and USE_ZLIB_DIRECTLY at the same time!"
+# endif
+#endif
+
+#ifndef USE_PROCESS
 #ifdef USE_ZLIB_DIRECTLY
 #include <zlib.h>
 #else
 #include "gzstream.h"
+#endif
 #endif
 
 // Turn off if you want ALMemory to get the variables - should

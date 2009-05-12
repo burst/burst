@@ -1,14 +1,14 @@
 #!/bin/bash
 
-HOST=192.168.7.109
+# Reuse the Makefile.local that should be here anyway
+pushd ../../; make Makefile.local; popd
+source ../../Makefile.local
+
 MODULE=crossbuild/src/librecordermodule.so
 if [ ! -e $MODULE ]; then
 	echo you need to build the local version first
 	exit -1
 fi
-if [ "$1" != "" ]; then
-	HOST=$1
-fi
-echo copying to $HOST
-scp $MODULE root@$HOST:/opt/naoqi/modules/lib
+echo copying to $ROBOT
+scp $MODULE root@$ROBOT:/opt/naoqi/modules/lib
 

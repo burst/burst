@@ -9,7 +9,12 @@
 #include "alproxy.h"
 #include "almemoryproxy.h"
 
+#ifndef USE_PROCESS
+# ifdef USE_ZLIB_DIRECTLY
 #include "gzlog.h"
+# endif
+#endif
+
 #include "recorder.h"
 
 // Turn on for verbose debug logs - read with nao log
