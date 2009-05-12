@@ -50,20 +50,23 @@ BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V * 3 / 2) # maximize top part s
 BOTTOM_CENTER_H_MIN_V = (0., CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
+# TODO: check what's the fastest time for scanning where ball/goal is still detected (can save lots of time)
 BOTTOM_FRONT_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((-CAM_FRONTAL_H, 0), 0.2),
-    ((CAM_FRONTAL_H, 0), 4.0),
-    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
-    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 5.0),
-    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
-    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 4.0),
+    ((-CAM_FRONTAL_H, CAM_MAXIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, CAM_MAXIMUM_V), 3.0),
+    ((CAM_FRONTAL_H, 0), 0.2),
+    ((-CAM_FRONTAL_H, 0), 3.0),
+    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
+    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 4.0),
+    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
+    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 3.0),
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
 
 BOTTOM_QUICK_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((0.0, 0.0), 1.0),
+    ((0.0, CAM_MAXIMUM_V), 1.0),
     ((0.0, CAM_MINIMUM_V), 2.0),
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
@@ -489,7 +492,7 @@ GREAT_KICK_LEFT = (
      (80.,-40.,50.,70.),0.8),
     #lift the left leg
     ((80.,40.,-50.,-70.),
-     (0.,20.,-30.,60.,-30.,-20.),
+     (0.,20.,-30.,80.,-30.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
      (80.,-40.,50.,70.),1.0),
     #Get ready
@@ -501,6 +504,11 @@ GREAT_KICK_LEFT = (
     ((80.,40.,-50.,-70.),
      (0.,20.,-70.,60.,-30.,0.),
      (0.,20.,-10.,20.,-10.,-20.),
+     (80.,-40.,50.,70.),0.18),
+    #make leg go further away
+    ((80.,40.,-50.,-70.),
+     (0.,-20.,-50.,10.,120.,0.),
+     (0.,-20.,-10.,20.,-10.,20.),
      (80.,-40.,50.,70.),0.18),
     #lift the left leg
     ((80.,40.,-50.,-70.),
@@ -532,7 +540,7 @@ GREAT_KICK_RIGHT = (
     #lift the right leg
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
-     (0.,-20.,-30.,60.,-30.,20.),
+     (0.,-20.,-30.,80.,-30.,20.),
      (80.,-40.,50.,70.),1.0),
     #Get ready
     ((80.,40.,-50.,-70.),
@@ -543,6 +551,11 @@ GREAT_KICK_RIGHT = (
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
      (0.,-20.,-70.,60.,-30.,0.),
+     (80.,-40.,50.,70.),0.18),
+    #make leg go further away
+    ((80.,40.,-50.,-70.),
+     (0.,-20.,-10.,20.,-10.,20.),
+     (0.,-20.,-50.,10.,120.,0.),
      (80.,-40.,50.,70.),0.18),
     #lift the right leg
     ((80.,40.,-50.,-70.),
@@ -558,8 +571,8 @@ GREAT_KICK_RIGHT = (
     ((80.,40.,-50.,-70.),
      (0.,0.,-10.,20.,-10.,0.),
      (0.,0.,-10.,20.,-10.,0.),
-     (80.,-40.,50.,70.),1.0))
-
+     (80.,-40.,50.,70.),1.0)
+    )
 
 
 KICK_A = (

@@ -1,15 +1,82 @@
+# Twisted-like Deferred and succeed
+
+class MyDeferred(object):
+    """ mimic in the most minimal way twisted.internet.defer.Deferred """
+    def __init__(self):
+        self._cb = None
+        self.called = 0
+        # not setting self.result to mimic bug/feature in original
+
+    def addCallback(self, f):
+        """ not implementing chained callbacks for now """
+        self._cb = f
+        if self.called: # call immediately
+            self.result = f(self.result) # saved for filter effect
+
+    def callback(self, result):
+        self.called = True
+        self.result = result
+        if self._cb:
+            self._cb(result)
+
+def succeed(result):
+    d = Deferred()
+    d.callback(result)
+    return d
+
+try:
+    # use the real thing if it is there
+    from twisted.internet.defer import Deferred
+except:
+    Deferred = MyDeferred
+
 # D* - Cacheing
+
+def cached_deferred(filename):
+    import os, cPickle
+    def wrap(func):
+        def cacheit(result):
+            failed, fd = False, None
+            try:
+                fd = open(filename, 'w+')
+                cPickle.dump(result, fd)
+            except Exception, e:
+                failed = True
+            finally:
+                if fd:
+                    fd.close()
+            if failed:
+                os.unlink(filename)
+                print "warning: cache failed, returning uncached results"
+                return succeed(result)
+            return result # must return for chained callback
+        
+        def wrapper(*args):
+            if not os.path.exists(filename):
+                # call function - don't protect this
+                deferred = func(*args)
+                deferred.addCallback(cacheit)
+                return deferred
+            # read pickle
+            fd = open(filename)
+            data = cPickle.load(fd)
+            fd.close()
+            return succeed(data)
+        return wrapper
+    return wrap
 
 def cached(filename):
     import os, cPickle
     def wrap(func):
         def wrapper(*args):
             if not os.path.exists(filename):
+                # call function - don't protect this
+                result = func(*args)
                 # write pickle
                 failed, fd = False, None
                 try:
                     fd = open(filename, 'w+')
-                    cPickle.dump(func(*args), fd)
+                    cPickle.dump(result, fd)
                 except Exception, e:
                     failed = True
                 finally:
@@ -17,6 +84,8 @@ def cached(filename):
                         fd.close()
                 if failed:
                     os.unlink(filename)
+                    print "warning: cache failed, returning uncached results"
+                    return result
             # read pickle
             fd = open(filename)
             data = cPickle.load(fd)

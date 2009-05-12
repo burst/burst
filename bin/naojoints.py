@@ -20,16 +20,35 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 
 import pynaoqi
-from burst_util import cached
+from burst_util import cached, cached_deferred, Deferred
 
-DT_CHECK_FOR_NEW_ANGLES = 0.5 # seconds between socket calls
+DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
 
-@cached('joint_data.pickle')
+@cached_deferred('%s/.burst_joint_data.pickle' % os.environ['HOME'])
 def getJointData(con):
-    joint_names = con.ALMotion.getBodyJointNames()
-    joint_limits = dict([(joint_name, con.ALMotion.getJointLimits(joint_name)) for joint_name in joint_names])
-    return (joint_names, joint_limits)
+
+    results = {}
+    collecting = Deferred()
+
+    def collect_callback(joint_names):
+        print "Collecting Joint Limits (need %s):" % len(joint_names),
+        def store_one(jointname, result):
+            results[jointname] = result
+            print "%s," % len(results),
+            if len(results) == len(joint_names):
+                # finally!
+                print "Joint Limits Done"
+                collecting.callback((joint_names, results))
+        for joint_name in joint_names:
+            con.ALMotion.getJointLimits(joint_name).addCallback(
+                lambda result, joint_name=joint_name: store_one(joint_name, result))
+
+    # NOTE - not using con.ALMotion.initDeferred, not sure it can be called multiple times, need
+    # to minimize the usage of that deferred.
+    con.ALMotion.getBodyJointNames().addCallback(collect_callback)
+
+    return collecting
 
 class Inertial(object):
 
@@ -52,7 +71,9 @@ class Inertial(object):
         self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
 
     def getInertial(self):
-        vals = self.con.ALMemory.getListData(self.vars)
+        self.con.ALMemory.getListData(self.vars).addCallback(self.updateLists)
+
+    def updateLists(self, vals):
         for l, new_val in zip(self.l, vals):
             l.set_label('%3.3f' % new_val)
 
@@ -69,8 +90,16 @@ class Main(object):
             return 'red'
 
         class Scale(object):
-            
+            """ A single scale for one joint. Has multiple widgets, delegates actually adding
+            them to a table to the caller. Store all the widgets in self.col in the order
+            to add to the table.
+            """
+
             MIN_TIME_BETWEEN_CHANGES = 0.1 # throtelling - seems I make nao's stuck? naoqi problem?
+            NUM_ROWS = 4
+            both = gtk.FILL | gtk.EXPAND
+            ROW_OPTIONS = [(0, 0), (0, 0), (0, 0), (both, both)]
+            assert(len(ROW_OPTIONS) == NUM_ROWS)
 
             def __init__(self, i, name, min_val, max_val, init_pos):
                 self.last_sent_value = min_val
@@ -89,11 +118,16 @@ class Main(object):
                 self.toplabel.set_markup('<span foreground="%s">%s</span>' % (color(i), i))
                 self.label = gtk.Label(self.name)
                 self.label.set_property('angle', 90)
+                self.count_label = gtk.Label('0')
                 self.lowbox = gtk.HBox()
                 self.lowbox.add(self.set_scale)
                 self.lowbox.add(self.state_scale)
-                self.col = [self.toplabel, self.label, self.lowbox]
+                # This list is the order of the elements in the table
+                self.col = [self.toplabel, self.count_label, self.label, self.lowbox]
+                assert(len(self.col) == self.NUM_ROWS)
                 #self.box.pack_start(self.toplabel, False, False, 0)
+
+                self._last = [] # list of all the deferreds for our gotoAngleWithSpeed requests
 
             def onChanged(self, w, scroll_type, val):
                 cur = time()
@@ -102,19 +136,58 @@ class Main(object):
                 self.last_sent_value = cur
                 s = self.set_scale
                 # TODO: throtlling?
-                print "joint, %s, value %s %s" % (joint_name, s.get_value(), val)
                 # name, value, speed percent [0-100], interpolation (1 = smooth)
-                con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+
+                if len(self._last) > 0 and self._last[-1].called:
+                    self.count_label.set_label('0')
+                    del self._last[:]
+                def gotoAngle():
+                    print "joint, %s, value %s %s" % (self.name, s.get_value(), val)
+                    d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+                    self._last.append(d)
+                    return d
+                if len(self._last) == 0:
+                    # first call, bery simple!
+                    self._last.append(gotoAngle())
+                else:
+                    self.count_label.set_label('%s' % len(self._last))
+                    self._last[-1].addCallback(lambda _: gotoAngle())
                 
         self.scales = scales = {}
-        self.con = pynaoqi.getDefaultConnection()
+        self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
         self.vision = None
         self.inertial = None
-        self.joint_names, self.joint_limits = getJointData(self.con)
+
+        # Create the joint controlling and displaying slides (called by onJointData)
+        def onBodyAngles(cur_angles):
+            table = gtk.Table(rows=Scale.NUM_ROWS, columns=len(self.joint_names), homogeneous=False)
+            c.add(table)
+            for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
+                min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
+                s = Scale(i, joint_name, min_val, max_val, cur_a)
+                scales[joint_name] = s
+                for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), Scale.ROW_OPTIONS):
+                    table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
+                # value-changed is raised also when set_value is called
+                # move-scaler - nothing?
+            self.updater = task.LoopingCall(self.getAngles)
+            self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
+            # we added a bunch of widgets, show them (this is async to __init__)
+            w.show_all()
+
+        def onJointData(results):
+            # called when we have the joint number, we can do this parallel but it's not
+            # that time consuming. Besides, joint data is cached, should only happen once on the
+            # machine (unless you delete ~/.burst_joint_data.pickle
+            self.joint_names, self.joint_limits = results
+            self.con.ALMotion.getBodyAngles().addCallback(onBodyAngles)
+
+        # initiate network request that will lead to slides creation.
+        # do everything based on a initDeferred, otherwise methods will not be available.
+        self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
         w = gtk.Window()
-        c = gtk.VBox()
-        table = gtk.Table(rows=3, columns=len(self.joint_names), homogeneous=False)
+        self.c = c = gtk.VBox()
         w.add(c)
 
         # Create top buttons
@@ -132,24 +205,13 @@ class Main(object):
             button_box.add(b)
         c.pack_start(button_box, False, False, 0)
 
-        # Create the joint controlling and displaying slides
-
-        c.add(table)
-        cur_angles = self.con.ALMotion.getBodyAngles()
-        for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
-            min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
-            s = Scale(i, joint_name, min_val, max_val, cur_a)
-            scales[joint_name] = s
-            both = gtk.FILL | gtk.EXPAND
-            for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), [(0, 0), (0, 0), (both, both)]):
-                table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
-            # value-changed is raised also when set_value is called
-            # move-scaler - nothing?
         w.resize(700, 400)
         w.show_all()
-        w.connect("destroy", gtk.main_quit)
-        self.updater = task.LoopingCall(self.getAngles)
-        self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
+        w.connect("destroy", self.onDestroy)
+    
+    def onDestroy(self, *args):
+        print "quitting.."
+        reactor.stop()
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):
@@ -177,7 +239,9 @@ class Main(object):
     def getAngles(self):
         """ TODO: callback from twisted
         """
-        new_angles = self.con.ALMotion.getBodyAngles()
+        self.con.ALMotion.getBodyAngles().addCallback(self.onNewAngles)
+
+    def onNewAngles(self, new_angles):
         self.cur_read_angles = new_angles
         for joint, angle in zip(self.joint_names, new_angles):
             self.scales[joint].state_scale.set_value(angle)
@@ -195,4 +259,5 @@ class Main(object):
 if __name__ == '__main__':
     main = Main()
     reactor.run()
+    #import pdb; pdb.set_trace()
 

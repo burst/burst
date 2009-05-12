@@ -19,11 +19,19 @@ else:
 
 MINIMAL_CHANGELOCATION_TURN = 0.20
 
+KICK_TYPE_STRAIGHT_WITH_LEFT = 0
+KICK_TYPE_STRAIGHT_WITH_RIGHT = 1
+KICK_TYPES = [KICK_TYPE_STRAIGHT_WITH_LEFT, KICK_TYPE_STRAIGHT_WITH_RIGHT]
+
 #######
 
 class Actions(object):
 
     def __init__(self, world):
+        self.KICKS = dict([
+            (kick_type, lambda move=kick_type: self.executeMove(move))
+            for kick_type in KICK_TYPES])
+
         self._world = world
         self._motion = burst.getMotionProxy()
         self._joint_names = self._motion.getBodyJointNames()
@@ -54,9 +62,10 @@ class Actions(object):
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
     
-    def kick(self):
-        return self.executeMove(moves.GREAT_KICK_RIGHT)
-
+    def kick(self, kick_type):
+        return self.KICKS[kick_type]()
+        #return self.executeMove(moves.GREAT_KICK_LEFT)
+    
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,

@@ -4,7 +4,7 @@
 pushd ../../; make Makefile.local; popd
 source ../../Makefile.local
 
-MODULE=crossbuild/src/librecordermodule.so
+MODULE=crossbuild/src/libburstmem.so
 if [ ! -e $MODULE ]; then
 	echo you need to build the local version first
 	exit -1

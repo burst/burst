@@ -122,5 +122,9 @@ if 'naoqi' not in sys.modules and 'aldebaran' not in sys.modules:
 try:
     from aldebaran import naoqi
 except:
-    import naoqi
-
+    try:
+        import naoqi
+    except Exception, e:
+        print "burst did it's best to find naoqi - you are probably either"
+        print "forgetting to setup AL_DIR or on a 64 bit machine. Either way"
+        print "burst will let you continue, but expect everything to explode."

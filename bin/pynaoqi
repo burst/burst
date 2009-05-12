@@ -8,6 +8,16 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 import pynaoqi
 
+# we use twisted in a thread if requested
+options = pynaoqi.getDefaultOptions()
+
+if options.twisted:
+    from ipy import IPShellTwisted
+    shellclass = lambda ns: IPShellTwisted(argv=[], user_ns=ns)
+else:
+    import IPython.ipapi
+    shellclass = IPython.ipapi.launch_new_instance
+
 # parse command line arguments
 try:
     con = pynaoqi.getDefaultConnection()
@@ -23,7 +33,11 @@ if con.options.video:
 my_ns = dict(
     con = con,
     pynaoqi = pynaoqi)
-import IPython.ipapi
+
 print "Pynaoqi shell - con object holds all the modules, methods, help!"
-IPython.ipapi.launch_new_instance(my_ns)
+shell = shellclass(my_ns)
+
+# If in twisted, start the mainloop
+if options.twisted:
+    shell.mainloop()
 

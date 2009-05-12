@@ -23,12 +23,16 @@ class walkTester(Player):
         self.kp = None
 
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        #self._actions.initPoseAndStiffness()
+        self._actions.initPoseAndStiffness()
         self.walkStartTime = time.time()
         self.test()
 
     def test(self):
         self._actions.changeLocationRelative(100.0)
+#        self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)
+#        self._actions.executeSyncMove(moves.GREAT_KICK_LEFT)
+#        self._actions.sitPoseAndRelax()
+#        self._eventmanager.quit()
     
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()

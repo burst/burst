@@ -1,7 +1,11 @@
 import os, sys, time
 import socket
 
-from naoqi import ALBroker, ALProxy
+# wrapped to allow import from pynaoqi
+try:
+    from naoqi import ALBroker, ALProxy
+except:
+    pass
 from base import host_to_ip, LOCALHOST_IP
 import base
 
