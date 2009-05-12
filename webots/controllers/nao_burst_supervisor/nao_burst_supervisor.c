@@ -324,26 +324,21 @@ static void check_keyboard() {
     break;
 
   case 'M': // Middle of field (initial position after goal)
-    move_ball_2d(2.1, 0.0);
+    move_robot_2d(0, 0.0, 0.0, -1.57);
+    move_ball_2d(-1.32302, 0.0);
     //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
     // (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
     break;
   case 'L': // Left - still visible from robot initial position
-    move_ball_2d(2.1, 0.5);
+    move_robot_2d(0, 0.0, 0.0, -1.57);
+    move_ball_2d(-1.32302, 0.5);
     //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
     // (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
     break;
   case 'R': // Right - still visible from robot initial position
-    move_ball_2d(2.1, -0.5);
-    break;
-
-  case 'Z':
     move_robot_2d(0, 0.0, 0.0, -1.57);
-    move_ball_2d(-1.32302, 0.00305675);
-    //move_ball_2d(-0.23134, -0.0536347);
+    move_ball_2d(-1.32302, -0.5);
     break;
-
-
 
   case WB_ROBOT_KEYBOARD_SHIFT + 'B':
     if (control_data.teams[TEAM_BLUE].score > 0) {

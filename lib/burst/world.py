@@ -14,6 +14,8 @@ from events import *
 from eventmanager import Deferred, EVENT_MANAGER_DT
 from sensing import FalldownDetector
 
+MISSING_FRAMES_MINIMUM = 10
+
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
 
@@ -72,6 +74,9 @@ class Locatable(object):
 
         # upper barrier on speed, used to remove outliers. cm/sec
         self.upper_v_limit = 400.0
+        
+        self.seen = False
+        self.missingFramesCounter = 0
 
     def compute_location_from_vision(self, vision_x, vision_y, width, height):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
@@ -133,7 +138,6 @@ class Ball(Movable):
         self.focDist = 0.0
         self.height = 0.0
         self.width = 0.0
-        self.seen = False
         self.body_x_isect = None
 
     def compute_intersection_with_body_x(self):
@@ -171,6 +175,7 @@ class Ball(Movable):
         # calculate events.
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
+            self.missingFramesCounter = 0
             # convert degrees to radians
             new_bearing *= DEG_TO_RAD
             new_elevation *= DEG_TO_RAD
@@ -182,6 +187,14 @@ class Ball(Movable):
                 events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
+        else:
+            # only update new_seen with a False value when some minimal "missing" frame counter is reach
+            self.missingFramesCounter += 1
+            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
+                self.missingFramesCounter = 0
+            else:
+                new_seen = True
+            
         if self.seen and not new_seen:
             events.add(EVENT_BALL_LOST)
         if not self.seen and new_seen:
@@ -198,7 +211,7 @@ class Ball(Movable):
                     self.width) = (new_centerX, new_centerY, new_confidence, 
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
-
+        
 ###############################################################################
 
 class Motion(object):
@@ -351,7 +364,6 @@ class GoalPost(Locatable):
         self.x = 0.0
         self.y = 0.0
         self.shotAvailable = 0.0
-        self.seen = False
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
@@ -364,6 +376,7 @@ class GoalPost(Locatable):
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen: # otherwise new_elevation is 'None'
+            self.missingFramesCounter = 0
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
@@ -371,6 +384,14 @@ class GoalPost(Locatable):
             else:
                 #print "%s - new_elevation == %r" % (self.__class__.__name__, new_elevation)
                 pass
+        else:
+            # only update new_seen with a False value when some minimal "missing" frame counter is reach
+            self.missingFramesCounter += 1
+            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
+                self.missingFramesCounter = 0
+            else:
+                new_seen = True
+            
         # TODO: we should only look at the localization supplied ball position,
         # and not the position in frame (image coordinates) or the relative position,
         # which may change while the ball is static.
@@ -386,7 +407,16 @@ class GoalPost(Locatable):
                   new_centerY, new_focDist, new_height,
                   new_leftOpening, new_rightOpening, new_x, new_y,
                   new_shotAvailable, new_width)
-        self.seen = new_seen
+        
+        if new_seen:
+            self.missingFramesCounter = 0
+            self.seen = True
+        else:
+            self.missingFramesCounter += 1
+            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
+                self.missingFramesCounter = 0
+                self.seen = False
+        
 
 BLUE_GOAL, YELLOW_GOAL = 1, 2
 
