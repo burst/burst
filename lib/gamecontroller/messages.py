@@ -10,38 +10,56 @@ ALL_ROBOTS_OF_AFFECTED_TEAM = 999
 BOTH_TEAMS = 999
 
 
+class Registrat(type):
+	registered = []
+	def __new__(cls, name, bases, dct):
+		clazz = type.__new__(cls, name, bases, dct)
+		Registrat.registered.append(clazz)
+		return clazz
+
+
+# TODO: This isn't proper documentation.
+# Messages are of the following form: <affected team> <affected robot> <state to transition to> (additional modifiers optional)
 class Message(object):
     
+    __metaclass__ = Registrat
+
     def __init__(self, affectedTeam, affectedRobot):
-        pass
+        self.affectedTeam = affectedTeam
+        self.affectedRobot = affectedRobot
 
     def serialize(self):
-        pass
+        return str(self.affectedTeam) + " " + str(self.affectedRobot) + " " + str(self.keyword)
 
     @staticmethod
     def deserialize(messageString):
-        pass
+        (affectedTeam, affectedRobot, msg) = tuple(messageString.split(' ')[0:3])
+        for transitionState in Registrat.registered:
+            if msg == transitionState.keyword:
+                return transitionState(affectedTeam, affectedRobot)
+        raise Exception("A malformed message was received.")
 
 
 class TransitionToInitialState(Message):
-    pass
+    keyword = "initial"
 
 
 class TransitionToReadyState(Message):
-    pass
+    keyword = "ready"
 
 
 class TransitionToSetState(Message):
-    pass
+    keyword = "set"
 
 
 class TransitionToPlayingState(Message):
-    pass
+    keyword = "playing"
 
 
 class TransitionToPenalizedState(Message):
-    pass
+    keyword = "penalized"
 
 
 class TransitionToFinishedState(Message):
-    pass
+    keyword = "finished"
+

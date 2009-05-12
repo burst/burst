@@ -3,6 +3,8 @@
 import messages
 
 
+__all__ = ['Listener']
+
 class Listener(object):
     
     def __init__(self, teamColor, robotNumber, ip, port):
@@ -36,6 +38,6 @@ class Listener(object):
             return message.affectedRobot == self.robotNumber or message.affectedRobot == messages.ALL_ROBOTS_OF_AFFECTED_TEAM
         else:
             return False
-    
+
 
 
