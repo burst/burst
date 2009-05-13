@@ -670,16 +670,18 @@ class World(object):
         self._vars_to_getlist_set = set()
         self._vars_to_getlist = []
         self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
+        self._shm = None
 
         # try using shared memory to access variables
-        SharedMemoryReader.tryToInitMMap()
-        if SharedMemoryReader.isMMapAvailable():
-            print "world: using SharedMemoryReader"
-            self._shm = SharedMemoryReader()
-            self._shm.open()
-            self.vars = self._shm.vars
-            self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
-        else:
+        if World.isRealNao:
+            SharedMemoryReader.tryToInitMMap()
+            if SharedMemoryReader.isMMapAvailable():
+                print "world: using SharedMemoryReader"
+                self._shm = SharedMemoryReader()
+                self._shm.open()
+                self.vars = self._shm.vars
+                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+        if self._shm is None:
             print "world: using ALMemory"
 
         self.time = time()
@@ -727,8 +729,15 @@ class World(object):
             [self.computed],
         ]
 
-        # create the MMAP_VARIABLES_FILENAME - must have self._vars_to_getlist
-        # ready, so done last
+        if self.isRealNao:
+            self.createMmapVariablesFile()
+    
+    def createMmapVariablesFile(self):
+        """
+        create the MMAP_VARIABLES_FILENAME - must have self._vars_to_getlist
+        ready, so call this after __init__ is done or at its end.
+        """
+        
         if not os.path.exists(MMAP_VARIABLES_FILENAME):
             print ("I see %s is missing. creating it for you. it has %s variables"
                     % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
