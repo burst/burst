@@ -2,9 +2,10 @@
 # Event enumeration
 #
 
-from events import FIRST_EVENT_NUM, LAST_EVENT_NUM, EVENT_STEP
+from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
+    EVENT_STEP, EVENT_TIME_EVENT)
 
-EVENT_MANAGER_DT = 0.05
+from .consts import EVENT_MANAGER_DT
 
 class SuperEvent(object):
     
@@ -85,6 +86,13 @@ class Deferred(object):
                 ret.onDone(chain_deferred.callOnDone)
 
 class EventManager(object):
+    """ Class to handle all event routing. Mainly we have:
+    anything in burst.events can be called with EventManager.register
+
+    due to lack of time time events are the same, so you only have one
+    and no support right now for multiple requestors (do that in your code
+    you lazy bum)
+    """
 
     def __init__(self, world):
         """ In charge of computing when certain events happen, keeping track
@@ -95,6 +103,22 @@ class EventManager(object):
         self._world = world
         self._should_quit = False
         self.unregister_all()
+        self.setTimeoutEventParams(0.0)
+
+    def setTimeoutEventParams(self, dt, oneshot=False, cb=None):
+        """ Set Timeout Parameters.
+        dt is in seconds. if oneshot is true the registration
+        will be deleted after a single callback.
+
+        When this is set the next timeout is scheduled to current time
+        taken from world plus dt (i.e. self._world.time + dt)
+        """
+        self._timeout_dt = dt
+        self._timeout_oneshot = oneshot
+        self._timeout_last = self._world.time
+        print "setting timeout event, start time =", self._timeout_last
+        if cb: # shortcut
+            self._events[EVENT_TIME_EVENT] = cb
 
     def register(self, event, callback):
         """ set a callback on an event.
@@ -128,7 +152,12 @@ class EventManager(object):
                 self._events[event]()
         if self._events[EVENT_STEP]:
             self._events[EVENT_STEP]()
-        # TODO: EVENT_TIME_EVENT
+        if self._events[EVENT_TIME_EVENT]:
+            if self._timeout_last + self._timeout_dt <= self._world.time:
+                self._events[EVENT_TIME_EVENT]()
+                self._timeout_last = self._world.time
+                if self._timeout_oneshot:
+                    self._events[EVENT_TIME_EVENT] = None
         for deferred in deferreds:
             deferred.callOnDone()
 
@@ -169,8 +198,10 @@ class EventManagerLoop(object):
         try:
             man = burst.ALProxy("Man")
         except:
+            print "<"*30 + " "*20 + ">"*30
             print "BIG FAT WARNING: you are missing the Man proxy - run naoload and uncomment man"
             print "                 Continue at your own risk"
+            print "<"*30 + " "*20 + ">"*30
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from time import sleep, time
         # TODO: this should be called from the gamecontroller, this is just

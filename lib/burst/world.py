@@ -7,27 +7,101 @@ Units:
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from time import time
 import os
+import stat
 import sys
+import mmap
+import struct
+import linecache
 
 import burst
 from events import *
-from eventmanager import Deferred, EVENT_MANAGER_DT
+from eventmanager import Deferred
 from sensing import FalldownDetector
+from burst_util import running_average
 
-MISSING_FRAMES_MINIMUM = 10
+from burst.consts import *
 
-MIN_BEARING_CHANGE = 1e-3 # TODO - ?
-MIN_DIST_CHANGE = 1e-3
+def timeit(tmpl):
+    def wrapper(f):
+        def wrap(*args, **kw):
+            t = time()
+            ret = f(*args, **kw)
+            print tmpl % ((time() - t) * 1000)
+            return ret
+        return wrap
+    return wrapper
 
-DEG_TO_RAD = pi / 180.0
+class SharedMemoryReader(object):
+    """ read from memory mapped file and not from ALMemory proxy, which
+    is painfully slow (but only if the file is there - for example, we
+    don't want to break running controllers not on the robot)
+    """
 
-BALL_REAL_DIAMETER = 8.7 # cm
-ROBOT_DIAMETER = 58.0 # this is from Appendix A of Getting Started - also, doesn't hands raised into account
-GOAL_POST_HEIGHT = 80.0
-GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it is the diameter in the sense of longest line across an image of the post.
+    verbose = False
 
-# Robot constants
-MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
+    def __init__(self):
+        if not self.isMMapAvailable():
+            raise Exception("Don't initialize me if there is no MMAP!")
+        self._shm_proxy = burst.ALProxy(BURST_SHARED_MEMORY_PROXY_NAME)
+        self._var_names = [l.strip() for l in linecache.getlines(MMAP_VARIABLES_FILENAME) if len(l.strip()) > 0 and l.strip()[:1] != '#']
+        self.vars = dict((k, 0.0) for k in self._var_names)
+        # TODO - this is slow (but still should be fast compared to ALMemory)
+        self._unpack = 'f'*len(self._var_names)
+        self._unpack_size = struct.calcsize(self._unpack)
+        self._fd = None
+        self._buf = None
+
+    def open(self):
+        """ start the shared memory proxy to write, and mmap to read """
+        if not self._shm_proxy.isMemoryMapRunning(): # blocking
+            self._shm_proxy.startMemoryMap()
+            assert(self._shm_proxy.isMemoryMapRunning())
+        if self._fd is not None: return
+        data = open(MMAP_FILENAME, 'r')
+        self._fd = fd = data.fileno()
+        self._buf = mmap.mmap(fd, MMAP_LENGTH, mmap.MAP_SHARED | mmap.ACCESS_READ, mmap.PROT_READ)
+        print "world: shared memory openned successfully"
+    
+    def close(self):
+        if self._fd is None: return
+        # no mmap.munmap??
+        self._fd.close()
+        self._fd = None
+        self._buf = None
+
+    def update(self):
+        # TODO - this is slow
+        # TODO - instead of updating the dict I could just update the
+        # values and only make the dict if someone explicitly wants it,
+        # and give values using cached indices created in constructor.
+        values = struct.unpack(self._unpack, self._buf[:self._unpack_size])
+        # TODO - would a single dict.update be faster?
+        for k, v in zip(self._var_names, values):
+            self.vars[k] = v
+        if self.verbose:
+            print self.vars
+
+    @classmethod
+    def isMMapAvailable(cls):
+        return (os.path.exists(MMAP_FILENAME) and
+            os.path.exists(MMAP_VARIABLES_FILENAME))
+
+    @classmethod
+    def tryToInitMMap(cls):
+        """ This is just the mmap setup file hidden in a class variable here.
+        It is perfectly safe to run on a regular computer since it won't
+        do anything if it finds it isn't on a nao, and only creates a file
+        if there is none there right now.
+        """
+        if not os.path.exists(MMAP_VARIABLES_FILENAME):
+            print ("world: run donothing.py once to create the %s file"
+                        % MMAP_VARIABLES_FILENAME)
+        if not os.path.exists(MMAP_FILENAME):
+            fd = open(MMAP_FILENAME, "w+")
+            fd.write(MMAP_LENGTH*"\00")
+            fd.close()
+            assert(os.path.exists(MMAP_FILENAME))
+            assert(os.stat(MMAP_FILENAME)[stat.ST_SIZE] == MMAP_LENGTH)
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -37,6 +111,8 @@ class Locatable(object):
     Because of the way the vision system we use (northern's) works, we keep things
     in polar coordinates - bearing in radians, distance in centimeters.
     """
+    
+    _name = "Locatable" # override to get nicer %s / %r
 
     REPORT_JUMP_ERRORS = False
 
@@ -77,6 +153,10 @@ class Locatable(object):
         
         self.seen = False
         self.missingFramesCounter = 0
+        
+        self.distSmoothed = 0.0
+        self.distRunningAverage = running_average(5)
+        self.distRunningAverage.next()
 
     def compute_location_from_vision(self, vision_x, vision_y, width, height):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
@@ -111,10 +191,17 @@ class Locatable(object):
 
         self.bearing = new_bearing
         self.dist = new_dist
+        self.distSmoothed = self.distRunningAverage.send(new_dist)
+        #if isinstance(self, Ball):
+        #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
+        
         self.elevation = new_elevation
         self.newness = newness
         self.body_x, self.body_y = body_x, body_y
         self.vx, self.vy = dx/dt, dy/dt
+    
+    def __str__(self):
+        return "<%s at %s>" % (self._name, id(self))
 
 class Movable(Locatable):
     def __init__(self, world, real_length):
@@ -338,6 +425,13 @@ class Robot(Movable):
         self._head_posts.calc_events(events, deferreds)
         self._walk_posts.calc_events(events, deferreds)
         
+# TODO - CrossBar
+# extra vars compared to GoalPost:
+# 'LeftOpening', 'RightOpening', 'shotAvailable'
+#self.shotAvailable = 0.0
+#self.leftOpening = 0.0
+#self.rightOpening = 0.0
+
 class GoalPost(Locatable):
 
     def __init__(self, world, name, position_changed_event):
@@ -348,8 +442,7 @@ class GoalPost(Locatable):
         template = '/BURST/Vision/%s/%%s' % name
         self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',
             'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
-         'FocDist', 'Height', 'LeftOpening', 'RightOpening', 'Width', 'X', 'Y',
-         'shotAvailable']]
+         'FocDist', 'Height', 'Width', 'X', 'Y']]
         self._world.addMemoryVars(self._vars)
 
         self.angleX = 0.0
@@ -358,12 +451,9 @@ class GoalPost(Locatable):
         self.centerY = 0.0
         self.focDist = 0.0
         self.height = 0.0
-        self.leftOpening = 0.0
-        self.rightOpening = 0.0
         self.width = 0.0
         self.x = 0.0
         self.y = 0.0
-        self.shotAvailable = 0.0
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
@@ -371,8 +461,8 @@ class GoalPost(Locatable):
         # and a 'struct' at the same time - somewhere in activestate.com?
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
                 new_dist, new_elevation, new_focDist, new_height,
-                new_leftOpening, new_rightOpening, new_x, new_y, new_shotAvailable,
-                    new_width) = new_state = self._world.getVars(self._vars)
+                new_width, new_x, new_y, 
+                ) = new_state = self._world.getVars(self._vars)
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen: # otherwise new_elevation is 'None'
@@ -401,12 +491,11 @@ class GoalPost(Locatable):
             events.add(self._position_changed_event)
         # store new values
         (self.angleX, self.angleY, self.centerX, self.centerY,
-                self.focDist, self.height, self.leftOpening, self.rightOpening,
-                self.x, self.y, self.shotAvailable, self.width) = (
+                self.focDist, self.height, self.width,
+                self.x, self.y) = (
                   new_angleX, new_angleY, new_centerX,
-                  new_centerY, new_focDist, new_height,
-                  new_leftOpening, new_rightOpening, new_x, new_y,
-                  new_shotAvailable, new_width)
+                  new_centerY, new_focDist, new_height, new_width,
+                  new_x, new_y)
         
         if new_seen:
             self.missingFramesCounter = 0
@@ -581,6 +670,19 @@ class World(object):
         self._vars_to_getlist_set = set()
         self._vars_to_getlist = []
         self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
+        self._shm = None
+
+        # try using shared memory to access variables
+        if World.isRealNao:
+            SharedMemoryReader.tryToInitMMap()
+            if SharedMemoryReader.isMMapAvailable():
+                print "world: using SharedMemoryReader"
+                self._shm = SharedMemoryReader()
+                self._shm.open()
+                self.vars = self._shm.vars
+                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+        if self._shm is None:
+            print "world: using ALMemory"
 
         self.time = time()
         self.const_time = self.time     # construction time
@@ -627,6 +729,22 @@ class World(object):
             [self.computed],
         ]
 
+        if self.isRealNao:
+            self.createMmapVariablesFile()
+    
+    def createMmapVariablesFile(self):
+        """
+        create the MMAP_VARIABLES_FILENAME - must have self._vars_to_getlist
+        ready, so call this after __init__ is done or at its end.
+        """
+        
+        if not os.path.exists(MMAP_VARIABLES_FILENAME):
+            print ("I see %s is missing. creating it for you. it has %s variables"
+                    % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
+            fd = open(MMAP_VARIABLES_FILENAME, 'w+')
+            fd.write('\n'.join(self._vars_to_getlist))
+            fd.close()
+
     def calc_events(self, events, deferreds):
         """ World treats itself as a regular object by having an update function,
         this is called after the basic objects and before the computed object (it
@@ -663,7 +781,11 @@ class World(object):
             return [self.vars.get(k, None) for k in vars]
         return [self.vars[k] for k in vars]
 
-    def _updateMemoryVariables(self):
+    def _updateMemoryVariablesFromSharedMem(self):
+        self._shm.update()
+
+    @timeit('al update time = %s ms')
+    def _updateMemoryVariablesFromALMemory(self):
         # TODO: optmize the heck out of this. Options include:
         #  * subscribeOnData / subscribeOnDataChange
         #  * module with alfastmemoryaccess, and shared memory with python
@@ -671,6 +793,8 @@ class World(object):
         values = self._memory.getListData(vars)
         for k, v in zip(vars, values):
             self.vars[k] = v
+
+    _updateMemoryVariables = _updateMemoryVariablesFromALMemory
 
     def update(self, cur_time):
         self.time = cur_time
