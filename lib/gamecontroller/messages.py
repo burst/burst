@@ -6,8 +6,8 @@
 __all__ = ['Message', 'BOTH_TEAMS', 'ALL_ROBOTS_OF_AFFECTED_TEAM']
 
 
-ALL_ROBOTS_OF_AFFECTED_TEAM = 999
-BOTH_TEAMS = 999
+ALL_ROBOTS_OF_AFFECTED_TEAM = None
+BOTH_TEAMS = None
 
 
 class Registrat(type):
