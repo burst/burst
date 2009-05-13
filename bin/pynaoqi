@@ -30,24 +30,43 @@ if con.options.video:
     con.retrieveImages()
 
 # start ipython shell
+# HACK to have access to something in the ipython namespace.
+class Result:
+    pass
+result = Result()
+
+def r(d):
+    def cb(r):
+        result.l = r
+        print "v.l updated"
+    d.addCallback(cb)
+
 def s(d):
     def cb(r):
-        globals()['last'] = r
+        result.l = r
         print r
     d.addCallback(cb)
+
 
 my_ns = dict(
     con = con,
     pynaoqi = pynaoqi,
-    s = s)
+    s = s,
+    r = r,
+    v = result)
 
 print "<"*30 + "o"*20 + ">"*30
 print """Pynaoqi shell - con object holds all the modules, methods, help!
-To get deferred value back, use s, as in:
+To get deferred value back, use r, as in:
+r con.ALMemory.getDataListName
+.. wait
+mylist = [x for x in v.l if x[0] == '/']
+
+To also print the result, you can use s:
 s con.ALMemory.getListData(mylist)
 
 the value returned from the last fired deferred will be in
-"last\""""
+"v.l\""""
 print "_"*80
 shell = shellclass(my_ns)
 
