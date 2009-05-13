@@ -1,3 +1,4 @@
+from consts import CM_TO_METER
 import burst
 from burst.consts import *
 from burst_util import transpose, cumsum
@@ -12,26 +13,27 @@ INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 if not World.isRealNao:
     DEFAULT_STEPS_FOR_TURN = 60
+    DEFAULT_STEPS_FOR_SIDEWAYS = 60
 else:
     DEFAULT_STEPS_FOR_TURN = 150
     DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
+    DEFAULT_STEPS_FOR_SIDEWAYS = 150
 
 
 MINIMAL_CHANGELOCATION_TURN = 0.20
+MINIMAL_CHANGELOCATION_SIDEWAYS = 0.005
+MINIMAL_CHANGELOCATION_X = 0.01
 
 KICK_TYPE_STRAIGHT_WITH_LEFT = 0
 KICK_TYPE_STRAIGHT_WITH_RIGHT = 1
-KICK_TYPES = [KICK_TYPE_STRAIGHT_WITH_LEFT, KICK_TYPE_STRAIGHT_WITH_RIGHT]
+KICK_TYPES = {KICK_TYPE_STRAIGHT_WITH_LEFT: moves.GREAT_KICK_LEFT,
+              KICK_TYPE_STRAIGHT_WITH_RIGHT: moves.GREAT_KICK_RIGHT}
 
 #######
 
 class Actions(object):
 
     def __init__(self, world):
-        self.KICKS = dict([
-            (kick_type, lambda move=kick_type: self.executeMove(move))
-            for kick_type in KICK_TYPES])
-
         self._world = world
         self._motion = burst.getMotionProxy()
         self._joint_names = self._motion.getBodyJointNames()
@@ -63,7 +65,7 @@ class Actions(object):
         return self._motion.getAngle(joint_name)
     
     def kick(self, kick_type):
-        return self.KICKS[kick_type]()
+        return self.executeMove(KICK_TYPES[kick_type])
         #return self.executeMove(moves.GREAT_KICK_LEFT)
     
     def setWalkConfig(self, param):
@@ -91,13 +93,10 @@ class Actions(object):
          
         Coordinate frame for robot is same as world: x forward, y left (z up)
          
-        What kind of walk is this: for simplicity (until projectants come
-        up with something better. yeah right. ok, maybe) we do a turn, walk,
+        What kind of walk is this: for simplicity we do a turn, walk,
         then final turn to wanted angle.
         """
         
-        # TODO: No sense in setting the stiffness unless it is not yet set.
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
@@ -137,10 +136,58 @@ class Actions(object):
         postid = self._motion.post.walk()
         return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
+
     def executeMoveChoreograph(self, (jointCodes, angles, times)):
         duration = max(col[-1] for col in times)
         postid = self._motion.post.doMove(jointCodes, angles, times, 1)
         return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk_param=moves.FASTEST_WALK):
+        """
+        Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
+        Will fire EVENT_CHANGE_LOCATION_DONE once finished.
+         
+        Coordinate frame for robot is same as world: x forward, y left (z up)
+        X & Y are in radians!
+        
+        What kind of walk is this: for simplicity we do sidewalking then walking to target 
+        (we assume no orientation change is required)
+        """
+        
+        print "changeLocationRelativeSideways (delta_x: %3.3f delta_y: %3.3f)" % (delta_x, delta_y)
+        distance, sideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
+        did_sideways = None
+
+        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+        
+        self.setWalkConfig(walk_param)
+        steps = walk_param[14]
+        StepLength = walk_param[8] # TODO: encapsulate walk params
+        
+        if distance >= MINIMAL_CHANGELOCATION_X:
+            print "WALKING STRAIGHT (StepLength: %3.3f distance: %3.3f)" % (StepLength, distance)
+            
+            # Vova trick - start with slower walk, then do the faster walk.
+            slow_walk_distance = min(distance, StepLength*2)
+            if not World.isRealNao:
+                print "ADD WALK STRAIGHT: %f, %f" % (distance, steps)
+                self._motion.addWalkStraight( distance, steps )
+            else:
+                self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+                self._motion.addWalkStraight( distance - slow_walk_distance, steps )
+
+        # Avoid minor sideways walking
+        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            print "WALKING SIDEWAYS (%3.3f)" % sideways
+            did_sideways = sideways
+            self._motion.addWalkSideways(sideways, DEFAULT_STEPS_FOR_SIDEWAYS)
+            
+        duration = (steps * distance / StepLength +
+                    (did_sideways and DEFAULT_STEPS_FOR_SIDEWAYS or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+        print "Estimated duration: %3.3f" % (duration)
+        
+        postid = self._motion.post.walk()
+        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):

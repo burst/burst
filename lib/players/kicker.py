@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from events import EVENT_BALL_IN_FRAME
+from consts import DEG_TO_RAD
 
 import os
 in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
@@ -19,8 +20,8 @@ from math import cos, sin
     Logic for Kicker:
 
 1. Scan for goal & ball
-2. Calculate kicking-point (correct angle towards opponent goal), go as quickly as possible towards it (turn-walk-turn) - open loop
-3. When near ball, go only straight and side-ways (align against leg closer to ball, and use relevant kick) - closed loop
+2. Calculate kicking-point (correct angle towards opponent goal), go as quickly as possible towards it (turn-walk-turn)
+3. When near ball, go only straight and side-ways (align against leg closer to ball, and use relevant kick)
 4. When close enough - kick!
 
 Keep using head to track once ball is found? will interfere with closed-loop
@@ -34,6 +35,7 @@ Add ball position cache (same as k-p local cache)
 Handle negative target location (walk backwards instead of really big turns...)
 What to do when near ball and k-p wasn't calculated?
 Handle case where ball isn't seen after front scan (add full scan inc. turning around) - hopefully will be overridden with ball from comm.
+Obstacle avoidance
 """
 
 class kicker(Player):
@@ -51,23 +53,22 @@ class kicker(Player):
         # do a quick search for kicking point
         self._actions.scanQuick().onDone(self.onScanDone)
         
-        # self._actions.scanFront().onDone(self.onScanFrontDone)
-        # else: self.doNextAction()
+        #self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
+        #self._actions.changeLocationRelativeSideways(20, 20)
 
     def onScanDone(self):
-        print "\nScan done!: (ball seen %s, dist: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.bearing)
+        print "\nScan done!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         print "******************"
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         if (not self.kp is None):
+            print "self.kp is known, moving head to kpBall direction"
             self.doMoveHead(self.kpBallBearing, -self.kpBallElevation)
         
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         self.doNextAction()
     
     def doNextAction(self):
-        print "\nDeciding on next move: (ball seen %s, dist: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.bearing)
+        print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         print "------------------"
-
-        return
 
         # if kicking-point is not known, search for it
         if self.kp is None:
@@ -81,36 +82,56 @@ class kicker(Player):
         if not self._world.ball.seen:
             print "BALL NOT SEEN!"
             # TODO: do another scan OR use bearing and distance from k-p???
-            
 #            print "ball location unknown, searching for ball & opponent goal"
 #            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
 #            self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
 #            # TODO: change to scan around
 #            self._actions.scanFront().onDone(self.onScanDone)
-            return
+            #return
         
-        # ball is visible, let's do something about it
-        # if ball close enough, just kick it
-        if self._world.ball.dist <= 60:
-            if self._world.ball.dist > 35.0:
-                print "close to ball, but not enough, try to advance slowly"
-                close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
-                self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-                self.gotoLocation(close_kp)
-            else:
-                print "Really close to ball"
-                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-                
-                if self._world.ball.dist >= 31.0:
-                    self.gotoLocation((34 - self._world.ball.dist, 0.0, 0.0))
-                else:
-                    print "Kicking!"
-                    self.doKick()
-                # TODO: add final positioning
-        else:
-            # get closer to ball
-            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+        # ball is visible, let's approach it
+        (target_x, target_y) = self.convertBallPosToFinalKickPoint(self._world.ball.distSmoothed, self._world.ball.bearing)
+        print "Final Kick point: (target_x: %3.3fcm, target_y: %3.3fcm)" % (target_x, target_y)
+        
+        # if ball is far, advance (turn/forward/turn)
+        if target_x > 50.0 or abs(target_y) > 50.0:
             self.gotoLocation(self.kp)
+        else:
+            # if ball close enough, kick it
+            if target_x <= 1.0 and abs(target_y) <= 1.2: # target_x <= 1.0 and abs(target_y) <= 2.0
+                self.doKick()
+            # if ball near us, advance (forward/side-stepping)
+            elif target_x <= 10. and abs(target_y) <= 10.:
+                #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+                self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
+                self._actions.changeLocationRelativeSideways(target_x, target_y)
+            # if ball a bit far, advance (forward only)
+            elif target_x <= 50.:
+                self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
+                self._actions.changeLocationRelativeSideways(target_x, 0.)
+            
+#        if balldist <= 60:
+#            self._actions.changeLocationRelativeSideways(target_x, target_y)
+#            
+#            if self._world.ball.dist > 35.0:
+#                print "close to ball, but not enough, try to advance slowly"
+#                close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
+#                self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+#                self.gotoLocation(close_kp)
+#            else:
+#                print "Really close to ball"
+#                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+#                
+#                if self._world.ball.dist >= 31.0:
+#                    self.gotoLocation((34 - self._world.ball.dist, 0.0, 0.0))
+#                else:
+#                    print "Kicking!"
+#                    self.doKick()
+#                # TODO: add final positioning
+#        else:
+#            # get closer to ball
+#            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
+#            self.gotoLocation(self.kp)
 
     def onKickingPointChanged(self):
         print "Kicking Point Changed!"
@@ -120,7 +141,7 @@ class kicker(Player):
             self._eventmanager.unregister(EVENT_KP_CHANGED)
             self.kp = computed.kp
             
-            self.kpBallDist = self._world.ball.dist
+            self.kpBallDist = self._world.ball.distSmoothed
             self.kpBallBearing = self._world.ball.bearing
             self.kpBallElevation = self._world.ball.elevation
             
@@ -128,27 +149,38 @@ class kicker(Player):
             print "KP Ball dist/bearing/elevation: %3.3f %3.3f %3.3f" % (self.kpBallDist, self.kpBallBearing, self.kpBallElevation)
             
     def doKick(self):
+        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        
         if self._world.ball.bearing > 0.0:
             # Kick with left
+            print "Left kick!"
             self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT)
         else:
             # Kick with right
+            print "Right kick!"
             self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT)
         
-        #self._actions.kick()
-        self._eventmanager.quit()
+        #self._eventmanager.quit()
         #self._actions.sitPoseAndRelax()
     
+    # TODO: MOVE TO WORLD? ACTIONS? BALL? Needs to take into account selected kick & kicking leg...
     def convertBallPosToFinalKickPoint(self, dist, bearing):
-        KICK_DIST_FROM_BALL = 28
-        KICK_OFFSET_MID_BODY = 4
+        KICK_DIST_FROM_BALL = 31.0
+        KICK_OFFSET_MID_BODY = 1.0
+        if bearing < 0:
+            KICK_OFFSET_MID_BODY *= -1
+
+        cosBearing = cos(bearing)
+        sinBearing = sin(bearing)
+        target_x = cosBearing * (dist - KICK_DIST_FROM_BALL) + KICK_OFFSET_MID_BODY * sinBearing
+        target_y = sinBearing * (dist - KICK_DIST_FROM_BALL) - KICK_OFFSET_MID_BODY * cosBearing
         
-        bx = dist*cos(bearing)
-        by = dist*sin(bearing)
+        if target_x > dist:
+            print "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ do we have a problem here?"
+            print "dist: %3.3f bearing: %3.3f" % (dist, bearing)
+            print "target_x: %3.3f target_y: %3.3f" % (target_x, target_y) 
         
-        target_x = bx - KICK_DIST_FROM_BALL * cos(bearing) + KICK_OFFSET_MID_BODY * sin(bearing)
-        target_y = by - KICK_DIST_FROM_BALL * sin(bearing) + KICK_OFFSET_MID_BODY * cos(bearing)
-        return target_x, target_y, 0.0
+        return target_x, target_y
     
     def onChangeLocationDone(self):
         print "Change Location Done!"

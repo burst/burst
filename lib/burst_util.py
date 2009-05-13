@@ -133,6 +133,14 @@ def cumsum(iter):
         s += t
         yield s
 
+def running_average(window_width):
+    samples = [0.0]*window_width
+    i = 0
+    while 1:
+        samples[i] = (yield float(sum(samples))/window_width)
+        i = (i + 1) % len(samples)
+        #print samples
+
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]

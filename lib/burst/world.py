@@ -13,6 +13,7 @@ import burst
 from events import *
 from eventmanager import Deferred, EVENT_MANAGER_DT
 from sensing import FalldownDetector
+from burst_util import running_average
 
 MISSING_FRAMES_MINIMUM = 10
 
@@ -37,6 +38,8 @@ class Locatable(object):
     Because of the way the vision system we use (northern's) works, we keep things
     in polar coordinates - bearing in radians, distance in centimeters.
     """
+    
+    _name = "Locatable" # override to get nicer %s / %r
 
     REPORT_JUMP_ERRORS = False
 
@@ -77,6 +80,10 @@ class Locatable(object):
         
         self.seen = False
         self.missingFramesCounter = 0
+        
+        self.distSmoothed = 0.0
+        self.distRunningAverage = running_average(5)
+        self.distRunningAverage.next()
 
     def compute_location_from_vision(self, vision_x, vision_y, width, height):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
@@ -111,10 +118,17 @@ class Locatable(object):
 
         self.bearing = new_bearing
         self.dist = new_dist
+        self.distSmoothed = self.distRunningAverage.send(new_dist)
+        #if isinstance(self, Ball):
+        #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
+        
         self.elevation = new_elevation
         self.newness = newness
         self.body_x, self.body_y = body_x, body_y
         self.vx, self.vy = dx/dt, dy/dt
+    
+    def __str__(self):
+        return "<%s at %s>" % (self._name, id(self))
 
 class Movable(Locatable):
     def __init__(self, world, real_length):

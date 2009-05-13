@@ -14,6 +14,7 @@ INTERPOLATION_LINEAR, INTERPOLATION_SMOOTH = 0, 1
 # Math constants
 
 DEG_TO_RAD = math.pi / 180.0
+CM_TO_METER = 100. # yeah, seems stupid, but probably better than using 100 throughout the code...
 
 # Camera / Vision constants
 
