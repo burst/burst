@@ -19,6 +19,7 @@
 
 // used for indexing arrays
 enum { X, Y, Z };
+enum { rX, rY, rZ, alpha };
 
 // field dimensions (in meters) and other constants that should match the .wbt file
 #define NUM_ROBOTS 1
@@ -58,6 +59,7 @@ static WbFieldRef ball_translation = NULL;        // to track ball position
 //static WbDeviceTag receiver;                      // to receive 'move' requests
 static const double *ball_pos = ZERO_VEC_3;       // current ball position (pointer to)
 static const double *robot_pos[NUM_ROBOTS];       // current robots position (pointer to)
+static const double *robot_rot[NUM_ROBOTS];       // current robots rotation (pointer to)
 static double time;                               // time [seconds] since end of half game
 static int step_count = 0;                        // number of steps since the simulation started
 static int last_touch_robot_index = -1;           // index of last robot that touched the ball
@@ -181,7 +183,7 @@ static void initialize() {
       robot_controller[i] = NULL;
     }
   }
-
+  
   // to keep track of ball position
   WbNodeRef ball = wb_supervisor_node_get_from_def("BALL");
   if (ball)
@@ -339,7 +341,6 @@ static void check_keyboard() {
     move_robot_2d(0, 0.0, 0.0, -1.57);
     move_ball_2d(-1.32302, -0.5);
     break;
-
   case WB_ROBOT_KEYBOARD_SHIFT + 'B':
     if (control_data.teams[TEAM_BLUE].score > 0) {
       control_data.teams[TEAM_BLUE].score--;
@@ -409,6 +410,62 @@ static void read_incoming_messages() {
 }
 */
 
+
+static void checkFalling() {
+  int j;
+  for (j = 0; j < NUM_ROBOTS; j++){
+    // USE: enum { rX, rY, rZ, alpha }
+    //New coordinates definition: http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
+    float a = cos(robot_rot[j][alpha]/2);
+    float b = robot_rot[j][rX]*sin(robot_rot[j][alpha]/2);
+    float c = robot_rot[j][rY]*sin(robot_rot[j][alpha]/2);
+    float d = robot_rot[j][rZ]*sin(robot_rot[j][alpha]/2);
+    
+    //matrix representation
+    float mat[3][3];
+    mat[X][X] = a*a + b*b - c*c - d*d;
+    mat[Y][X] = 2*b*c - 2*a*d;
+    mat[Z][X] = 2*a*c + 2*b*d;
+    mat[X][Y] = 2*a*d + 2*b*c;
+    mat[Y][Y] = a*a - b*b + c*c - d*d;
+    mat[Z][Y] = 2*c*d - 2*a*b;
+    mat[X][Z] = 2*b*d - 2*a*c;
+    mat[Y][Z] = 2*a*b + 2*c*d;
+    mat[Z][Z] = a*a - b*b - c*c + d*d;
+    
+   //detect falling on back 
+    if ((mat[Y][Y] < fabs(mat[Y][Z]) || mat[Y][Y] < fabs(mat[Y][X])) && (mat[Z][Y] > 0)) {
+    
+      move_robot_2d(j, robot_pos[j][X], robot_pos[j][Z], robot_rot[j][alpha]);
+       //########################################turning on belly:this next code make the robot diapear sometimes
+       ////##Now turning on belly:)
+       //mat[X][Y]=mat[X][Y]*(-1);
+       //mat[Z][Z]=mat[Z][Z]*(-1);
+       
+       ////going back to the old coordinates: http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation 
+       //float r = sqrt(1 + mat[X][X] - mat[Y][Y] - mat[Z][Z]);
+       //float q0 = (mat[Z][Y] - mat[Y][Z])/(2*r);//a
+       //float qu = r/2;                          //b
+       //float qv = (mat[X][Y] + mat[Y][X])/(2*r);//c
+       //float qw = (mat[Z][X] + mat[X][Z])/(2*r);//d
+       
+       //float _alpha=acos(q0)/2;
+       //double rot[4] = { qu/sin(_alpha/2), qv/sin(_alpha/2), qw/sin(_alpha/2), _alpha };
+       
+       //double trans[3] = { robot_pos[j][X], robot_pos[j][Y]+0.01, robot_pos[j][Z] };
+       //wb_supervisor_field_set_sf_vec3f(robot_translation[0], trans);
+       //wb_supervisor_field_set_sf_rotation(robot_rotation[j], rot);
+       //#################################################3
+    }
+  }
+}
+
+
+
+
+
+
+
 // this is what is done at every time step independently of the game state
 static void step() {
 
@@ -417,10 +474,13 @@ static void step() {
     ball_pos = wb_supervisor_field_get_sf_vec3f(ball_translation);
 
   int i;
-  for (i = 0; i < NUM_ROBOTS; i++)
+  for (i = 0; i < NUM_ROBOTS; i++) {
     // copy pointer to robot position values
     if (robot_translation[i])
       robot_pos[i] = wb_supervisor_field_get_sf_vec3f(robot_translation[i]);
+    if (robot_rotation[i])
+      robot_rot[i] = wb_supervisor_field_get_sf_rotation(robot_rotation[i]);
+  }
 
   if (message_steps)
     message_steps--;
@@ -431,7 +491,12 @@ static void step() {
   // every 480 milliseconds
   if (step_count++ % 12 == 0)
     sendGameControlData();
-
+  
+  checkFalling();
+  
+  
+  
+  
   // did I receive a message ?
   //read_incoming_messages();
 
