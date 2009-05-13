@@ -1,7 +1,7 @@
 all: tbd
 
-tbd: TBD.zip
+tbd: TDP.zip
 
-TBD.zip: Team\ Description\ Document/burst.tex
-	zip -r TBD.zip "Team Description Document"
+TDP.zip: Team\ Description\ Paper/spl_burst.tex
+	zip -r TDP.zip "Team Description Paper"
 
