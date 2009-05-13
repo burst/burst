@@ -39,7 +39,8 @@ class Player(object):
     def onOnBack(self):
         print "I'm on my back."
         self._eventmanager.unregister(EVENT_ON_BACK)
-        self._actions.executeGettingUpBack().onDone(self.gettingUpDoneBack)
+        # temporarily removed
+        #self._actions.executeGettingUpBack().onDone(self.gettingUpDoneBack)
     
     def gettingUpDoneBack(self):
         print "Getting up done!"
@@ -48,7 +49,8 @@ class Player(object):
     def onOnBelly(self):
         print "I'm on my belly."
         self._eventmanager.unregister(EVENT_ON_BELLY)
-        self._actions.executeGettingUpBelly().onDone(self.gettingUpDoneBelly)
+        # temporarily removed
+        #self._actions.executeGettingUpBelly().onDone(self.gettingUpDoneBelly)
         
     def gettingUpDoneBelly(self):
         print "Getting up done!"
