@@ -784,7 +784,7 @@ class World(object):
     def _updateMemoryVariablesFromSharedMem(self):
         self._shm.update()
 
-    @timeit('al update time = %s ms')
+    #@timeit('al update time = %s ms')
     def _updateMemoryVariablesFromALMemory(self):
         # TODO: optmize the heck out of this. Options include:
         #  * subscribeOnData / subscribeOnDataChange
