@@ -254,7 +254,7 @@ class NaoQiParam(object):
     def __init__(self, ztype, zname, zdoc):
         ztype = int(ztype)
         self.__doc__ = zdoc
-        self._type = nao_type_to_py_type.get(ztype, ztype)
+        _, self._type = nao_type_dict.get(ztype, (None, ztype))
         self._name = zname
 
     def validate(self, v):
@@ -274,15 +274,15 @@ class NaoQiParam(object):
 
 ARRAY='array'
 VECTOR_STRING = 'vectorString'
-nao_type_to_py_type = {
-    1: None, # void
-    2: bool,
-    3: int,
-    4: float,
-    5: str,
-    6: ARRAY,
-    24: ARRAY,
-    25: VECTOR_STRING,
+nao_type_dict = {
+    1: ('void', None),
+    2: ('bool', lambda v: v != 'false'),
+    3: ('int', int),
+    4: ('float', float),
+    5: ('string', str),
+    6: ('ARRAY6', ARRAY),
+    24: ('ARRAY24', ARRAY),
+    25: ('VECTOR_STRING', VECTOR_STRING),
     }
 
 def arrayctor(node):
@@ -314,12 +314,12 @@ class NaoQiReturn(object):
 
     def __init__(self, rettype, name, doc):
         rettype = int(rettype)
-        self._rettype = nao_type_to_py_type.get(rettype, rettype)
+        self._rettype_pprint, self._rettype = nao_type_dict.get(rettype, rettype)
         self.__doc__ = doc
         self._name = name
 
     def __str__(self):
-        return str(self._rettype)
+        return self._rettype_pprint
 
     def __repr__(self):
         return '<NQRet %s>' % str(self._rettype)
@@ -331,8 +331,6 @@ class NaoQiReturn(object):
             return ret.toprettyxml()
         if self._rettype == None:
             return None
-        if self._rettype in set([bool, int, float, str]):
-            return self._rettype(ret.firstChild.firstChild.nodeValue)
         if self._rettype in [ARRAY, VECTOR_STRING]:
             if ret.firstChild is None:
                 return []
@@ -340,7 +338,7 @@ class NaoQiReturn(object):
             if first_child_type in ['xsd:float', 'xsd:int', 'xsd:string']: # some sort of exception
                 return get_xsi_type_to_ctor(ret.firstChild.attributes['xsi:type'].value)(ret.firstChild)
             return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
-        return ret
+        return self._rettype(ret.firstChild.firstChild.nodeValue)
 
 ##################################################################
 
@@ -871,7 +869,7 @@ def getDefaultOptions():
     parser.add_option('--ip', action='store', dest='ip', default='localhost')
     parser.add_option('--port', action='store', dest='port', default=None)
     parser.add_option('--video', action='store_true', dest='video', default=None)
-    parser.add_option('--twisted', action='store_true', dest='twisted', default=False)
+    parser.add_option('--twisted', action='store_true', dest='twisted', default=True)
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
