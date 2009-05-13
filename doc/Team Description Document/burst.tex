@@ -1,0 +1,99 @@
+\documentclass[runningheads,a4paper]{llncs}
+
+\usepackage{amssymb}
+\setcounter{tocdepth}{3}
+\usepackage{graphicx}
+
+\usepackage{url}
+\urldef{\mailsa}\path|galk@cs.biu.ac.il|
+\newcommand{\keywords}[1]{\par\addvspace\baselineskip
+\noindent\keywordname\enspace\ignorespaces#1}
+
+\begin{document}
+
+\mainmatter  % start of an individual contribution
+
+\title{Robocup 2009\\Standard Platform League\\Team BURST Description}
+
+\titlerunning{Team BURST Description}
+
+\author{Gal Kaminka
+\and Eli Kolberg\and Eran Polosetski\and\\ Vladimir (Vova) Sadov\and
+Alon Levy\and\\ Asaf Shilony\and Anat Sevet\and Elad Alon\and Meytal Traub}
+%
+\authorrunning{SPL Team BURST Description}
+% (feature abused for this document to repeat the title also on left hand pages)
+
+% the affiliations are given next; don't give your e-mail address
+% unless you accept that it will be published
+\institute{Computer Science \& Computer Engineering Departments,\\
+              Bar Ilan University, Israel\\
+\mailsa\\
+\url{http://shwarma.cs.biu.ac.il/robocup/}}
+
+%
+% NB: a more complex sample for affiliations and the mapping to the
+% corresponding authors can be found in the file "llncs.dem"
+% (search for the string "\mainmatter" where a contribution starts).
+% "llncs.dem" accompanies the document class "llncs.cls".
+%
+
+\toctitle{Robocup 2009 SPL}
+\tocauthor{Team BURST Description}
+\maketitle
+
+
+\begin{abstract}
+Team BURST is a newly-formed joint team which intends to compete in the RoboCup
+2009 standard platform league. BURST is the first non-Junior RoboCup team from Israel, ever. Our main research interests within the scope of the SPL are \emph{Robust, realtime vision}, \emph{Machine learning for gait generation and adaptation} and \emph{Architectures for humanoid decision-making}.
+
+
+\keywords{Humanoids, Nao, Robotic soccer.}
+\end{abstract}
+
+
+\section{Introduction}
+Team BURST (Bar-ilan University Robotic Soccer Team) is a newly-formed joint team which is competing in the RoboCup 2009 standard platform league. BURST is the first senior (non-Junior) RoboCup team from Israel, ever. The team is composed of two previously-independent RoboCup efforts at Bar Ilan University, lead by Drs. Kaminka (Computer Science department) and Kolberg (Computer Engineering department). Both team leaders have considerable experience in RoboCup (as participants, organizers, league chairs, and symposium co-chairs). All student members of the team have relevant experience in robotics. Some also bring to bear professional programming and team leadership experiences.
+
+We have a long history of publications, in and out of RoboCup forums, and in
+and out of robotic soccer (dozens of publications in the last three years, alone). We
+take RoboCup-based research very seriously, and have focused research goals that we
+hope to achieve by utilizing the robotic platform, and our participation in the league.
+Specifically, we are interested in: (i) anytime object-recognition (as a basis for anytime
+visual SLAM); (ii) using reinforcement learning to generate robust and speedy biped
+and quadped gaits; and (iii) decision-making architectures for humanoid robots.
+
+We hope that by participating in the standard platform league, we would be able to attract Israeli fans and researchers to take a more active part in RoboCup in the coming years.
+
+
+
+\section{Software Architecture}
+Alon - add here several general words about our architecture (Event-based, etc)
+
+\subsection{Vision}
+Eran - add here several words about our vision
+
+\subsection{Localization}
+Eran - add here several words about our localization
+
+\subsection{Locomotion}
+Our ultimate goal is to create a robust closed-loop locomotion controller which will be able to adjust itself to the changing terrain conditions, to switch gaits dynamically and prevent falls. To achieve this goal we have started from the basic NaoQi open-loop controller and generated several stable gaits variations with NaoQi built-in parameters. Using resulting scripts we have extracted command sequences for each joint involved in walking and built our own open-loop locomotion controller fully adjustable for our needs. We hope that FSR data, accelerometers/gyro sensors data and joints sensors position errors data will allow us to built a closed-loop controller ontop our current, open-loop locomotion controller.
+
+\subsection{Path Planning}
+A considerable effort has been made on studying motion path planning. Given starting coordinates (X,Y,Yaw), target coordinates (X,Y,Yaw) and set of all the gaits defined for the robot, we are building motion planner that will propose such a combination of walking commands that will minimize total travel time. This project is performed by group of outstanding undergraduate students whom we are very proud to host in our lab.
+
+\subsection{Behaviors}
+Eran,Alon - add here several words about our behaviors
+
+\label{references}
+
+
+\begin{thebibliography}{4}
+
+\bibitem{url} Team BURST Homepage, \url{http://shwarma.cs.biu.ac.il/robocup/}
+
+\end{thebibliography}
+
+
+
+\end{document}
