@@ -9,6 +9,7 @@ except:
     pass
 
 from twisted.internet import reactor, task
+from twisted.internet.defer import succeed
 from twisted.internet.threads import deferToThread
 
 import gtk
@@ -128,6 +129,7 @@ class Main(object):
                 #self.box.pack_start(self.toplabel, False, False, 0)
 
                 self._last = [] # list of all the deferreds for our gotoAngleWithSpeed requests
+                self._waiting_callbacks = 0
 
             def onChanged(self, w, scroll_type, val):
                 cur = time()
@@ -139,19 +141,31 @@ class Main(object):
                 # name, value, speed percent [0-100], interpolation (1 = smooth)
 
                 if len(self._last) > 0 and self._last[-1].called:
+                    #print "zeroing deferred list"
                     self.count_label.set_label('0')
                     del self._last[:]
-                def gotoAngle():
-                    print "joint, %s, value %s %s" % (self.name, s.get_value(), val)
-                    d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+                    self._waiting_callbacks = 0
+
+                def gotoAngle(ind, val):
+                    #print "joint %s, ind %s, value %s %s" % (
+                    #            self.name, ind, s.get_value(), val)
+                    if ind == self._waiting_callbacks:
+                        d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+                    else:
+                        #print "not moving, %s != %s" % (ind, self._waiting_callbacks)
+                        d = succeed(0)
                     self._last.append(d)
                     return d
+
                 if len(self._last) == 0:
                     # first call, bery simple!
-                    self._last.append(gotoAngle())
+                    self._last.append(gotoAngle(self._waiting_callbacks, val))
                 else:
+                    self._waiting_callbacks += 1
+                    ind = self._waiting_callbacks
                     self.count_label.set_label('%s' % len(self._last))
-                    self._last[-1].addCallback(lambda _: gotoAngle())
+                    self._last[-1].addCallback(lambda _,
+                            ind=ind, val=val: gotoAngle(ind, val))
                 
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
