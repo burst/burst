@@ -30,11 +30,25 @@ if con.options.video:
     con.retrieveImages()
 
 # start ipython shell
+def s(d):
+    def cb(r):
+        globals()['last'] = r
+        print r
+    d.addCallback(cb)
+
 my_ns = dict(
     con = con,
-    pynaoqi = pynaoqi)
+    pynaoqi = pynaoqi,
+    s = s)
 
-print "Pynaoqi shell - con object holds all the modules, methods, help!"
+print "<"*30 + "o"*20 + ">"*30
+print """Pynaoqi shell - con object holds all the modules, methods, help!
+To get deferred value back, use s, as in:
+s con.ALMemory.getListData(mylist)
+
+the value returned from the last fired deferred will be in
+"last\""""
+print "_"*80
 shell = shellclass(my_ns)
 
 # If in twisted, start the mainloop

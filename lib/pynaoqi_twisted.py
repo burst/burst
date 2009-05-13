@@ -40,7 +40,12 @@ class SoapProtocol(Protocol):
             body = ''.join(self._got)
             xml = minidom.parseString(body)
             soapbody = xml.documentElement.firstChild
-            self.deferred.callback(soapbody)
+            # we filter out fault codes for now, just print them out
+            # maybe add a cb for that later? (user settable) (or use errback mechanism)
+            if soapbody.firstChild.nodeName == 'SOAP-ENV:Fault':
+                print "Got a fault:\n%s" % soapbody.firstChild.toprettyxml()
+            else:
+                self.deferred.callback(soapbody)
             self.transport.loseConnection()
         else:
             if data_len not in self._packet_sizes:
@@ -66,9 +71,9 @@ class SoapRequestFactory(ClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         if reason.type != twisted.internet.error.ConnectionDone:
-            print "BOO CONNECTION LOST", connector, reason
+            print "CONNECTION LOST", reason
 
     def clientConnectionFailed(self, connector, reason):
-        print "BOO CONNECTION FAILED", connector, reason
+        print "CONNECTION FAILED", reason
 
 
