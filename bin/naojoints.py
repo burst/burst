@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from time import time
+from math import pi
 
 from twisted.internet import gtk2reactor
 
@@ -25,6 +26,31 @@ from burst_util import cached, cached_deferred, Deferred
 
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
+
+def toggle(initial=False):
+    """ make a function into a toggle - this lets that function access a variable
+    on it's own function object called state, which starts out at initial
+    """
+    def wrapgen(f):
+        f.state = initial
+        def wrapper(*args, **kw):
+            ret = f(*args, **kw)
+            f.state = not f.state
+            return ret
+    return wrapgen
+
+def showtoggle(f):
+    f.state = False
+    def wrapper(*args, **kw):
+        widgets = f()
+        if f.state:
+            for w in widgets:
+                w.show_all()
+        else:
+            for w in widgets:
+                w.hide_all()
+        f.state = not f.state
+    return wrapper
 
 @cached_deferred('%s/.burst_joint_data.pickle' % os.environ['HOME'])
 def getJointData(con):
@@ -175,6 +201,9 @@ class Main(object):
         # Create the joint controlling and displaying slides (called by onJointData)
         def onBodyAngles(cur_angles):
             table = gtk.Table(rows=Scale.NUM_ROWS, columns=len(self.joint_names), homogeneous=False)
+            # update visibility toggling lists
+            self._joints_widgets.add(table)
+            self._all_widgets.add(table)
             c.add(table)
             for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
                 min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
@@ -204,7 +233,7 @@ class Main(object):
         self.c = c = gtk.VBox()
         w.add(c)
 
-        # Create top buttons
+        # Create Many Buttons on Top
 
         def create_button_strip(data):
             button_box = gtk.HBox()
@@ -217,11 +246,11 @@ class Main(object):
             return button_box, buttons
 
         top_buttons_data = [
-            ('print angles', self.printAngles),
-            ('stiffness on', self.setStiffnessOn),
-            ('stiffness off', self.setStiffnessOff),
-            ('vision', self.toggleVision),
-            ('inertial', self.toggleInertial),
+            ('print angles',    self.printAngles),
+            ('stiffness on',    self.setStiffnessOn),
+            ('stiffness off',   self.setStiffnessOff),
+            ('vision',          self.toggleVision),
+            ('inertial',        self.toggleInertial),
             ]
         chains = ['Head', 'LLeg', 'LArm', 'RArm', 'RLeg']
         stiffness_off_buttons_data = [
@@ -236,13 +265,72 @@ class Main(object):
         moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
             self.con.ALMotion.executeMove(move))
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
-        c.pack_start(create_button_strip(top_buttons_data)[0], False, False, 0)
+
+        self._walkconfig = [0.05, 0.02, 0.02, 0.35, 0.015, 0.018]
+
+        def updateWalkConfig(_):
+            self.con.ALMotion.getWalkConfig().addCallback(self.setWalkConfig)
+
+        self._start_walk_count = 1
+        def startWalkTest(result=None):
+            print "start walk req %s" % self._start_walk_count
+            self._start_walk_count += 1
+            self.con.ALMotion.getRemainingFootStepCount().addCallback(startWalkCb)
+
+        def startWalkCb(steps):
+            if steps > 0:
+                print "remaining footsteps, not calling walk"
+            else:
+                self.con.ALMotion.walk()
+
+        def doWalk(steps):
+            # distance [m], # 20ms cycles per step
+            perstep = self._walkconfig[0]
+            return self.con.ALMotion.addWalkStraight(steps*perstep, 60).addCallback(
+                startWalkTest)
+
+        def doArc(angle):
+            # angle [rad], radius [m], # 20ms cycles per step
+            return self.con.ALMotion.addWalkArc(angle, 0.5, 60).addCallback(
+                startWalkTest)
+
+        def doTurn(angle):
+            # angle [rad], # 20ms cycles per step
+            return self.con.ALMotion.addTurn(steps, 60).addCallback(
+                startWalkTest)
+
+        toggle_buttons_data = [
+            ('all', self.onShowAll),
+            ('joints only', self.onShowJointsOnly),
+            ('buttons only', self.onShowButtonsOnly),
+        ]
+
+        walk_buttons_data = [
+            ('Walk: get config', updateWalkConfig),
+            ('fw 1', lambda _, steps=1: doWalk(3)),
+            ('rev 1', lambda _, steps=-1: doWalk(-3)),
+            ('rt 45', lambda _, steps=1: doTurn(pi / 4)),
+            ('lt 45', lambda _, steps=-1: doTurn(-pi / 4)),
+            ('arc right 1', lambda _, steps=1: doArc(1)),
+            ('arc left 1', lambda _, steps=-1: doArc(-1)),
+        ]
+
+        top_strip, top_buttons       = create_button_strip(top_buttons_data)
         stiffness_off, self.stiffness_off_buttons = (
-            create_button_strip(stiffness_off_buttons_data))
-        stiffness_on, self.stiffness_on_buttons = create_button_strip(stiffness_on_buttons_data)
-        c.pack_start(stiffness_off, False, False, 0)
-        c.pack_start(stiffness_on, False, False, 0)
-        c.pack_start(create_button_strip(moves_buttons_data)[0], False, False, 0)
+                                       create_button_strip(stiffness_off_buttons_data))
+        stiffness_on, self.stiffness_on_buttons = (
+                                       create_button_strip(stiffness_on_buttons_data))
+        moves_strip, moves_buttons   = create_button_strip(moves_buttons_data)
+        walk_strip, walk_buttons     = create_button_strip(walk_buttons_data)
+        toggle_strip, toggle_buttons = create_button_strip(toggle_buttons_data)
+
+        for button_strip in [top_strip, toggle_strip, stiffness_off, stiffness_on, moves_strip, walk_strip]:
+            c.pack_start(button_strip, False, False, 0)
+    
+        # lists for toggling visibility with appropriate callbacks
+        self._buttons_widgets = set([stiffness_off, stiffness_on, moves_strip, walk_strip])
+        self._joints_widgets = set([])
+        self._all_widgets = self._buttons_widgets.union(self._joints_widgets)
 
         # Create walk buttons (later need to allow hiding them)
         button_box = gtk.HBox()
@@ -251,6 +339,25 @@ class Main(object):
         w.show_all()
         w.connect("destroy", self.onDestroy)
     
+    def onShowAll(self, _):
+        for w in self._all_widgets:
+            w.show_all()
+
+    def onShowJointsOnly(self, _):
+        for w in self._joints_widgets:
+            w.show_all()
+        for w in self._buttons_widgets:
+            w.hide_all()
+
+    def onShowButtonsOnly(self, _):
+        for w in self._buttons_widgets:
+            w.show_all()
+        for w in self._joints_widgets:
+            w.hide_all()
+
+    def setWalkConfig(self, arg):
+        self._walkconfig = arg
+
     def onDestroy(self, *args):
         print "quitting.."
         reactor.stop()

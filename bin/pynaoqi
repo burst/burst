@@ -47,7 +47,8 @@ shell = shellclass(my_ns)
 realshell = getrealshell(shell)
 
 # set a nicer prompt to tell the user where he is connected to
-realshell.outputcache.prompt1.p_template='${con.host} [\#]: '
+# reminder: can use ${} to eval stuff, like: '${con.host} [\#]: '
+realshell.outputcache.prompt1.p_template='%s [\#]: ' % (con.host)
 
 # If in twisted, start the mainloop, and add a hook to display deferred results
 # when they are available (also affects *any* deferred you try to print)
