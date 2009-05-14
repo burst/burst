@@ -230,7 +230,7 @@ class Main(object):
                 for chain in chains]
         stiffness_on_buttons_data = [
                 ('%s on' % chain,
-                    lambda _, chain=chain: self.con.ALMotion.setChainStiffness(chain, 0.0))
+                    lambda _, chain=chain: self.con.ALMotion.setChainStiffness(chain, 1.0))
                 for chain in chains]
         import burst.moves as moves
         moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
