@@ -24,6 +24,13 @@ class Me(Player):
 def chorwrap(f):
     return f()
 
+def mirrorChoreographMove(jointCodes, angles, times):
+    """ Usage:
+    GET_UP_BACK_MIR = mirrorChoreographMove(GET_UP_BACK)
+    """
+    newJointCodes = [{'L':'R','R':'L'}.get(jc[0], jc[0]) + jc[1:] for jc in jointCodes]
+    return newJointCodes, angles, times
+
 @chorwrap
 def GET_UP_BACK():
     jointCodes = list()
