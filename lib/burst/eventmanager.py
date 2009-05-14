@@ -1,6 +1,9 @@
 #
-# Event enumeration
+# Event Manager, and a main loop
 #
+
+import traceback
+import sys
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -193,15 +196,27 @@ class EventManagerLoop(object):
             self._run()
 
     def _run(self):
-        # a sanity check
-        import burst
+        """ wrap the real loop to catch keyboard interrupt and network errors """
         try:
-            man = burst.ALProxy("Man")
-        except:
-            print "<"*30 + " "*20 + ">"*30
-            print "BIG FAT WARNING: you are missing the Man proxy - run naoload and uncomment man"
-            print "                 Continue at your own risk"
-            print "<"*30 + " "*20 + ">"*30
+            self._run_loop()
+        except KeyboardInterrupt:
+            print "ctrl-c detected."
+        except RuntimeError, e:
+            print "naoqi exception caught:", e
+            print "quitting"
+            return
+        except Exception, e:
+            print "caught player exception:"
+            if hasattr(sys, 'last_traceback'):
+                traceback.print_tb(sys.last_traceback)
+            else:
+                print "no traceback, bare exception:", e
+        # We reache this point after any exception EXCEPT RuntimeError
+        print "sitting and removing stiffness and quitting"
+        self._actions.sitPoseAndRelax()
+            
+    def _run_loop(self):
+        import burst
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from time import sleep, time
         # TODO: this should be called from the gamecontroller, this is just
