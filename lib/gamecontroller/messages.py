@@ -3,7 +3,8 @@
 #from events import *
 
 
-__all__ = ['Message', 'BOTH_TEAMS', 'ALL_ROBOTS_OF_AFFECTED_TEAM']
+__all__ = ['Message', 'BOTH_TEAMS', 'ALL_ROBOTS_OF_AFFECTED_TEAM', 'TransitionToInitialState', 'TransitionToReadyState',
+            'TransitionToSetState', 'TransitionToPlayingState', 'TransitionToPenalizedState', 'TransitionToFinishedState']
 
 
 ALL_ROBOTS_OF_AFFECTED_TEAM = None

@@ -95,8 +95,10 @@ class ServerSocket(threading.Thread):
                             ejected = True
                             self.listeners.remove(previouslyUnreadyListener)
                             break
-                    # Either way, add the new listener.
+                    # Either way, move the new listener.
+                    print "new one added", previouslyUnreadyListener.teamColor, previouslyUnreadyListener.robotNumber
                     self.listeners.add(previouslyUnreadyListener)
+                    self.unreadyListeners.remove(previouslyUnreadyListener)
             # See if any more listeners are incoming.
             try:
                 channel, details = self.server.accept()
@@ -115,30 +117,47 @@ class GameController(object):
         self.serverSocket = ServerSocket(self.listeners, port)
 
     def send(self, message, recipient=None):
-        messageSent = False        
-        if recipient == None:
-            messageSent = True # A message to be sent to everyone is considered sent even if "everyone" was an empty set.
-            print "sending: ", message, "to", len(self.listeners), "users."
-            for listener in self.listeners:
-                listener.send(message)
-        else:
-            # TODO - use dictionary instead of iteration
-            for listener in self.listeners:
-                if listener.identification == recipient:
-                    listener.send(message)
-                    messageSent = True
-        if not messageSent and DEBUGGING:
-            print "[ERROR]: GameController.send - could not deliver a message."
+        try:
+            messageSent = False        
+            if recipient == None:
+                messageSent = True # A message to be sent to everyone is considered sent even if "everyone" was an empty set.
+                print "sending: ", message, "to", len(self.listeners), "users."
+                for lstnr in self.listeners:
+                    lstnr.send(message)
+            else:
+                # TODO - use dictionary instead of iteration
+                for lstnr in self.listeners:
+                    if lstnr.identification == recipient:
+                        lstnr.send(message)
+                        messageSent = True
+            if not messageSent and DEBUGGING:
+                print "[ERROR]: GameController.send - could not deliver a message."
+        except listener.ConnectionLostException, e:
+            self.listeners.remove(e.defunctListener)
+            print "It appears we have lost connection to", e.defunctListener, "- removing it."
 
     def run(self):
         self.serverSocket.start()
+        # TEST:
+        import time
+        while True:
+            self.send(messages.TransitionToFinishedState(3, 4))
+            time.sleep(1)
 
 
 
 if __name__ == '__main__':
-    import sys
+    import signal, sys, time
+
+    def exit_on_ctrl_c(num, frame):
+        print '' # Otherwise, the ^C would be incorporated into the new line.
+        raise SystemExit
+
     if len(sys.argv) < 2:
         GameController().run()
     else:
         GameController(int(sys.argv[1])).run()
+    signal.signal(signal.SIGINT, exit_on_ctrl_c)
+    while True:
+        time.sleep(1)
 
