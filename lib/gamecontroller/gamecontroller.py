@@ -12,6 +12,8 @@ import messages, listener
 __all__ = ['GameController']
 
 
+DEBUGGING = True
+
 
 class SynchronizedContainer(object): # TODO: Move to some util package.
     
@@ -89,12 +91,13 @@ class ServerSocket(threading.Thread):
             for previouslyUnreadyListener in self.unreadyListeners:
                 if previouslyUnreadyListener.ready():
                     # See if a robot bearing the same identification is already connected. If so, eject that older instance, but report doing so.
-                    ejected = False
+                    ejectee = None
                     for oldListener in self.listeners:
                         if oldListener.identification == previouslyUnreadyListener.identification:
-                            ejected = True
-                            self.listeners.remove(previouslyUnreadyListener)
+                            ejectee = oldListener
                             break
+                    if ejectee != None:
+                        self.listeners.remove(ejectee)
                     # Either way, move the new listener.
                     print "new one added", previouslyUnreadyListener.teamColor, previouslyUnreadyListener.robotNumber
                     self.listeners.add(previouslyUnreadyListener)
@@ -116,10 +119,10 @@ class GameController(object):
         self.listeners = SynchronizedContainer()
         self.serverSocket = ServerSocket(self.listeners, port)
 
-    def send(self, message, recipient=None):
+    def send(self, message):
         try:
             messageSent = False        
-            if recipient == None:
+            if message.affectedTeam == messages.BOTH_TEAMS or message.affectedRobot == messages.ALL_ROBOTS_OF_AFFECTED_TEAM:
                 messageSent = True # A message to be sent to everyone is considered sent even if "everyone" was an empty set.
                 print "sending: ", message, "to", len(self.listeners), "users."
                 for lstnr in self.listeners:
@@ -127,7 +130,7 @@ class GameController(object):
             else:
                 # TODO - use dictionary instead of iteration
                 for lstnr in self.listeners:
-                    if lstnr.identification == recipient:
+                    if (lstnr.teamColor, lstnr.robotNumber) == (message.affectedTeam, message.affectedRobot):
                         lstnr.send(message)
                         messageSent = True
             if not messageSent and DEBUGGING:
@@ -138,11 +141,13 @@ class GameController(object):
 
     def run(self):
         self.serverSocket.start()
+        import shell
+        shell.shell_loop(self)
         # TEST:
-        import time
-        while True:
-            self.send(messages.TransitionToFinishedState(3, 4))
-            time.sleep(1)
+#        import time
+#        while True:
+#            self.send(messages.TransitionToFinishedState(3, 4))
+#            time.sleep(1)
 
 
 
@@ -153,11 +158,12 @@ if __name__ == '__main__':
         print '' # Otherwise, the ^C would be incorporated into the new line.
         raise SystemExit
 
+    signal.signal(signal.SIGINT, exit_on_ctrl_c)
+
     if len(sys.argv) < 2:
         GameController().run()
     else:
         GameController(int(sys.argv[1])).run()
-    signal.signal(signal.SIGINT, exit_on_ctrl_c)
-    while True:
-        time.sleep(1)
+#    while True:
+ #       time.sleep(1)
 

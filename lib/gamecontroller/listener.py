@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import threading
+import threading, socket
 
 import messages
 
@@ -41,7 +41,7 @@ class Listener(threading.Thread):
     def send(self, message):
         try:
             self.channel.send(message.serialize())
-        except Exception: #TODO: Make sure this only catches socket exception. Preferably only relevant ones.
+        except socket.error: #TODO: Make sure this only catches socket exception. Preferably only relevant ones.
 #            import pdb; pdb.set_trace() # TODO: Remove this when done debugging.
             raise ConnectionLostException(self)
             
