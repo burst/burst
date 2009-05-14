@@ -12,19 +12,19 @@ class Listener(threading.Thread):
     def __init__(self, channel, details):
         threading.Thread.__init__(self)
         self.lock = threading.Lock()
-        self.inbuffer = inbuffer
+        self.inbuffer = ''
         self.channel = channel
         self.details = details
         self.isReady = False
         self.start()
 
-    def ready():
+    def ready(self):
         self.lock.acquire()
         result = self.isReady
         self.lock.release()
         return result
 
-    def setReady(isReady):
+    def setReady(self, isReady):
         self.lock.acquire()
         self.isReady = isReady
         self.lock.release()
@@ -42,10 +42,13 @@ class Listener(threading.Thread):
             return False
 
     def handshake(self):
+        print "sending REPORT command"
         self.channel.send("REPORT!")
+        self.channel.setblocking(True)
         while not '\n' in self.inbuffer:
             self.inbuffer += self.channel.recv(100)
         firstLine, self.inbuffer = tuple(self.inbuffer.split('\n',1))
+        self.channel.setblocking(False)
         return tuple(int(firstLine.split(' ',1)[0]), int(firstLine.split(' ',1)[1]))
 
     def run(self):

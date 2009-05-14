@@ -102,7 +102,6 @@ class ServerSocket(threading.Thread):
                 channel, details = self.server.accept()
                 channel.setblocking(False)
                 newListener = listener.Listener(channel, details)
-                newListener.start()
                 self.unreadyListeners.add(newListener)
             except socket.timeout:
                 pass
@@ -123,6 +122,7 @@ class GameController(object):
             for listener in self.listeners:
                 listener.send(message)
         else:
+            # TODO - use dictionary instead of iteration
             for listener in self.listeners:
                 if listener.identification == recipient:
                     listener.send(message)
