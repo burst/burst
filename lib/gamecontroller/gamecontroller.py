@@ -12,10 +12,8 @@ import messages, listener
 __all__ = ['GameController']
 
 
-UNKNOWN = None
 
-
-class ListenersPool(object):
+class SynchronizedContainer(object): # TODO: Move to some util package.
     
     def __init__(self):
         self.lock = threading.Lock()
@@ -50,6 +48,11 @@ class ListenersPool(object):
         self.lock.release()
         return result
 
+    def remove(self, item):
+        self.lock.acquire()
+        self.listeners.remove(item)
+        self.lock.release()
+
 
 
 class ServerSocket(threading.Thread):
@@ -57,6 +60,7 @@ class ServerSocket(threading.Thread):
     def __init__(self, listeners, port=0):
         threading.Thread.__init__(self)
         self.listeners = listeners
+        self.unreadyListeners = SynchronizedContainer()
         self.lock = threading.Lock()
         self.status = 'created'
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,26 +84,37 @@ class ServerSocket(threading.Thread):
 
     def run(self):
         self.status = 'running'
-        print 'z'
         while not self.stopped():
+            # Check all of the listeners you've got so far. If any of them has finished handshaking, move them to the ready listeners pool.
+            for previouslyUnreadyListener in self.unreadyListeners:
+                if previouslyUnreadyListener.ready():
+                    # See if a robot bearing the same identification is already connected. If so, eject that older instance, but report doing so.
+                    ejected = False
+                    for oldListener in self.listeners:
+                        if oldListener.identification == previouslyUnreadyListener.identification:
+                            ejected = True
+                            self.listeners.remove(previouslyUnreadyListener)
+                            break
+                    # Either way, add the new listener.
+                    self.listeners.add(previouslyUnreadyListener)
+            # See if any more listeners are incoming.
             try:
                 channel, details = self.server.accept()
                 channel.setblocking(False)
                 newListener = listener.Listener(channel, details)
                 newListener.start()
-                self.listeners.add(newListener)
+                self.unreadyListeners.add(newListener)
             except socket.timeout:
                 pass
-
 
 
 
 class GameController(object):
     
     def __init__(self, port=0):
-        self.listeners = ListenersPool()
+        self.listeners = SynchronizedContainer()
         self.serverSocket = ServerSocket(self.listeners, port)
-            
+
     def send(self, message, recipient=None):
         messageSent = False        
         if recipient == None:
