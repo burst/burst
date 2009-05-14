@@ -490,6 +490,17 @@ class ALMotionExtended(NaoQiModule):
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Work like northern bites code using ALMotion.doMove
         """
+        # minimal check just for allowed moves, not checking it is a list non zero length etc.
+        if len(moves[0]) == 5 and len(moves[0][0]) == 4:
+            self.executeMove20(moves, interp_type)
+        elif len(moves[0]) == 2 and len(moves[0][0]) == 2:
+            self.executeMoveHead(moves, interp_type)
+        else:
+            print "ERROR: ALMotionExtend.executeMove: unrecognized move"
+
+    def executeMove20(self, moves, interp_type):
+        """ for 20 joint moves (4 + 6 + 6 + 4)
+        """
         joints = self._joint_names[2:]
         n_joints = len(joints)
         angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
@@ -498,6 +509,13 @@ class ALMotionExtended(NaoQiModule):
         durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
+        self.doMove(joints, angles_matrix, durations_matrix, interp_type)
+
+    def executeMoveHead(self, moves, interp_type):
+        joints = self._joint_names[:2]
+        n_joints = len(joints)
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in head] for head, interp_time in moves])
+        durations_matrix = [list(cumsum(interp_time for head, interp_time in moves))] * n_joints
         self.doMove(joints, angles_matrix, durations_matrix, interp_type)
 
     def executeMoveByGoto(self, moves, interp_type = INTERPOLATION_SMOOTH):

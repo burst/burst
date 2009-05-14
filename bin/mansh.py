@@ -1,9 +1,34 @@
 #!/usr/bin/env python
 
 """
-shell to test Man module, i.e. nao-man.
-uses burst, so all the regular command line arguments apply,
-including --ip and --port.
+shell to test Man module. Connects to the debugsocket.DebugSocket instance
+in Brain on port 20000 (set in noggin/Brain.py, Brain.__init__)
+
+Provides command completion (via tab) and history (saved in ~/.mansh_history)
+also provides "macros" via the nogging/util/mansh_commands.py file, used
+for testing/developing kicks/motions.
+
+Seems to be safe for usage since it is run when the other python code is
+to be run, and from within the python interpreter (as opposed to previous
+approaches of sending code via the soap interface to run PySimpleEval)
+
+Usage:
+to connect to localhost, no parameters are required
+to connect to a robot, use --ip <hostname/ip> (despite the argument name
+you don't have to supply an ip address)
+
+Example usage - get ball dist via localization dist:
+
+$ mansh.py
+['trace', 'traceoff', 'walk', 'kick', 'half_kick', 'almost_kick', 'kick_right', 'kick_left', 'stand_up_front', 'stand_up_back', 'sit', 'look_down', 'stop_walk', 'stand', 'init', 'stiffness_on', 'stiffness_off']
+connecting to debug shell on localhost:20000
+eval>> # (pressed Tab Tab to get the default commands)
+almost_kick     kick            look_down       stand_up_back   stop_walk
+c               kick_left       self            stand_up_front  trace
+half_kick       kick_right      sit             stiffness_off   traceoff
+init            l               stand           stiffness_on    walk
+eval>>brain.ball.locDist, brain.ball.dist
+(103.01202391345397, 103.25756072998047)
 """
 
 import readline
@@ -37,7 +62,8 @@ class Main:
             'exec': self.switchToExec,
             'local': execer
             }
-        print self.command_names
+        print 'available macro commands:'
+        print ', '.join(self.command_names)
         self.cmds = dict([(k, lambda txt=txt, self=self: self.execIt(txt)) for k, txt in command_pairs])
         self.states = self.state_func.keys()
 
@@ -46,7 +72,7 @@ class Main:
         if len(possibilities) == 0 or state > len(possibilities):
             return None # only if there was an error completing this
         return possibilities[state]
- 
+
     def get_completion_possibilities(self, text):
         """ find all completions for text. We currently look at two places:
         commands - the macros defined in mansh_commands
@@ -99,7 +125,7 @@ class Main:
     def main(self):
         self.parse_cl_args()
         host, port = self.options.ip, self.options.port
-        print "connecting to debug shell on %s:%s" % (host, port)
+        print "connecting to %s:%s" % (host, port)
         self.s = socket()
         try:
             self.s.connect((host, port))

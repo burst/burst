@@ -14,9 +14,11 @@ options = pynaoqi.getDefaultOptions()
 if options.twisted:
     from ipy import IPShellTwisted
     shellclass = lambda ns: IPShellTwisted(argv=[], user_ns=ns)
+    getrealshell = lambda shell: shell.IP
 else:
     import IPython.ipapi
     shellclass = IPython.ipapi.launch_new_instance
+    getrealshell = lambda x: x
 
 # parse command line arguments
 try:
@@ -30,47 +32,41 @@ if con.options.video:
     con.retrieveImages()
 
 # start ipython shell
-# HACK to have access to something in the ipython namespace.
-class Result:
-    pass
-result = Result()
-
-def r(d):
-    def cb(r):
-        result.l = r
-        print "v.l updated"
-    d.addCallback(cb)
-
-def s(d):
-    def cb(r):
-        result.l = r
-        print r
-    d.addCallback(cb)
-
 
 my_ns = dict(
     con = con,
-    pynaoqi = pynaoqi,
-    s = s,
-    r = r,
-    v = result)
+    pynaoqi = pynaoqi)
 
 print "<"*30 + "o"*20 + ">"*30
 print """Pynaoqi shell - con object holds all the modules, methods, help!
-To get deferred value back, use r, as in:
-r con.ALMemory.getDataListName
-.. wait
-mylist = [x for x in v.l if x[0] == '/']
-
-To also print the result, you can use s:
-s con.ALMemory.getListData(mylist)
-
-the value returned from the last fired deferred will be in
-"v.l\""""
+Deferreds: Any operation returning a deferred will return immediately
+as expected, and additionally once its callback is called it will be
+printed and available as _d."""
 print "_"*80
 shell = shellclass(my_ns)
+realshell = getrealshell(shell)
 
-# If in twisted, start the mainloop
+# set a nicer prompt to tell the user where he is connected to
+realshell.outputcache.prompt1.p_template='${con.host} [\#]: '
+
+# If in twisted, start the mainloop, and add a hook to display deferred results
+# when they are available (also affects *any* deferred you try to print)
 if options.twisted:
+    import twisted.internet.defer as defer
+    from IPython.hooks import result_display
+    from IPython.genutils import Term
+
+    def pr(x):
+        print >>Term.cout, "deferred: %s" % x
+        shell.IP.user_ns['_d'] = x
+        return x
+
+    def display_defer(self, arg):
+        # don't display already called deferreds?
+        if isinstance(arg, defer.Deferred):
+            arg.addCallback(pr)
+        else:
+            result_display(self, arg)
+    shell.IP.set_hook('result_display', display_defer)
     shell.mainloop()
 

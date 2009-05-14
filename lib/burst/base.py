@@ -119,12 +119,20 @@ except:
 if 'naoqi' not in sys.modules and 'aldebaran' not in sys.modules:
     fix_sys_path()
 
+print_warning = False
 try:
     from aldebaran import naoqi
 except:
     try:
         import naoqi
     except Exception, e:
-        print "burst did it's best to find naoqi - you are probably either"
-        print "forgetting to setup AL_DIR or on a 64 bit machine. Either way"
-        print "burst will let you continue, but expect everything to explode."
+        print "naoqi import caused exception (after path fix):", e
+        print_warning = True
+    except:
+        print_warning = True
+
+if print_warning:
+    print "burst did it's best to find naoqi - you are probably either"
+    print "forgetting to setup AL_DIR or on a 64 bit machine. Either way"
+    print "burst will let you continue, but expect everything to explode."
+

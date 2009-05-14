@@ -4,6 +4,9 @@
 from burst.consts import DEG_TO_RAD
 from ..world import World
 
+# array with names of attributes of this module that can be run with executeMove
+NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND".split()
+
 def getMoveTime(move):
     totalTime = 0.0
     for target in move:

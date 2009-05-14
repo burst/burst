@@ -56,7 +56,6 @@ class Inertial(object):
     def __init__(self, con):
         self.con = con
         self.w = w =gtk.Window()
-        w.set_title(con.host)
         c = gtk.HBox()
         w.add(c)
         self.l = []
@@ -201,23 +200,52 @@ class Main(object):
         # do everything based on a initDeferred, otherwise methods will not be available.
         self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
         w = gtk.Window()
+        w.set_title(self.con.host)
         self.c = c = gtk.VBox()
         w.add(c)
 
         # Create top buttons
 
-        button_box = gtk.HBox()
-        for label, cb in [
+        def create_button_strip(data):
+            button_box = gtk.HBox()
+            buttons = []
+            for label, cb in data:
+                b = gtk.Button(label)
+                b.connect("clicked", cb)
+                button_box.add(b)
+                buttons.append(b)
+            return button_box, buttons
+
+        top_buttons_data = [
             ('print angles', self.printAngles),
             ('stiffness on', self.setStiffnessOn),
             ('stiffness off', self.setStiffnessOff),
             ('vision', self.toggleVision),
             ('inertial', self.toggleInertial),
-            ]:
-            b = gtk.Button(label)
-            b.connect('clicked', cb)
-            button_box.add(b)
-        c.pack_start(button_box, False, False, 0)
+            ]
+        chains = ['Head', 'LLeg', 'LArm', 'RArm', 'RLeg']
+        stiffness_off_buttons_data = [
+                ('%s OFF' % chain,
+                    lambda _, chain=chain: self.con.ALMotion.setChainStiffness(chain, 0.0))
+                for chain in chains]
+        stiffness_on_buttons_data = [
+                ('%s on' % chain,
+                    lambda _, chain=chain: self.con.ALMotion.setChainStiffness(chain, 0.0))
+                for chain in chains]
+        import burst.moves as moves
+        moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
+            self.con.ALMotion.executeMove(move))
+                for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
+        c.pack_start(create_button_strip(top_buttons_data)[0], False, False, 0)
+        stiffness_off, self.stiffness_off_buttons = (
+            create_button_strip(stiffness_off_buttons_data))
+        stiffness_on, self.stiffness_on_buttons = create_button_strip(stiffness_on_buttons_data)
+        c.pack_start(stiffness_off, False, False, 0)
+        c.pack_start(stiffness_on, False, False, 0)
+        c.pack_start(create_button_strip(moves_buttons_data), False, False, 0)
+
+        # Create walk buttons (later need to allow hiding them)
+        button_box = gtk.HBox()
 
         w.resize(700, 400)
         w.show_all()

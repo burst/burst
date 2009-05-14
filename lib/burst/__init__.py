@@ -40,7 +40,8 @@ from base import *
 # import burst.moves as moves)
 try:
     from naoqi import *
-except Exception, e:
+# Note: Bare exception since Exception doesn't catch "wrong ELF class: ELFCLASS32" exceptions
+except:
     pass
 
 # import any submodules of burst (must happen last!)

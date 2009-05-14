@@ -1,3 +1,9 @@
+""" ""Macro"" file for mansh.py - python code as strings (ugly, but not meant
+for anything larger then a few lines), exports command_pairs to mansh.py
+"""
+
+__all__ = ['command_pairs']
+
 uninstall_tracer="""
 import sys
 sys.settrace(None)
@@ -110,8 +116,8 @@ command_pairs = [
     ('sit', sit),
     ('look_down', look_down),
     ('stop_walk', stop_walk),
-    ('stand', stand),            
-    ('init', init),            
+    ('stand', stand),
+    ('init', init),
     ('stiffness_on', stiffness_on),
     ('stiffness_off', stiffness_off)
 ]
