@@ -7,8 +7,13 @@ __all__ = ['Message', 'BOTH_TEAMS', 'ALL_ROBOTS_OF_AFFECTED_TEAM', 'TransitionTo
             'TransitionToSetState', 'TransitionToPlayingState', 'TransitionToPenalizedState', 'TransitionToFinishedState']
 
 
-ALL_ROBOTS_OF_AFFECTED_TEAM = None
-BOTH_TEAMS = None
+ALL_ROBOTS_OF_AFFECTED_TEAM = 0
+BOTH_TEAMS = 0
+
+
+class ParseError(Exception):
+    pass
+
 
 
 class Registrat(type):
@@ -19,11 +24,14 @@ class Registrat(type):
 		return clazz
 
 
+
 # TODO: This isn't proper documentation.
 # Messages are of the following form: <affected team> <affected robot> <state to transition to> (additional modifiers optional)
 class Message(object):
     
     __metaclass__ = Registrat
+
+    keyword = ""
 
     def __init__(self, affectedTeam, affectedRobot):
         self.affectedTeam = affectedTeam
@@ -39,6 +47,18 @@ class Message(object):
             if msg == transitionState.keyword:
                 return transitionState(affectedTeam, affectedRobot)
         raise Exception("A malformed message was received.")
+
+    @staticmethod
+    def parse(string):
+        if len(string.split(' ')) != 3:
+            raise ParseError
+        teamColor, robotNumber, cmd = tuple(string.split(' '))
+        for cls in Registrat.registered:
+            if cls.keyword == cmd:
+                return cls(int(teamColor), int(robotNumber))
+        raise ParseError
+
+
 
 
 class TransitionToInitialState(Message):
