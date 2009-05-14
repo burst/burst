@@ -73,8 +73,11 @@ def getSpeechProxy():
     if _broker is None:
         raise InitException, "Must initialize the module first."
     if speechProxy is None:
-        speechProxy = ALProxy("ALTextToSpeech")
-        proxies.append(speechProxy)
+        try:
+            speechProxy = ALProxy("ALTextToSpeech")
+            proxies.append(speechProxy)
+        except Exception,e :
+            print "WARNING: Speech Proxy not available (Exception: %s)" % e
     return speechProxy
 
 

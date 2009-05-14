@@ -155,7 +155,7 @@ class Locatable(object):
         self.missingFramesCounter = 0
         
         self.distSmoothed = 0.0
-        self.distRunningAverage = running_average(5)
+        self.distRunningAverage = running_average(3) # TODO: Change to median AND/OR use ballEKF/ballLoc
         self.distRunningAverage.next()
 
     def compute_location_from_vision(self, vision_x, vision_y, width, height):
@@ -277,9 +277,7 @@ class Ball(Movable):
         else:
             # only update new_seen with a False value when some minimal "missing" frame counter is reach
             self.missingFramesCounter += 1
-            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
-                self.missingFramesCounter = 0
-            else:
+            if self.missingFramesCounter < MISSING_FRAMES_MINIMUM:
                 new_seen = True
             
         if self.seen and not new_seen:
@@ -477,9 +475,7 @@ class GoalPost(Locatable):
         else:
             # only update new_seen with a False value when some minimal "missing" frame counter is reach
             self.missingFramesCounter += 1
-            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
-                self.missingFramesCounter = 0
-            else:
+            if self.missingFramesCounter < MISSING_FRAMES_MINIMUM:
                 new_seen = True
             
         # TODO: we should only look at the localization supplied ball position,
@@ -496,17 +492,8 @@ class GoalPost(Locatable):
                   new_angleX, new_angleY, new_centerX,
                   new_centerY, new_focDist, new_height, new_width,
                   new_x, new_y)
+        self.seen = new_seen
         
-        if new_seen:
-            self.missingFramesCounter = 0
-            self.seen = True
-        else:
-            self.missingFramesCounter += 1
-            if self.missingFramesCounter > MISSING_FRAMES_MINIMUM:
-                self.missingFramesCounter = 0
-                self.seen = False
-        
-
 BLUE_GOAL, YELLOW_GOAL = 1, 2
 
 class Team(object):
@@ -659,6 +646,8 @@ class World(object):
                 poschains + transform + various)
 
     def __init__(self):
+        # TODO - try to get the "/BURST/*" variables from ALMemory and complain if they
+        # are not there (same as the old "can't find MAN module", only now there isn't one)
         self._memory = burst.getMemoryProxy()
         self._motion = burst.getMotionProxy()
         self._events = set()
