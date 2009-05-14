@@ -242,7 +242,7 @@ class Main(object):
         stiffness_on, self.stiffness_on_buttons = create_button_strip(stiffness_on_buttons_data)
         c.pack_start(stiffness_off, False, False, 0)
         c.pack_start(stiffness_on, False, False, 0)
-        c.pack_start(create_button_strip(moves_buttons_data), False, False, 0)
+        c.pack_start(create_button_strip(moves_buttons_data)[0], False, False, 0)
 
         # Create walk buttons (later need to allow hiding them)
         button_box = gtk.HBox()
