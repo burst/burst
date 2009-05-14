@@ -16,7 +16,20 @@ def getMoveTime(move):
             totalTime += target[1]
     return totalTime
 
-INITIAL_POS = (((80.,40.,-50.,-70.),(0.,0.,-50.,100.,-50.,0.),(0.,0.,-50.,100.,-50.,0.),(80.,-40.,50.,70.),4.0),)
+'''
+    Angles:
+        LEFT: ShoulderPitch,ShoulderRoll,ElbowYaw,ElbowRoll
+        LEFT: HipYawPitch,HipRoll,HipPitch,KneePitch,AnklePitch,AnkleRoll
+        RIGHT: HipYawPitch,-HipRoll,HipPitch,KneePitch,AnklePitch,-AnkleRoll
+        RIGHT: ShoulderPitch,ShoulderRoll,ElbowYaw,ElbowRoll
+    Note:
+        To convert symmetric left/right movements, yaw and roll should also be * -1 - see mirrorChoreographMove
+'''
+
+INITIAL_POS = (((90.,20.,-80.,-45.),
+                (0.,0.,-25.,40.,-20.,0.),
+                (0.,0.,-25.,40.,-20.,0.),
+                ((90.,-20.,80.,45.)),4.0),)
 
 #Angles measured pretty exactly from the robot w/gains off.
 #might want to make them even different if we suspect the motors are weakening
@@ -74,9 +87,9 @@ BOTTOM_QUICK_SCAN = (
     (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
     )
 
-BOTTOM_INIT_FAR = ((BOTTOM_CENTER_H_MAX_V_FAR, 0.2),)
-BOTTOM_INIT_CLOSE = ((BOTTOM_CENTER_H_MAX_V_CLOSE, 0.2),)
-BOTTOM_CENTER_H_MIN_V = ((BOTTOM_CENTER_H_MIN_V, 0.2),)
+BOTTOM_INIT_FAR = ((BOTTOM_CENTER_H_MAX_V_FAR, 0.5),)
+BOTTOM_INIT_CLOSE = ((BOTTOM_CENTER_H_MAX_V_CLOSE, 0.5),)
+BOTTOM_CENTER_H_MIN_V = ((BOTTOM_CENTER_H_MIN_V, 0.5),)
 
 LOC_PANS = (
     (( 65.0, 10.0),1.5),
@@ -231,10 +244,10 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.00,                  # ZmpOffsetY 
            120]                    # 20ms count per step
 
-if not World.isRealNao:
-    FASTEST_WALK = FASTEST_WALK_WEBOTS
-else:
+if World.isRealNao:
     FASTEST_WALK = SLOW_WALK
+else:
+    FASTEST_WALK = FASTEST_WALK_WEBOTS
 
 #KICKS
 

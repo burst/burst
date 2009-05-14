@@ -11,14 +11,13 @@ from math import atan2
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
-if not World.isRealNao:
-    DEFAULT_STEPS_FOR_TURN = 60
-    DEFAULT_STEPS_FOR_SIDEWAYS = 60
-else:
+if World.isRealNao:
     DEFAULT_STEPS_FOR_TURN = 150
     DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
-    DEFAULT_STEPS_FOR_SIDEWAYS = 150
-
+    DEFAULT_STEPS_FOR_SIDEWAYS = 60
+else:
+    DEFAULT_STEPS_FOR_TURN = 60
+    DEFAULT_STEPS_FOR_SIDEWAYS = 60
 
 MINIMAL_CHANGELOCATION_TURN = 0.20
 MINIMAL_CHANGELOCATION_SIDEWAYS = 0.005
@@ -36,6 +35,7 @@ class Actions(object):
     def __init__(self, world):
         self._world = world
         self._motion = burst.getMotionProxy()
+        self._tts = burst.getSpeechProxy()
         self._joint_names = self._motion.getBodyJointNames()
 
     def scanFront(self):
@@ -47,21 +47,20 @@ class Actions(object):
 
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
-        self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
+        #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR)
-        self.executeSyncMove(moves.STAND)
+        self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
+        self.executeSyncMove(moves.INITIAL_POS)
     
     def sitPoseAndRelax(self):
         self.clearFootsteps()
         self.executeSyncMove(moves.STAND)
         self.executeSyncMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
-        # TODO: remove?
-        self._eventmanager.quit()
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
-        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1),) )
+        #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
+        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.15),) )
 
     def getAngle(self, joint_name):
         return self._motion.getAngle(joint_name)
@@ -115,12 +114,11 @@ class Actions(object):
         
         # Vova trick - start with slower walk, then do the faster walk.
         slow_walk_distance = min(distance, StepLength*2)
-        if not World.isRealNao:
-            self._motion.addWalkStraight( distance, steps )
-        else:
+        if World.isRealNao:
             self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
             self._motion.addWalkStraight( distance - slow_walk_distance, steps )
-            
+        else:
+            self._motion.addWalkStraight( distance, steps )
 
         # Now turn to the final angle, taking into account the turn we already did
         final_turn = delta_theta - bearing
@@ -171,12 +169,12 @@ class Actions(object):
             
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, StepLength*2)
-            if not World.isRealNao:
-                print "ADD WALK STRAIGHT: %f, %f" % (distance, steps)
-                self._motion.addWalkStraight( distance, steps )
-            else:
+            if World.isRealNao:
                 self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
                 self._motion.addWalkStraight( distance - slow_walk_distance, steps )
+            else:
+                print "ADD WALK STRAIGHT: %f, %f" % (distance, steps)
+                self._motion.addWalkStraight( distance, steps )
 
         # Avoid minor sideways walking
         if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
@@ -303,6 +301,11 @@ class Actions(object):
         postid = self._motion.post.walk()
         self._motion.wait(postid, 0)
         return True
+
+    def say(self, message):
+        print "saying: %s" % message
+        if not self._tts is None:
+            self._tts.say(message)
 
     def executeGettingUpBelly(self):
         return self.executeMoveChoreograph(moves.GET_UP_BELLY)
