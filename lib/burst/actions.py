@@ -57,6 +57,8 @@ class Actions(object):
         self.executeSyncMove(moves.STAND)
         self.executeSyncMove(moves.SIT_POS)
         self._motion.setBodyStiffness(0)
+        # TODO: remove?
+        self._eventmanager.quit()
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
         return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.1),) )

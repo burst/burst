@@ -64,7 +64,6 @@ class Rectangle(Player):
         print "done - stopping recording"
         self.stopRecord_helper()
         self._actions.sitPoseAndRelax()
-        self._eventmanager.quit()
 
     def onStop(self):
         super(Rectangle, self).onStop()

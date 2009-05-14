@@ -154,11 +154,11 @@ class kicker(Player):
         if self._world.ball.bearing > 0.0:
             # Kick with left
             print "Left kick!"
-            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT)
+            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT).onDone(self._actions.sitPoseAndRelax())
         else:
             # Kick with right
             print "Right kick!"
-            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT)
+            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self._actions.sitPoseAndRelax())
         
         #self._eventmanager.quit()
         #self._actions.sitPoseAndRelax()

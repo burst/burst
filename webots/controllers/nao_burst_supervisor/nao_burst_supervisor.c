@@ -492,7 +492,7 @@ static void step() {
   if (step_count++ % 12 == 0)
     sendGameControlData();
   
-  checkFalling();
+  //checkFalling();
   
   
   
