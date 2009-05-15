@@ -1,12 +1,7 @@
 #!/usr/bin/python
 
-import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
+# import player_init MUST BE THE FIRST LINE
+import player_init
 
 from burst.player import Player
 from burst.events import *
@@ -24,6 +19,7 @@ class Template(Player):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
         self._eventmanager.setTimeoutEventParams(2.0, oneshot=True, cb=self.onTimeout)
+        raise Exception("test")
 
     def onStep(self):
         print "donothing: ball dist is %s" % self._world.ball.dist

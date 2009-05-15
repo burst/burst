@@ -24,6 +24,8 @@ sys.path.append(burst_lib)
 import pynaoqi
 from burst_util import cached, cached_deferred, Deferred
 
+import burst.moves as moves
+
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
 
@@ -39,18 +41,8 @@ def toggle(initial=False):
             return ret
     return wrapgen
 
-def showtoggle(f):
-    f.state = False
-    def wrapper(*args, **kw):
-        widgets = f()
-        if f.state:
-            for w in widgets:
-                w.show_all()
-        else:
-            for w in widgets:
-                w.hide_all()
-        f.state = not f.state
-    return wrapper
+red = gtk.gdk.rgb_get_colormap().alloc_color('red')
+green = gtk.gdk.rgb_get_colormap().alloc_color('green')
 
 @cached_deferred('%s/.burst_joint_data.pickle' % os.environ['HOME'])
 def getJointData(con):
@@ -103,95 +95,117 @@ class Inertial(object):
         for l, new_val in zip(self.l, vals):
             l.set_label('%3.3f' % new_val)
 
+class ToggleButton(object):
+    
+    def __init__(self, button, widgets):
+        self._button = button
+        self._state = False
+        self._widgets = widgets
+        self._button.connect("clicked", self.onButtonPress)
+        self._colors = {False:red, True:green}
+
+    def onButtonPress(self, _):
+        print self, self.__class__, id(self.__dict__), self.__dict__
+        if self._state:
+            for w in self._widgets:
+                w.show_all()
+        else:
+            for w in self._widgets:
+                w.hide_all()
+        self._state = not self._state
+        #self._button.modify_bg(gtk.STATE_INSENSITIVE, self._colors[self._state])
+
+def color(i):
+    if i < 2: return 'green'
+    if i < 8: return 'red'
+    if i < 14: return 'blue'
+    if i < 20: return 'purple'
+    return 'red'
+
+class Scale(object):
+    """ A single scale for one joint. Has multiple widgets, delegates actually adding
+    them to a table to the caller. Store all the widgets in self.col in the order
+    to add to the table.
+    """
+
+    MIN_TIME_BETWEEN_CHANGES = 0.1 # throtelling - seems I make nao's stuck? naoqi problem?
+    NUM_ROWS = 4
+    both = gtk.FILL | gtk.EXPAND
+    ROW_OPTIONS = [(0, 0), (0, 0), (0, 0), (both, both)]
+    assert(len(ROW_OPTIONS) == NUM_ROWS)
+
+    def __init__(self, i, name, min_val, max_val, init_pos):
+        self.last_sent_value = min_val
+        self.last_sent_time = start_time
+        self.name = name
+        range_val = max_val - min_val
+        step = range_val / 1000.0
+        page_step = range_val / 10.0
+        page_size = page_step
+        adj = gtk.Adjustment(init_pos, min_val, max_val, step, page_step, page_size)
+        self.set_scale = gtk.VScale(adj)
+        self.set_scale.connect("change-value", self.onChanged)
+        adj = gtk.Adjustment(min_val, min_val, max_val, step, page_step, page_size)
+        self.state_scale = gtk.VScale(adj)
+        self.toplabel = gtk.Label()
+        self.toplabel.set_markup('<span foreground="%s">%s</span>' % (color(i), i))
+        self.label = gtk.Label(self.name)
+        self.label.set_property('angle', 90)
+        self.count_label = gtk.Label('0')
+        self.lowbox = gtk.HBox()
+        self.lowbox.add(self.set_scale)
+        self.lowbox.add(self.state_scale)
+        # This list is the order of the elements in the table
+        self.col = [self.toplabel, self.count_label, self.label, self.lowbox]
+        assert(len(self.col) == self.NUM_ROWS)
+        #self.box.pack_start(self.toplabel, False, False, 0)
+
+        self._last = [] # list of all the deferreds for our gotoAngleWithSpeed requests
+        self._waiting_callbacks = 0
+
+    def onChanged(self, w, scroll_type, val):
+        cur = time()
+        if cur - self.last_sent_time < Scale.MIN_TIME_BETWEEN_CHANGES:
+            return
+        self.last_sent_value = cur
+        s = self.set_scale
+        # TODO: throtlling?
+        # name, value, speed percent [0-100], interpolation (1 = smooth)
+
+        if len(self._last) > 0 and self._last[-1].called:
+            #print "zeroing deferred list"
+            self.count_label.set_label('0')
+            del self._last[:]
+            self._waiting_callbacks = 0
+
+        def gotoAngle(ind, val):
+            #print "joint %s, ind %s, value %s %s" % (
+            #            self.name, ind, s.get_value(), val)
+            if ind == self._waiting_callbacks:
+                d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+            else:
+                #print "not moving, %s != %s" % (ind, self._waiting_callbacks)
+                d = succeed(0)
+            self._last.append(d)
+            return d
+
+        if len(self._last) == 0:
+            # first call, bery simple!
+            self._last.append(gotoAngle(self._waiting_callbacks, val))
+        else:
+            self._waiting_callbacks += 1
+            ind = self._waiting_callbacks
+            self.count_label.set_label('%s' % len(self._last))
+            self._last[-1].addCallback(lambda _,
+                    ind=ind, val=val: gotoAngle(ind, val))
+
 class Main(object):
 
     def __init__(self):
+        global start_time
+        global con
         start_time = time()
-
-        def color(i):
-            if i < 2: return 'green'
-            if i < 8: return 'red'
-            if i < 14: return 'blue'
-            if i < 20: return 'purple'
-            return 'red'
-
-        class Scale(object):
-            """ A single scale for one joint. Has multiple widgets, delegates actually adding
-            them to a table to the caller. Store all the widgets in self.col in the order
-            to add to the table.
-            """
-
-            MIN_TIME_BETWEEN_CHANGES = 0.1 # throtelling - seems I make nao's stuck? naoqi problem?
-            NUM_ROWS = 4
-            both = gtk.FILL | gtk.EXPAND
-            ROW_OPTIONS = [(0, 0), (0, 0), (0, 0), (both, both)]
-            assert(len(ROW_OPTIONS) == NUM_ROWS)
-
-            def __init__(self, i, name, min_val, max_val, init_pos):
-                self.last_sent_value = min_val
-                self.last_sent_time = start_time
-                self.name = name
-                range_val = max_val - min_val
-                step = range_val / 1000.0
-                page_step = range_val / 10.0
-                page_size = page_step
-                adj = gtk.Adjustment(init_pos, min_val, max_val, step, page_step, page_size)
-                self.set_scale = gtk.VScale(adj)
-                self.set_scale.connect("change-value", self.onChanged)
-                adj = gtk.Adjustment(min_val, min_val, max_val, step, page_step, page_size)
-                self.state_scale = gtk.VScale(adj)
-                self.toplabel = gtk.Label()
-                self.toplabel.set_markup('<span foreground="%s">%s</span>' % (color(i), i))
-                self.label = gtk.Label(self.name)
-                self.label.set_property('angle', 90)
-                self.count_label = gtk.Label('0')
-                self.lowbox = gtk.HBox()
-                self.lowbox.add(self.set_scale)
-                self.lowbox.add(self.state_scale)
-                # This list is the order of the elements in the table
-                self.col = [self.toplabel, self.count_label, self.label, self.lowbox]
-                assert(len(self.col) == self.NUM_ROWS)
-                #self.box.pack_start(self.toplabel, False, False, 0)
-
-                self._last = [] # list of all the deferreds for our gotoAngleWithSpeed requests
-                self._waiting_callbacks = 0
-
-            def onChanged(self, w, scroll_type, val):
-                cur = time()
-                if cur - self.last_sent_time < Scale.MIN_TIME_BETWEEN_CHANGES:
-                    return
-                self.last_sent_value = cur
-                s = self.set_scale
-                # TODO: throtlling?
-                # name, value, speed percent [0-100], interpolation (1 = smooth)
-
-                if len(self._last) > 0 and self._last[-1].called:
-                    #print "zeroing deferred list"
-                    self.count_label.set_label('0')
-                    del self._last[:]
-                    self._waiting_callbacks = 0
-
-                def gotoAngle(ind, val):
-                    #print "joint %s, ind %s, value %s %s" % (
-                    #            self.name, ind, s.get_value(), val)
-                    if ind == self._waiting_callbacks:
-                        d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
-                    else:
-                        #print "not moving, %s != %s" % (ind, self._waiting_callbacks)
-                        d = succeed(0)
-                    self._last.append(d)
-                    return d
-
-                if len(self._last) == 0:
-                    # first call, bery simple!
-                    self._last.append(gotoAngle(self._waiting_callbacks, val))
-                else:
-                    self._waiting_callbacks += 1
-                    ind = self._waiting_callbacks
-                    self.count_label.set_label('%s' % len(self._last))
-                    self._last[-1].addCallback(lambda _,
-                            ind=ind, val=val: gotoAngle(ind, val))
-                
+              
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
@@ -240,7 +254,8 @@ class Main(object):
             buttons = []
             for label, cb in data:
                 b = gtk.Button(label)
-                b.connect("clicked", cb)
+                if cb:
+                    b.connect("clicked", cb)
                 button_box.add(b)
                 buttons.append(b)
             return button_box, buttons
@@ -261,7 +276,7 @@ class Main(object):
                 ('%s on' % chain,
                     lambda _, chain=chain: self.con.ALMotion.setChainStiffness(chain, 1.0))
                 for chain in chains]
-        import burst.moves as moves
+
         moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
             self.con.ALMotion.executeMove(move))
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
@@ -302,13 +317,17 @@ class Main(object):
         toggle_buttons_data = [
             ('all', self.onShowAll),
             ('joints only', self.onShowJointsOnly),
+            ('stiffness toggle', None),
             ('buttons only', self.onShowButtonsOnly),
         ]
+        stiffness_toggle_index = 2
+
+        walk_steps = 4
 
         walk_buttons_data = [
             ('Walk: get config', updateWalkConfig),
-            ('fw 1', lambda _, steps=1: doWalk(3)),
-            ('rev 1', lambda _, steps=-1: doWalk(-3)),
+            ('fw %s' % walk_steps, lambda _, steps=walk_steps: doWalk(walk_steps)),
+            ('rev %s' % walk_steps, lambda _, steps=-walk_steps: doWalk(-walk_steps)),
             ('rt 45', lambda _, steps=1: doTurn(pi / 4)),
             ('lt 45', lambda _, steps=-1: doTurn(-pi / 4)),
             ('arc right 1', lambda _, steps=1: doArc(1)),
@@ -323,6 +342,12 @@ class Main(object):
         moves_strip, moves_buttons   = create_button_strip(moves_buttons_data)
         walk_strip, walk_buttons     = create_button_strip(walk_buttons_data)
         toggle_strip, toggle_buttons = create_button_strip(toggle_buttons_data)
+
+        # Python bug? if I don't set the result of ToggleButton to something
+        # it is lost to the garbage collector.. very hard to debug, since you just
+        # have a missing dictionary, but no actual error..
+        self._stiffness_toggle = ToggleButton(button=toggle_buttons[stiffness_toggle_index],
+            widgets = (stiffness_on, stiffness_off))
 
         for button_strip in [top_strip, toggle_strip, stiffness_off, stiffness_on, moves_strip, walk_strip]:
             c.pack_start(button_strip, False, False, 0)

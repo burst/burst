@@ -1,14 +1,7 @@
 #!/usr/bin/python
-import os
 
-# DONT USE BURST CODE BEFORE THIS PREAMBLE
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
-# IT IS NOW SAFE TO import burst
+# import player_init MUST BE THE FIRST LINE
+import player_init
 
 from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST
 from burst.consts import DEG_TO_RAD
@@ -168,11 +161,11 @@ class kicker(Player):
         if self._world.ball.bearing > 0.0:
             # Kick with left
             print "Left kick!"
-            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT).onDone(self._actions.sitPoseAndRelax())
+            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT).onDone(self._eventmanager.quit)
         else:
             # Kick with right
             print "Right kick!"
-            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self._actions.sitPoseAndRelax())
+            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self._eventmanager.quit)
         
         #self._eventmanager.quit()
         #self._actions.sitPoseAndRelax()

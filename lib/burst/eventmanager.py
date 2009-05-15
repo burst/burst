@@ -5,6 +5,8 @@
 import traceback
 import sys
 
+import burst.base
+
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
 
@@ -71,6 +73,8 @@ class Deferred(object):
         # giving a chance to the caller to use the chain_deferred??
 
         # will be called by cb's return deferred, if any
+        if cb is None:
+            raise Exception("onDone called with cb == None")
         chain_deferred = Deferred(data = None, parent=self)
         self._ondone = (cb, chain_deferred)
         return chain_deferred
@@ -184,7 +188,6 @@ class EventManagerLoop(object):
         """ wrap the actual run in _run to allow profiling - from the command line
         use --profile
         """
-        import burst.base
         if burst.base.options.profile:
             print "running via hotshot"
             import hotshot
@@ -197,6 +200,23 @@ class EventManagerLoop(object):
 
     def _run(self):
         """ wrap the real loop to catch keyboard interrupt and network errors """
+        do_sitpose = True
+        if burst.base.options.catch_player_exceptions:
+            try:
+                do_sitpose = self._run_exception_wrap()
+            except Exception, e:
+                print "caught player exception:"
+                if hasattr(sys, 'last_traceback'):
+                    traceback.print_tb(sys.last_traceback)
+                else:
+                    print "no traceback, bare exception:", e
+        else:
+            do_sitpose = self._run_exception_wrap()
+        if do_sitpose:
+            print "sitting, removing stiffness and quitting."
+            self._actions.sitPoseAndRelax()
+            
+    def _run_exception_wrap(self):
         try:
             self._run_loop()
         except KeyboardInterrupt:
@@ -204,17 +224,9 @@ class EventManagerLoop(object):
         except RuntimeError, e:
             print "naoqi exception caught:", e
             print "quitting"
-            return
-        except Exception, e:
-            print "caught player exception:"
-            if hasattr(sys, 'last_traceback'):
-                traceback.print_tb(sys.last_traceback)
-            else:
-                print "no traceback, bare exception:", e
-        # We reache this point after any exception EXCEPT RuntimeError
-        print "sitting and removing stiffness and quitting"
-        self._actions.sitPoseAndRelax()
-            
+            return False
+        return True
+
     def _run_loop(self):
         import burst
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
