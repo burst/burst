@@ -1,0 +1,2 @@
+#!/bin/bash
+vim $AL_DIR/modules/lib/autoload.ini
