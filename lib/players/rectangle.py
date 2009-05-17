@@ -59,7 +59,6 @@ class Rectangle(Player):
 
 if __name__ == '__main__':
     import burst
-    from burst.eventmanager import EventManagerLoop
-    burst.init()
-    EventManagerLoop(Rectangle).run()
+    from burst.eventmanager import MainLoop
+    MainLoop(Rectangle).run()
 

@@ -424,7 +424,6 @@ class KickerOLD(Player):
 
 if __name__ == '__main__':
     import burst
-    from burst.eventmanager import EventManagerLoop
-    burst.init()
-    EventManagerLoop(KickerOLD).run()
+    from burst.eventmanager import MainLoop
+    MainLoop(KickerOLD).run()
 
