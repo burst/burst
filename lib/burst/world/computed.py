@@ -1,6 +1,6 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
-from ..events import *
+from ..events import (EVENT_BALL_IN_FRAME, EVENT_KP_CHANGED)
 
 class Computed(object):
     """ place holder for any computed value, currently just the kicking point, that
