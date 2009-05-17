@@ -190,6 +190,29 @@ class Actions(object):
         postid = self._motion.post.walk()
         return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
 
+    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH):
+        """ Go through a list of body angles, works like northern bites code:
+        moves is a list, each item contains:
+         larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time, interp_type
+
+        interp_type - 1 for SMOOTH, 0 for Linear
+        interp_time - time in seconds for interpolation
+
+        NOTE: currently this is SYNCHRONOUS - it takes at least
+        sum(interp_time) to execute.
+        """
+        joints = self._joint_names[2:]
+        n_joints = len(joints)
+        angles_matrix = transpose([[x for x in list(larm)
+                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
+                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
+        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        duration = max(col[-1] for col in durations_matrix)
+        #print repr((joints, angles_matrix, durations_matrix))
+        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+
+
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
