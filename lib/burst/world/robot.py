@@ -1,5 +1,5 @@
 from .objects import Movable
-from ..consts import *
+from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
 from ..eventmanager import Deferred
 
 class Motion(object):

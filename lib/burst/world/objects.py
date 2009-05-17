@@ -1,7 +1,7 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
-from ..consts import *
-from ..events import *
+from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD, MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE, MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
+from ..events import (EVENT_BALL_IN_FRAME, EVENT_BALL_BODY_X_ISECT_UPDATE, EVENT_BALL_LOST, EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
 from burst_util import running_average
 
 class Locatable(object):

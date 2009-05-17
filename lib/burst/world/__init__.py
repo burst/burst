@@ -13,17 +13,19 @@ import struct
 import linecache
 
 import burst
-from ..events import *
+from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
+    EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
+    EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
 from ..sensing import FalldownDetector
 from burst_util import running_average
 
-from ..consts import *
+from ..consts import MMAP_VARIABLES_FILENAME
 
-from .sharedmemory import *
-from .objects import Ball, GoalPost
-from .robot import Robot
-from .team import Team
-from .computed import Computed
+from sharedmemory import *
+from objects import Ball, GoalPost
+from robot import Robot
+from team import Team
+from computed import Computed
 
 def timeit(tmpl):
     def wrapper(f):
