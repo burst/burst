@@ -1,0 +1,12 @@
+#!/bin/sh
+cd bin
+if [ $(uname) = "Linux" ]
+then
+  export "LD_LIBRARY_PATH=${AL_DIR}/extern/c/linux/lib/;../../../../../../lib/"
+else
+  echo "macOsX"
+  export DYLD_LIBRARY_PATH=../../../../../../lib/
+fi
+# Replace current process with nao_in_webots
+echo $DYLD_LIBRARY_PATH
+exec ./nao_in_webots

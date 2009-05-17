@@ -1,0 +1,3 @@
+#!/bin/sh
+
+dchroot -d ./nao_in_webots_32
