@@ -244,9 +244,11 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.00,                  # ZmpOffsetY 
            120]                    # 20ms count per step
 
-if World.isRealNao:
+if World.running_on_nao:
+    print "HERE"
     FASTEST_WALK = SLOW_WALK
 else:
+    print "THERE"
     FASTEST_WALK = FASTEST_WALK_WEBOTS
 
 #KICKS

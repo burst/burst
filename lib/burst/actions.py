@@ -11,7 +11,7 @@ from math import atan2
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
-if World.isRealNao:
+if World.connecting_to_nao:
     DEFAULT_STEPS_FOR_TURN = 150
     DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
     DEFAULT_STEPS_FOR_SIDEWAYS = 60
@@ -114,7 +114,7 @@ class Actions(object):
         
         # Vova trick - start with slower walk, then do the faster walk.
         slow_walk_distance = min(distance, StepLength*2)
-        if World.isRealNao:
+        if World.connected_to_robot:
             self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
             self._motion.addWalkStraight( distance - slow_walk_distance, steps )
         else:
@@ -170,7 +170,7 @@ class Actions(object):
             
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, StepLength*2)
-            if World.isRealNao:
+            if World.connecting_to_nao:
                 self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
                 self._motion.addWalkStraight( distance - slow_walk_distance, steps )
             else:

@@ -57,7 +57,9 @@ def gethostname():
 class World(object):
 
     # TODO - move this to __init__?
-    isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
+    connecting_to_nao = burst.connecting_to_nao()
+    connecting_to_webots = burst.connecting_to_webots()
+    running_on_nao = burst.running_on_nao()
     hostname = gethostname()
 
     # TODO -use callbacks, and don't use this hardcoded list (or do?)
@@ -138,7 +140,7 @@ class World(object):
 
         print "world will record (if asked) %s vars" % len(self._recorded_vars)
         self._recorded_header = self._recorded_vars
-        self._record_basename = World.isRealNao and '/media/userdata' or '/tmp'
+        self._record_basename = World.running_on_nao and '/media/userdata' or '/tmp'
 
         # Stuff that we prefer the users use directly doesn't get a leading
         # underscore
@@ -176,7 +178,7 @@ class World(object):
         ]
 
         # try using shared memory to access variables
-        if World.isRealNao:
+        if World.running_on_nao:
             self.updateMmapVariablesFile()
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
@@ -211,9 +213,8 @@ class World(object):
                 print "updating %s" % MMAP_VARIABLES_FILENAME
                 recreate = True
         else:
-            print ("I see %s is missing. creating it for you." +
-             + "it has %s variables"
-                    % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
+            print (("I see %s is missing. creating it for you." +
+                "it has %s variables") % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
             recreate = True
         if recreate:
             fd = open(MMAP_VARIABLES_FILENAME, 'w+')
