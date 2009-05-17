@@ -57,8 +57,8 @@ def gethostname():
 class World(object):
 
     # TODO - move this to __init__?
-    connecting_to_nao = burst.connecting_to_nao()
-    connecting_to_webots = burst.connecting_to_webots()
+    connected_to_nao = burst.connecting_to_nao()
+    connected_to_webots = burst.connecting_to_webots()
     running_on_nao = burst.running_on_nao()
     hostname = gethostname()
 
