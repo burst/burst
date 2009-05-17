@@ -14,9 +14,6 @@ motion_proxy = burst.getMotionProxy()
 # by user code.
 debug = False # set to False when checking in
 
-def init(**kw):
-    naoqi_extended.init(**kw)
-
 def default_help():
     return "usage: %s [--port=<port>] [--ip=<ip>]" % sys.argv[0]
 
@@ -42,6 +39,9 @@ if is64():
     print "64 bit architecture - UNTESTED"
     from naoqi_pynaoqi import *
 
+    def init(*args, **kw):
+        pass
+
 else:
     # put all of naoqi namespace in burst (wrapped in try to work under pynaoqi
     # import burst.moves as moves)
@@ -53,6 +53,9 @@ else:
 
     # import any submodules of burst (must happen last!)
     from naoqi_extended import *
+
+    def init(**kw):
+        naoqi_extended.init(**kw)
 
 if __name__ == '__main__':
     test()

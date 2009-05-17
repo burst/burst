@@ -4,6 +4,7 @@
 
 import traceback
 import sys
+from time import time
 
 import burst.base
 
@@ -171,7 +172,7 @@ class EventManager(object):
         for deferred in deferreds:
             deferred.callOnDone()
 
-class EventManagerLoop(object):
+class BasicMainLoop(object):
     
     def __init__(self, playerclass):
         """ Must be called after burst.init() - so that any proxies can be
@@ -234,6 +235,36 @@ class EventManagerLoop(object):
             return False
         return True
 
+    def preMainLoopInit(self):
+        """ call once before the main loop """
+        self._player.onStart()
+        self.main_start_time = time()
+        self.cur_time = self.main_start_time
+        self.next_loop = self.cur_time
+
+    def doSingleStep(self):
+        """ call once for every loop iteration
+        TODO: This is just using a polling loop to emulate real
+        event generation, once twisted is really used this should
+        become mute, and twisted will call the eventmanager directly.
+        eventmanager will then probably register directly with twisted.
+
+        returns the amount of time to sleep in seconds
+        """
+        self._world.update(self.cur_time)
+        self._eventmanager.runonce()
+        self.next_loop += EVENT_MANAGER_DT
+        self.cur_time = time()
+        if self.cur_time > self.next_loop:
+            print "WARNING: loop took %0.3f ms" % (
+                (self.cur_time - self.next_loop + EVENT_MANAGER_DT
+                ) * 1000)
+            self.next_loop = self.cur_time
+            return None
+        else:
+            return self.next_loop - self.cur_time
+
+class SimpleMainLoop(BasicMainLoop):
     def _run_loop(self):
         import burst
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
@@ -241,21 +272,32 @@ class EventManagerLoop(object):
         # TODO: this should be called from the gamecontroller, this is just
         # a temporary measure. The gamecontroller should keep track of the game state,
         # and when it is changed call the player.
-        self._player.onStart()
-        self.main_start_time = time()
-        cur_time = self.main_start_time
-        next_loop = cur_time
+        self.preMainLoopInit()
         while True:
-            self._world.update(cur_time)
-            self._eventmanager.runonce()
+            sleep_time = self.doSingleStep()
             if self._eventmanager._should_quit:
                 break
-            next_loop += EVENT_MANAGER_DT
-            cur_time = time()
-            if cur_time > next_loop:
-                print "WARNING: loop took %0.3f ms" % (
-                    (cur_time - next_loop + EVENT_MANAGER_DT) * 1000)
-                next_loop = cur_time
-            else:
-                sleep(next_loop - cur_time)
+            if sleep_time:
+                sleep(sleep_time)
+
+class TwistedMainLoop(BasicMainLoop):
+    def _run_loop(self):
+        print "running TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
+        from twisted.internet import reactor, task
+        self.preMainLoopInit()
+        main_task = task.LoopingCall(self.onTimeStep)
+        main_task.start(EVENT_MANAGER_DT)
+        reactor.run()
+
+    def onTimeStep(self):
+        sleep_time = self.doSingleStep()
+        if self._eventmanager._should_quit:
+            reactor.stop()
+
+from burst_util import is64
+if is64():
+    MainLoop == TwistedMainLoop
+else:
+    # default loop doesn't use twisted
+    MainLoop = SimpleMainLoop
 

@@ -35,7 +35,7 @@ MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
 MMAP_LENGTH      = 4096
 
 # Event Manager constants
-EVENT_MANAGER_DT = 0.05
+EVENT_MANAGER_DT = 0.05 # seconds
 
 # World constants
 
