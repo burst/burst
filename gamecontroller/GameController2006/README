@@ -1,0 +1,162 @@
+ROBOCUP GAMECONTROLLER 2006
+
+== INTRODUCTION ==
+
+The GameController is used in the Legged League of RoboCup to send referee
+signals to the robots on the field.  The GameController uses UDP to
+broadcast a RoboCupGameControlData structure for all teams to receive. This is
+done every 500ms (twice a second). It will also send burst packets when there 
+are important state changes (e.g. kickoff).
+
+The GameController was written with the NetBeans 4.1 IDE. Because of this there 
+may be extra metadata comments that NetBeans has inserted into the Java files, 
+especially MainGUI.java. You can get NetBeans from http://www.netbeans.org
+
+See the "Data Structure" section for more details on the format of the data 
+structure.
+
+See file CHANGES for bug fixes / new features.
+
+    
+== USAGE ==
+GameController is written in Java using Swing for the GUI. It should compile and 
+run using the stock standard J2SDK 1.4.2 with no additional libraries.
+
+Use the Makefile to compile the code into a jar file.
+
+Usage: java -jar GameController [-debug] [-quiet] [-numplayers X] [-port X] [-broadcast broadcast_address] blue_team_number red_team_number
+* The broadcast port will default to 3838 if not specified.
+* The broadcast address will default to 255.255.255.255 if not specified.
+* The team numbers must be specified for the GameController to work.
+* -debug will print debug information to the command line.
+* -quiet will stop the GameController from beeping
+* -numplayers will adjust the maximum number of players - defaults to 4
+eg: 1) java -jar GameController 25 15
+    2) java -jar GameController -debug -port 9900 -broadcast 192.168.0.255 25 15
+
+
+== GAME ==
+The "Game" buttons on the far left reflect the game's states. From top to bottom:
+
+-> Blue/Red Kick Off
+Click one of these buttons to select the Blue/Red team for the next kick off.
+
+-> Initial
+The GameController will initially be broadcasting this state. In this state the 
+robots should be reading in information for kick off and team colour. See the 
+official rules for more information.
+   
+-> Ready
+In this state all the robots on the field should move into their correct 
+positions on the field. See the official rules for more information.  During
+the "Ready" state, the event timer will count down.  If the event timer
+reaches 0 then the state is automatically changed to "Set".
+
+-> Set
+The robots should now be in their start off positions and be ready to go. See the
+official rules for more information.
+
+-> Play
+Game starts. The 10 minute count down will start automatically as well.
+
+-> Blue/Red Drop In
+When a drop in occurs, the referee should use these buttons to select what team 
+caused the penalty. In the next possible broadcast this information will be 
+included.
+   
+-> Finish
+Click to finish the game. The count down timer will stop.
+
+-> Auto Pause
+Check this option to automatically pause the clock when in "Ready" and "Set" 
+states. This is inline with secion 3.1 of the rules, where the clock may or may
+not be paused for stoppage of play for the preliminary games.
+
+-> Penalty Shoot
+Check this option to change the secondary state to 'penalty shoot'.
+
+== PENALTIES ==
+
+In this GameController select players and penalties in either order:
+1) Select a penalty, then click on a player
+2) Select multiple players first, then select a penalty
+
+Depending on the penalty sanctioned, a countdown will begin in the player that 
+was just penalised. In the last five seconds of the countdown the player's 
+unpenalise button turns green as an alert. The player can be unpenalised at any 
+time during the penalty period.
+
+
+== STATUS ==
+There is a countdown clock, which can be started/paused/reset. Note that the 
+GameController does not automatically broadcast a "finish" when the timer 
+reaches zero as there is a possibility of lost time. The timer will count 
+upwards from zero once it reaches zero to help keep track of the lost time.
+
+The clock can be manually edited when it is not counting. Once the change has
+been made to the time, press enter to commit the time change.
+
+Its the resposibility of the referee to click on the "Finish" button to 
+broadcast a finish message to all players. The clock stops after clicking Finish.
+
+The First Half / Second Half combobox selection will switch the teams around, 
+including their scores and team numbers. The combobox is only enabled when the
+clock is not running.
+
+eg, in the first half the Blue team is team #25 and has a score of 2, after 
+selecting Second Half, the Red Team will become team #25, with a score of 2.
+
+
+== EVENT CLOCK ==
+
+There is a second clock in addition the to game clock: the event clock.  The
+title of the event panel indicates which event is being timed.  Currently there
+are two events that are timed in the event clock:
+
+ - The time limit on the "Ready" state before the game switches to "Set".
+ - Time outs.  At the end of a time out, the state automatically switches to
+   "Ready".
+
+Selecting the "Time out done" button will end any event.
+
+== DATA STRUCTURE ==
+Included in the project's directory is a C header file RoboCupGameControlData.h
+that has the definition of the data structure being used. It also contains the
+constants that represents the states. In the GameController Java source you can
+find the same information in RoboCupGameControlData.java, TeamInfo.java,
+RobotInfo.java, and Constants.java.
+
+The data broadcasted by the GameController is the data structure in reverse 
+network byte order (little endian, AIBO byte order).
+
+Here are some further notes about broadcasts and the data structure.
+
+-> Header
+The GameController broadcasts a header on the data structure to allow for 
+identification of the packet. Currently this header is "RGme".
+
+-> Version Information
+The GameController broadcasts the version of the RoboCupGameControlData it is 
+using in the structure. This will allow robots to check whether they are using
+an outdated version of RoboCupGameControlData by comparing the broadcasted
+version with its own STRUCT_VERSION constant. See CHANGES for the version number
+
+-> Drop In Notifications
+The data structure initially sets the last drop in time to -1 (all bits on),
+which indicates a drop in has never occurred. This value is automatically reset
+to -1 when a new half starts or when it has been more than 10 minutes since
+the last drop-in. 
+
+-> Burst Broadcasts
+To decreases the chances of robots not receiving important broadcasts, the 
+GameController will go into "burst mode" when either a Play (kick off) signal is
+sent. The GameController will broadcast an extra 3 packets identical to the 
+first when in burst mode.
+
+-> Penalties
+All state changes other than Drop Ins will reset the penalties on all players.
+
+== Authors ==
+
+Original Code: Sunny Leung <shnl327@cse.unsw.edu.au>
+Updates: Will Uther <William.Uther@nicta.com.au>

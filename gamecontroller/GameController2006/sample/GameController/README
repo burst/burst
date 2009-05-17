@@ -1,0 +1,16 @@
+== USAGE ==
+
+This is a modified version of the OPEN-R BlinkingLED7, UDPEchoServer, and 
+SensorObserver7 example
+
+After running make install to build the code, install the OS into the memory 
+stick using whatever method you use. 
+
+Then:
+1) Edit wlandflt.txt in this directory to suit your network.
+2) Edit team.cfg to contain a team number, and a player number (default file has 
+   team number 1, and player 1)
+
+Edit ins to change it to suit your memory stick mounting methods and memory 
+stick directories, then run ins to copy bin files and the edited wlandflt.txt 
+and team.cfg into the memory stick

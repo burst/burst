@@ -1,0 +1,6 @@
+mountms
+cp --reply=yes -f ./MS/OPEN-R/MW/CONF/* /mnt/ms/open-r/mw/conf/
+cp --reply=yes -f ./MS/OPEN-R/MW/OBJS/* /mnt/ms/open-r/mw/objs/
+cp --reply=yes -f wlandflt.txt /mnt/ms/open-r/system/conf/wlandflt.txt
+cp --reply=yes -f team.cfg /mnt/ms/team.cfg
+umountms

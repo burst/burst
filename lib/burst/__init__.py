@@ -40,6 +40,7 @@ from burst_util import is64
 
 if is64():
     print "64 bit architecture - UNTESTED"
+    from naoqi_pynaoqi import *
 
 else:
     # put all of naoqi namespace in burst (wrapped in try to work under pynaoqi

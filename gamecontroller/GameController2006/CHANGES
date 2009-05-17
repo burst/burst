@@ -1,0 +1,117 @@
+== GAMECONTROLLER CHANGES ==
+* 14 April 2006 * GUI 13 | Struct 6/1
+ - Add a half-time special event timer of 10 minutes.
+   - The GameController will start timing when you hit 'finish'
+   - After half of the half-time has passed, the GameController will change
+      to displaying second-half information (swap colours, etc) if this hasn't
+      already been switched.  It will also swap to state 'initial'.
+   - At the end of the half-time break, the GameController will automatically
+      switch into the 'Ready' state.
+ - Add the version string back into the GameController window title
+   - Format is: GUI version - outgoing packet version . incomming packet version
+* 13 April 2006 * GUI 12 | Struct 6/1
+ - Allow manual unpenalise as well as manual penalise.
+ - Allow re-penalising manually penalised robots without restarting the penalty
+    clock.  This means that if a manual penalty and a gamecontroller penalty
+    both happen to a robot in quick succession, the timer will be started by
+    the first one, and the penalty type will be recorded by the GameController.
+* 10 Feb 2006 * GUI 10 | Struct 6/1
+ - Fixed a bug in the sample code reported by FC Twaves
+ - Added a second packet type broadcast by the dog when it is manually penalised
+ - Modified the GameController to listen for the manual penalise packet and
+    mark the robot as penalised
+
+* 7 Feb 1006 * GUI 10 | Struct 5
+ - GameController
+   - Name changed to GameController 2006
+   - Added -quiet flag
+   - Added up to 11 players per side in GUI - defaults to 4 players per team
+   - Changed to new structure
+   - Rewrote packet generation to handle different sized ints
+   - Changed internal button handling - much more standard now
+   - Added event timing
+   - Made event timing automatically move from Ready to Set states
+   - Made event timing handle timeouts
+   - Added penalty shoot checkbox
+ - Object
+   - Updated for new structure
+   - Include structure version in internally generated packets
+   - Assume Max(4, player_number) players per team for internally generated packets
+
+* 28/5/2005 * - Sample 7 | Struct version 4
+- Remember which colour kicks off the first time, and reset to that colour
+  kicking off when the half changes
+- Reset the clock when the half changes
+
+* 23/5/2005 * - Sample 6 | Struct version 4
+- Bug fix: Enable half selection popup correctly
+- Bug fix: Swap scores correctly when switching halves
+- Bug fix: Unpenalize UI on goal score
+- Bug fix: Fix initialization bug in timer
+
+* 17/2/2005 * - Sample 5 | Struct version 4
+- Bug fix: When there are two Game Controllers running on different teams, 
+  robots that receive packets that are no meant for them are no longer blocked 
+  out from receiving other Game Controller packets. The Game Controller object
+  did not become ready to receive the next packet after it received an invalid
+  packet for whatever reason
+- Bug fix: Should not be any more warnings when compiling Game Controller object
+- Added partial packet size check to Game Controller object  
+- Added a Makefile to create the Game Controller JAR file for yourself 
+  (no bin distributed)
+- No more STRUCT_SIZE in RoboCupGameControlData.h, use sizeof instead
+- Initial packet creation includes the header as well
+- The definition of the Drop In buttons have been changed. To allow for more 
+  intuitive use of the program, the Drop In buttons now define which team 
+  *CAUSED* the Drop In (ie, the team that kicked it out should be selected)
+- Neater code to access LEDs in Game Controller object
+- Added battery indicator. In the INITIAL, READY and SET states red face LEDs 
+  will light if the battery level is less than 40% (configurable in 
+  GameControllerConfig.h)
+- Head button hold time for state change reduced from 1000ms to 100ms
+- Back buttons hold time for team configuration reduced from 1000ms to 100ms
+- Removed PowerMonitor directory from sample code. Was not needed
+
+
+* 3/2/2005 * - Sample 4 | Struct version 3
+- Sample GameController object shows player number of face LEDs
+- Burst only for Play button, not Drop Ins
+
+  
+* 1/2/2005 * - Sample 3 | Struct version 3
+- Bug fix: GameController broadcasted inconsistent STATE_FINISHED compared to 
+  what was defined in RoboCupGameControlData.h
+
+
+* 19/1/2005 * - Sample 2 | Struct version 2
+- Less restrictive license for RoboCupGameControlData.h
+- Added data structure header for identification (STRUCT_HEADER = "RGme")
+- Version information added into the header file for comparision between 
+  broadcasted version and local version
+- RobotInfo now have has an "estimated seconds till unpenalised" field. This 
+  field should be ignored if the dog is not penalised (ie, PENALTY_NONE)
+- Data type in structure is changed from int to uint32 (to be specific)
+- Removed STATE_PENALISED, it was redundant
+- Sample code checks version information  
+- Sample code only reports unique structures, not every single received one
+- Sample code checks header information
+- Automatically set "Ready" state after a team scoring
+- Shorter bursts mode, now it repeats itself Constants.NETWORK_BURST_COUNT times
+  rather than repeating for X seconds with a decreased heartbeat rate to prevent
+  network congestion during peak times (eg, start of game)
+- Command line arguments no longer order specific
+- Configurable UDP port (as command line argument)
+- Countdown time is "unofficial"
+- Different frame for kick off buttons
+- Optional automatic pause clock with state change to "Ready" and "Set". This is
+  to comply with section 3.1 of the rules, where the clock may not stop for
+  stoppage of plays in the preliminary games  
+- Editable countdown time
+
+
+* 17/1/2005 - Sample 1 | Struct version 1
+- Initial release
+
+
+== TODO ==
+- Better editable time GUI
