@@ -34,8 +34,8 @@ def timeit(tmpl):
             return ret
         return wrap
     return wrapper
-###############################################################################
-###############################################################################
+
+############################################################################
 
 def cross(*args):
     if len(args) == 1:
@@ -141,7 +141,8 @@ class World(object):
         self._recorded_header = self._recorded_vars
         self._record_basename = World.isRealNao and '/media/userdata' or '/tmp'
 
-        # Stuff that we prefer the users use directly doesn't get a leading underscore
+        # Stuff that we prefer the users use directly doesn't get a leading
+        # underscore
         self.ball = Ball(self)
         self.bglp = GoalPost(self, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
         self.bgrp = GoalPost(self, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
@@ -149,21 +150,24 @@ class World(object):
         self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
         self.robot = Robot(self)
         self.falldetector = FalldownDetector(self)
-        # construct team after all the posts are constructed, it keeps a reference to them.
+        # construct team after all the posts are constructed, it keeps a
+        # reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
 
-        # all objects that we delegate the event computation and naoqi interaction to.
-        # TODO: we have the exact state of B-HUMAN, so we could use exactly their solution,
-        # and hence this todo. We have multiple objects that calculate their events
-        # based on ground truths (naoqi proxies) and on calculated truths. We need to
-        # rerun them every time something is updated, *in the correct order*. So right
-        # now I'm hardcoding this by using an ordered list of lists, but later this
-        # should be calculated by storing a "needed" and "provided" list, just like B-HUMAN,
-        # and doing the sorting once (and that value can be cached to avoid recomputing on
-        # each run).
+        # all objects that we delegate the event computation and naoqi
+        # interaction to.  TODO: we have the exact state of B-HUMAN, so we
+        # could use exactly their solution, and hence this todo. We have
+        # multiple objects that calculate their events based on ground truths
+        # (naoqi proxies) and on calculated truths. We need to rerun them
+        # every time something is updated, *in the correct order*. So right
+        # now I'm hardcoding this by using an ordered list of lists, but
+        # later this should be calculated by storing a "needed" and
+        # "provided" list, just like B-HUMAN, and doing the sorting once (and
+        # that value can be cached to avoid recomputing on each run).
         self._objects = [
-            # All basic objects that rely on just naoproxies should be in the first list
+            # All basic objects that rely on just naoproxies should be in the
+            # first list
             [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
              self.robot, self.falldetector],
             # anything that relies on basics but nothing else should go next

@@ -133,7 +133,10 @@ class EventManager(object):
         if not self._events[event]:
             self._num_registered += 1
         else:
-            print "WARNING: overwriting register for event %s with %s (old was %s)" % (event, callback, self._events[event])
+            if self._events[event] is callback:
+                print "WARNING: harmless register overwrite of event %s" % event
+            else:
+                print "WARNING: overwriting register for event %s with %s (old was %s)" % (event, callback, self._events[event])
         self._events[event] = callback
 
     def unregister(self, event):
@@ -176,6 +179,10 @@ class EventManagerLoop(object):
         """
         import actions
         import world
+
+        # need to call burst.init first (also, this kinda makes sure
+        # there is only one EventManagerLoop)
+        burst.init()
 
         # main objects: world, eventmanager, actions and player
         self._world = world.World()

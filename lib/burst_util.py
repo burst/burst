@@ -1,7 +1,7 @@
 # ELF util
 
 # are we on 64 bit or 32 bit? if on 64, use pynaoqi (and tell user)
-ELFCLASS32, ELFCLASS64 = 1, 2 # taken from
+ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from
 def is64():
     fd = open('/bin/sh') # some executable that should be on all systems
     header = fd.read(16) # size of ELF header

@@ -36,16 +36,22 @@ def test():
 # must be the first import - you can only import naoqi after this
 from base import *
 
-# put all of naoqi namespace in burst (wrapped in try to work under pynaoqi
-# import burst.moves as moves)
-try:
-    from naoqi import *
-# Note: Bare exception since Exception doesn't catch "wrong ELF class: ELFCLASS32" exceptions
-except:
-    pass
+from burst_util import is64
 
-# import any submodules of burst (must happen last!)
-from naoqi_extended import *
+if is64():
+    print "64 bit architecture - UNTESTED"
+
+else:
+    # put all of naoqi namespace in burst (wrapped in try to work under pynaoqi
+    # import burst.moves as moves)
+    try:
+        from naoqi import *
+    # Note: Bare exception since Exception doesn't catch "wrong ELF class: ELFCLASS32" exceptions
+    except:
+        pass
+
+    # import any submodules of burst (must happen last!)
+    from naoqi_extended import *
 
 if __name__ == '__main__':
     test()
