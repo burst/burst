@@ -19,7 +19,6 @@ class Template(Player):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
         self._eventmanager.setTimeoutEventParams(2.0, oneshot=True, cb=self.onTimeout)
-        raise Exception("test")
 
     def onStep(self):
         print "donothing: ball dist is %s" % self._world.ball.dist

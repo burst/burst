@@ -36,7 +36,7 @@ class Actions(object):
         self._world = world
         self._motion = burst.getMotionProxy()
         self._tts = burst.getSpeechProxy()
-        self._joint_names = self._motion.getBodyJointNames()
+        self._joint_names = self._world.jointnames
 
     def scanFront(self):
         # TODO: Stop moving when both ball and goal found? 
@@ -60,10 +60,10 @@ class Actions(object):
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._motion.getAngle("HeadYaw")+delta_yaw, self._motion.getAngle("HeadPitch")+delta_pitch),0.15),) )
+        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw, self._world.getAngle("HeadPitch")+delta_pitch),0.15),) )
 
     def getAngle(self, joint_name):
-        return self._motion.getAngle(joint_name)
+        return self._world.getAngle(joint_name)
     
     def kick(self, kick_type):
         return self.executeMove(KICK_TYPES[kick_type])
@@ -120,7 +120,8 @@ class Actions(object):
         else:
             self._motion.addWalkStraight( distance, steps )
 
-        # Now turn to the final angle, taking into account the turn we already did
+        # Now turn to the final angle, taking into account the turn we
+        # already did
         final_turn = delta_theta - bearing
         if abs(final_turn) >= MINIMAL_CHANGELOCATION_TURN:
             did_a_turn[1] = final_turn

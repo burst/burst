@@ -60,6 +60,15 @@ class World(object):
     isRealNao = os.path.exists('/opt/naoqi/bin/naoqi')
     hostname = gethostname()
 
+    # TODO -use callbacks, and don't use this hardcoded list (or do?)
+    jointnames = ['HeadYaw', 'HeadPitch', 'LShoulderPitch', 'LShoulderRoll',
+    'LElbowYaw', 'LElbowRoll', 'LWristYaw', 'LHand', 'LHipYawPitch',
+    'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll',
+    'RHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch',
+    'RAnkleRoll', 'RShoulderPitch', 'RShoulderRoll', 'RElbowYaw',
+    'RElbowRoll', 'RWristYaw', 'RHand']
+    chainnames = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
+
     def getRecorderVariableNames(self):
         joints = self.jointnames
         chains = self.chainnames
@@ -112,30 +121,18 @@ class World(object):
         # we do memory.getListData once per self.update, in one go.
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
-        self._vars_to_getlist_set = set()
-        self._vars_to_getlist = []
+        default_vars = self.getDefaultVars()
+        self._vars_to_getlist_set = set(default_vars)
+        self._vars_to_getlist = list(default_vars)
         self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
         self._shm = None
-
-        # try using shared memory to access variables
-        if World.isRealNao:
-            SharedMemoryReader.tryToInitMMap()
-            if SharedMemoryReader.isMMapAvailable():
-                print "world: using SharedMemoryReader"
-                self._shm = SharedMemoryReader()
-                self._shm.open()
-                self.vars = self._shm.vars
-                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
-        if self._shm is None:
-            print "world: using ALMemory"
 
         self.time = time()
         self.const_time = self.time     # construction time
 
-        joints = self._motion.getBodyJointNames()
-        chains = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
-        self.jointnames = joints
-        self.chainnames = chains
+        self._getAnglesMap = dict([(joint,
+            'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
+            for joint in self.jointnames])
 
         self._recorded_vars = self.getRecorderVariableNames()
 
@@ -178,18 +175,47 @@ class World(object):
             [self.computed],
         ]
 
-        if self.isRealNao:
-            self.createMmapVariablesFile()
+        # try using shared memory to access variables
+        if World.isRealNao:
+            self.updateMmapVariablesFile()
+            SharedMemoryReader.tryToInitMMap()
+            if SharedMemoryReader.isMMapAvailable():
+                print "world: using SharedMemoryReader"
+                self._shm = SharedMemoryReader()
+                self._shm.open()
+                self.vars = self._shm.vars
+                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+        if self._shm is None:
+            print "world: using ALMemory"
     
-    def createMmapVariablesFile(self):
+    def getDefaultVars(self):
+        """ return list of variables we want anyway, regardless of what
+        the objects we use want. This currently includes:
+         Device/SubDeviceList/<jointname>/Position/Sensor/Value
+          - for getAngle
         """
-        create the MMAP_VARIABLES_FILENAME - must have self._vars_to_getlist
-        ready, so call this after __init__ is done or at its end.
+        return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
+            for joint in self.jointnames]
+
+    def updateMmapVariablesFile(self):
         """
-        
-        if not os.path.exists(MMAP_VARIABLES_FILENAME):
-            print ("I see %s is missing. creating it for you. it has %s variables"
+        create/update the MMAP_VARIABLES_FILENAME - must have
+        self._vars_to_getlist ready, so call this after __init__ is done or
+        at its end.
+        """
+
+        recreate = False
+        if os.path.exists(MMAP_VARIABLES_FILENAME):
+            existing_vars = [x.strip() for x in linecache.updatecache(MMAP_VARIABLES_FILENAME)]
+            if set(existing_vars) != self._vars_to_getlist_set:
+                print "updating %s" % MMAP_VARIABLES_FILENAME
+                recreate = True
+        else:
+            print ("I see %s is missing. creating it for you." +
+             + "it has %s variables"
                     % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
+            recreate = True
+        if recreate:
             fd = open(MMAP_VARIABLES_FILENAME, 'w+')
             fd.write('\n'.join(self._vars_to_getlist))
             fd.close()
@@ -205,7 +231,7 @@ class World(object):
             events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
 
     def addMemoryVars(self, vars):
-        # slow? but keeps the order of that of the registration
+        # slow? but retains the order of the registration
         for v in vars:
             if v not in self._vars_to_getlist_set:
                 self._vars_to_getlist.append(v)
@@ -290,4 +316,13 @@ class World(object):
         self._record_file = None
         self._record_csv = None
         self.removeMemoryVars(self._recorded_vars)
+
+    # accessors that wrap the ALMemory - you can also
+    # use world.vars
+    def getAngle(self, jointname):
+        """ almost the same as ALMotion.getAngle as the help tells it -
+        returns the sensed angle, which we take to be the sensor position,
+        not the actuated position
+        """
+        return self.vars[self._getAnglesMap[jointname]]
 

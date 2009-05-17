@@ -42,7 +42,7 @@ INTERPOLATION_SMOOTH = 1
 # Utilities
 
 def getip():
-    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
 
 def compresstoprint(s, first, last):
     if len(s) < first + last + 3:
@@ -246,6 +246,16 @@ def callNaoQiObject(mod, meth, *args):
         X('albroker:p', [], [p])]))
     return o
 
+def postNaoQiObject(mod, meth, *args):
+    o = S()
+    p = serializeToSoap(args) # note - this always creates an Array arround them
+    o.body.C(X('albroker:callNaoqi2', children=[
+        X('albroker:mod', [], [mod]),
+        X('albroker:meth', [], [meth]),
+        X('albroker:p', [], [p])]))
+    return o
+
+
 ##################################################################
 # NaoQiModule, NaoQiMethod (Top Level objects)
 
@@ -386,25 +396,54 @@ class NaoQiMethod(object):
     def getMethodHelp(self):
         return self._con._sendRequest(callNaoQiObject(self._mod._modname, 'getMethodHelp', self._name))
 
+    def _realcall(self, args, callCreator, callback, d):
+        """ handles normal and post calls. They all go through validation
+        (TODO - make it optional), then it is passed through the callCreator,
+        and on return through the callback and finally to the deferred d.
+        """
+        if len(args) != len(self._params):
+            raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
+        for i, (p, a) in enumerate(zip(self._params, args)):
+            if not p.validate(a):
+                raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
+        self._con._sendRequest(callCreator(self._mod._modname,
+            self._name, *args)).addCallback(callback
+            ).addCallback(lambda result: d.callback(result))
+
     def __call__(self, *args):
         ret = Deferred()
-
-        def realcall(result=None):
-            if len(args) != len(self._params):
-                raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
-            for i, (p, a) in enumerate(zip(self._params, args)):
-                if not p.validate(a):
-                    raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
-            self._con._sendRequest(callNaoQiObject(self._mod._modname, self._name, *args)).addCallback(self._call_onResponse).addCallback(lambda result: ret.callback(result))
-
+        
         if not self._has_docs:
-            self.makeHelp().addCallback(realcall)
+            self.makeHelp().addCallback(lambda _, self=self, args=args:
+                self._realcall(args=args, callCreator=callNaoQiObject,
+                    callback=self._call_onResponse, d=ret))
         else:
-            realcall()
+            self._realcall(args=args, callCreator=callNaoQiObject,
+                callback=self._call_onResponse, d=ret)
+
         return ret
 
     def _call_onResponse(self, soapbody):
         return self._return.fromNaoQiCall(soapbody)
+
+    def _post_onResponse(self, soapbody):
+        # returns albroker:callNaoqi2Response wrapping an array
+        # with postid (int), methname , module name, a boolean
+        # and an int (no idea the meaning of the later two)
+        return int(soapbody.firstChild.firstChild.firstChild.firstChild.firstChild.data)
+
+    def post(self, *args):
+        ret = Deferred()
+
+        if not self._has_docs:
+            self.makeHelp().addCallback(lambda _, self=self, args=args:
+                self._realcall(args=args, callCreator=postNaoQiObject,
+                    callback=self._post_onResponse, d=ret))
+        else:
+            self._realcall(args=args, callCreator=postNaoQiObject,
+                callback=self._post_onResponse, d=ret)
+
+        return ret
 
 ##################################################################
 
@@ -416,6 +455,9 @@ class MethodHolder(object):
 
 ##################################################################
 
+class ModulePosts(object):
+    pass
+
 class NaoQiModule(object):
 
     VERBOSE = True # mainly here so I can shut it down when using twisted
@@ -426,6 +468,7 @@ class NaoQiModule(object):
         # async? nah, don't bother right now. (everything here
         # should be twisted.. ok, it can be asynced some other way)
         self.initDeferred = Deferred() # hook for inheriting classes, will be called when init is done
+        self.post = ModulePosts()
         self.methods = MethodHolder()
         self.getMethods().addCallback(self.onMethodsAvailable)
 
@@ -435,6 +478,7 @@ class NaoQiModule(object):
             methobj = NaoQiMethod(self, meth)
             setattr(self, meth, methobj)
             setattr(self.methods, meth, methobj)
+            setattr(self.post, meth, methobj.post)
         # this actually uses one of the methods above!
         self._has_docs = False
         self.__doc__ = """ Call con.%s.makeHelp() to generate help for this module and it's methods """ % self._modname

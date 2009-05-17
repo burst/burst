@@ -175,6 +175,9 @@ class EventManager(object):
 class BasicMainLoop(object):
     
     def __init__(self, playerclass):
+        self._playerclass = playerclass
+
+    def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
         created at will.
         """
@@ -189,7 +192,7 @@ class BasicMainLoop(object):
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
         self._actions = actions.Actions(world = self._world)
-        self._player = playerclass(world = self._world, eventmanager = self._eventmanager,
+        self._player = self._playerclass(world = self._world, eventmanager = self._eventmanager,
             actions = self._actions)
 
     def run(self):
@@ -265,6 +268,11 @@ class BasicMainLoop(object):
             return self.next_loop - self.cur_time
 
 class SimpleMainLoop(BasicMainLoop):
+
+    def __init__(self, playerclass):
+        super(SimpleMainLoop, self).__init__(playerclass = playerclass)
+        self.initMainObjectsAndPlayer()
+
     def _run_loop(self):
         import burst
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
@@ -281,12 +289,23 @@ class SimpleMainLoop(BasicMainLoop):
                 sleep(sleep_time)
 
 class TwistedMainLoop(BasicMainLoop):
-    def _run_loop(self):
-        print "running TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
+
+    def __init__(self, playerclass):
+        super(TwistedMainLoop, self).__init__(playerclass = playerclass)
+        import pynaoqi
+        self.con = pynaoqi.getDefaultConnection()
+        self.con.ALMemory.initDeferred.addCallback(self._twistedStart)
+
+    def _twistedStart(self, _):
+        self.initMainObjectsAndPlayer()
         from twisted.internet import reactor, task
         self.preMainLoopInit()
         main_task = task.LoopingCall(self.onTimeStep)
         main_task.start(EVENT_MANAGER_DT)
+
+    def _run_loop(self):
+        print "running TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
+        from twisted.internet import reactor
         reactor.run()
 
     def onTimeStep(self):
@@ -296,7 +315,7 @@ class TwistedMainLoop(BasicMainLoop):
 
 from burst_util import is64
 if is64():
-    MainLoop == TwistedMainLoop
+    MainLoop = TwistedMainLoop
 else:
     # default loop doesn't use twisted
     MainLoop = SimpleMainLoop

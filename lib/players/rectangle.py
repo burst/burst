@@ -47,7 +47,7 @@ class Rectangle(Player):
 
         self._actions.initPoseAndStiffness()
         
-        lambda: clr(0.0, side, pi).onDone(
+        clr(0.0, side, pi).onDone(
             lambda: clr(side, 0, pi/2)).onDone(
             lambda: clr(side, 0, pi/4)).onDone(
             lambda: clr(side/sqrt(2), side/sqrt(2), pi/4)).onDone(

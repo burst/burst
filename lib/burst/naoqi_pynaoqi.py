@@ -17,5 +17,6 @@ def getBroker():
     return con
 
 def getSpeechProxy():
-    """ can throw an exception! (attribute not found) """
-    return con.ALTextToSpeech
+    """ return None if nothing there """
+    return hasattr(con, 'ALTextToSpeech') and con.ALTextToSpeech or None
+
