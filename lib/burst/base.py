@@ -32,11 +32,21 @@ try: # doesn't work on opennao
 except:
     getaddrinfo = lambda ip, port: [[None, None, None, [ip]]]
 
+def running_on_nao():
+    """ True if we are physically on the nao geode brain box """
+    return os.path.exists('/opt/naoqi/bin/naoqi')
+
 def connecting_to_webots():
+    """ True if we are connecting to webots """
     global ip
     #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    is_nao = os.path.exists('/opt/naoqi/bin/naoqi')
-    return not is_nao and ip == LOCALHOST_IP
+    return not running_on_nao() and ip == LOCALHOST_IP
+
+def connecting_to_nao():
+    """ True if we are not connecting to webots.
+    Note that this doesn't imply running_on_nao, since we can
+    be connecting remotely """
+    return not connecting_to_webots()
 
 def fix_sys_path():
     naoqi_root = None

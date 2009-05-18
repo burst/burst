@@ -35,7 +35,7 @@ Handle case where ball isn't seen after front scan (add full scan inc. turning a
 Obstacle avoidance
 """
 
-if World.isRealNao:
+if World.connected_to_nao:
     KICK_MINIMAL_DISTANCE_X = 1.3*4 #1.6 is closest perceivable distance (x)
     KICK_MINIMAL_DISTANCE_Y = 0.3*2 #0.3 is closest perceivable bearing (y)
     KICK_DIST_FROM_BALL = 13.0
@@ -43,7 +43,7 @@ if World.isRealNao:
     KICK_NEAR_BALL_DISTANCE_X = 10.0
     KICK_NEAR_BALL_DISTANCE_Y = 10.0
 else:
-    KICK_MINIMAL_DISTANCE_X = 1.0
+    KICK_MINIMAL_DISTANCE_X = 1.1
     KICK_MINIMAL_DISTANCE_Y = 1.2
     KICK_DIST_FROM_BALL = 31.0
     KICK_OFFSET_MID_BODY = 1.0
