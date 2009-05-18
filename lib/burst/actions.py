@@ -52,7 +52,7 @@ class Actions(object):
         self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
         self.executeSyncMove(moves.INITIAL_POS)
     
-    def sitPoseAndRelax(self):
+    def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self.clearFootsteps()
         self.executeSyncMove(moves.STAND)
         self.executeSyncMove(moves.SIT_POS)
@@ -94,7 +94,7 @@ class Actions(object):
          
         Coordinate frame for robot is same as world: x forward, y left (z up)
          
-        What kind of walk is this: for simplicity we do a turn, walk,
+        What kind of walk this is: for simplicity we do a turn, walk,
         then final turn to wanted angle.
         """
         
