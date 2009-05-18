@@ -1,6 +1,6 @@
 from events import EVENT_FALLEN_DOWN, EVENT_ON_BELLY, EVENT_ON_BACK
 
-SMOOTHING_FACTOR = 3
+SMOOTHING_FACTOR = 5
 
 class FalldownDetector(object):
     """ Detecting / Storing robot fall down state

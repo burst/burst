@@ -3,6 +3,7 @@
 #import MotionConstants
 from burst.consts import DEG_TO_RAD
 from ..world import World
+from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 
 # array with names of attributes of this module that can be run with executeMove
 NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND".split()
@@ -110,7 +111,7 @@ SCAN_BALL= (
 #PENALIZED_HEADS = (((0.0,25.0),0.5),)
 
 # WALKS
-FASTEST_WALK_WEBOTS = [
+FASTEST_WALK_WEBOTS = WalkParameters([
            100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
            30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
@@ -125,9 +126,9 @@ FASTEST_WALK_WEBOTS = [
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
            0.018,                # 13 ZmpOffsetY 
-           18]                   # 15 20ms count per step
+           18])                   # 15 20ms count per step
 
-FAST_WALK_WEBOTS = [
+FAST_WALK_WEBOTS = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            90.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -142,9 +143,10 @@ FAST_WALK_WEBOTS = [
            0.3,                   # MaxTurn
            0.06,                  # ZmpOffsetX MAX
            0.016,                 # ZmpOffsetY 
-           18]
+           18])
 
-FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
+FASTER_WALK = WalkParameters([
+           110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            90.0 * DEG_TO_RAD,  # ElbowMedian 
            0.0 * DEG_TO_RAD,  # ElbowAmplitude 
@@ -158,10 +160,11 @@ FASTER_WALK = [110.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.016,                 # ZmpOffsetY 
-           18]#,                    # 20ms count per step
+           18])#,                    # 20ms count per step
            #,0.68]                  # Angle 0.68
 
-FAST_WALK = [100.0 * DEG_TO_RAD, # 0 ShoulderMedian
+FAST_WALK = WalkParameters([
+           100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
            30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
            10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
@@ -176,9 +179,10 @@ FAST_WALK = [100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            0.015,                # 12 ZmpOffsetX
            0.018,                # 13 ZmpOffsetY 
            # Not walk parameters proper.
-           25]                   # 15 20ms count per step
+           25])                   # 15 20ms count per step
 
-STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+STD_WALK = WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
            10.0 * DEG_TO_RAD,  # ElbowAmplitude 
@@ -192,9 +196,10 @@ STD_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.018,                 # ZmpOffsetY 
-           25]                    # 20ms count per step
+           25])                    # 20ms count per step
 
-SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
+SLOW_WALK1 = WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
            10.0 * DEG_TO_RAD,  # ElbowAmplitude 
@@ -208,9 +213,10 @@ SLOW_WALK1 = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.015,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           100]                    # 20ms count per step
+           100])                    # 20ms count per step
 
-SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+SLOW_WALK = WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
            10.0 * DEG_TO_RAD,  # ElbowAmplitude 
@@ -224,11 +230,12 @@ SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           80]                    # 20ms count per step
+           80])                    # 20ms count per step
 
 # Alon is looking for a walk that DOESN'T FALL!!!
 
-KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
+KICKER_WALK = WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,      # ShoulderAmplitude
            30.0 * DEG_TO_RAD,      # ElbowMedian 
            10.0 * DEG_TO_RAD,      # ElbowAmplitude 
@@ -242,7 +249,7 @@ KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           120]                    # 20ms count per step
+           120])                    # 20ms count per step
 
 if World.connected_to_nao:
     FASTEST_WALK = SLOW_WALK
