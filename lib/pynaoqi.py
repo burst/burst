@@ -581,13 +581,14 @@ def getpairs(elem):
 class BaseNaoQiConnection(object):
 
     def __init__(self, url="http://localhost:9560/", verbose = True, options=None):
-        self.verbose = True
+        self.verbose = verbose
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
         self._req = Requester(url)
         self.s = None # socket to connect to broker. reusing - will it work?
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
+        self._error_accessing_host = False
        
         if self.options.twisted:
             # if we have twisted, use that implementation
@@ -611,13 +612,21 @@ class BaseNaoQiConnection(object):
     def _initModules(self):
         """ internal method. Initializes the list of modules and their list of methods """
         self._modules = []
-        for i, modname in enumerate(self.getModules()):
+        modules = []
+        try:
+            modules = self.getModules()
+        except urllib2.URLError:
+            if not self._error_accessing_host:
+                print "connection refused, will retry 1 second after reactor.start"
+                self._error_accessing_host = True
+            import twisted.internet.reactor as reactor
+            reactor.callLater(1.0, self._initModules)
+        for i, modname in enumerate(modules):
             if self.verbose:
                 print "(%s) %s.." % (i + 1, modname),
                 sys.stdout.flush()
             mod = self.getModule(modname)
             self._modules.append(mod)
-        if self.verbose: print
         self.modules = ModulesHolder()
         for m in self._modules:
             self.__dict__[m.getName()] = m
@@ -698,13 +707,9 @@ class BaseNaoQiConnection(object):
         """ get the modules list by parsing the http page for the broker -
         probably there is another way, but who cares?! 8)
         """
-        if self.verbose:
-            print "retrieving modules..",
         x = minidom.parse(urllib2.urlopen(self._url))
         modulesroot = x.firstChild.nextSibling.firstChild.firstChild.firstChild.nextSibling.nextSibling
         modules = [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
-        if self.verbose:
-            print "%s" % len(modules)
         return modules
 
     def getModule(self, modname):
@@ -932,6 +937,7 @@ def getDefaultOptions():
     parser.add_option('--port', action='store', dest='port', default=None)
     parser.add_option('--video', action='store_true', dest='video', default=None)
     parser.add_option('--twisted', action='store_true', dest='twisted', default=True)
+    parser.add_option('--notwisted', action='store_false', dest='twisted')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
@@ -941,7 +947,7 @@ def getDefaultOptions():
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
-        if arg in ['--video', '--twisted']:
+        if arg in ['--video', '--twisted', '--notwisted']:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):

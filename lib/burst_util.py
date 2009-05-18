@@ -1,13 +1,4 @@
-# ELF util
-
-# are we on 64 bit or 32 bit? if on 64, use pynaoqi (and tell user)
-ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from
-def is64():
-    fd = open('/bin/sh') # some executable that should be on all systems
-    header = fd.read(16) # size of ELF header
-    fd.close()
-    ei_class = header[4]
-    return ei_class == ELFCLASS64
+import re
 
 # Twisted-like Deferred and succeed
 
@@ -123,22 +114,12 @@ def dh_matrix(a, alpha, d, theta):
         [0., 0., 0., 1.]
     ]
 
-# Stuff
-
-def getip():
-    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
-
-def compresstoprint(s, first, last):
-    if len(s) < first + last + 3:
-        return s
-    return s[:first] + '\n...\n' + s[-last:]
-
-def cumsum(iter):
-    """ cumulative summation over an iterator """
-    s = 0.0
-    for t in iter:
-        s += t
-        yield s
+def isnumeric(x):
+    try:
+        i = float(x)
+    except:
+        return False
+    return True
 
 def running_average(window_width):
     samples = [0.0]*window_width
@@ -151,4 +132,49 @@ def running_average(window_width):
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
- 
+
+def cumsum(iter):
+    """ cumulative summation over an iterator """
+    s = 0.0
+    for t in iter:
+        s += t
+        yield s
+
+# Text utils
+
+def minimal_title(names):
+    if len(names) == 0:
+        return ''
+    if len(names) == 1:
+        return names[0]
+    n = len(names)
+    for i in xrange(min(map(len, names))):
+        for j in xrange(n-1):
+            if names[j][i] != names[j+1][i]:
+                break
+    return '%s{%s}' % (names[0][:i], ', '.join([n[i+1:] for n in names]))
+
+def compresstoprint(s, first, last):
+    if len(s) < first + last + 3:
+        return s
+    return s[:first] + '\n...\n' + s[-last:]
+
+# Operating System utilities
+
+def getip():
+    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+
+def not_on_nao():
+    #is_nao = os.popen("uname -m").read().strip() == 'i586'
+    return os.path.exists('/opt/naoqi/bin/naoqi')
+
+# ELF util
+
+ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from the ELF spec
+def is64():
+    fd = open('/bin/sh') # some executable that should be on all systems
+    header = fd.read(16) # size of ELF header
+    fd.close()
+    ei_class = header[4]
+    return ei_class == ELFCLASS64
+

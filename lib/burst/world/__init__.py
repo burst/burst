@@ -50,7 +50,8 @@ def cross(*args):
 
 def gethostname():
     fd = open('/etc/hostname')
-    hostname = fd.read().strip().lower() # all hostnames should be lower, we just enforce it..
+    # all hostnames should be lower, we just enforce it..
+    hostname = fd.read().strip().lower()
     fd.close()
     return hostname
 

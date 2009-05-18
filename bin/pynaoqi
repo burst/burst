@@ -1,65 +1,155 @@
 #!/usr/bin/python
-import sys, os
+
+"""
+Shell for playing with Nao Robots through the Naoqi SOAP protocol using
+a python only implementation.
+"""
+
+import sys, os, time
 import optparse
 import urllib2
 
 # add path of burst library
 burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '../lib'))
 sys.path.append(burst_lib)
+
 import pynaoqi
+from burst_util import isnumeric, minimal_title
 
 # we use twisted in a thread if requested
 options = pynaoqi.getDefaultOptions()
 
 if options.twisted:
+    # Try to throw in gtk support
+    from twisted.internet import gtk2reactor
+
+    # we should be the first to install it, so no need for try/except
+    gtk2reactor.install()
+
+#############################################################################
+
+# Plotting / Logging utils - yeah, I should use matplotlib.. but this is actually
+# simple.
+class GtkTextLogger(object):
+
+    counter = 1
+    running = []
+
+    def __init__(self, tick, dt=1.0):
+        from twisted.internet import task
+        import gtk
+        self._tick = tick
+        self._task = task.LoopingCall(self._onLoop)
+        self._w = w = gtk.Window()
+        w.connect("destroy", self._onDestroy)
+        w.set_title('text logger %s' % self.counter)
+        self.counter += 1
+        self._tv = tv = gtk.TextView()
+        self._tb = tb = gtk.TextBuffer()
+        self._sw = gtk.ScrolledWindow()
+        self._sw.add(self._tv)
+        w.add(self._sw)
+        w.set_size_request(300,300)
+        self._w.show_all()
+        tv.set_buffer(tb)
+        self._start = time.time()
+        self._task.start(dt)
+        self.running.append(self)
+
+    # Task Methods
+
+    @classmethod
+    def stopAll(self):
+        for f in self.running:
+            f.stop()
+        del self.running[:]
+
+    def stop(self):
+        self._task.stop()
+
+    # GUI Methods
+
+    def show(self):
+        self._w.show()
+
+    def hide(self):
+        self._w.hide()
+
+    def set_title(self, txt):
+        self._w.set_title(txt)
+
+    # Internal Methods
+
+    def _onDestroy(self):
+        print "stopping task"
+        self.stop()
+        self._w.destroy()
+
+    def _onLoop(self):
+        self._tick().addCallback(self._update)
+
+    def _update(self, result):
+        tb = self._tb
+        tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (
+            (time.time() - self._start), str(result)))
+
+def watch_multiple(*names):
+
+    def prettyprint(results):
+        return [(isnumeric(f) and '%3.3f' or '%s') % f for f in results]
+
+    GtkTextLogger(lambda:
+        con.ALMemory.getListData(names).addCallback(prettyprint)).set_title(minimal_title(names))
+
+#############################################################################
+
+def main_twisted(con, my_ns):
+
     from ipy import IPShellTwisted
-    shellclass = lambda ns: IPShellTwisted(argv=[], user_ns=ns)
-    getrealshell = lambda shell: shell.IP
-else:
-    import IPython.ipapi
-    shellclass = IPython.ipapi.launch_new_instance
-    getrealshell = lambda x: x
+    if con.options.video:
+        sys.argv.append('-gthread')
+        con.retrieveImages()
 
-# parse command line arguments
-try:
-    con = pynaoqi.getDefaultConnection()
-except urllib2.URLError, e:
-    print "error connecting: %s" % e
-    raise SystemExit
+    tshell = IPShellTwisted(argv=[], user_ns=my_ns)
+    shell = tshell.IP
+    pimp_my_shell(shell)
 
-if con.options.video:
-    sys.argv.append('-gthread')
-    con.retrieveImages()
-
-# start ipython shell
-
-my_ns = dict(
-    con = con,
-    pynaoqi = pynaoqi)
-
-print "<"*30 + "o"*20 + ">"*30
-print """Pynaoqi shell - con object holds all the modules, methods, help!
-Deferreds: Any operation returning a deferred will return immediately
+    print "<"*30 + "o"*20 + ">"*30
+    print """Pynaoqi shell - con object holds everything.
+To generate help, call con.makeHelp()
+To generate help on a single module, call con.ALMotion.makeHelp()"""
+    print """Deferreds: Any operation returning a deferred will return immediately
 as expected, and additionally once its callback is called it will be
 printed and available as _d."""
-print "_"*80
-shell = shellclass(my_ns)
-realshell = getrealshell(shell)
+    print "_"*80
 
-# set a nicer prompt to tell the user where he is connected to
-# reminder: can use ${} to eval stuff, like: '${con.host} [\#]: '
-realshell.outputcache.prompt1.p_template='%s [\#]: ' % (con.host)
+    from twisted.internet import task
 
-# If in twisted, start the mainloop, and add a hook to display deferred results
-# when they are available (also affects *any* deferred you try to print)
-if options.twisted:
+    def pr(x):
+        print str(x)
+
+    my_ns['task'] = task
+    my_ns['pr'] = pr
+    my_ns['loop'] = GtkTextLogger
+    my_ns['watch'] = watch_multiple
+
+    # Start the mainloop, and add a hook to display deferred results when they
+    # are available (also affects *any* deferred you try to print)
     import twisted.internet.defer as defer
     from IPython.hooks import result_display
     from IPython.genutils import Term
 
+    def onDataListName(names):
+        shell.user_ns['names'] = names
+
+    con.ALMemory.initDeferred.addCallback(lambda _: con.ALMemory.getDataListName().addCallback(onDataListName))
+
     def pr(x):
-        print >>Term.cout, "deferred: %s" % x
-        shell.IP.user_ns['_d'] = x
+        s = str(x)
+        if len(s) > 1000:
+            s = s[:1000] + '...'
+        print >>Term.cout, "deferred: %s" % s
+        shell.user_ns['_d'] = x
         return x
 
     def display_defer(self, arg):
@@ -68,6 +158,50 @@ if options.twisted:
             arg.addCallback(pr)
         else:
             result_display(self, arg)
-    shell.IP.set_hook('result_display', display_defer)
-    shell.mainloop()
+    shell.set_hook('result_display', display_defer)
+    tshell.mainloop()
+
+#############################################################################
+
+def main_no_twisted(con, my_ns):
+    import IPython.ipapi
+    shell = IPython.ipapi.launch_new_instance(my_ns)
+    print "<"*30 + "o"*20 + ">"*30
+    print """Pynaoqi shell - con object holds everything.
+    To generate help, call con.makeHelp()
+    To generate help on a single module, call con.ALMotion.makeHelp()
+    """
+    print "_"*80
+    pimp_my_shell(shell)
+
+#############################################################################
+
+def pimp_my_shell(shell):
+    # set a nicer prompt to tell the user where he is connected to
+    # reminder: can use ${} to eval stuff, like: '${con.host} [\#]: '
+    shell.outputcache.prompt1.p_template='%s [\#]: ' % (con.host)
+
+#############################################################################
+
+if __name__ == '__main__':
+    # If you are looking for command line parsing, it happens
+    # in pynaoqi.getDefaultConnection (actually in pynaoqi.getDefaultOptions)
+    try:
+        con = pynaoqi.getDefaultConnection()
+    except urllib2.URLError, e:
+        print "error connecting: %s" % e
+        raise SystemExit
+
+    import burst.moves as moves
+
+    my_ns = dict(
+        con = con,
+        pynaoqi = pynaoqi,
+        moves = moves)
+
+    if options.twisted:
+        main_twisted(con, my_ns)
+    else:
+        main_no_twisted(con, my_ns)
+
 

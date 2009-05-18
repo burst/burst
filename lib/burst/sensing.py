@@ -1,19 +1,26 @@
 from events import EVENT_FALLEN_DOWN, EVENT_ON_BELLY, EVENT_ON_BACK
 
+SMOOTHING_FACTOR = 3
+
 class FalldownDetector(object):
     """ Detecting / Storing robot fall down state
     """
+    # As the data is somewhat noisy - y values of 4.83 surrounded by 0.02, 0.05 and 0.04 - I've 
+    # added a little bit of smoothing.
     
     def __init__(self, world):
         self._world = world
         self._var = "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
         self._world.addMemoryVars([self._var])
+        self.ys = [0.0 for i in xrange(SMOOTHING_FACTOR)]
 
     def hasFallenDown(self):
         return self.isOnBack() or self.isOnBelly()
 
     def calc_events(self, events, deferreds):
-        self.y = self._world.vars[self._var]
+        self.ys = sorted(self.ys[1:] + [self._world.vars[self._var]])
+        self.y = self.ys[len(self.ys)/2]
+#        print "y:", str(self.y)
         self._on_back = self.y < -1.0
         self._on_belly = self.y > 1.0
 
