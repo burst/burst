@@ -58,7 +58,8 @@ class SerialPostQueue(object):
             if len(self._posts) == 0:
                 self._start_time = None
             else:
-                # DANGEROUS: We assume next head move starts immediately after the last.
+                # DANGEROUS: We assume next head move starts immediately
+                # after the last.
                 self._start_time = self._world.time
 
 class Robot(Movable):
