@@ -126,7 +126,7 @@ FASTEST_WALK_WEBOTS = WalkParameters([
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
            0.018,                # 13 ZmpOffsetY 
-           18])                   # 15 20ms count per step
+           18])                  # 14 20ms count per step
 
 FAST_WALK_WEBOTS = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian
