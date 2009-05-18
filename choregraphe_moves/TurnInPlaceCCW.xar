@@ -700,99 +700,8 @@
                                     <name>motion_layer1</name>
                                     <mute>0</mute>
                                     <MotionKeyframe>
-                                        <name>keyframe2</name>
-                                        <index>2</index>
-                                        <interpolation>1</interpolation>
-                                        <Motors>
-                                            <Motor>
-                                                <name>LAnklePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LAnkleRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LElbowYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipPitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipRoll</name>
-                                                <value>-5</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipYawPitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LKneePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LShoulderPitch</name>
-                                                <value>50</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LShoulderRoll</name>
-                                                <value>15</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LWristYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RAnklePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RAnkleRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RElbowRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RElbowYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHand</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHipPitch</name>
-                                                <value>-5</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHipRoll</name>
-                                                <value>-0.5</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RKneePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RShoulderPitch</name>
-                                                <value>50</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RShoulderRoll</name>
-                                                <value>-15</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RWristYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                        </Motors>
-                                    </MotionKeyframe>
-                                    <MotionKeyframe>
                                         <name>keyframe4_copy</name>
-                                        <index>7</index>
+                                        <index>5</index>
                                         <interpolation>1</interpolation>
                                         <Motors>
                                             <Motor>
@@ -809,7 +718,7 @@
                                             </Motor>
                                             <Motor>
                                                 <name>LHipPitch</name>
-                                                <value>-5.3</value>
+                                                <value>12.4</value>
                                             </Motor>
                                             <Motor>
                                                 <name>LHipRoll</name>
@@ -817,7 +726,7 @@
                                             </Motor>
                                             <Motor>
                                                 <name>LHipYawPitch</name>
-                                                <value>3.5</value>
+                                                <value>-12.7</value>
                                             </Motor>
                                             <Motor>
                                                 <name>LKneePitch</name>
@@ -857,11 +766,11 @@
                                             </Motor>
                                             <Motor>
                                                 <name>RHipPitch</name>
-                                                <value>-6.3</value>
+                                                <value>13.1</value>
                                             </Motor>
                                             <Motor>
                                                 <name>RHipRoll</name>
-                                                <value>-6.9</value>
+                                                <value>-10.6</value>
                                             </Motor>
                                             <Motor>
                                                 <name>RKneePitch</name>
@@ -882,8 +791,8 @@
                                         </Motors>
                                     </MotionKeyframe>
                                     <MotionKeyframe>
-                                        <name>keyframe9</name>
-                                        <index>9</index>
+                                        <name>keyframe8</name>
+                                        <index>8</index>
                                         <interpolation>1</interpolation>
                                         <Motors>
                                             <Motor>
@@ -900,98 +809,7 @@
                                             </Motor>
                                             <Motor>
                                                 <name>LHipPitch</name>
-                                                <value>-6.8</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipRoll</name>
-                                                <value>0.4</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipYawPitch</name>
-                                                <value>4.3</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LKneePitch</name>
-                                                <value>1</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LShoulderPitch</name>
-                                                <value>50</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LShoulderRoll</name>
-                                                <value>15</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LWristYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RAnklePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RAnkleRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RElbowRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RElbowYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHand</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHipPitch</name>
-                                                <value>-6.3</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RHipRoll</name>
-                                                <value>-12.3</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RKneePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RShoulderPitch</name>
-                                                <value>50</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RShoulderRoll</name>
-                                                <value>-15</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>RWristYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                        </Motors>
-                                    </MotionKeyframe>
-                                    <MotionKeyframe>
-                                        <name>keyframe11</name>
-                                        <index>11</index>
-                                        <interpolation>1</interpolation>
-                                        <Motors>
-                                            <Motor>
-                                                <name>LAnklePitch</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LAnkleRoll</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LElbowYaw</name>
-                                                <value>0</value>
-                                            </Motor>
-                                            <Motor>
-                                                <name>LHipPitch</name>
-                                                <value>7</value>
+                                                <value>-5</value>
                                             </Motor>
                                             <Motor>
                                                 <name>LHipRoll</name>
@@ -999,7 +817,7 @@
                                             </Motor>
                                             <Motor>
                                                 <name>LHipYawPitch</name>
-                                                <value>-15.2</value>
+                                                <value>10.5</value>
                                             </Motor>
                                             <Motor>
                                                 <name>LKneePitch</name>
@@ -1039,7 +857,7 @@
                                             </Motor>
                                             <Motor>
                                                 <name>RHipPitch</name>
-                                                <value>7</value>
+                                                <value>-5</value>
                                             </Motor>
                                             <Motor>
                                                 <name>RHipRoll</name>
