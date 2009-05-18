@@ -128,10 +128,6 @@ def dh_matrix(a, alpha, d, theta):
 def getip():
     return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
 
-def not_on_nao():
-    #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    return os.path.exists('/opt/naoqi/bin/naoqi')
-
 def compresstoprint(s, first, last):
     if len(s) < first + last + 3:
         return s
