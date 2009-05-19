@@ -225,10 +225,10 @@ class BasicMainLoop(object):
         self.next_loop += EVENT_MANAGER_DT
         self.cur_time = time()
         if self.cur_time > self.next_loop:
-            print "WARNING: loop took %0.3f ms" % (
-                (self.cur_time - self.next_loop + EVENT_MANAGER_DT
-                ) * 1000)
-            self.next_loop = self.cur_time
+#            print "WARNING: loop took %0.3f ms" % (
+#                (self.cur_time - self.next_loop + EVENT_MANAGER_DT
+#                ) * 1000)
+#            self.next_loop = self.cur_time
             return None
         else:
             return self.next_loop - self.cur_time

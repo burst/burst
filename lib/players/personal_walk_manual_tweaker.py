@@ -8,13 +8,14 @@ import burst.moves as moves
 from math import cos, sin
 import time
 from burst.walkparameters import WalkParameters
+import os
 
 OUTPUT_FILE_NAME = './testme.txt'
 outputFile = None
 
 
 walkType = 'changeLocationRelative'
-walkDistance = 40.0
+walkDistance = 100.0
 walkParams = moves.SLOW_WALK
 
 
@@ -47,11 +48,12 @@ class personalWalkManualTweaker(Player):
 
 def moduleCleanup(eventmanager, actions, world):
     if not robotName is None:
-        print "Step length:", walkParams[WalkParameters.StepLength]
         remaining_steps = world.getRemainingFootstepCount()
-        print "Remaining steps:", remaining_steps
         result = str(robotName) + ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
-        result += str(walkParams[WalkParameters.StepLength] * remaining_steps)
+        print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
+        distanceWalkedBeforeFallingDown = min(walkDistance, max(0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
+        result += str(distanceWalkedBeforeFallingDown)
+        print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
         outputFile.write(result+"\n")
     if not outputFile is None and not outputFile.closed:
         outputFile.close()
@@ -62,8 +64,8 @@ if __name__ == '__main__':
     from burst.eventmanager import MainLoop
     #import atexit; atexit.register(moduleCleanup) # Make sure the file is closed down (and thus also flushed) when the program finishes.
     from sys import argv
-    #OUTPUT_FILE_NAME = '~/src/burst/doc/results_of_personalization_tests.csv'
-    OUTPUT_FILE_NAME = './testme.txt'
+    OUTPUT_FILE_NAME = os.environ['HOME']+'/src/burst/doc/results_of_personalization_tests.csv'
+    #OUTPUT_FILE_NAME = './testme.txt'
     outputFile = open(OUTPUT_FILE_NAME, 'a')
 
     # Determine the name of the robot you're running on. A bit sideways, I'll admit. Nevertheless:
