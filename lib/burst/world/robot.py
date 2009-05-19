@@ -1,6 +1,6 @@
 from .objects import Movable
 from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
-from ..eventmanager import Deferred
+from burst_util import BurstDeferred
 
 class Motion(object):
     
@@ -36,7 +36,7 @@ class SerialPostQueue(object):
         return len(self._posts) > 0
 
     def add(self, postid, event, duration):
-        deferred = Deferred(data=postid)
+        deferred = BurstDeferred(data=postid)
         # we keep for each move: postid -> (event code, deferred, start time, duration)
         if self._start_time is None:
             self._start_time = self._world.time
@@ -73,7 +73,7 @@ class Robot(Movable):
         self._walk_posts   = SerialPostQueue('walk', world)
     
     def add_expected_motion_post(self, postid, event, duration):
-        deferred = Deferred(data=postid)
+        deferred = BurstDeferred(data=postid)
         self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
         return deferred
 

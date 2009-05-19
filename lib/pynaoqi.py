@@ -589,6 +589,9 @@ class BaseNaoQiConnection(object):
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
         self._error_accessing_host = False
+
+        self.modulesDeferred = Deferred()
+        self._modules_to_wait_for_init_of = None
        
         if self.options.twisted:
             # if we have twisted, use that implementation
@@ -617,7 +620,7 @@ class BaseNaoQiConnection(object):
             modules = self.getModules()
         except urllib2.URLError:
             if not self._error_accessing_host:
-                print "connection refused, will retry 1 second after reactor.start"
+                print "!!! connection refused, will retry 1 second after reactor.start"
                 self._error_accessing_host = True
             import twisted.internet.reactor as reactor
             reactor.callLater(1.0, self._initModules)
@@ -631,6 +634,18 @@ class BaseNaoQiConnection(object):
         for m in self._modules:
             self.__dict__[m.getName()] = m
             self.modules.__dict__[m.getName()] = m
+        if len(self._modules) > 0:
+            # assume this is the fixed number of modules.
+            # this doesn't hold if we start in the middle of
+            # a loading naoqi - live with it.
+            self._modules_to_wait_for_init_of = len(self._modules)
+            for m in self._modules:
+                m.initDeferred.addCallback(self._moduleInitDone)
+
+    def _moduleInitDone(self, _):
+        self._modules_to_wait_for_init_of -= 1
+        if self._modules_to_wait_for_init_of <= 0:
+            self.modulesDeferred.callback(None)
 
     def contentLengthFromHeaders(self, headers):
         return int(re.search('Content-Length: ([0-9]+)', headers).groups()[0])
