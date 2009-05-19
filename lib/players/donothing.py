@@ -21,7 +21,8 @@ class Template(Player):
         self._eventmanager.setTimeoutEventParams(2.0, oneshot=True, cb=self.onTimeout)
 
     def onStep(self):
-        print "donothing: ball dist is %s" % self._world.ball.dist
+        #print "donothing: ball dist is %s" % self._world.ball.dist
+        pass
 
     def onTimeout(self):
         print "timed out at t = %s" % self._world.time

@@ -39,3 +39,9 @@ class WalkParameters(list):
                 self[getattr(self, var)] = value * RAD_TO_DEG
             setattr(self, "set"+var+"Rad", f)
             setattr(self, "get"+var+"Rad", lambda: self[getattr(self, var)] * DEG_TO_RAD)
+
+    def __str__(self):
+        result = str(self[0])
+        for i in xrange(1, 15):
+            result += ", " + str(self[i])
+        return result

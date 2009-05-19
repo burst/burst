@@ -5,6 +5,8 @@ Units:
 """
 
 from time import time
+import datetime
+import csv
 import os
 import stat
 import sys
@@ -26,6 +28,7 @@ from objects import Ball, GoalPost
 from robot import Robot
 from team import Team
 from computed import Computed
+from objects import Locatable
 
 def timeit(tmpl):
     def wrapper(f):
@@ -127,7 +130,7 @@ class World(object):
         
         # This makes sure stuff actually works if nothing is being updated on the nao.
         self._default_proxied_variable_value = 0.0
-
+        
         # We do memory.getListData once per self.update, in one go.
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
@@ -184,6 +187,13 @@ class World(object):
             # self.computed should always be last
             [self.computed],
         ]
+
+        # logging variables
+        self._logged_objects = [[obj, None] for obj in [self.ball]]
+        self._object_to_filename = {self.ball: 'ball'}
+        self._do_log_positions = burst.options.log_positions
+        if self._do_log_positions:
+            self._openPositionLogs()
 
         # Try using shared memory to access variables
         if World.running_on_nao:
@@ -306,6 +316,26 @@ class World(object):
         for objlist in self._objects:
             for obj in objlist:
                 obj.calc_events(self._events, self._deferreds)
+        if self._do_log_positions:
+            self._logPositions()
+
+    def _openPositionLogs(self):
+        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        for i, data in enumerate(self._logged_objects):
+            filename = '%s_%s.csv' % (self._object_to_filename[data[0]], timestamp)
+            fd = open(filename, 'w+')
+            writer = csv.writer(fd)
+            writer.writerow(Locatable.HISTORY_LABELS)
+            data[1] = (fd, writer)
+            print "LOGGING: opened %s for logging %s" % (filename, data[0])
+
+    def _logPositions(self):
+        for obj, (fd, writer) in self._logged_objects:
+            writer.writerow(obj.history[-1])
+
+    def _closePositionLogs(self):
+        for obj, (fd, writer) in self._logged_objects:
+            fd.close()
 
     def getEventsAndDeferreds(self):
         events, deferreds = self._events, self._deferreds
@@ -352,4 +382,13 @@ class World(object):
         not the actuated position
         """
         return self.vars[self._getAnglesMap[jointname]]
+
+    # accessors that wrap ALMotion
+    # TODO - cache these
+    def getRemainingFootstepCount(self):
+        return self._motion.getRemainingFootStepCount()
+
+    def cleanup(self):
+        if self._do_log_positions:
+            self._closePositionLogs()
 
