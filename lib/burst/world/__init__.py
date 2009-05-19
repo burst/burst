@@ -353,3 +353,8 @@ class World(object):
         """
         return self.vars[self._getAnglesMap[jointname]]
 
+    # accessors that wrap ALMotion
+    # TODO - cache these
+    def getRemainingFootstepCount(self):
+        return self._motion.getRemainingFootStepCount()
+

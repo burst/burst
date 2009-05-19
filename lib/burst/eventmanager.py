@@ -135,6 +135,7 @@ class BasicMainLoop(object):
     
     def __init__(self, playerclass):
         self._playerclass = playerclass
+        self._ctrl_c_cb = None
 
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
@@ -153,6 +154,9 @@ class BasicMainLoop(object):
         self._actions = actions.Actions(world = self._world)
         self._player = self._playerclass(world = self._world, eventmanager = self._eventmanager,
             actions = self._actions)
+
+    def setCtrlCCallback(self, ctrl_c_cb):
+        self._ctrl_c_cb = ctrl_c_cb
 
     def run(self):
         """ wrap the actual run in _run to allow profiling - from the command line
@@ -173,7 +177,7 @@ class BasicMainLoop(object):
         do_sitpose = True
         if burst.base.options.catch_player_exceptions:
             try:
-                do_sitpose = self._run_exception_wrap()
+                ctrl_c_pressed = self._run_exception_wrap()
             except Exception, e:
                 print "caught player exception:"
                 if hasattr(sys, 'last_traceback'):
@@ -181,8 +185,11 @@ class BasicMainLoop(object):
                 else:
                     print "no traceback, bare exception:", e
         else:
-            do_sitpose = self._run_exception_wrap()
-        if do_sitpose:
+            ctrl_c_pressed = self._run_exception_wrap()
+        if ctrl_c_pressed:
+            if self._ctrl_c_cb:
+                self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
+                    world=self._world)
             print "sitting, removing stiffness and quitting."
             self._actions.sitPoseAndRelax()
             

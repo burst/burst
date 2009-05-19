@@ -1,3 +1,12 @@
+import os
+import struct
+import linecache
+import mmap
+
+import burst
+from burst.consts import (BURST_SHARED_MEMORY_PROXY_NAME,
+    MMAP_VARIABLES_FILENAME, MMAP_FILENAME, MMAP_LENGTH)
+
 class SharedMemoryReader(object):
     """ read from memory mapped file and not from ALMemory proxy, which
     is painfully slow (but only if the file is there - for example, we

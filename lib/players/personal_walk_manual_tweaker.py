@@ -7,7 +7,7 @@ from burst.consts import *
 import burst.moves as moves
 from math import cos, sin
 import time
-
+from burst.walkparameters import WalkParameters
 
 OUTPUT_FILE_NAME = './testme.txt'
 outputFile = None
@@ -39,22 +39,28 @@ class personalWalkManualTweaker(Player):
 
     def onFallenDown(self):
         print "FELL DOWN!"
-        self._actions.clearFootsteps()
-        self._actions.sitPoseAndRelax()
+        # Currently, the assuming of a safe state and the setting of the stiffness to off is to be 
+        # handled by code in Player itself.
         exit()
 
 
 
-def moduleCleanup():
+def moduleCleanup(eventmanager, actions, world):
+    if not robotName is None:
+        print "Step length:", walkParams[WalkParameters.StepLength]
+        remaining_steps = world.getRemainingFootstepCount()
+        print "Remaining steps:", remaining_steps
+        result = str(robotName) + ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
+        result += str(walkParams[WalkParameters.StepLength] * remaining_steps)
+        outputFile.write(result+"\n")
     if not outputFile is None and not outputFile.closed:
         outputFile.close()
-
 
 
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    import atexit; atexit.register(moduleCleanup) # Make sure the file is closed down (and thus also flushed) when the program finishes.
+    #import atexit; atexit.register(moduleCleanup) # Make sure the file is closed down (and thus also flushed) when the program finishes.
     from sys import argv
     #OUTPUT_FILE_NAME = '~/src/burst/doc/results_of_personalization_tests.csv'
     OUTPUT_FILE_NAME = './testme.txt'
@@ -70,11 +76,8 @@ if __name__ == '__main__':
         print 'Please provide the robot\'s name, so that we can log the test\'s results.'
         exit()
     
-    result = str(robotName) + ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " + 'FILL ME!'
-    outputFile.write(result+"\n")
-#    MainLoop(personalWalkManualTweaker).run()
-
-
-
-
+    mainloop = MainLoop(personalWalkManualTweaker)
+    mainloop.setCtrlCCallback(moduleCleanup)
+    mainloop.run()
+    #burst.getMotionProxy().getRemainingFootStepCount()
 
