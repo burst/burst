@@ -424,3 +424,6 @@ class Actions(object):
 
     def executeGettingUpBack(self):
         return self.executeMoveChoreograph(moves.GET_UP_BACK)
+
+    def executeCircleStrafer(self):
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)

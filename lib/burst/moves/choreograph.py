@@ -332,3 +332,95 @@ def GOALIE_LEAP_RIGHT():
     return jointCodes, angles, times
 
 GOALIE_LEAP_LEFT = mirrorChoreographMove(*GOALIE_LEAP_RIGHT)
+
+@chorwrap
+def CIRCLE_STRAFER():
+    jointCodes = list()
+    angles = list()
+    times = list()
+
+    jointCodes.append("LAnklePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LAnkleRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LElbowYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LHipPitch")
+    angles.append([float(0.00000), float(-0.09250), float(-0.11868), float(0.12217)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LHipRoll")
+    angles.append([float(-0.08727), float(0.00698), float(0.00698), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LHipYawPitch")
+    angles.append([float(0.00000), float(0.06109), float(0.07505), float(-0.26529)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LKneePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.01745), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LShoulderPitch")
+    angles.append([float(0.87266), float(0.87266), float(0.87266), float(0.87266)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LShoulderRoll")
+    angles.append([float(0.26180), float(0.26180), float(0.26180), float(0.26180)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("LWristYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RAnklePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RAnkleRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RElbowRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RElbowYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RHand")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RHipPitch")
+    angles.append([float(-0.08727), float(-0.10996), float(-0.10996), float(0.12217)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RHipRoll")
+    angles.append([float(-0.00873), float(-0.12043), float(-0.21468), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RKneePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RShoulderPitch")
+    angles.append([float(0.87266), float(0.87266), float(0.87266), float(0.87266)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RShoulderRoll")
+    angles.append([float(-0.26180), float(-0.26180), float(-0.26180), float(-0.26180)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+
+    jointCodes.append("RWristYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.06667), float(0.40000), float(0.53333), float(0.66667)])
+    return jointCodes, angles, times
+
