@@ -50,11 +50,16 @@ def cross(*args):
 
 def gethostname():
     fd = open('/etc/hostname')
-    hostname = fd.read().strip().lower() # all hostnames should be lower, we just enforce it..
+    # all hostnames should be lower, we just enforce it..
+    hostname = fd.read().strip().lower()
     fd.close()
     return hostname
 
 class World(object):
+
+    # Some variable we are sure to export if Man module (man) is
+    # actually running on the robot / webots.
+    MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES = ['/BURST/Vision/Ball/bearing']
 
     # TODO - move this to __init__?
     connected_to_nao = burst.connecting_to_nao()
@@ -120,7 +125,10 @@ class World(object):
         self._events = set()
         self._deferreds = []
         
-        # we do memory.getListData once per self.update, in one go.
+        # This makes sure stuff actually works if nothing is being updated on the nao.
+        self._default_proxied_variable_value = 0.0
+
+        # We do memory.getListData once per self.update, in one go.
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
         default_vars = self.getDefaultVars()
@@ -156,7 +164,7 @@ class World(object):
         self.team = Team(self)
         self.computed = Computed(self)
 
-        # all objects that we delegate the event computation and naoqi
+        # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
         # could use exactly their solution, and hence this todo. We have
         # multiple objects that calculate their events based on ground truths
@@ -177,7 +185,7 @@ class World(object):
             [self.computed],
         ]
 
-        # try using shared memory to access variables
+        # Try using shared memory to access variables
         if World.running_on_nao:
             self.updateMmapVariablesFile()
             SharedMemoryReader.tryToInitMMap()
@@ -189,7 +197,21 @@ class World(object):
                 self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
         if self._shm is None:
             print "world: using ALMemory"
+
+        self.checkManModule()
     
+    def checkManModule(self):
+        """ report to user if the Man module isn't loaded. Since recently Man stopped being
+        logged as a module, we look for some of the variables we export.
+        """
+        # note - blocking
+        if self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES)[0] in ['None', 'nil']:
+            print "WARNING " + "*"*60
+            print "WARNING"
+            print "WARNING >>>>>>> Man Isn't Running - naoload && naoqi restart <<<<<<<"
+            print "WARNING"
+            print "WARNING " + "*"*60
+
     def getDefaultVars(self):
         """ return list of variables we want anyway, regardless of what
         the objects we use want. This currently includes:
@@ -237,7 +259,7 @@ class World(object):
             if v not in self._vars_to_getlist_set:
                 self._vars_to_getlist.append(v)
                 self._vars_to_getlist_set.add(v)
-                self.vars[v] = None
+                self.vars[v] = self._default_proxied_variable_value
 
     def removeMemoryVars(self, vars):
         """ IMPORTANT NOTICE: you must make sure you don't remove variables that
@@ -268,6 +290,10 @@ class World(object):
         vars = self._vars_to_getlist
         values = self._memory.getListData(vars)
         for k, v in zip(vars, values):
+            # TODO - fix pynaoqi to return 'None' in this event,
+            # just like naoqi does. (currently returns 'nil')
+            if v in ['None', 'nil']:
+                v = self._default_proxied_variable_value
             self.vars[k] = v
 
     _updateMemoryVariables = _updateMemoryVariablesFromALMemory

@@ -13,7 +13,7 @@ from twisted.internet import reactor, task
 from twisted.internet.defer import succeed
 from twisted.internet.threads import deferToThread
 
-import gtk
+import gtk, gobject, cairo, goocanvas
 
 # add path to burst lib
 import os
@@ -69,6 +69,210 @@ def getJointData(con):
 
     return collecting
 
+localization_vars = [
+ '/BURST/Loc/Ball/XEst',
+ '/BURST/Loc/Ball/XUncert',
+ '/BURST/Loc/Ball/XVelocityEst',
+ '/BURST/Loc/Ball/XVelocityUncert',
+ '/BURST/Loc/Ball/YEst',
+ '/BURST/Loc/Ball/YUncert',
+ '/BURST/Loc/Ball/YVelocityEst',
+ '/BURST/Loc/Ball/YVelocityUncert',
+ '/BURST/Loc/Self/HEst',
+ '/BURST/Loc/Self/HEstDeg',
+ '/BURST/Loc/Self/HUncert',
+ '/BURST/Loc/Self/HUncertDeg',
+ '/BURST/Loc/Self/LastOdoDeltaF',
+ '/BURST/Loc/Self/LastOdoDeltaL',
+ '/BURST/Loc/Self/LastOdoDeltaR',
+ '/BURST/Loc/Self/XEst',
+ '/BURST/Loc/Self/XUncert',
+ '/BURST/Loc/Self/YEst',
+ '/BURST/Loc/Self/YUncert',
+]
+
+# All units in centimeters
+FIELD_OUTER_LENGTH = 740
+FIELD_OUTER_WIDTH = 540
+FIELD_LENGTH = 605
+FIELD_WIDTH = 405
+
+# 0,0 is bottom left of outer field (so all values are positive).
+# x points towards yellow goal, y is positive for up.
+GOAL_LEN = 140.0
+OUTER_X_BUFFER = 67.5
+BGRP_X = OUTER_X_BUFFER
+BGRP_Y = FIELD_OUTER_WIDTH / 2.0 + GOAL_LEN / 2.0
+BGLP_X = OUTER_X_BUFFER
+BGLP_Y = FIELD_OUTER_WIDTH / 2.0 - GOAL_LEN / 2.0
+YGRP_X = OUTER_X_BUFFER + FIELD_LENGTH
+YGRP_Y = FIELD_OUTER_WIDTH / 2.0 + GOAL_LEN / 2.0
+YGLP_X = OUTER_X_BUFFER + FIELD_LENGTH
+YGLP_Y = FIELD_OUTER_WIDTH / 2.0 - GOAL_LEN / 2.0
+
+fol = FIELD_OUTER_LENGTH
+fow = FIELD_OUTER_WIDTH
+fl = FIELD_LENGTH
+fw = FIELD_WIDTH
+
+LOC_SCREEN_X_SIZE = 740.0
+LOC_SCREEN_Y_SIZE = 540.0
+
+def maxmin():
+    val = yield()
+    themin = val
+    themax = val
+    while True:
+        val = yield(themin, themax)
+        themin, themax = min(themin, val), max(themax, val)
+
+class MyCircle(object):
+    """ Normalize coordinates
+    """
+    _screen_x, _screen_y = LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
+    _xf, _yf = _screen_x / fol, _screen_y / fow # 1/cm
+    print "XF = %s, YF = %s" % (_xf, _yf)
+    # The position of the center on screen point, in local (field, set_x/set_y) coordinates
+    _cx, _cy = 0.5 * fol, 0.5 * fow
+    _cx_screen, _cy_screen = _screen_x / 2, _screen_y / 2
+
+    @classmethod
+    def fromCircle(cls, ex):
+        el = ex._ellipse
+        c = MyCircle(parent = el.get_parent(),
+            center_x = ex._x,
+            center_y = ex._y,
+            radius = ex._radius,
+            fill_color = ex._fill_color)
+        return c
+
+    def __init__(self, parent, center_x, center_y, radius,
+        fill_color):
+        _cx, _cy, _xf, _yf = self._cx, self._cy, self._xf, self._yf
+        self._ellipse = goocanvas.Ellipse(parent = parent,
+            center_x = 0.0, center_y = 0.0,
+            radius_x = radius * _xf, radius_y = radius * _yf,
+            fill_color = fill_color)
+        self._radius = radius
+        self._fill_color = fill_color
+        self._x = center_x
+        self._y = center_y
+        self.set_x(center_x)
+        self.set_y(center_y)
+        self.maxmin_x = maxmin()
+        self.maxmin_x.next()
+        self.maxmin_y = maxmin()
+        self.maxmin_y.next()
+
+    def get_x(self):
+        return self._x
+
+    def get_screen_x(self):
+        return (self._x - self._cx) * self._xf + self._cx_screen
+
+    def set_x(self, x):
+        self._x = x
+        if hasattr(self, 'maxmin_x'):
+            self.maxmin_x_val = self.maxmin_x.send(x)
+        self._ellipse.set_property('center-x', self.get_screen_x())
+
+    def get_y(self):
+        return self._y
+
+    def get_screen_y(self):
+        return (self._y - self._cy) * self._yf + self._cy_screen
+    
+    def set_y(self, y):
+        self._y = y
+        if hasattr(self, 'maxmin_y'):
+            self.maxmin_y_val = self.maxmin_y.send(y)
+        self._ellipse.set_property('center-y', self.get_screen_y())
+
+    x = property(get_x, set_x)
+    y = property(get_y, set_y)
+
+class Localization(object):
+
+    def __init__(self, con):
+        self.con = con
+        self.w = w =gtk.Window()
+        self.status = 'started'
+        self.set_title()
+        c = gtk.VBox()
+        w.add(c)
+        self.field = goocanvas.Canvas()
+        self.field.set_size_request(LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE)
+        c.add(self.field)
+        self.objects = []
+        self.snapshots = []
+        self.root = root = self.field.get_root_item()
+        for color, x, y in [
+            ('blue', BGLP_X, BGLP_Y),
+            ('blue', BGRP_X, BGRP_Y),
+            ('yellow', YGLP_X, YGLP_Y),
+            ('yellow', YGRP_X, YGRP_Y),
+            ('orange', 0, 0),
+            ('black', FIELD_OUTER_LENGTH/4, 0)]:
+            obj = MyCircle(parent = root,
+                center_x = x, center_y = y, radius = 5,
+                fill_color = color)
+            self.objects.append(obj)
+        self.robot = self.objects[-1]
+        self.ball  = self.objects[-2]
+        snapshot = gtk.Button('snapshot')
+        snapshot.connect('clicked', self.onSnapshot)
+        c.pack_start(snapshot, False, False, 0)
+
+        self._pairs = []
+        self.localized = {}
+        for v in localization_vars:
+            _, __, ___, obj, key = v.split('/')
+            if obj not in self.localized:
+                self.localized[obj] = {}
+            if key not in self.localized[obj]:
+                self.localized[obj][key] = 0.0
+            self._pairs.append((obj, key))
+
+        w.show_all()
+        self.vars = localization_vars
+        con.modulesDeferred.addCallback(self.installUpdater)
+
+    def set_title(self):
+        self.w.set_title('localization - %s - %s' % (self.con.host, self.status))
+
+    def installUpdater(self, _):
+        self.updater = task.LoopingCall(self.getVariables)
+        self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
+
+    def getVariables(self):
+        self.con.ALMemory.getListData(self.vars).addCallback(self.updateField)
+
+    def onSnapshot(self, name=None):
+        # TODO - different color, filters
+        self.snapshots.append([])
+        for i in xrange(4,6):
+            self.snapshots[-1].append(MyCircle.fromCircle(self.objects[i]))
+
+    def updateField(self, vals):
+        """ localization values are in centimeters """
+        for (obj, key), v in zip(self._pairs, vals):
+            self.localized[obj][key] = v
+        read = (self.localized['Ball']['XEst'],
+                self.localized['Ball']['YEst'],
+                self.localized['Self']['XEst'],
+                self.localized['Self']['YEst'])
+        try:
+            self.status = "%3.3f %3.3f %3.3f %3.3f" % read
+            self.set_title()
+        except:
+            self.status = 'no reading'
+            self.set_title()
+            return
+        self.ball.x, self.ball.y, self.robot.x, self.robot.y = read
+        #print 'screen: %3.3f %3.3f %3.3f %3.3f' % (self.ball.get_screen_x(), self.ball.get_screen_y(), self.robot.get_screen_x(), self.robot.get_screen_y())
+        #print "ball:   %s, %s" % (self.ball.maxmin_x_val, self.ball.maxmin_y_val)
+
+
 class Inertial(object):
 
     def __init__(self, con):
@@ -105,7 +309,6 @@ class ToggleButton(object):
         self._colors = {False:red, True:green}
 
     def onButtonPress(self, _):
-        print self, self.__class__, id(self.__dict__), self.__dict__
         if self._state:
             for w in self._widgets:
                 w.show_all()
@@ -113,7 +316,7 @@ class ToggleButton(object):
             for w in self._widgets:
                 w.hide_all()
         self._state = not self._state
-        #self._button.modify_bg(gtk.STATE_INSENSITIVE, self._colors[self._state])
+        self._button.modify_fg(gtk.STATE_INSENSITIVE, self._colors[self._state])
 
 def color(i):
     if i < 2: return 'green'
@@ -211,6 +414,8 @@ class Main(object):
         con = self.con
         self.vision = None
         self.inertial = None
+        self.localization = None
+        self.toggleLocalization(None)
 
         # Create the joint controlling and displaying slides (called by onJointData)
         def onBodyAngles(cur_angles):
@@ -243,7 +448,7 @@ class Main(object):
         # do everything based on a initDeferred, otherwise methods will not be available.
         self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
         w = gtk.Window()
-        w.set_title(self.con.host)
+        w.set_title('naojoints - %s' % self.con.host)
         self.c = c = gtk.VBox()
         w.add(c)
 
@@ -266,6 +471,7 @@ class Main(object):
             ('stiffness off',   self.setStiffnessOff),
             ('vision',          self.toggleVision),
             ('inertial',        self.toggleInertial),
+            ('localization',    self.toggleLocalization),
             ]
         chains = ['Head', 'LLeg', 'LArm', 'RArm', 'RLeg']
         stiffness_off_buttons_data = [
@@ -409,6 +615,13 @@ class Main(object):
             self.inertial_visible = True
             return
         self.toggleit(self.inertial.w, 'inertial_visible')
+
+    def toggleLocalization(self, w):
+        if self.localization is None:
+            self.localization = Localization(self.con)
+            self.localization_visible = True
+            return
+        self.toggleit(self.localization.w, 'localization_visible')
 
     def getAngles(self):
         """ TODO: callback from twisted

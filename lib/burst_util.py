@@ -1,13 +1,4 @@
-# ELF util
-
-# are we on 64 bit or 32 bit? if on 64, use pynaoqi (and tell user)
-ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from
-def is64():
-    fd = open('/bin/sh') # some executable that should be on all systems
-    header = fd.read(16) # size of ELF header
-    fd.close()
-    ei_class = header[4]
-    return ei_class == ELFCLASS64
+import re
 
 # Twisted-like Deferred and succeed
 
@@ -40,6 +31,58 @@ try:
     from twisted.internet.defer import Deferred
 except:
     Deferred = MyDeferred
+
+# Slightly less twisted like chain geared deferred implementation
+
+# TODO: Rename me
+class BurstDeferred(object):
+    """
+    Normal Help:
+
+        A Deferred is a promise to call you when some operation is complete.
+    It is also concatenatable. What that means for implementation, is that
+    when the operation is done we need to call a deferred we stored and gave
+    the user when he gave us a callback. That deferred 
+
+    Twisted users:
+
+        Sort of like Deferred, only geared towards chainable deferreds, which
+    is the only use case right now.  So basically you are expected to
+    return from onDone a new BurstDeferred that will be called when the
+    argument of onDone actually finishes.
+    """
+
+    def __init__(self, data, parent=None):
+        self._data = data
+        self._ondone = None
+        self._completed = False # we need this for concatenation to work
+        self._parent = parent # DEBUG only
+    
+    def onDone(self, cb):
+        # TODO: shortcutting. How the fuck do I call the cb immediately without
+        # giving a chance to the caller to use the chain_deferred??
+
+        # will be called by cb's return deferred, if any
+        if cb is None:
+            raise Exception("onDone called with cb == None")
+        chain_deferred = BurstDeferred(data = None, parent=self)
+        self._ondone = (cb, chain_deferred)
+        return chain_deferred
+
+    def callOnDone(self):
+        self._completed = True
+        if self._ondone:
+            cb, chain_deferred = self._ondone
+            if expected_argument_count(cb) == 0:
+                ret = cb()
+            else:
+                ret = cb(self._data)
+            # is it a deferred? if so tell it to execute the deferred
+            # we handed out once it is done.
+            if isinstance(ret, BurstDeferred):
+                ret.onDone(chain_deferred.callOnDone)
+
+
 
 # D* - Cacheing
 
@@ -123,22 +166,12 @@ def dh_matrix(a, alpha, d, theta):
         [0., 0., 0., 1.]
     ]
 
-# Stuff
-
-def getip():
-    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ifconfig').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
-
-def compresstoprint(s, first, last):
-    if len(s) < first + last + 3:
-        return s
-    return s[:first] + '\n...\n' + s[-last:]
-
-def cumsum(iter):
-    """ cumulative summation over an iterator """
-    s = 0.0
-    for t in iter:
-        s += t
-        yield s
+def isnumeric(x):
+    try:
+        i = float(x)
+    except:
+        return False
+    return True
 
 def running_average(window_width):
     samples = [0.0]*window_width
@@ -151,4 +184,72 @@ def running_average(window_width):
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
- 
+
+def cumsum(iter):
+    """ cumulative summation over an iterator """
+    s = 0.0
+    for t in iter:
+        s += t
+        yield s
+
+# Text utils
+
+def refilter(exp, it):
+    rec = re.compile(exp)
+    return [x for x in it if rec.search(x)]
+
+def redir(exp, obj):
+    return refilter(exp, dir(obj))
+
+def minimal_title(names):
+    """
+    compress many similar strings:
+    ['/BURST/Loc/Ball/XEst', '/BURST/Loc/Ball/YEst']
+     -> '/BURST/Loc/Ball/{XEst, YEst}'
+    """
+    if len(names) == 0:
+        return ''
+    if len(names) == 1:
+        return names[0]
+    n = len(names)
+    last = -1
+    for i in xrange(min(map(len, names))):
+        for j in xrange(n-1):
+            if names[j][i] != names[j+1][i]:
+                last = i
+                break
+            if last != -1:
+                break
+    return '%s{%s}' % (names[0][:last], ', '.join([n[last:] for n in names]))
+
+def compresstoprint(s, first, last):
+    if len(s) < first + last + 3:
+        return s
+    return s[:first] + '\n...\n' + s[-last:]
+
+# Operating System utilities
+
+def getip():
+    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+
+def not_on_nao():
+    #is_nao = os.popen("uname -m").read().strip() == 'i586'
+    return os.path.exists('/opt/naoqi/bin/naoqi')
+
+# ELF util
+
+ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from the ELF spec
+def is64():
+    fd = open('/bin/sh') # some executable that should be on all systems
+    header = fd.read(16) # size of ELF header
+    fd.close()
+    ei_class = header[4]
+    return ei_class == ELFCLASS64
+
+# Python language util
+
+def expected_argument_count(f):
+    if hasattr(f, 'im_func'):
+        return f.im_func.func_code.co_argcount - 1 # to account for self
+    return f.func_code.co_argcount
+

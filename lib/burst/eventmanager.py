@@ -7,6 +7,7 @@ import sys
 from time import time
 
 import burst.base
+from burst_util import BurstDeferred
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -50,48 +51,6 @@ class SerialEvent(SuperEvent):
         if len(self._events) == self._i:
             return
         self._eventmanager.register(self._events[self._i], self.onEvent)
-
-def expected_argument_count(f):
-    if hasattr(f, 'im_func'):
-        return f.im_func.func_code.co_argcount - 1 # to account for self
-    return f.func_code.co_argcount
-
-class Deferred(object):
-    """ A Deferred is a promise to call you when some operation is complete.
-    It is also concatenatable. What that means for implementation, is that
-    when the operation is done we need to call a deferred we stored and gave
-    the user when he gave us a callback. That deferred 
-    """
-
-    def __init__(self, data, parent=None):
-        self._data = data
-        self._ondone = None
-        self._completed = False # we need this for concatenation to work
-        self._parent = parent # DEBUG only
-    
-    def onDone(self, cb):
-        # TODO: shortcutting. How the fuck do I call the cb immediately without
-        # giving a chance to the caller to use the chain_deferred??
-
-        # will be called by cb's return deferred, if any
-        if cb is None:
-            raise Exception("onDone called with cb == None")
-        chain_deferred = Deferred(data = None, parent=self)
-        self._ondone = (cb, chain_deferred)
-        return chain_deferred
-
-    def callOnDone(self):
-        self._completed = True
-        if self._ondone:
-            cb, chain_deferred = self._ondone
-            if expected_argument_count(cb) == 0:
-                ret = cb()
-            else:
-                ret = cb(self._data)
-            # is it a deferred? if so tell it to execute the deferred
-            # we handed out once it is done.
-            if isinstance(ret, Deferred):
-                ret.onDone(chain_deferred.callOnDone)
 
 class EventManager(object):
     """ Class to handle all event routing. Mainly we have:
@@ -269,6 +228,11 @@ class BasicMainLoop(object):
 
 class SimpleMainLoop(BasicMainLoop):
 
+    """ Until twisted is installed on the robot this is the default event loop.
+    It basically sleeps and polls. Some intelligence goes into not polling (sending
+    socket requests) too much, that happens in World.update.
+    """
+
     def __init__(self, playerclass):
         super(SimpleMainLoop, self).__init__(playerclass = playerclass)
         self.initMainObjectsAndPlayer()
@@ -294,7 +258,7 @@ class TwistedMainLoop(BasicMainLoop):
         super(TwistedMainLoop, self).__init__(playerclass = playerclass)
         import pynaoqi
         self.con = pynaoqi.getDefaultConnection()
-        self.con.ALMemory.initDeferred.addCallback(self._twistedStart)
+        self.con.modulesDeferred.addCallback(self._twistedStart)
 
     def _twistedStart(self, _):
         self.initMainObjectsAndPlayer()
