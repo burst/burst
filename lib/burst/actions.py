@@ -135,7 +135,7 @@ class Journey(object):
             normal_walk_distance = self._leg_distance - slow_walk_distance
             self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
             print "Adding slow walk: %f" % slow_walk_distance # DBG
-            self._motion.addWalkStraight( normal_walk_distance, steps )
+            self._motion.addWalkStraight( normal_walk_distance, self._time_per_steps)
             print "Adding normal walk: %f" % normal_walk_distance # DBG
         else:
             self._motion.addWalkStraight( self._leg_distance, self._time_per_steps )
