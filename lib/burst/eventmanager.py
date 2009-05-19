@@ -155,6 +155,9 @@ class BasicMainLoop(object):
         self._player = self._playerclass(world = self._world, eventmanager = self._eventmanager,
             actions = self._actions)
 
+    def cleanup(self):
+        self._world.cleanup()
+
     def setCtrlCCallback(self, ctrl_c_cb):
         self._ctrl_c_cb = ctrl_c_cb
 
@@ -174,10 +177,10 @@ class BasicMainLoop(object):
 
     def _run(self):
         """ wrap the real loop to catch keyboard interrupt and network errors """
-        do_sitpose = True
+        ctrl_c_pressed, normal_quit = False, True # default is normal_quit so we sit
         if burst.base.options.catch_player_exceptions:
             try:
-                ctrl_c_pressed = self._run_exception_wrap()
+                ctrl_c_pressed, normal_quit = self._run_exception_wrap()
             except Exception, e:
                 print "caught player exception:"
                 if hasattr(sys, 'last_traceback'):
@@ -185,24 +188,31 @@ class BasicMainLoop(object):
                 else:
                     print "no traceback, bare exception:", e
         else:
-            ctrl_c_pressed = self._run_exception_wrap()
+            ctrl_c_pressed, normal_quit = self._run_exception_wrap()
         if ctrl_c_pressed:
             if self._ctrl_c_cb:
                 self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
                     world=self._world)
+        if normal_quit:
             print "sitting, removing stiffness and quitting."
             self._actions.sitPoseAndRelax()
             
     def _run_exception_wrap(self):
+        """ returns (ctrl_c_pressed, normal_quit_happened)
+        A normal quit is either: Ctrl-C or eventmanager.quit()
+        so only non normal quit is a caught exception (uncaught and
+        you wouldn't be here)"""
+        ctrl_c_pressed, normal_quit = False, True
         try:
             self._run_loop()
         except KeyboardInterrupt:
             print "ctrl-c detected."
+            ctrl_c_pressed = True
         except RuntimeError, e:
             print "naoqi exception caught:", e
             print "quitting"
-            return False
-        return True
+            normal_quit = False
+        return ctrl_c_pressed, normal_quit
 
     def preMainLoopInit(self):
         """ call once before the main loop """
@@ -258,6 +268,7 @@ class SimpleMainLoop(BasicMainLoop):
                 break
             if sleep_time:
                 sleep(sleep_time)
+        self.cleanup()
 
 class TwistedMainLoop(BasicMainLoop):
 
@@ -283,6 +294,7 @@ class TwistedMainLoop(BasicMainLoop):
         sleep_time = self.doSingleStep()
         if self._eventmanager._should_quit:
             reactor.stop()
+            self.cleanup()
 
 from burst_util import is64
 if is64():
