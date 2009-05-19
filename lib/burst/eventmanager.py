@@ -228,6 +228,11 @@ class BasicMainLoop(object):
 
 class SimpleMainLoop(BasicMainLoop):
 
+    """ Until twisted is installed on the robot this is the default event loop.
+    It basically sleeps and polls. Some intelligence goes into not polling (sending
+    socket requests) too much, that happens in World.update.
+    """
+
     def __init__(self, playerclass):
         super(SimpleMainLoop, self).__init__(playerclass = playerclass)
         self.initMainObjectsAndPlayer()

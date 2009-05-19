@@ -9,7 +9,7 @@ except:
 from base import host_to_ip, LOCALHOST_IP
 import base
 
-__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'shutdown']
+__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -17,6 +17,7 @@ motionProxy = None
 speechProxy = None
 memoryProxy = None
 visionProxy = None
+dcmProxy = None
 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
@@ -100,6 +101,15 @@ def getVisionProxy():
 		proxies.append(visionProxy)
 	return visionProxy
 	
+def getDCMProxy():
+	global dcmProxy, proxies, _broker
+	if _broker is None:
+		raise InitException, "Must initialize the module first."
+	if dcmProxy is None:
+		dcmProxy = ALProxy("DCM")
+		proxies.append(dcmProxy)
+	return dcmProxy
+
 
 def shutdown():
     pass
