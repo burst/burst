@@ -1,7 +1,11 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
-from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD, MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE, MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
-from ..events import (EVENT_BALL_IN_FRAME, EVENT_BALL_BODY_X_ISECT_UPDATE, EVENT_BALL_LOST, EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
+from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
+    MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
+    MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
+from ..events import (EVENT_BALL_IN_FRAME,
+    EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
+    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
 from burst_util import running_average
 
 class Locatable(object):
@@ -126,9 +130,9 @@ class Ball(Movable):
         self.focDist = 0.0
         self.height = 0.0
         self.width = 0.0
-        self.body_x_isect = None
+        self.body_isect = None
 
-    def compute_intersection_with_body_x(self):
+    def compute_intersection_with_body(self, isX = False):
         ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
         dist, bearing = self.dist, self.bearing
         last_dist, last_bearing = self.last_dist, self.last_bearing
@@ -142,14 +146,18 @@ class Ball(Movable):
             print "bearing=" ,bearing,"  dist=",dist
             print "last_bearing=", last_bearing, "  last_dist=", last_dist
             print "------------------------------------------------"
-        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL
-            and y2 < y1 and dist < last_dist):
+        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL):
             m = (y1 - y2) / (x1 - x2)
-            x = (-y1 + m * x1) / m
-            self.body_x_isect = x
+            if isX :
+                x = (-y1 + m * x1) / m
+                self.body_isect = x
+                return True
+            elif  x1 < x2:
+                y = y1 - m * X1
+                self.body_isect = y
+                print "ball intersection with body: " , y
+                return True
             #theta=atan(m)
-            # print "INFO: ball intersection with body x: %s" % x
-            return True
         return False
 
     def calc_events(self, events, deferreds):
@@ -171,8 +179,8 @@ class Ball(Movable):
             events.add(EVENT_BALL_IN_FRAME)
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
             self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
-            if self.compute_intersection_with_body_x():
-                events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
+            if self.compute_intersection_with_body():
+                events.add(EVENT_BALL_BODY_INTERSECT_UPDATE)
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
         else:

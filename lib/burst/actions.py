@@ -299,14 +299,6 @@ class Actions(object):
         #if self._motion.getRemainingFootStepCount() > 0:
         self._motion.clearFootsteps()
 
-    def getToGoalieInitPosition(self):
-        ids = []
-        ids.append(self._motion.post.turn(90*DEG_TO_RAD, 70))
-        ids.append(self._motion.post.gotoChainAngles('Head', [-90*DEG_TO_RAD, -20*DEG_TO_RAD], 1, 1))
-        for x in ids:
-            self._motion.wait(x, 0)
-
-
     def moveHead(self, x, y):
         self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
 
@@ -336,3 +328,9 @@ class Actions(object):
 
     def executeGettingUpBack(self):
         return self.executeMoveChoreograph(moves.GET_UP_BACK)
+
+    def executeLeapLeft(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT)
+
+    def executeLeapRight(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT)
