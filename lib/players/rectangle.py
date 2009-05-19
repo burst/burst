@@ -43,7 +43,7 @@ class Rectangle(Player):
 
         side = 40
         clr = lambda x, y, t: self._actions.changeLocationRelative(
-                    x, y, t, walk_param=moves.KICKER_WALK)
+                    x, y, t, walk_param=moves.KICKER_WALK, steps_before_full_stop=2)
 
         self._actions.initPoseAndStiffness()
         
@@ -51,7 +51,7 @@ class Rectangle(Player):
             lambda: clr(side, 0, pi/2)).onDone(
             lambda: clr(side, 0, pi/4)).onDone(
             lambda: clr(side/sqrt(2), side/sqrt(2), pi/4)).onDone(
-            lambda: pr('rectangle done')
+            self._eventmanager.quit
             )
 
     def onStop(self):

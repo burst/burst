@@ -1,12 +1,14 @@
+from math import atan2
 from consts import CM_TO_METER
 import burst
 from burst.consts import *
-from burst_util import transpose, cumsum
+from burst_util import transpose, cumsum, BurstDeferred
 from events import *
 from eventmanager import EVENT_MANAGER_DT
 import moves
 from world import World
-from math import atan2
+from walkparameters import WalkParameters
+
 
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
@@ -30,6 +32,121 @@ KICK_TYPES = {KICK_TYPE_STRAIGHT_WITH_LEFT: moves.GREAT_KICK_LEFT,
 
 #######
 
+class Journey(object):
+
+    """ Class used by changeLocationRelative. Breaks down a single walk
+    into multiple legs. In the simplest case it acts like the old changeLocationRelative,
+    i.e. does a single leg.
+    """
+
+    SLOW_START_STEPS = 2 # The amount of steps one should take at a slower pace at the beginning.
+
+    def __init__(self, actions):
+        self._actions = actions
+        self._world = self._actions._world
+        self._motion = self._actions._motion
+        self._deferred = None
+        self._distance, self._bearing, self._delta_theta = None, None, None
+        self._turn = [None, None]
+        self._distance_left = None
+        self._time_per_steps, self._step_length = None, None
+    
+    def __str__(self):
+        return "<Journey %3.3f distance, %3.3f bearing>" % (self._distance, self._bearing)
+
+    def start(self, walk_param, steps_before_full_stop,
+            distance, bearing, delta_theta):
+        """ Do first leg, if the distance is smaller than threshold do final
+        leg, otherwise schedule the next leg """
+        self._deferred = BurstDeferred(None)
+        self._distance = distance
+        self._bearing = bearing
+        self._delta_theta = delta_theta
+        self._distance_left = self._distance
+        self._turn = turn = [None, None] # for duration estimation
+
+        self._time_per_steps = walk_param[WalkParameters.TimePerStep]
+        self._step_length = step_length = walk_param[WalkParameters.StepLength]
+        if steps_before_full_stop == 0:
+            self._leg_distance = self._distance
+        else:
+            self._leg_distance = steps_before_full_stop * step_length
+        if abs(bearing) >= MINIMAL_CHANGELOCATION_TURN:
+            turn[0] = bearing
+        final_turn = delta_theta - bearing
+        if abs(final_turn) >= MINIMAL_CHANGELOCATION_TURN:
+            turn[1] = final_turn
+        # TODO - compute duration correctly for the multiple legs
+        self._duration = duration = (self._time_per_steps * distance / step_length +
+                    (turn[0] and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+
+        self._actions.setWalkConfig(walk_param)
+        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+
+        if turn[0]:
+            print "DEBUG: addTurn %3.3f" % bearing
+        print "DEBUG: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (
+            step_length, distance, duration)
+        if turn[1]:
+            print "DEBUG: addTurn %3.3f" % final_turn
+
+        # Avoid turns
+        if self._turn[0]:
+            self._motion.addTurn(self._turn[0], DEFAULT_STEPS_FOR_TURN)
+
+        self.onLegComplete()
+
+        return self._deferred
+
+    def lastLeg(self):
+        # Now turn to the final angle, taking into account the turn we
+        # already did
+        self.addSingleLeg()
+        if self._turn[1]:
+            self._motion.addTurn(self._turn[1], DEFAULT_STEPS_FOR_TURN)
+        postid = self._motion.post.walk()
+        # final leg will call the user's callbacks
+        # TODO - duration calculation for real
+        self._world.robot.add_expected_walk_post(postid,
+            EVENT_CHANGE_LOCATION_DONE, 1.0
+                ).onDone(self.callbackAndReset)
+    
+    def callbackAndReset(self):
+        # TODO: do I need to reset anything?
+        self._deferred.callOnDone()
+
+    def onLegComplete(self):
+        if self._distance_left <= self._leg_distance:
+            self.lastLeg()
+        else:
+            self.addSingleLeg()
+            postid = self._motion.post.walk()
+            # TODO - compute duration correctly
+            self._world.robot.add_expected_walk_post(postid,
+                EVENT_CHANGE_LOCATION_DONE, 1.0).onDone(self.onLegComplete)
+    
+    def addSingleLeg(self):
+        """ call _motion.addWalkStraight, for webots walk do a single type of walk,
+        for real robot do a slow walk for SLOW_START_STEPS and then a normal walk
+        """
+        if World.connected_to_nao:
+            slow_walk_distance = min(self._leg_distance,
+                self._step_length * self.SLOW_START_STEPS)
+            normal_walk_distance = self._leg_distance - slow_walk_distance
+            self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+            print "Adding slow walk: %f" % slow_walk_distance # DBG
+            self._motion.addWalkStraight( normal_walk_distance, steps )
+            print "Adding normal walk: %f" % normal_walk_distance # DBG
+        else:
+            self._motion.addWalkStraight( self._leg_distance, self._time_per_steps )
+            print "Adding normal walk: %f" % self._leg_distance
+        self._distance_left -= self._leg_distance
+        if self._distance_left < 0.0:
+            print "ERROR: Journey distance left calculation incorrect"
+            self._distance_left = 0.0
+
+#######
+
 class Actions(object):
 
     def __init__(self, world):
@@ -37,6 +154,7 @@ class Actions(object):
         self._motion = burst.getMotionProxy()
         self._tts = burst.getSpeechProxy()
         self._joint_names = self._world.jointnames
+        self._journey = Journey(self)
 
     def scanFront(self):
         # TODO: Stop moving when both ball and goal found? 
@@ -87,7 +205,7 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk_param=moves.FASTEST_WALK):
+        walk_param=moves.FASTEST_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -96,46 +214,18 @@ class Actions(object):
          
         What kind of walk this is: for simplicity we do a turn, walk,
         then final turn to wanted angle.
+
+        @param steps_before_full_stop: Each steps_before_full_stop, the robot will halt, to regain its balance.
+            If the parameter is not set, or is set to 0, the robot will execute its entire journey in one go.
         """
-        
-        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
-        
+
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
         bearing  = atan2(delta_y, delta_x)
-        did_a_turn = [None, None] # for duration estimation
-        # Avoid turns
-        if abs(bearing) >= MINIMAL_CHANGELOCATION_TURN:
-            did_a_turn[0] = bearing
-            self._motion.addTurn(bearing, DEFAULT_STEPS_FOR_TURN)
-        
-        self.setWalkConfig(walk_param)
-        steps = walk_param[14]
-        StepLength = walk_param[8] # TODO: encapsulate walk params
-        
-        # Vova trick - start with slower walk, then do the faster walk.
-        slow_walk_distance = min(distance, StepLength*2)
-        if World.connected_to_nao:
-            self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
-            self._motion.addWalkStraight( distance - slow_walk_distance, steps )
-        else:
-            self._motion.addWalkStraight( distance, steps )
 
-        # Now turn to the final angle, taking into account the turn we
-        # already did
-        final_turn = delta_theta - bearing
-        if abs(final_turn) >= MINIMAL_CHANGELOCATION_TURN:
-            did_a_turn[1] = final_turn
-            self._motion.addTurn(final_turn, DEFAULT_STEPS_FOR_TURN)
-        
-        duration = (steps * distance / StepLength +
-                    (did_a_turn and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
-        if did_a_turn[0]:
-            print "DEBUG: addTurn %3.3f" % bearing
-        print "DEBUG: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (StepLength, distance, duration)
-        if did_a_turn[1]:
-            print "DEBUG: addTurn %3.3f" % final_turn
-        postid = self._motion.post.walk()
-        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
+        return self._journey.start(walk_param=walk_param,
+            steps_before_full_stop = steps_before_full_stop,
+            delta_theta = delta_theta,
+            distance=distance, bearing=bearing)
 
 
     def executeMoveChoreograph(self, (jointCodes, angles, times)):
@@ -162,8 +252,8 @@ class Actions(object):
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
         self.setWalkConfig(walk_param)
-        steps = walk_param[14]
-        StepLength = walk_param[8] # TODO: encapsulate walk params
+        steps = walk_param[WalkParameters.TimePerStep]
+        StepLength = walk_param[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (StepLength: %3.3f distance: %3.3f)" % (StepLength, distance)
@@ -295,8 +385,6 @@ class Actions(object):
         self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
  
     def clearFootsteps(self):
-        """ NOTE: USER BEWARE. We had problems with clearFootsteps """
-        #if self._motion.getRemainingFootStepCount() > 0:
         self._motion.clearFootsteps()
 
     def getToGoalieInitPosition(self):

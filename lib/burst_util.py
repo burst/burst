@@ -32,6 +32,58 @@ try:
 except:
     Deferred = MyDeferred
 
+# Slightly less twisted like chain geared deferred implementation
+
+# TODO: Rename me
+class BurstDeferred(object):
+    """
+    Normal Help:
+
+        A Deferred is a promise to call you when some operation is complete.
+    It is also concatenatable. What that means for implementation, is that
+    when the operation is done we need to call a deferred we stored and gave
+    the user when he gave us a callback. That deferred 
+
+    Twisted users:
+
+        Sort of like Deferred, only geared towards chainable deferreds, which
+    is the only use case right now.  So basically you are expected to
+    return from onDone a new BurstDeferred that will be called when the
+    argument of onDone actually finishes.
+    """
+
+    def __init__(self, data, parent=None):
+        self._data = data
+        self._ondone = None
+        self._completed = False # we need this for concatenation to work
+        self._parent = parent # DEBUG only
+    
+    def onDone(self, cb):
+        # TODO: shortcutting. How the fuck do I call the cb immediately without
+        # giving a chance to the caller to use the chain_deferred??
+
+        # will be called by cb's return deferred, if any
+        if cb is None:
+            raise Exception("onDone called with cb == None")
+        chain_deferred = BurstDeferred(data = None, parent=self)
+        self._ondone = (cb, chain_deferred)
+        return chain_deferred
+
+    def callOnDone(self):
+        self._completed = True
+        if self._ondone:
+            cb, chain_deferred = self._ondone
+            if expected_argument_count(cb) == 0:
+                ret = cb()
+            else:
+                ret = cb(self._data)
+            # is it a deferred? if so tell it to execute the deferred
+            # we handed out once it is done.
+            if isinstance(ret, BurstDeferred):
+                ret.onDone(chain_deferred.callOnDone)
+
+
+
 # D* - Cacheing
 
 def cached_deferred(filename):
@@ -142,17 +194,33 @@ def cumsum(iter):
 
 # Text utils
 
+def refilter(exp, it):
+    rec = re.compile(exp)
+    return [x for x in it if rec.search(x)]
+
+def redir(exp, obj):
+    return refilter(exp, dir(obj))
+
 def minimal_title(names):
+    """
+    compress many similar strings:
+    ['/BURST/Loc/Ball/XEst', '/BURST/Loc/Ball/YEst']
+     -> '/BURST/Loc/Ball/{XEst, YEst}'
+    """
     if len(names) == 0:
         return ''
     if len(names) == 1:
         return names[0]
     n = len(names)
+    last = -1
     for i in xrange(min(map(len, names))):
         for j in xrange(n-1):
             if names[j][i] != names[j+1][i]:
+                last = i
                 break
-    return '%s{%s}' % (names[0][:i], ', '.join([n[i+1:] for n in names]))
+            if last != -1:
+                break
+    return '%s{%s}' % (names[0][:last], ', '.join([n[last:] for n in names]))
 
 def compresstoprint(s, first, last):
     if len(s) < first + last + 3:
@@ -177,4 +245,11 @@ def is64():
     fd.close()
     ei_class = header[4]
     return ei_class == ELFCLASS64
+
+# Python language util
+
+def expected_argument_count(f):
+    if hasattr(f, 'im_func'):
+        return f.im_func.func_code.co_argcount - 1 # to account for self
+    return f.func_code.co_argcount
 

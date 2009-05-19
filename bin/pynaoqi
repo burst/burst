@@ -31,18 +31,29 @@ if options.twisted:
 # Plotting / Logging utils - yeah, I should use matplotlib.. but this is actually
 # simple.
 class GtkTextLogger(object):
-
+    """ A simple widget to log output of a callback over time,
+    using text (not graphical, just a ticker scrolling).
+    """
     counter = 1
-    running = []
+    loggers = []
 
-    def __init__(self, tick, dt=1.0):
+    """
+    @tick_cb - function that returns the value to display, preferably
+    as a string. (if not str is called on it). Will be called repeatedly.
+    @dt - time between calls.
+    @title - title of window.
+    """
+    def __init__(self, tick_cb, title=None, dt=1.0):
         from twisted.internet import task
         import gtk
-        self._tick = tick
+        if title is None:
+            title = 'logger %s' % self.counter
+        self._title = title
+        self._tick_cb = tick_cb
+        self._dt = dt
         self._task = task.LoopingCall(self._onLoop)
         self._w = w = gtk.Window()
-        w.connect("destroy", self._onDestroy)
-        w.set_title('text logger %s' % self.counter)
+        w.connect("delete-event", self._onDestroy)
         self.counter += 1
         self._tv = tv = gtk.TextView()
         self._tb = tb = gtk.TextBuffer()
@@ -53,19 +64,30 @@ class GtkTextLogger(object):
         self._w.show_all()
         tv.set_buffer(tb)
         self._start = time.time()
-        self._task.start(dt)
-        self.running.append(self)
+        self.start()
+        self.loggers.append(self)
 
     # Task Methods
 
     @classmethod
+    def startAll(self):
+        for f in self.loggers:
+            if not f._task.running:
+                f.start()
+
+    @classmethod
     def stopAll(self):
-        for f in self.running:
-            f.stop()
-        del self.running[:]
+        for f in self.loggers:
+            if f._task.running:
+                f.stop()
 
     def stop(self):
         self._task.stop()
+        self.set_title()
+
+    def start(self):
+        self._task.start(self._dt)
+        self.set_title()
 
     # GUI Methods
 
@@ -75,20 +97,26 @@ class GtkTextLogger(object):
     def hide(self):
         self._w.hide()
 
-    def set_title(self, txt):
-        self._w.set_title(txt)
+    def set_title(self, txt=None):
+        if txt is None:
+            txt = self._title
+        self._w.set_title('%s - %s' % (
+            self._task.running and 'running' or 'stopped', txt))
+        self._title = txt
 
     # Internal Methods
 
-    def _onDestroy(self):
+    def _onDestroy(self, target, event):
         print "stopping task"
         self.stop()
         self._w.destroy()
 
     def _onLoop(self):
-        self._tick().addCallback(self._update)
+        #if not self._w.is_active(): return
+        self._tick_cb().addCallback(self._update)
 
     def _update(self, result):
+        #if not self._w.is_active(): return
         tb = self._tb
         tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (
             (time.time() - self._start), str(result)))
@@ -99,7 +127,8 @@ def watch_multiple(*names):
         return [(isnumeric(f) and '%3.3f' or '%s') % f for f in results]
 
     GtkTextLogger(lambda:
-        con.ALMemory.getListData(names).addCallback(prettyprint)).set_title(minimal_title(names))
+        con.ALMemory.getListData(names).addCallback(prettyprint),
+        title = minimal_title(names))
 
 #############################################################################
 
@@ -124,14 +153,18 @@ printed and available as _d."""
     print "_"*80
 
     from twisted.internet import task
+    import gtk
 
     def pr(x):
         print str(x)
 
+    my_ns['gtk'] = gtk
     my_ns['task'] = task
     my_ns['pr'] = pr
     my_ns['loop'] = GtkTextLogger
     my_ns['watch'] = watch_multiple
+    # place holder until onDataListName works
+    my_ns['names'] = 'fetching..'
 
     # Start the mainloop, and add a hook to display deferred results when they
     # are available (also affects *any* deferred you try to print)
@@ -139,10 +172,13 @@ printed and available as _d."""
     from IPython.hooks import result_display
     from IPython.genutils import Term
 
+    # get the list of all variables - this can take a little
+    # while on the robot, but it is async, so it should be fine
     def onDataListName(names):
         shell.user_ns['names'] = names
 
-    con.ALMemory.initDeferred.addCallback(lambda _: con.ALMemory.getDataListName().addCallback(onDataListName))
+    con.modulesDeferred.addCallback(
+        lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
 
     def pr(x):
         s = str(x)
@@ -179,7 +215,8 @@ def main_no_twisted(con, my_ns):
 def pimp_my_shell(shell):
     # set a nicer prompt to tell the user where he is connected to
     # reminder: can use ${} to eval stuff, like: '${con.host} [\#]: '
-    shell.outputcache.prompt1.p_template='%s [\#]: ' % (con.host)
+    # NM stands for No Modules
+    shell.outputcache.prompt1.p_template='%s ${not con._modules and "NM " or ""}[\#]: ' % (con.host)
 
 #############################################################################
 
@@ -193,11 +230,14 @@ if __name__ == '__main__':
         raise SystemExit
 
     import burst.moves as moves
+    import burst_util
 
     my_ns = dict(
         con = con,
         pynaoqi = pynaoqi,
-        moves = moves)
+        moves = moves,
+        refilter = burst_util.refilter,
+        redir = burst_util.redir)
 
     if options.twisted:
         main_twisted(con, my_ns)
