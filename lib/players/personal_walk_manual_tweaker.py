@@ -15,7 +15,7 @@ outputFile = None
 
 
 walkType = 'changeLocationRelative'
-walkDistance = 100.0
+walkDistance = 200.0
 walkParams = moves.SLOW_WALK
 
 
@@ -40,23 +40,27 @@ class personalWalkManualTweaker(Player):
 
     def onFallenDown(self):
         print "FELL DOWN!"
-        # Currently, the assuming of a safe state and the setting of the stiffness to off is to be 
-        # handled by code in Player itself.
+        moduleCleanup(self._eventmanager, self._actions, self._world)
+        self._actions.sitPoseAndRelax()
         exit()
 
 
 
+cleaned = False
 def moduleCleanup(eventmanager, actions, world):
-    if not robotName is None:
-        remaining_steps = world.getRemainingFootstepCount()
-        result = str(robotName) + ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
-        print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
-        distanceWalkedBeforeFallingDown = min(walkDistance, max(0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
-        result += str(distanceWalkedBeforeFallingDown)
-        print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
-        outputFile.write(result+"\n")
-    if not outputFile is None and not outputFile.closed:
-        outputFile.close()
+    global cleaned
+    if not cleaned:
+        if not robotName is None:
+            remaining_steps = world.getRemainingFootstepCount()
+            result = str(robotName) + ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
+            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
+            distanceWalkedBeforeFallingDown = min(walkDistance, max(0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
+            result += str(distanceWalkedBeforeFallingDown)
+            print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
+            outputFile.write(result+"\n")
+        if not outputFile is None and not outputFile.closed:
+            outputFile.close()
+    cleaned = True
 
 
 if __name__ == '__main__':
