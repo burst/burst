@@ -128,7 +128,7 @@ class Ball(Movable):
     
     _name = 'Ball'
 
-    DEBUG_INTERSECTION = False
+    DEBUG_INTERSECTION = True
 
     def __init__(self, world):
         super(Ball, self).__init__(world,
@@ -153,19 +153,21 @@ class Ball(Movable):
         x2 = last_dist * cos(last_bearing)
         y2 = last_dist * sin(last_bearing)
         if self.DEBUG_INTERSECTION:
+            print "\n"
             print "------------------------------------------------"
             print "x1=", x1, "  x2=", x2, "  y1=", y1, "  y2=", y2
             print "bearing=" ,bearing,"  dist=",dist
             print "last_bearing=", last_bearing, "  last_dist=", last_dist
             print "------------------------------------------------"
+            print "\n"
         if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL):
             m = (y1 - y2) / (x1 - x2)
             if isX :
                 x = (-y1 + m * x1) / m
                 self.body_isect = x
                 return True
-            elif  x1 < x2:
-                y = y1 - m * X1
+            elif  x1 < x2 :#and fabs(y1-y2) < 1.5:
+                y = y1 - m * x1
                 self.body_isect = y
                 print "ball intersection with body: " , y
                 return True

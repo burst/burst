@@ -163,12 +163,16 @@ class Actions(object):
     def scanQuick(self):
         return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
 
-    def initPoseAndStiffness(self):
+    def initPoseAndStiffness(self , isGoalie = False):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
-        self.executeSyncMove(moves.INITIAL_POS)
+        if isGoalie:
+            self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR) #BOTTOM_CENTER_H_MIN_V
+            self.executeSyncMove(moves.INITIAL_POS)
+        else:
+            self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
+            self.executeSyncMove(moves.INITIAL_POS)
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self.clearFootsteps()

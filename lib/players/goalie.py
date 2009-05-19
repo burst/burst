@@ -23,8 +23,7 @@ class goalie(Player):
         self.kp = None
 
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        self._actions.initPoseAndStiffness()
-        self._actions.executeHeadMove( (((70,50 ),0.15),) )
+        self._actions.initPoseAndStiffness(True)
         #self._actions.executeLeapLeft()
         #self._actions.executeLeapRight()
         self.walkStartTime = time.time()

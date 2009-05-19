@@ -331,7 +331,10 @@ class World(object):
 
     def _logPositions(self):
         for obj, (fd, writer) in self._logged_objects:
-            writer.writerow(obj.history[-1])
+            if obj.history[-1] != None:
+                writer.writerow(obj.history[-1])
+            else:
+                writer.writerow([self.time] + [0.0] * (len(Locatable.HISTORY_LABELS) - 1))
 
     def _closePositionLogs(self):
         for obj, (fd, writer) in self._logged_objects:
