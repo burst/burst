@@ -169,7 +169,6 @@ class Ball(Movable):
             elif  x1 < x2 :#and fabs(y1-y2) < 1.5:
                 y = y1 - m * x1
                 self.body_isect = y
-                print "ball intersection with body: " , y
                 return True
             #theta=atan(m)
         return False
