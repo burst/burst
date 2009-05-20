@@ -298,13 +298,25 @@ nao_type_dict = {
 def arrayctor(node):
     return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
 
+seen_nil_strings = set()
+def return_and_print_nil(x):
+    global seen_nil_strings
+    # The print is for debugging purposes only, to make
+    # sure the type is always matched by the same string.
+    nil_str = str(x.firstChild.nodeValue)
+    if nil_str not in seen_nil_strings:
+        print "nil: %s" % nil_str
+        seen_nil_strings.add(nil_str)
+    # We return 'None' for compatibility with naoqi
+    return 'None'
+
 xsi_type_to_ctor = {
     'xsd:int': lambda x: int(x.firstChild.nodeValue),
     'xsd:float': lambda x: float(x.firstChild.nodeValue),
     'xsd:string': lambda x: str(x.firstChild.nodeValue),
     'xsd:boolean': lambda x: str(x.firstChild.nodeValue) != 'false',
     'xsd:base64Binary': lambda x: base64.decodestring(x.firstChild.nodeValue),
-    'nil': lambda x: str(x.firstChild.nodeValue),
+    'nil': return_and_print_nil,
     'Array': arrayctor
 }
 
@@ -602,7 +614,7 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
-                from pynaoqi_twisted import SoapRequestFactory
+                from .pynaoqi_twisted import SoapRequestFactory
                 self.SoapRequestFactory = SoapRequestFactory
                 NaoQiModule.VERBOSE = False
 
@@ -960,12 +972,6 @@ def main():
     while True:
         meths[c]()
         c = 1 - c
-
-def asaf():
-    sys.path.append('/home/asaf/src/nao-man/motion')
-    import SweeterMoves
-    globals()['SweeterMoves'] = SweeterMoves
-    globals()['con'] = NaoQiConnection('http://maldini:9559')    
 
 options = None
 

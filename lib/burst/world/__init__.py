@@ -336,6 +336,8 @@ class World(object):
         if self._do_log_positions:
             self._logPositions()
 
+    # Logging Functions
+
     def _openPositionLogs(self):
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         for i, data in enumerate(self._logged_objects):
@@ -356,6 +358,8 @@ class World(object):
     def _closePositionLogs(self):
         for obj, (fd, writer) in self._logged_objects:
             fd.close()
+
+    # Accessors
 
     def getEventsAndDeferreds(self):
         events, deferreds = self._events, self._deferreds

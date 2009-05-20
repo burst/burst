@@ -216,7 +216,10 @@ def cumsum(iter):
         s += t
         yield s
 
-# Text utils
+# Text/String/Printing utils
+
+def nicefloats(l):
+    return (' '.join(['%3.3f']*len(l))) % tuple(l)
 
 def trim(s, l):
     """ trims at 3 bytes larger then the supplied value,
