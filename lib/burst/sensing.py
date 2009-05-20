@@ -18,9 +18,10 @@ class FalldownDetector(object):
         return self.isOnBack() or self.isOnBelly()
 
     def calc_events(self, events, deferreds):
-        self.ys = sorted(self.ys[1:] + [self._world.vars[self._var]])
-        self.y = self.ys[len(self.ys)/2]
+        self.ys = self.ys[1:] + [self._world.vars[self._var]]
+        self.y = sorted(self.ys)[len(self.ys)/2]
 #        print "y:", str(self.y)
+        print self.y
         self._on_back = self.y < -1.0
         self._on_belly = self.y > 1.0
 
