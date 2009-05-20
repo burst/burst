@@ -433,3 +433,9 @@ class Actions(object):
     def executeCircleStraferInitPose(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE) 
 
+    def executeTurnCW(self):
+        return self.executeMoveChoreograph(moves.TURN_CW) 
+
+    def executeTurnCCW(self):
+        return self.executeMoveChoreograph(moves.TURN_CCW) 
+

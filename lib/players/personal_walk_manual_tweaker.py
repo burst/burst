@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-#self._world._memory.getData('/.../baterry..',0)
 
 import player_init
 from burst.player import Player
@@ -33,7 +32,7 @@ walkParams = WalkParameters([
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
-           80])                    # 20ms count per step
+           100])                    # 20ms count per step
 
 
 class personalWalkManualTweaker(Player):
@@ -46,9 +45,7 @@ class personalWalkManualTweaker(Player):
         self.test()
 
     def test(self):
-        print '***'
-        print self._world._memory.getData('Device/SubDeviceList/Battery/Charge/Sensor/RemainingCapacity',0)
-        print '***'
+        self._actions.executeHeadMove(moves.BOTTOM_INIT_FAR)
         #self._actions.changeLocationRelative()
         t = getattr(self._actions, walkType)
         t(walkDistance, walk_param=walkParams)
@@ -56,10 +53,13 @@ class personalWalkManualTweaker(Player):
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()
         print "Walk Done! - took approximately %f seconds." % (self.walkEndTime - self.walkStartTime)
-        #self._eventmanager.quit()
+        moduleCleanup(self._eventmanager, self._actions, self._world)
+        self._actions.sitPoseAndRelax()
+        exit()
+#        self._eventmanager.quit()
 
     def onFallenDown(self):
-        print "FELL DOWN!"
+        print "Fell down."
         moduleCleanup(self._eventmanager, self._actions, self._world)
         self._actions.sitPoseAndRelax()
         exit()
@@ -75,10 +75,10 @@ def moduleCleanup(eventmanager, actions, world):
             result = str(robotName)
             result += ", " + str(world._memory.getData('Device/SubDeviceList/Battery/Charge/Sensor/Value',0))
             result += ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
-            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
+#            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
             distanceWalkedBeforeFallingDown = min(walkDistance, max(0.0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
             result += str(distanceWalkedBeforeFallingDown)
-            print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
+#            print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
             outputFile.write(result+"\n")
         if not outputFile is None and not outputFile.closed:
             outputFile.close()
