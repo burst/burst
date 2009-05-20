@@ -614,7 +614,7 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
-                from pynaoqi_twisted import SoapRequestFactory
+                from .pynaoqi_twisted import SoapRequestFactory
                 self.SoapRequestFactory = SoapRequestFactory
                 NaoQiModule.VERBOSE = False
 
