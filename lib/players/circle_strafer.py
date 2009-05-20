@@ -21,7 +21,7 @@ later the actions calls for same.
 class circle_strafer(Player):
 
     def onStart(self):
-        self.kp = 0
+        self.counter = 0
         self._eventmanager.unregister_all()
         #self._eventanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         self._actions.initPoseAndStiffness()
@@ -33,16 +33,16 @@ class circle_strafer(Player):
     def onTurnDone(self):
         print "\nTurn done!: "
         print "******************"
-        if (self.kp < 25):
-            print "self.kp smaller then 25"
-            self.kp = self.kp + 1
+        if (self.counter < 25):
+            print "self.counter smaller then 25"
+            self.counter = self.counter + 1
         self.doNextAction()
     
     def doNextAction(self):
         print "\ndoNextAction)"
         print "------------------"
 
-        if self.kp < 25:
+        if self.counter < 25:
             self._actions.executeCircleStrafer().onDone(self.onTurnDone)
             return
 

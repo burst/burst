@@ -125,10 +125,10 @@ class Movable(Locatable):
         super(Movable, self).__init__(world, real_length)
 
 class Ball(Movable):
-    
+
     _name = 'Ball'
 
-    DEBUG_INTERSECTION = True
+    DEBUG_INTERSECTION = False
 
     def __init__(self, world):
         super(Ball, self).__init__(world,

@@ -1,4 +1,5 @@
 import re
+from time import time
 
 # Data Structures
 
@@ -282,8 +283,11 @@ class CallLogger(object):
         self._f = f
 
     def __call__(self, *args, **kw):
-        print "%s called (%s)" % (self._name, trim(str(args) + str(kw), 40))
-        return self._f(*args, **kw)
+        start = time()
+        ret = self._f(*args, **kw)
+        end = time()
+        print "%s,%3d ms,(%s)" % (self._name, (end - start) * 1000, trim(str(args) + str(kw), 40))
+        return ret
 
 class LogCalls(object):
 
@@ -295,5 +299,9 @@ class LogCalls(object):
         f = getattr(self._obj, k) # can throw, which is ok.
         if callable(f):
             return CallLogger('%s.%s' % (self._name, k), f)
+        else:
+            # hack - just catch the post option of proxies
+            if k == 'post':
+                return LogCalls('%s.%s' % (self._name, k), f)
         return f
 
