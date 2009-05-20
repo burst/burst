@@ -196,7 +196,8 @@ class Localization(object):
     def __init__(self, con):
         self.con = con
         self.w = w =gtk.Window()
-        w.set_title('localization - %s' % con.host)
+        self.status = 'started'
+        self.set_title()
         c = gtk.VBox()
         w.add(c)
         self.field = goocanvas.Canvas()
@@ -234,7 +235,10 @@ class Localization(object):
 
         w.show_all()
         self.vars = localization_vars
-        con.ALMemory.initDeferred.addCallback(self.installUpdater)
+        con.modulesDeferred.addCallback(self.installUpdater)
+
+    def set_title(self):
+        self.w.set_title('localization - %s - %s' % (self.con.host, self.status))
 
     def installUpdater(self, _):
         self.updater = task.LoopingCall(self.getVariables)
@@ -257,10 +261,16 @@ class Localization(object):
                 self.localized['Ball']['YEst'],
                 self.localized['Self']['XEst'],
                 self.localized['Self']['YEst'])
-        print "read:   %3.3f %3.3f %3.3f %3.3f" % read
+        try:
+            self.status = "%3.3f %3.3f %3.3f %3.3f" % read
+            self.set_title()
+        except:
+            self.status = 'no reading'
+            self.set_title()
+            return
         self.ball.x, self.ball.y, self.robot.x, self.robot.y = read
-        print 'screen: %3.3f %3.3f %3.3f %3.3f' % (self.ball.get_screen_x(), self.ball.get_screen_y(), self.robot.get_screen_x(), self.robot.get_screen_y())
-        print "ball:   %s, %s" % (self.ball.maxmin_x_val, self.ball.maxmin_y_val)
+        #print 'screen: %3.3f %3.3f %3.3f %3.3f' % (self.ball.get_screen_x(), self.ball.get_screen_y(), self.robot.get_screen_x(), self.robot.get_screen_y())
+        #print "ball:   %s, %s" % (self.ball.maxmin_x_val, self.ball.maxmin_y_val)
 
 
 class Inertial(object):

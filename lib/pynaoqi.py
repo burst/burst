@@ -408,7 +408,7 @@ class NaoQiMethod(object):
                 raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
         self._con._sendRequest(callCreator(self._mod._modname,
             self._name, *args)).addCallback(callback
-            ).addCallback(lambda result: d.callback(result))
+            ).addCallback(d.callback)
 
     def __call__(self, *args):
         ret = Deferred()
@@ -427,8 +427,8 @@ class NaoQiMethod(object):
         return self._return.fromNaoQiCall(soapbody)
 
     def _post_onResponse(self, soapbody):
-        # returns albroker:callNaoqi2Response wrapping an array
-        # with postid (int), methname , module name, a boolean
+        # returns postid from a <albroker:callNaoqi2Response> wrapping an <array>
+        # with fields "postid" (int), "methname" , "module name", a boolean
         # and an int (no idea the meaning of the later two)
         return int(soapbody.firstChild.firstChild.firstChild.firstChild.firstChild.data)
 
@@ -764,6 +764,9 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
         self._registered_to_camera = False
+        # raw string (length/meaning depends on colorspace, resolution), width, height
+        self._camera_raw_frame = (None, 0, 0)
+        self._camera_missed_frames = 0
 
     def getBrokerInfo(self):
         def onResponse(self, soapbody):
@@ -800,15 +803,24 @@ class NaoQiConnection(BaseNaoQiConnection):
         """ Default parameters are exactly what nao-man (northern bites) use:
         YUV422 color space, 320x240 (Quarter VGA), and 15 fps
         """
-        if self._registered_to_camera: return self._camera_name
-        self._camera_name = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
+        if self._registered_to_camera:
+            return succeed(self._camera_name)
+        self._camera_resolution = resolution
+        self._camera_colorspace = colorspace
+        d = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
+        d.addCallback(self._onRegisterToCamera)
+        return d
+
+    def _onRegisterToCamera(self, camera_name):
+        print "registered to camera under name: %s" % camera_name
+        self._camera_name = camera_name
         vd = vision_definitions
         self._camera_param_dimensions_d = {vd.kQVGA:(320, 240)} # TODO - fill it
         self._camera_param_length_factor_d = {vd.kYUV422InterlacedColorSpace: 2}
-        width, height = self._camera_param_dimensions_d[resolution]
-        length = self._camera_param_length_factor_d[colorspace] * width * height
+        width, height = self._camera_param_dimensions_d[self._camera_resolution]
+        length = self._camera_param_length_factor_d[self._camera_colorspace] * width * height
         self._camera_param = (width, height, length)
-        self.registered_to_camera = True
+        self._registered_to_camera = True
         return self._camera_name
 
     def get_imops(self):
@@ -846,28 +858,43 @@ class NaoQiConnection(BaseNaoQiConnection):
         gobject.timeout_add(500, getNew)
 
     def getRGBRemoteFromYUV422(self):
-        yuv, width, height = self.getImageRemoteRaw()
-        imops, rgb = self.get_imops()
-        if not imops: return None
-        imops.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
-        return width, height, rgb
+        d = Deferred()
+        def onImageRemoteRaw((yuv, width, height)):
+            imops, rgb = self.get_imops()
+            if not imops:
+                d.callback(None) # TODO - errback?
+            imops.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
+            d.callback((width, height, rgb))
+        self.getImageRemoteRaw().addCallback(onImageRemoteRaw)
+        return d
 
     def getImageRemoteFromYUV422(self):
-        ret = self.getRGBRemoteFromYUV422()
-        if ret is None: return None
-        width, height, rgb = ret
-        return self.imageFromRGB(width, height, rgb)
+        d = self.getRGBRemoteFromYUV422()
+        if d is None: return None
+        d.addCallback(self.imageFromRGB)
+        return d
 
     def getImageRemoteRaw(self):
-        (width, height, layers, colorspace, timestamp_secs, timestamp_microsec,
-            imageraw) = self.NaoCam.getImageRemote(self._camera_name)
-        return imageraw, width, height
+        def filter_some(result):
+            # We silently ignore missing frames - empty results from our request.
+            # no idea why this happens. We just return the last frame
+            if len(result) > 0:
+                (width, height, layers, colorspace, timestamp_secs,
+                timestamp_microsec, imageraw) = result
+                self._camera_raw_frame = (imageraw, width, height)
+            else:
+                self._camera_missed_frames += 1
+                print "Bad frame %s" % self._camera_missed_frames
+            return self._camera_raw_frame
+        d = self.NaoCam.getImageRemote(self._camera_name)
+        d.addCallback(filter_some)
+        return d
 
     def getImageRemoteFromRGB(self, debug_file_name = None):
         rgb, width, height = self.getImageRemoteRaw()
         return self.imageFromRGB(width, height, rgb, debug_file_name = debug_file_name)
 
-    def imageFromRGB(self, width, height, rgb, debug_file_name = None):
+    def imageFromRGB(self, (width, height, rgb), debug_file_name = None):
         image = Image.fromstring('RGB', (width, height), rgb)
         if debug_file_name:
             if debug_file_name[:1] != '/':
@@ -948,11 +975,11 @@ def getDefaultOptions():
     if options is not None: return options
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option('--ip', action='store', dest='ip', default='localhost')
-    parser.add_option('--port', action='store', dest='port', default=None)
-    parser.add_option('--video', action='store_true', dest='video', default=None)
-    parser.add_option('--twisted', action='store_true', dest='twisted', default=True)
-    parser.add_option('--notwisted', action='store_false', dest='twisted')
+    parser.add_option('--ip', action='store', dest='ip', default='localhost', help='hostname to connect to')
+    parser.add_option('--port', action='store', dest='port', default=None, help='port to connect to')
+    parser.add_option('--twisted', action='store_true', dest='twisted', default=True, help='use twisted')
+    parser.add_option('--notwisted', action='store_false', dest='twisted', help='don\'t use twisted')
+    parser.add_option('--locon', action='store_true', dest='localization', help='turn localization on')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
@@ -962,7 +989,7 @@ def getDefaultOptions():
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
-        if arg in ['--video', '--twisted', '--notwisted']:
+        if arg in ['--locon', '--twisted', '--notwisted']:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):

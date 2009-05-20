@@ -1,5 +1,18 @@
 import re
 
+# Data Structures
+
+class RingBuffer(list):
+    """ Todo - a more efficient implementation. (only
+    if this becomes an issue)
+    """
+    def __init__(self, size):
+        super(RingBuffer, self).__init__([None]*size)
+
+    def ring_append(self, x):
+        self.pop(0)
+        self.append(x)
+
 # Twisted-like Deferred and succeed
 
 class MyDeferred(object):

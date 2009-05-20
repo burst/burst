@@ -135,7 +135,7 @@ class Journey(object):
             normal_walk_distance = self._leg_distance - slow_walk_distance
             self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
             print "Adding slow walk: %f" % slow_walk_distance # DBG
-            self._motion.addWalkStraight( normal_walk_distance, steps )
+            self._motion.addWalkStraight( normal_walk_distance, self._time_per_steps)
             print "Adding normal walk: %f" % normal_walk_distance # DBG
         else:
             self._motion.addWalkStraight( self._leg_distance, self._time_per_steps )
@@ -163,12 +163,16 @@ class Actions(object):
     def scanQuick(self):
         return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
 
-    def initPoseAndStiffness(self):
+    def initPoseAndStiffness(self , isGoalie = False):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
-        self.executeSyncMove(moves.INITIAL_POS)
+        if isGoalie:
+            self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR) #BOTTOM_CENTER_H_MIN_V
+            self.executeSyncMove(moves.INITIAL_POS)
+        else:
+            self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
+            self.executeSyncMove(moves.INITIAL_POS)
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self.clearFootsteps()
@@ -387,14 +391,6 @@ class Actions(object):
     def clearFootsteps(self):
         self._motion.clearFootsteps()
 
-    def getToGoalieInitPosition(self):
-        ids = []
-        ids.append(self._motion.post.turn(90*DEG_TO_RAD, 70))
-        ids.append(self._motion.post.gotoChainAngles('Head', [-90*DEG_TO_RAD, -20*DEG_TO_RAD], 1, 1))
-        for x in ids:
-            self._motion.wait(x, 0)
-
-
     def moveHead(self, x, y):
         self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
 
@@ -425,8 +421,15 @@ class Actions(object):
     def executeGettingUpBack(self):
         return self.executeMoveChoreograph(moves.GET_UP_BACK)
 
+    def executeLeapLeft(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT)
+
+    def executeLeapRight(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT)
+
     def executeCircleStrafer(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)
 
     def executeCircleStraferInitPose(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE) 
+

@@ -1,8 +1,12 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
-from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD, MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE, MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
-from ..events import (EVENT_BALL_IN_FRAME, EVENT_BALL_BODY_X_ISECT_UPDATE, EVENT_BALL_LOST, EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
-from burst_util import running_average
+from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
+    MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
+    MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
+from ..events import (EVENT_BALL_IN_FRAME,
+    EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
+    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
+from burst_util import running_average, RingBuffer
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -16,6 +20,7 @@ class Locatable(object):
     _name = "Locatable" # override to get nicer %s / %r
 
     REPORT_JUMP_ERRORS = False
+    HISTORY_SIZE = 10
 
     def __init__(self, world, real_length):
         """
@@ -28,6 +33,9 @@ class Locatable(object):
         self._motion = world._motion
         # longest arc across the object, i.e. a diagonal.
         self._real_length = real_length
+
+        self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last 
+
         # This is the player body frame relative bearing. radians.
         self.bearing = 0.0
         self.elevation = 0.0
@@ -58,6 +66,13 @@ class Locatable(object):
         self.distSmoothed = 0.0
         self.distRunningAverage = running_average(3) # TODO: Change to median AND/OR use ballEKF/ballLoc
         self.distRunningAverage.next()
+
+    HISTORY_LABELS = ['time', 'distance', 'bearing']
+    def _record_current_state(self):
+        """ pushes new values into the history buffer. called from
+        update_location_body_coordinates
+        """
+        self.history.ring_append([self.newness, self.dist, self.bearing])
 
     def compute_location_from_vision(self, vision_x, vision_y, width, height):
         mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
@@ -92,6 +107,7 @@ class Locatable(object):
 
         self.bearing = new_bearing
         self.dist = new_dist
+        self._record_current_state()
         self.distSmoothed = self.distRunningAverage.send(new_dist)
         #if isinstance(self, Ball):
         #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
@@ -112,7 +128,7 @@ class Ball(Movable):
     
     _name = 'Ball'
 
-    DEBUG_INTERSECTION = False
+    DEBUG_INTERSECTION = True
 
     def __init__(self, world):
         super(Ball, self).__init__(world,
@@ -126,9 +142,9 @@ class Ball(Movable):
         self.focDist = 0.0
         self.height = 0.0
         self.width = 0.0
-        self.body_x_isect = None
+        self.body_isect = None
 
-    def compute_intersection_with_body_x(self):
+    def compute_intersection_with_body(self, isX = False):
         ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
         dist, bearing = self.dist, self.bearing
         last_dist, last_bearing = self.last_dist, self.last_bearing
@@ -137,19 +153,25 @@ class Ball(Movable):
         x2 = last_dist * cos(last_bearing)
         y2 = last_dist * sin(last_bearing)
         if self.DEBUG_INTERSECTION:
+            print "\n"
             print "------------------------------------------------"
             print "x1=", x1, "  x2=", x2, "  y1=", y1, "  y2=", y2
             print "bearing=" ,bearing,"  dist=",dist
             print "last_bearing=", last_bearing, "  last_dist=", last_dist
             print "------------------------------------------------"
-        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL
-            and y2 < y1 and dist < last_dist):
+            print "\n"
+        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL):
             m = (y1 - y2) / (x1 - x2)
-            x = (-y1 + m * x1) / m
-            self.body_x_isect = x
+            if isX :
+                x = (-y1 + m * x1) / m
+                self.body_isect = x
+                return True
+            elif  x1 < x2 :#and fabs(y1-y2) < 1.5:
+                y = y1 - m * x1
+                self.body_isect = y
+                print "ball intersection with body: " , y
+                return True
             #theta=atan(m)
-            # print "INFO: ball intersection with body x: %s" % x
-            return True
         return False
 
     def calc_events(self, events, deferreds):
@@ -171,8 +193,8 @@ class Ball(Movable):
             events.add(EVENT_BALL_IN_FRAME)
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
             self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
-            if self.compute_intersection_with_body_x():
-                events.add(EVENT_BALL_BODY_X_ISECT_UPDATE)
+            if self.compute_intersection_with_body():
+                events.add(EVENT_BALL_BODY_INTERSECT_UPDATE)
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
         else:

@@ -18,8 +18,11 @@ dBodyID ball;                               // physics ball object id
 int steps = 0;                              // counter for steps
 int kick = 0;                               // counter for kicks
 
-#define NUM_KICK_ANGLES 5
+#define NUM_KICK_ANGLES 1
 float kick_angles[NUM_KICK_ANGLES];         // angles of kicks
+
+const float kick_start_angle = M_PI/16; //-M_PI/6;
+const float kick_delta_angle = M_PI/3;
 
 const float steps_between_kicks = 100;      // steps between kicks
 const float KICK_FORCE = 5.0;              // force to kick - 5.0 is already pretty high.
@@ -36,7 +39,7 @@ void webots_physics_init(dWorldID world, dSpaceID space, dJointGroupID contactJo
         printf("missing BALL in your wbt file - please define or remove this plugin.\n");
     }
     for (i = 0 ; i < NUM_KICK_ANGLES ; ++i) {
-        kick_angles[i] = -M_PI/6 + (M_PI / 3) * i / NUM_KICK_ANGLES;
+        kick_angles[i] = kick_start_angle + kick_delta_angle * i / NUM_KICK_ANGLES;
     }
   /*
    * Get ODE object from the .wbt model, e.g.
