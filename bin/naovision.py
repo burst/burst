@@ -61,6 +61,8 @@ class Main(object):
     def __init__(self, con):
         self.con = con
         self.names = getVisionDataNames(self.con)
+        self._already_notified = False
+
         self.createFieldAndObjects()
         self.w = w = gtk.Window()
         c = gtk.HBox()
@@ -86,6 +88,11 @@ class Main(object):
             ('yglp', 'yellow'), ('ygrp', 'yellow')]:
             setattr(self, attr, make_rect(root, POST_DIAMETER, color))
 
+    def notifyUserManModuleIsntLoaded(self):
+        if not self._already_notified:
+            print ">>>> man module isn't loaded <<<<"
+            self._already_notified = True
+
     def getVision(self):
         """ TODO: callback from twisted
         """
@@ -99,11 +106,17 @@ class Main(object):
             try:
                 return [new_data['/BURST/Vision/%s/%s' % (part, attr)] for attr in attrs]
             except:
+                print "breakpoint"
                 import pdb; pdb.set_trace()
         # centerX, centerY - ball position in image, not very interesting.
         for propname, value in zip(['center-x', 'center-y'],
             get_many('Ball', ['centerX', 'centerY'])):
-            self.vision_ball.set_property(propname, value)
+            if value == 'None':
+                self.notifyUserManModuleIsntLoaded()
+                return
+            else:
+                self.vision_ball.set_property(propname, value)
+
         ball_bearing, ball_dist = get_many('Ball', ['bearing', 'dist'])
         # ball dist is in cm, need to multiply by 10 to get mm
         if ball_dist > 0.0:

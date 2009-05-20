@@ -101,7 +101,7 @@ class GtkTextLogger(TaskBaseWindow):
     def __init__(self, tick_cb, title=None, dt=1.0):
         super(GtkTextLogger, self).__init__(tick_cb=tick_cb, dt=dt)
         if title is None:
-            title = 'logger %s' % self.counter
+            title = '%s %s' % (options.ip, self.counter)
         self._title = title
         self.counter += 1
         self._tv = tv = gtk.TextView()
@@ -190,7 +190,7 @@ def watch(*names):
 
     GtkTextLogger(lambda:
         con.ALMemory.getListData(names).addCallback(prettyprint),
-        title = minimal_title(names))
+        title = '%s - %s' % (options.ip, minimal_title(names)))
 
 video_window = None
 def video():
@@ -305,7 +305,8 @@ if __name__ == '__main__':
         moves = moves,
         vision_definitions = vision_definitions,
         refilter = burst_util.refilter,
-        redir = burst_util.redir)
+        redir = burst_util.redir,
+        nicefloats = burst_util.nicefloats)
 
     if options.twisted:
         main_twisted(con, my_ns)

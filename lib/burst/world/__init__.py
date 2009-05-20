@@ -149,17 +149,20 @@ class World(object):
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
         default_vars = self.getDefaultVars()
-        self._vars_to_getlist_set = set(default_vars)
-        self._vars_to_getlist = list(default_vars)
+        self._vars_to_getlist_set = set()
+        self._vars_to_getlist = list()
         self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
+        self.addMemoryVars(default_vars)
         self._shm = None
 
         self.time = time()
         self.const_time = self.time     # construction time
 
+        # Variables for body joint angles from dcm
         self._getAnglesMap = dict([(joint,
             'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
             for joint in self.jointnames])
+        self.addMemoryVars(self._getAnglesMap.values())
 
         self._recorded_vars = self.getRecorderVariableNames()
 

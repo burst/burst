@@ -143,8 +143,54 @@ class Ball(Movable):
         self.height = 0.0
         self.width = 0.0
         self.body_isect = None
+        self.base_point = None
+        self.base_point_index = None
+    
 
-    def compute_intersection_with_body(self, isX = False):
+    #for robot body when facing the other goal
+    def compute_intersection_with_body(self):
+        
+        #for working with self.history:
+        T = 0
+        DIST = 1
+        BEARING = 2
+        
+        X = 1
+        Y = 2
+        
+        ERROR_VAL_X = 4
+        ERROR_VAL_Y = 4
+        HISTORY_NUM_POINTS = 10
+        
+        if self.history[0] != None:
+            self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
+            self.base_point_index = 1
+        else:
+            return False
+       
+        i = 0
+        for point in self.history:
+            if point != None:
+                i = i +1
+                cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
+                if i > self.base_point_index :
+                    if  cor_point[X] - self.base_point[X] > ERROR_VAL_X:
+                        self.base_point = cor_point
+                        self.base_point_index = i
+                        return False
+                    if fabs(self.base_point[X] - cor_point[X]) > ERROR_VAL_X and fabs(self.base_point[Y] - cor_point[Y]) > ERROR_VAL_Y and self.base_point[X] > cor_point[X]:
+                        m= (self.base_point[Y] - cor_point[Y]) / (self.base_point[X] - cor_point[X])
+                        y = cor_point[Y] - m * cor_point[X]
+                        self.body_isect = y
+                        print "ball intersection with body: " , y
+                        return True
+        return False
+
+
+
+
+
+        """
         ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
         dist, bearing = self.dist, self.bearing
         last_dist, last_bearing = self.last_dist, self.last_bearing
@@ -169,9 +215,12 @@ class Ball(Movable):
             elif  x1 < x2 :#and fabs(y1-y2) < 1.5:
                 y = y1 - m * x1
                 self.body_isect = y
+                print "ball intersection with body: " , y
+                print "History" , self.history
                 return True
             #theta=atan(m)
         return False
+        """
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
