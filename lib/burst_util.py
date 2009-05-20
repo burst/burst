@@ -195,6 +195,16 @@ def running_average(window_width):
         i = (i + 1) % len(samples)
         #print samples
 
+def running_median(window_width):
+    samples = [0.0]*window_width
+    i = 0
+    while 1:
+        samples[i] = (yield sorted(samples)[len(samples)/2])
+        i = (i + 1) % len(samples)
+        #print sorted(samples)
+        #print samples
+
+
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
