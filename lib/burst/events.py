@@ -46,6 +46,10 @@ EVENT_KP_CHANGED = counter; counter+=1
 EVENT_STEP = counter; counter+=1
 EVENT_TIME_EVENT = counter; counter+=1
 
+### Dcm events
+# Pretty much debug code right now...
+EVENT_MOTION_SEQUENCE_SENT = counter; counter+=1
+
 ################################################################################
 LAST_EVENT_NUM = counter
 ################################################################################

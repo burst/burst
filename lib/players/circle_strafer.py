@@ -1,40 +1,50 @@
 #!/usr/bin/python
 
-# DON'T PUT ANYTHING BEFORE THIS LINE
+# import player_init MUST BE THE FIRST LINE
 import player_init
 
+from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST
+from burst.consts import DEG_TO_RAD
 from burst.player import Player
 from burst.events import *
 from burst.consts import *
+import burst.actions as actions
 import burst.moves as moves
+from burst.world import World
 from math import cos, sin
-import time
+
+"""
+Circle Strafing tester. Test the choreograph moves for circle tracing,
+later the actions calls for same.
+"""
 
 class circle_strafer(Player):
-    
-#    def onStop(self):
-#        super(Kicker, self).onStop()
 
     def onStart(self):
-        self.kp = None
-
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
+        self.kp = 0
+        self._eventmanager.unregister_all()
+        #self._eventanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
         self._actions.initPoseAndStiffness()
-        self.walkStartTime = time.time()
-        self.test()
+        self._actions.executeCircleStraferInitPose().onDone(self.doNextAction)
 
-    def test(self):
-        self._actions.executeCircleStrafer()
-    #   self._actions.changeLocationRelative(100.0)
-    #   self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)
-    #   self._actions.executeSyncMove(moves.GREAT_KICK_LEFT)
-    #   self._actions.sitPoseAndRelax()
-    #   self._eventmanager.quit()
+        # do a quick search for kicking point
+        #self._actions.executeCircleStrafer().onDone(self.onTurnDone)
+
+    def onTurnDone(self):
+        print "\nTurn done!: "
+        print "******************"
+        if (self.kp < 25):
+            print "self.kp smaller then 25"
+            self.kp = self.kp + 1
+        self.doNextAction()
     
-    def onChangeLocationDone(self):
-        self.walkEndTime = time.time()
-        print "Walk Done! - tool approximately %f" % (self.walkEndTime - self.walkStartTime)
-        #self._eventmanager.quit()
+    def doNextAction(self):
+        print "\ndoNextAction)"
+        print "------------------"
+
+        if self.kp < 25:
+            self._actions.executeCircleStrafer().onDone(self.onTurnDone)
+            return
 
 if __name__ == '__main__':
     import burst

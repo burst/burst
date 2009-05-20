@@ -213,6 +213,9 @@ class BasicMainLoop(object):
 
         returns the amount of time to sleep in seconds
         """
+        if burst.options.trace_proxies:
+            # the strange number 66 is to line up with the LogCalls object.
+            print "%3.3f  %s" % (self.cur_time - self.main_start_time, "-"*66)
         self._world.update(self.cur_time)
         self._eventmanager.runonce()
         self.next_loop += EVENT_MANAGER_DT

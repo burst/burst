@@ -109,6 +109,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
     parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
     parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
+    parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)

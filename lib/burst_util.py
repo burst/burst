@@ -194,6 +194,15 @@ def cumsum(iter):
 
 # Text utils
 
+def trim(s, l):
+    """ trims at 3 bytes larger then the supplied value,
+    to account for ... added if trimmed
+    """
+    if len(s) < l + 3:
+        return s
+    else:
+        return s[:l] + '...'
+
 def refilter(exp, it):
     rec = re.compile(exp)
     return [x for x in it if rec.search(x)]
@@ -252,4 +261,26 @@ def expected_argument_count(f):
     if hasattr(f, 'im_func'):
         return f.im_func.func_code.co_argcount - 1 # to account for self
     return f.func_code.co_argcount
+
+class CallLogger(object):
+
+    def __init__(self, name, f):
+        self._name = name
+        self._f = f
+
+    def __call__(self, *args, **kw):
+        print "%s called (%s)" % (self._name, trim(str(args) + str(kw), 40))
+        return self._f(*args, **kw)
+
+class LogCalls(object):
+
+    def __init__(self, name, obj):
+        self._obj = obj
+        self._name = name
+
+    def __getattr__(self, k):
+        f = getattr(self._obj, k) # can throw, which is ok.
+        if callable(f):
+            return CallLogger('%s.%s' % (self._name, k), f)
+        return f
 

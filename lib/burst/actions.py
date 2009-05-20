@@ -151,8 +151,8 @@ class Actions(object):
 
     def __init__(self, world):
         self._world = world
-        self._motion = burst.getMotionProxy()
-        self._tts = burst.getSpeechProxy()
+        self._motion = world.getMotionProxy()
+        self._speech = world.getSpeechProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
 
@@ -416,8 +416,8 @@ class Actions(object):
 
     def say(self, message):
         print "saying: %s" % message
-        if not self._tts is None:
-            self._tts.say(message)
+        if not self._speech is None:
+            self._speech.say(message)
 
     def executeGettingUpBelly(self):
         return self.executeMoveChoreograph(moves.GET_UP_BELLY)
@@ -427,3 +427,6 @@ class Actions(object):
 
     def executeCircleStrafer(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)
+
+    def executeCircleStraferInitPose(self):
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE) 

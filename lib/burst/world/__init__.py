@@ -17,7 +17,7 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
     EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
 from ..sensing import FalldownDetector
-from burst_util import running_average
+from burst_util import running_average, LogCalls
 
 from ..consts import MMAP_VARIABLES_FILENAME
 
@@ -117,11 +117,25 @@ class World(object):
         return (com + dcm + jsense + actsense + inert + force +
                 poschains + transform + various)
 
+    def getMemoryProxy(self):
+        return self._memory
+
+    def getMotionProxy(self):
+        return self._motion
+
+    def getSpeechProxy(self):
+        return self._speech
+
     def __init__(self):
-        # TODO - try to get the "/BURST/*" variables from ALMemory and complain if they
-        # are not there (same as the old "can't find MAN module", only now there isn't one)
-        self._memory = burst.getMemoryProxy()
-        self._motion = burst.getMotionProxy()
+        if burst.options.trace_proxies:
+            print "INFO: Proxy tracing is on"
+            # avoid logging None objects - like when getSpeechProxy returns None
+            callWrapper = lambda name, obj: (obj and LogCalls(name, obj) or obj)
+        else:
+            callWrapper = lambda name, obj: obj
+        self._memory = callWrapper("ALMemory", burst.getMemoryProxy())
+        self._motion = callWrapper("ALMotion", burst.getMotionProxy())
+        self._speech = callWrapper("ALSpeech", burst.getSpeechProxy())
         self._events = set()
         self._deferreds = []
         
