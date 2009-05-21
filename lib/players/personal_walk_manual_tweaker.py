@@ -45,7 +45,7 @@ class personalWalkManualTweaker(Player):
         self.test()
 
     def test(self):
-        self._actions.executeHeadMove(moves.BOTTOM_INIT_FAR)
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR)
         #self._actions.changeLocationRelative()
         t = getattr(self._actions, walkType)
         t(walkDistance, walk_param=walkParams)

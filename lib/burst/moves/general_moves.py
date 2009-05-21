@@ -55,41 +55,45 @@ SET_POS = INITIAL_POS
 READY_POS = INITIAL_POS
 
 
-# HEAD SCANS
-CAM_MAXIMUM_V = 30. * DEG_TO_RAD # NOTE: should have been 45 according to specs
-CAM_MINIMUM_V = -45. * DEG_TO_RAD
-CAM_MAXIMUM_H = 90. * DEG_TO_RAD # TODO: check if can be changed to 120 (mainly for goalie, via DCM)
-CAM_FRONTAL_H = CAM_MAXIMUM_H * 2 / 3 # can be useful to scan front area and not entire possible area
+''' HEAD POSITIONS (for bottom camera) '''
+HEAD_PITCH_DOWN_MAX = 30. * DEG_TO_RAD # NOTE: should have been 45 according to specs
+HEAD_PITCH_UP_MAX = -45. * DEG_TO_RAD
+HEAD_YAW_RANGE_MAX = 90. * DEG_TO_RAD 
+HEAD_YAW_RANGE_MOST = HEAD_YAW_RANGE_MAX * 2 / 3 # can be useful to scan front area and not entire possible area
 
-BOTTOM_CENTER_H_MAX_V_FAR = (0., -CAM_MAXIMUM_V) # minimize top part seen - allow keeper to see top of goal bar
-BOTTOM_CENTER_H_MAX_V_CLOSE = (0., -CAM_MAXIMUM_V * 3 / 2) # maximize top part seen - better when close to opponent goal
-BOTTOM_CENTER_H_MIN_V = (0., CAM_MAXIMUM_V) # maximize top part seen - better when close to opponent goal
+HEAD_POS_FRONT_CLOSE = (0., HEAD_PITCH_UP_MAX) # look front - close
+HEAD_POS_FRONT_FAR = (0., HEAD_PITCH_UP_MAX * 2 / 3) # look front - far
+HEAD_POS_FRONT_BOTTOM = (0., HEAD_PITCH_DOWN_MAX) # look down
+
+''' HEAD MOVES / SCANS (for bottom camera) '''
+
+
+HEAD_MOVE_FRONT_FAR = ((HEAD_POS_FRONT_FAR, 0.5),)
+#HEAD_MOVE_FRONT_CLOSE = ((HEAD_POS_FRONT_CLOSE, 0.5),)
+#HEAD_MOVE_FRONT_BOTTOM = ((HEAD_POS_FRONT_BOTTOM, 0.5),)
+
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
 # TODO: check what's the fastest time for scanning where ball/goal is still detected (can save lots of time)
 BOTTOM_FRONT_SCAN = (
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((-CAM_FRONTAL_H, CAM_MAXIMUM_V), 0.2),
-    ((CAM_FRONTAL_H, CAM_MAXIMUM_V), 3.0),
-    ((CAM_FRONTAL_H, 0), 0.2),
-    ((-CAM_FRONTAL_H, 0), 3.0),
-    ((-CAM_FRONTAL_H, -CAM_MAXIMUM_V), 0.2),
-    ((CAM_FRONTAL_H, -CAM_MAXIMUM_V), 4.0),
-    ((CAM_FRONTAL_H, CAM_MINIMUM_V), 0.2),
-    ((-CAM_FRONTAL_H, CAM_MINIMUM_V), 3.0),
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
+    (HEAD_POS_FRONT_FAR, 0.2),
+    ((-HEAD_YAW_RANGE_MOST, HEAD_PITCH_DOWN_MAX), 0.2),
+    ((HEAD_YAW_RANGE_MOST, HEAD_PITCH_DOWN_MAX), 3.0),
+    ((HEAD_YAW_RANGE_MOST, 0), 0.2),
+    ((-HEAD_YAW_RANGE_MOST, 0), 3.0),
+    ((-HEAD_YAW_RANGE_MOST, -HEAD_PITCH_DOWN_MAX), 0.2),
+    ((HEAD_YAW_RANGE_MOST, -HEAD_PITCH_DOWN_MAX), 4.0),
+    ((HEAD_YAW_RANGE_MOST, HEAD_PITCH_UP_MAX), 0.2),
+    ((-HEAD_YAW_RANGE_MOST, HEAD_PITCH_UP_MAX), 3.0),
+    (HEAD_POS_FRONT_FAR, 0.2),
     )
 
 BOTTOM_QUICK_SCAN = (
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
-    ((0.0, CAM_MAXIMUM_V), 1.0),
-    ((0.0, CAM_MINIMUM_V), 2.0),
-    (BOTTOM_CENTER_H_MAX_V_FAR, 0.2),
+    (HEAD_POS_FRONT_FAR, 0.2),
+    ((0.0, HEAD_PITCH_DOWN_MAX), 1.0),
+    ((0.0, HEAD_PITCH_UP_MAX), 2.0),
+    (HEAD_POS_FRONT_FAR, 0.2),
     )
-
-BOTTOM_INIT_FAR = ((BOTTOM_CENTER_H_MAX_V_FAR, 0.5),)
-BOTTOM_INIT_CLOSE = ((BOTTOM_CENTER_H_MAX_V_CLOSE, 0.5),)
-BOTTOM_CENTER_H_MIN_V = ((BOTTOM_CENTER_H_MIN_V, 0.5),)
 
 LOC_PANS = (
     (( 65.0, 10.0),1.5),

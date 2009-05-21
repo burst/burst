@@ -23,7 +23,7 @@ class goalie(Player):
         self.kp = None
 
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        self._actions.initPoseAndStiffness(True)
+        self._actions.initPoseAndStiffness()
         
         #self._eventmanager.register(EVENT_BALL_IN_FRAME,
         #    lambda target=self._world.ball: self._actions.executeTracking(target)
