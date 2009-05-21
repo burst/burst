@@ -68,7 +68,11 @@ class burstmem:public
     // Battery checking functionality
 
     static const int CHARGER_UNKNOWN, CHARGER_CONNECTED, CHARGER_DISCONNECTED;
+    int numberOfTicksBeforeAnnouncement;
+    int ticksLastStatusHasHeld;
     int lastBatteryStatus;
+    void readBatteryChargerWarningConfig();
+    
     void checkBatteryStatus();
 
     void announceChargerChange( int status );

@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h> // O_WRONLY
+#include <stdlib.h>
 
 #include "alproxy.h"
 #include "almemoryproxy.h"
@@ -23,6 +24,7 @@ using namespace AL;
 // TODO - read these from config.h which somehow gets created through python
 // during startup using the values in lib/burst/consts.py
 const char* MMAP_VARIABLES_FILENAME = "/home/root/burst/lib/etc/mmap_variables.txt";
+const char* CHARGER_CONFIG_FILENAME = "/home/root/burst/lib/etc/charger_warning.txt";
 const char* MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap";
 const unsigned int MMAP_LENGTH      = 4096;
 
@@ -82,8 +84,17 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
             std::endl;
     }
 
-    subscribeToDataChange();
+    readBatteryChargerWarningConfig();
 
+    subscribeToDataChange();
+}
+
+void burstmem::readBatteryChargerWarningConfig()
+{
+    std::vector < std::string > charger_config;
+    readVariablesFile(CHARGER_CONFIG_FILENAME, charger_config);
+    numberOfTicksBeforeAnnouncement = atoi(charger_config[0].c_str());
+    ticksLastStatusHasHeld = 0;
 }
 
 void burstmem::subscribeToDataChange()
@@ -262,7 +273,8 @@ void
 burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
                        const std::string & pMessage)
 {
-    checkBatteryStatus();
+    if ( numberOfTicksBeforeAnnouncement != 0 )
+        checkBatteryStatus();
     updateMemoryMappedVariables();
 }
 
@@ -295,8 +307,17 @@ burstmem::checkBatteryStatus ()
     float result = this->m_memory->getData(batteryChargerStatusString, 0);
     int newBatteryStatus = result < 0.0 ? CHARGER_DISCONNECTED : CHARGER_CONNECTED;
     if ( lastBatteryStatus != newBatteryStatus )
-        announceChargerChange( newBatteryStatus );
-    lastBatteryStatus = newBatteryStatus;
+    {
+        lastBatteryStatus = newBatteryStatus;
+        ticksLastStatusHasHeld = 1;
+    }
+    else
+    {
+        if ( ticksLastStatusHasHeld == numberOfTicksBeforeAnnouncement )
+            announceChargerChange( newBatteryStatus );
+        if (ticksLastStatusHasHeld != numberOfTicksBeforeAnnouncement+1 ) // Prevent integer overflow.
+            ticksLastStatusHasHeld += 1;
+    }
 }
 
 void
