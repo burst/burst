@@ -158,10 +158,10 @@ class Actions(object):
 
     def scanFront(self):
         # TODO: Stop moving when both ball and goal found? 
-        return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
+        return self.executeHeadMove(moves.HEAD_SCAN_FRONT)
 
     def scanQuick(self):
-        return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
+        return self.executeHeadMove(moves.HEAD_SCAN_QUICK)
 
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
