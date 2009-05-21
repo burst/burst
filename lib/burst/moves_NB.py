@@ -165,25 +165,6 @@ SLOW_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
            0.00,                  # ZmpOffsetY 
            80]                    # 20ms count per step
 
-# Alon is looking for a walk that DOESN'T FALL!!!
-
-KICKER_WALK = [100.0 * DEG_TO_RAD, # ShoulderMedian
-           15.0 * DEG_TO_RAD,      # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,      # ElbowMedian 
-           10.0 * DEG_TO_RAD,      # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
-           -4.5,                  # RHipRoll(degrees)
-           0.22,                  # HipHeight(meters)
-           3.4,                   # TorsoYOrientation(degrees)
-           0.070,                  # StepLength
-           0.043,                  # StepHeight
-           0.03,                  # StepSide
-           0.3,                   # MaxTurn
-           0.01,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
-           120]                    # 20ms count per step
-
-
 #KICKS
 
 KICK_STRAIGHT = (

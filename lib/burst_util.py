@@ -1,3 +1,4 @@
+import os
 import re
 from time import time
 
@@ -264,6 +265,9 @@ def compresstoprint(s, first, last):
     return s[:first] + '\n...\n' + s[-last:]
 
 # Operating System utilities
+
+def get_hostname():
+    return os.popen('hostname').read().strip()
 
 def getip():
     return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
