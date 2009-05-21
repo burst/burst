@@ -1,6 +1,7 @@
 print "messi moves!!"
 
 from .walks import SLOW_WALK
+SLOW_WALK.defaultSpeed = 80
 
 SIT_POS = (((0.,91.,0.,0.),
             (0.,0.,-55.,125.7,-75.7,0.),
@@ -10,5 +11,3 @@ SIT_POS = (((0.,91.,0.,0.),
             (0.,0.,-55.,125.7,-75.7,0.),
             (0.,0.,-55.,125.7,-75.7,0.),
             (90.,0.,65.,57.),1.5))
-
-SLOW_WALK.slowestSpeed = 40
