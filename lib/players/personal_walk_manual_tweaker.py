@@ -18,7 +18,7 @@ outputFile = None
 
 walkType = 'changeLocationRelative'
 walkDistance = 200.0
-walkParams = Walk([
+walkParams = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -32,7 +32,7 @@ walkParams = Walk([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00],                  # ZmpOffsetY 
+           0.00]),                  # ZmpOffsetY 
            100)                    # 20ms count per step
 
 

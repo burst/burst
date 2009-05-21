@@ -19,7 +19,7 @@ class WalkParameters(list):
 
     def __str__(self):
         result = str(self[0])
-        for i in xrange(1, 15):
+        for i in xrange(1, 14):
             result += ", " + str(self[i])
         return result
 
