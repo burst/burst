@@ -554,7 +554,7 @@ def TURN_CW():
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LHipRoll")
-    angles.append([float(0.00698), float(0.00000)])
+    angles.append([float(-0.15010), float(0.00000)])
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LHipYawPitch")

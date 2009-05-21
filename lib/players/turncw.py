@@ -33,8 +33,8 @@ class turncw(Player):
     def onTurnDone(self):
         print "\nTurn done!: "
         print "******************"
-        if (self.counter < 35):
-            print "self.counter smaller then 35"
+        if (self.counter < 50):
+            print "self.counter = %d" % (self.counter)
             self.counter = self.counter + 1
         self.doNextAction()
     
@@ -42,7 +42,7 @@ class turncw(Player):
         print "\ndoNextAction)"
         print "------------------"
 
-        if self.counter < 35:
+        if self.counter < 50:
             self._actions.executeTurnCW().onDone(self.onTurnDone)
             return
 
