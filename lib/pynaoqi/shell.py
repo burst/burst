@@ -42,7 +42,10 @@ if has_matplotlib:
 ################################################################################
 # Gui Widgets
 
-from pynaoqi.widgets import GtkTextLogger, GtkTimeTicker, CanvasTicker
+from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
+    CanvasTicker, VideoWindow)
+
+from pynaoqi.gui import Joints
 
 def watch(names):
     """ watch multiple variables. For instance:
@@ -182,6 +185,7 @@ def main():
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
         pairit = burst_util.pairit,
+        joints = Joints,
         )
 
     if options.twisted:

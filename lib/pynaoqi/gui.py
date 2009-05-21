@@ -171,7 +171,7 @@ class Scale(object):
             self._last[-1].addCallback(lambda _,
                     ind=ind, val=val: gotoAngle(ind, val))
 
-class Main(object):
+class Joints(object):
 
     def __init__(self):
         global start_time
@@ -181,6 +181,7 @@ class Main(object):
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
+        self.updater = task.LoopingCall(self.getAngles)
         self.vision = None
         self.inertial = None
         self.localization = None
@@ -202,7 +203,6 @@ class Main(object):
                     table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
                 # value-changed is raised also when set_value is called
                 # move-scaler - nothing?
-            self.updater = task.LoopingCall(self.getAngles)
             self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
             # we added a bunch of widgets, show them (this is async to __init__)
             w.show_all()
@@ -363,8 +363,9 @@ class Main(object):
         self._walkconfig = arg
 
     def onDestroy(self, *args):
-        print "quitting.."
-        reactor.stop()
+        if self.updater.running:
+            print "stopping joints task"
+            self.updater.stop()
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):
@@ -416,8 +417,15 @@ class Main(object):
         j = self.cur_read_angles
         print repr([j[2:6], j[8:14], j[14:20], j[20:24]])
 
+class JointsMain(Joints):
+
+    def onDestroy(self, *args):
+        super(JointsMain, self).onDestroy()
+        print "quitting.."
+        reactor.stop()
+
 def main():
-    main = Main()
+    joints = JointsMain()
     reactor.run()
 
 if __name__ == '__main__':
