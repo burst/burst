@@ -296,7 +296,22 @@ nao_type_dict = {
     }
 
 def arrayctor(node):
-    return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
+    try:
+        return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
+    except:
+        import pdb; pdb.set_trace()
+
+seen_nil_strings = set()
+def return_and_print_nil(x):
+    global seen_nil_strings
+    # The print is for debugging purposes only, to make
+    # sure the type is always matched by the same string.
+    nil_str = str(x.firstChild.nodeValue)
+    if nil_str not in seen_nil_strings:
+        print "nil: %s" % nil_str
+        seen_nil_strings.add(nil_str)
+    # We return 'None' for compatibility with naoqi
+    return 'None'
 
 xsi_type_to_ctor = {
     'xsd:int': lambda x: int(x.firstChild.nodeValue),
@@ -304,7 +319,7 @@ xsi_type_to_ctor = {
     'xsd:string': lambda x: str(x.firstChild.nodeValue),
     'xsd:boolean': lambda x: str(x.firstChild.nodeValue) != 'false',
     'xsd:base64Binary': lambda x: base64.decodestring(x.firstChild.nodeValue),
-    'nil': lambda x: str(x.firstChild.nodeValue),
+    'nil': return_and_print_nil,
     'Array': arrayctor
 }
 
@@ -602,7 +617,7 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
-                from pynaoqi_twisted import SoapRequestFactory
+                from .pynaoqi_twisted import SoapRequestFactory
                 self.SoapRequestFactory = SoapRequestFactory
                 NaoQiModule.VERBOSE = False
 
@@ -961,12 +976,6 @@ def main():
         meths[c]()
         c = 1 - c
 
-def asaf():
-    sys.path.append('/home/asaf/src/nao-man/motion')
-    import SweeterMoves
-    globals()['SweeterMoves'] = SweeterMoves
-    globals()['con'] = NaoQiConnection('http://maldini:9559')    
-
 options = None
 
 # helper function - exactly the same as in burst, handle --ip and --port
@@ -979,7 +988,8 @@ def getDefaultOptions():
     parser.add_option('--port', action='store', dest='port', default=None, help='port to connect to')
     parser.add_option('--twisted', action='store_true', dest='twisted', default=True, help='use twisted')
     parser.add_option('--notwisted', action='store_false', dest='twisted', help='don\'t use twisted')
-    parser.add_option('--locon', action='store_true', dest='localization', help='turn localization on')
+    parser.add_option('--locon', action='store_true', dest='localization_on_start', help='turn localization on')
+    parser.add_option('--reportnew', action='store_true', dest='report_new_packet_sizes', help='debug - report new packet sizes')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
@@ -989,7 +999,7 @@ def getDefaultOptions():
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
-        if arg in ['--locon', '--twisted', '--notwisted']:
+        if arg in ['--locon', '--twisted', '--notwisted', '--reportnew']:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):

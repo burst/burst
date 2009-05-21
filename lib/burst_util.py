@@ -195,6 +195,16 @@ def running_average(window_width):
         i = (i + 1) % len(samples)
         #print samples
 
+def running_median(window_width):
+    samples = [0.0]*window_width
+    i = 0
+    while 1:
+        samples[i] = (yield sorted(samples)[len(samples)/2])
+        i = (i + 1) % len(samples)
+        #print sorted(samples)
+        #print samples
+
+
 def transpose(m):
     n_inner = len(m[0])
     return [[inner[i] for inner in m] for i in xrange(n_inner)]
@@ -206,7 +216,10 @@ def cumsum(iter):
         s += t
         yield s
 
-# Text utils
+# Text/String/Printing utils
+
+def nicefloats(l):
+    return (' '.join(['%3.3f']*len(l))) % tuple(l)
 
 def trim(s, l):
     """ trims at 3 bytes larger then the supplied value,
@@ -270,6 +283,9 @@ def is64():
     return ei_class == ELFCLASS64
 
 # Python language util
+
+def pairit(n):
+    return [n[i:i+2] for i in xrange(0,len(n),2)]
 
 def expected_argument_count(f):
     if hasattr(f, 'im_func'):

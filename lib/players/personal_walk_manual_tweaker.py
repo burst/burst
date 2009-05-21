@@ -90,7 +90,7 @@ if __name__ == '__main__':
     from burst.eventmanager import MainLoop
     #import atexit; atexit.register(moduleCleanup) # Make sure the file is closed down (and thus also flushed) when the program finishes.
     from sys import argv
-    OUTPUT_FILE_NAME = os.environ['HOME']+'/src/burst/doc/results_of_personalization_tests.csv'
+    OUTPUT_FILE_NAME = os.environ['HOME']+'/src/burst/data/calibration/results_of_personalization_tests.csv'
     #OUTPUT_FILE_NAME = './testme.txt'
     outputFile = open(OUTPUT_FILE_NAME, 'a')
 
