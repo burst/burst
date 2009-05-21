@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h> // O_WRONLY
+#include <stdlib.h>
 
 #include "alproxy.h"
 #include "almemoryproxy.h"
@@ -23,8 +24,13 @@ using namespace AL;
 // TODO - read these from config.h which somehow gets created through python
 // during startup using the values in lib/burst/consts.py
 const char* MMAP_VARIABLES_FILENAME = "/home/root/burst/lib/etc/mmap_variables.txt";
+const char* CHARGER_CONFIG_FILENAME = "/home/root/burst/lib/etc/charger_warning.txt";
 const char* MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap";
 const unsigned int MMAP_LENGTH      = 4096;
+
+const int burstmem::CHARGER_UNKNOWN = 0,
+    burstmem::CHARGER_CONNECTED = 1,
+    burstmem::CHARGER_DISCONNECTED = 2;
 
 //______________________________________________
 // constructor
@@ -32,6 +38,7 @@ const unsigned int MMAP_LENGTH      = 4096;
 burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     : ALModule (pBroker, pName), m_copying(false), m_memory_mapped(false)
     , m_mmap(NULL)
+    , lastBatteryStatus(CHARGER_UNKNOWN)
 {
 
     std::cout << "burstmem: Module starting" << std::endl;
@@ -40,13 +47,13 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
         ("This is the burstmem module - designed to record a lot of stuff to a csv file, that's all.");
 
     // Define callable methods with there description
-    functionName ("startMemoryMap", "burstmem", "start copying fast->mmap periodically");
+    functionName ("startMemoryMap", "burstmem", "start copying almemory->mmap periodically");
     BIND_METHOD (burstmem::startMemoryMap);
 
     functionName ("stopMemoryMap", "burstmem", "stop memcopy and alfast");
     BIND_METHOD (burstmem::stopMemoryMap);
 
-    functionName ("isMemoryMapRunning", "burstmem", "return true if alfast is memory mapped");
+    functionName ("isMemoryMapRunning", "burstmem", "return true if almemory is memory-mapped");
     BIND_METHOD (burstmem::isMemoryMapRunning);
 
     functionName ("getNumberOfVariables", "burstmem", "return number of read variables (for debugging");
@@ -69,6 +76,7 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     //Create a proxy on memory module
     try {
         m_memory = getParentBroker ()->getMemoryProxy ();
+        textToSpeechProxy = getParentBroker()->getProxy("ALTextToSpeech");
     }
     catch (ALError & e) {
         std::
@@ -76,6 +84,46 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
             std::endl;
     }
 
+    readBatteryChargerWarningConfig();
+
+    subscribeToDataChange();
+}
+
+void burstmem::readBatteryChargerWarningConfig()
+{
+    std::vector < std::string > charger_config;
+    readVariablesFile(CHARGER_CONFIG_FILENAME, charger_config);
+    numberOfTicksBeforeAnnouncement = atoi(charger_config[0].c_str());
+    ticksLastStatusHasHeld = 0;
+}
+
+void burstmem::subscribeToDataChange()
+{
+    // request updates to memory and connect to variables
+    try {
+        std::cout << "burstmem: start: subscribing to data changes" << std::endl;
+
+        const std::string & strModuleName = getName ().c_str ();
+        std::string memoryKeyNameValueChangesEveryCycle = "DCM/Time";
+
+        m_memory->subscribeOnDataChange (
+            memoryKeyNameValueChangesEveryCycle,   // the key
+            strModuleName, // the name of this module
+            string ("CycleChangedNotification"),   // the name of the notification
+            string ("dataChanged"));       // the method to use for the callback
+
+        // Following two lines cause us to be called 50Hz.
+        // Without them it is more like 16Hz (60ms)
+
+        //m_memory->subscribeOnDataSetTimePolicy
+        //    (memoryKeyNameValueChangesEveryCycle, strModuleName, 0);
+
+        std::cout << "burstmem: task started." << std::endl;
+
+    } catch (AL::ALError e) {
+        std::cout << "burstmem: Failed to start the task: " << e.toString () <<
+            std::endl;
+    }
 }
 
 //______________________________________________
@@ -179,39 +227,6 @@ void burstmem::startMemoryMap ()
         std::cout << "burstmem: memory mapped just fine" << std::endl;
     }
 
-    // request updates to memory and connect to variables
-    try {
-        std::cout << "burstmem: start: initialization has begun" << std::endl;
-
-        const std::string & strModuleName = getName ().c_str ();
-        std::string memoryKeyNameValueChangesEveryCycle = "DCM/Time";
-
-        m_memory->subscribeOnDataChange (
-            memoryKeyNameValueChangesEveryCycle,   // the key
-            strModuleName, // the name of this module
-            string ("CycleChangedNotification"),   // the name of the notification
-            string ("dataChanged"));       // the method to use for the callback
-
-        // Following two lines cause us to be called 50Hz.
-        // Without them it is more like 16Hz (60ms)
-
-        //m_memory->subscribeOnDataSetTimePolicy
-        //    (memoryKeyNameValueChangesEveryCycle, strModuleName, 0);
-
-        if (0) {
-            std::cout << "burst: connect to variables up next" << std::endl;
-    
-            m_memoryfastaccess =
-                AL::ALPtr < ALMemoryFastAccess > (new ALMemoryFastAccess ());
-    
-            m_memoryfastaccess->ConnectToVariables (m_broker, m_varnames);
-        }
-        std::cout << "burstmem: task started." << std::endl;
-
-    } catch (AL::ALError e) {
-        std::cout << "burstmem: Failed to start the task: " << e.toString () <<
-            std::endl;
-    }
 }
 
 //______________________________________________
@@ -258,6 +273,14 @@ void
 burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
                        const std::string & pMessage)
 {
+    if ( numberOfTicksBeforeAnnouncement != 0 )
+        checkBatteryStatus();
+    updateMemoryMappedVariables();
+}
+
+void
+burstmem::updateMemoryMappedVariables()
+{
     if (!m_copying || !m_memory_mapped) return;
 
     try {
@@ -275,5 +298,34 @@ burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
         std::cout << "Recorder caught ALError: " << e.toString () << std::
             endl;
     }
+}
+
+void
+burstmem::checkBatteryStatus ()
+{
+    const std::string batteryChargerStatusString = "Device/SubDeviceList/Battery/Current/Sensor/Value";
+    float result = this->m_memory->getData(batteryChargerStatusString, 0);
+    int newBatteryStatus = result < 0.0 ? CHARGER_DISCONNECTED : CHARGER_CONNECTED;
+    if ( lastBatteryStatus != newBatteryStatus )
+    {
+        lastBatteryStatus = newBatteryStatus;
+        ticksLastStatusHasHeld = 1;
+    }
+    else
+    {
+        if ( ticksLastStatusHasHeld == numberOfTicksBeforeAnnouncement )
+            announceChargerChange( newBatteryStatus );
+        if (ticksLastStatusHasHeld != numberOfTicksBeforeAnnouncement+1 ) // Prevent integer overflow.
+            ticksLastStatusHasHeld += 1;
+    }
+}
+
+void
+burstmem::announceChargerChange( int status )
+{
+    if ( status == CHARGER_CONNECTED )
+        textToSpeechProxy->pCall("say", std::string("Connected."));
+    else if ( status == CHARGER_DISCONNECTED )
+        textToSpeechProxy->pCall("say", std::string("Disconnected."));
 }
 

@@ -64,8 +64,8 @@ class Journey(object):
         self._delta_theta = delta_theta
         self._distance_left = self._distance
         self._turn = turn = [None, None] # for duration estimation
-
-        self._time_per_steps = walk_param[WalkParameters.TimePerStep]
+        #import pdb; pdb.set_trace()
+        self._time_per_steps = walk_param.defaultSpeed
         self._step_length = step_length = walk_param[WalkParameters.StepLength]
         if steps_before_full_stop == 0:
             self._leg_distance = self._distance
@@ -80,7 +80,7 @@ class Journey(object):
         self._duration = duration = (self._time_per_steps * distance / step_length +
                     (turn[0] and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
 
-        self._actions.setWalkConfig(walk_param)
+        self._actions.setWalkConfig(walk_param.walkParameters)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
         if turn[0]:
@@ -158,21 +158,17 @@ class Actions(object):
 
     def scanFront(self):
         # TODO: Stop moving when both ball and goal found? 
-        return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
+        return self.executeHeadMove(moves.HEAD_SCAN_FRONT)
 
     def scanQuick(self):
-        return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
+        return self.executeHeadMove(moves.HEAD_SCAN_QUICK)
 
-    def initPoseAndStiffness(self , isGoalie = False):
+    def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        if isGoalie:
-            self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR) #BOTTOM_CENTER_H_MIN_V
-            self.executeSyncMove(moves.INITIAL_POS)
-        else:
-            self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
-            self.executeSyncMove(moves.INITIAL_POS)
+        self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR)
+        self.executeSyncMove(moves.INITIAL_POS)
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self.clearFootsteps()
@@ -194,9 +190,8 @@ class Actions(object):
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
-            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
-            ) = param[:14]
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
         self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude )
@@ -256,7 +251,7 @@ class Actions(object):
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
         self.setWalkConfig(walk_param)
-        steps = walk_param[WalkParameters.TimePerStep]
+        steps = walk_param.defaultSpeed
         StepLength = walk_param[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
