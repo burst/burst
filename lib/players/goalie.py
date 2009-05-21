@@ -24,11 +24,24 @@ class goalie(Player):
 
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
         self._actions.initPoseAndStiffness(True)
+        
+        #self._eventmanager.register(EVENT_BALL_IN_FRAME,
+        #    lambda target=self._world.ball: self._actions.executeTracking(target)
+        #)
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        
+        #self.doMoveHead(self._world.ball.bearing, -self._world.ball.elevation)
         #self._actions.executeLeapLeft()
         #self._actions.executeLeapRight()
-        self.walkStartTime = time.time()
+        #self.walkStartTime = time.time()
         #self.test()
-
+    
+    def trackBall(self):
+        self._actions.executeTracking(self._world.ball)
+    
+    #def doMoveHead(self, deltaHeadYaw, deltaHeadPitch):
+    #    self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
+   
     def test(self):
         self._actions.changeLocationRelative(100.0)
 #        self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)

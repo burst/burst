@@ -1,5 +1,5 @@
 from math import atan2
-from consts import CM_TO_METER
+from consts import CM_TO_METER, IMAGE_HALF_HEIGHT, IMAGE_HALF_WIDTH
 import burst
 from burst.consts import *
 from burst_util import transpose, cumsum, BurstDeferred
@@ -414,6 +414,28 @@ class Actions(object):
         print "saying: %s" % message
         if not self._speech is None:
             self._speech.say(message)
+
+    def normalizeBallX(self, ballX):
+        return (IMAGE_HALF_WIDTH - ballX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+
+    def normalizeBallY(self, ballY):
+        return (IMAGE_HALF_HEIGHT - ballY) / IMAGE_HALF_HEIGHT # between 1 (top) to -1 (bottom)
+
+    def executeTracking(self, target):
+        
+        if not self._world.robot.isHeadMotionInProgress():
+            xNormalized = self.normalizeBallX(target.centerX)
+            yNormalized = self.normalizeBallY(target.centerY)
+            if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
+                CAM_X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
+                CAM_Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
+                deltaHeadYaw = xNormalized * CAM_X_TO_RAD_FACTOR
+                deltaHeadPitch = -yNormalized * CAM_Y_TO_RAD_FACTOR
+                #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
+                self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
+                #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (deltaHeadYaw, deltaHeadPitch)            
+                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
+        
 
     def executeGettingUpBelly(self):
         return self.executeMoveChoreograph(moves.GET_UP_BELLY)
