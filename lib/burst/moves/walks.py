@@ -2,8 +2,40 @@ from burst.consts import DEG_TO_RAD
 from burst.world import World
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 
+
+class Walk(list):
+
+    SlowestSpeed, FastestSpeed, DefaultSpeed = object(), object(), object()
+
+    def __init__(self, walkParameters, defaultSpeed=None, slowestSpeed=150, fastestSpeed=100):
+        self.walkParameters = walkParameters
+        self.slowestSpeed = slowestSpeed
+        self.fastestSpeed = fastestSpeed
+        if defaultSpeed is None:
+            self.defaultSpeed = slowestSpeed
+        else:
+            self.defaultSpeed = defaultSpeed
+
+    def fractionalSpeed(self, fraction):
+        return self.slowestSpeed - (self.slowestSpeed-self.fastestSpeed)*fraction
+
+    def __getitem__(self, key):
+        if key == Walk.SlowestSpeed: return self.slowestSpeed
+        elif key == Walk.FastestSpeed: return self.fastestSpeed
+        elif key == Walk.DefaultSpeed: return self.defaultSpeed
+        else: return self.walkParameters[key]
+
+    def __setitem__(self, key, value):
+        if key == Walk.SlowestSpeed: self.slowestSpeed = value
+        elif key == Walk.FastestSpeed: self.fastestSpeed = value
+        elif key == Walk.DefaultSpeed: self.defaultSpeed = value
+        else: self.walkParameters[key] = value
+
+
+
+
 # WALKS
-FASTEST_WALK_WEBOTS = WalkParameters([
+FASTEST_WALK_WEBOTS = Walk([
            100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
            30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
@@ -17,10 +49,10 @@ FASTEST_WALK_WEBOTS = WalkParameters([
            0.06,                 # 10 StepSide (was 0.02)
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
-           0.018,                # 13 ZmpOffsetY 
-           54])                  # 14 20ms count per step
+           0.018],                # 13 ZmpOffsetY 
+           54)                  # 14 20ms count per step
 
-SLOW_WALK = WalkParameters([
+SLOW_WALK = Walk([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -34,8 +66,9 @@ SLOW_WALK = WalkParameters([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
-           80])                    # 20ms count per step
+           0.00],                  # 
+           80          # 20ms count per step
+    )
 
 if World.connected_to_nao:
     FASTEST_WALK = SLOW_WALK
@@ -54,7 +87,7 @@ else:
 
 
 
-
+'''
 FAST_WALK_WEBOTS = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -141,3 +174,10 @@ SLOW_WALK1 = WalkParameters([
            0.015,                  # ZmpOffsetX
            0.00,                  # ZmpOffsetY 
            100])                    # 20ms count per step
+'''
+
+# TODO:
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Let the relevant robot personalization script runs its course, and change whatever it needs in this module. #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+

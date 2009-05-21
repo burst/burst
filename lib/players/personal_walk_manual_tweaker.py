@@ -9,6 +9,7 @@ import burst.moves as moves
 from math import cos, sin
 import time
 from burst.walkparameters import WalkParameters
+from burst.moves.walks import Walk
 import os
 
 OUTPUT_FILE_NAME = './testme.txt'
@@ -17,7 +18,7 @@ outputFile = None
 
 walkType = 'changeLocationRelative'
 walkDistance = 200.0
-walkParams = WalkParameters([
+walkParams = Walk([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -31,8 +32,8 @@ walkParams = WalkParameters([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
-           100])                    # 20ms count per step
+           0.00],                  # ZmpOffsetY 
+           100)                    # 20ms count per step
 
 
 class personalWalkManualTweaker(Player):
@@ -45,6 +46,7 @@ class personalWalkManualTweaker(Player):
         self.test()
 
     def test(self):
+        time.sleep(3)
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR)
         #self._actions.changeLocationRelative()
         t = getattr(self._actions, walkType)
@@ -86,6 +88,7 @@ def moduleCleanup(eventmanager, actions, world):
 
 
 if __name__ == '__main__':
+#    time.sleep(3)
     import burst
     from burst.eventmanager import MainLoop
     #import atexit; atexit.register(moduleCleanup) # Make sure the file is closed down (and thus also flushed) when the program finishes.

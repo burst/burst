@@ -8,7 +8,8 @@ class WalkParameters(list):
         file that requested this, et voila! '''
 
     # Constants:
-    ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude, LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY, TimePerStep = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+    (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude, LHipRoll, RHipRoll, HipHeight, 
+    TorsoYOrientation, StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
 
     def __init__(self, *args, **kwargs):
         if len(args) > 0:
@@ -24,6 +25,7 @@ class WalkParameters(list):
 
 
 
+# Add some syntactic sugar to the class's objects.
 for var in ['ShoulderMedian', 'ShoulderAmplitude', 'ElbowMedian', 'ElbowAmplitude']:
 
     def f(self, value):
