@@ -8,7 +8,7 @@ class Walk(list):
     SlowestSpeed, FastestSpeed, DefaultSpeed = object(), object(), object()
 
     def __init__(self, walkParameters, defaultSpeed=None, slowestSpeed=150, fastestSpeed=100):
-        self.walkParameters = walkParameters
+        self.walkParameters = walkParameters # TODO
         self.slowestSpeed = slowestSpeed
         self.fastestSpeed = fastestSpeed
         if defaultSpeed is None:
@@ -34,6 +34,7 @@ class Walk(list):
     def __str__(self):
         return str(self.walkParameters) + ", " + str(self.defaultSpeed)
 
+    __repr__ = __str__
 
 
 
@@ -178,9 +179,3 @@ SLOW_WALK1 = WalkParameters([
            0.00,                  # ZmpOffsetY 
            100])                    # 20ms count per step
 '''
-
-# TODO:
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Let the relevant robot personalization script runs its course, and change whatever it needs in this module. #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
