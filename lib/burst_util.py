@@ -274,6 +274,9 @@ def is64():
 
 # Python language util
 
+def pairit(n):
+    return [n[i:i+2] for i in xrange(0,len(n),2)]
+
 def expected_argument_count(f):
     if hasattr(f, 'im_func'):
         return f.im_func.func_code.co_argcount - 1 # to account for self

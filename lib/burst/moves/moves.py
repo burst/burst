@@ -6,6 +6,7 @@ from ..world import World
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 
 # array with names of attributes of this module that can be run with executeMove
+# in the naojoints utility (burst/bin/naojoints.py)
 NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND".split()
 
 def getMoveTime(move):
@@ -116,8 +117,8 @@ FASTEST_WALK_WEBOTS = WalkParameters([
            10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
            30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
            10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
-           3.5,                  # 4 LHipRoll(degrees) 
-           -3.5,                 # 5 RHipRoll(degrees)
+           2.5,                  # 4 LHipRoll(degrees) 
+           -2.5,                 # 5 RHipRoll(degrees)
            0.23,                 # 6 HipHeight(meters)
            3.0,                  # 7 TorsoYOrientation(degrees)
            0.07,                 # 8 StepLength
@@ -126,7 +127,7 @@ FASTEST_WALK_WEBOTS = WalkParameters([
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
            0.018,                # 13 ZmpOffsetY 
-           18])                  # 14 20ms count per step
+           54])                  # 14 20ms count per step
 
 FAST_WALK_WEBOTS = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian

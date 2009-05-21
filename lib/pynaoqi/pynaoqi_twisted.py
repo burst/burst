@@ -13,6 +13,7 @@ class SoapProtocol(Protocol):
         self.deferred = deferred
         self.tosend = tosend
         self.con = con
+        self.options = con.options
 
     def connectionMade(self):
         #print "sending %s" % tosend
@@ -50,7 +51,8 @@ class SoapProtocol(Protocol):
         else:
             if data_len not in self._packet_sizes:
                 self._packet_sizes.add(data_len)
-                print "YAY NEW PACKET SIZE: %s (got %s/%s)" % (data_len, self._got_len, self._content_length)
+                if self.options.report_new_packet_sizes:
+                    print "YAY NEW PACKET SIZE: %s (got %s/%s)" % (data_len, self._got_len, self._content_length)
 
     dataReceived = dataReceivedHeaders
 
