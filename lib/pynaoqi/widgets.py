@@ -249,12 +249,13 @@ class VideoWindow(TaskBaseWindow):
 
     def __init__(self, con):
         self._con = con
-        self._con.registerToCamera()
+        self._con.registerToCamera().addCallback(self._finishInit)
         super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
-        import twisted.internet.task as task
         self._im = gtkim = gtk.Image()
         self._w.add(gtkim)
         self._w.show_all()
+
+    def _finishInit(self):
         self._startTaskFirstTime()
 
     def getNew(self):
