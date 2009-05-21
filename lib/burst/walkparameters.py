@@ -16,32 +16,34 @@ class WalkParameters(list):
         else:
             super(WalkParameters, self).__init__([0.0 for item in xrange(15)])
 
-        for var in ['ShoulderMedian', 'ShoulderAmplitude', 'ElbowMedian', 'ElbowAmplitude']:
-
-            def f(value):
-                self[getattr(self, var)] = value * DEG_TO_RAD
-            setattr(self, "set"+var+"Deg", f)
-            setattr(self, "get"+var+"Deg", lambda: self[getattr(self, var)] * RAD_TO_DEG)
-
-            def f(value):
-                self[getattr(self, var)] = value
-            setattr(self, "set"+var+"Rad", f)
-            setattr(self, "get"+var+"Rad", lambda: self[getattr(self, var)])
-
-        for var in ['LHipRoll', 'RHipRoll', 'TorsoYOrientation']:
-
-            def f(value):
-                self[getattr(self, var)] = value
-            setattr(self, "set"+var+"Deg", f)
-            setattr(self, "get"+var+"Deg", lambda: self[getattr(self, var)])
-
-            def f(value):
-                self[getattr(self, var)] = value * RAD_TO_DEG
-            setattr(self, "set"+var+"Rad", f)
-            setattr(self, "get"+var+"Rad", lambda: self[getattr(self, var)] * DEG_TO_RAD)
-
     def __str__(self):
         result = str(self[0])
         for i in xrange(1, 15):
             result += ", " + str(self[i])
         return result
+
+
+
+for var in ['ShoulderMedian', 'ShoulderAmplitude', 'ElbowMedian', 'ElbowAmplitude']:
+
+    def f(self, value):
+        self[getattr(self, var)] = value * DEG_TO_RAD
+    setattr(WalkParameters, "set"+var+"Deg", f)
+    setattr(WalkParameters, "get"+var+"Deg", lambda self: self[getattr(self, var)] * RAD_TO_DEG)
+
+    def f(self, value):
+        self[getattr(self, var)] = value
+    setattr(WalkParameters, "set"+var+"Rad", f)
+    setattr(WalkParameters, "get"+var+"Rad", lambda self: self[getattr(self, var)])
+
+for var in ['LHipRoll', 'RHipRoll', 'TorsoYOrientation']:
+
+    def f(self, value):
+        self[getattr(self, var)] = value
+    setattr(WalkParameters, "set"+var+"Deg", f)
+    setattr(WalkParameters, "get"+var+"Deg", lambda self: self[getattr(self, var)])
+
+    def f(self, value):
+        self[getattr(self, var)] = value * RAD_TO_DEG
+    setattr(WalkParameters, "set"+var+"Rad", f)
+    setattr(WalkParameters, "get"+var+"Rad", lambda self: self[getattr(self, var)] * DEG_TO_RAD)
