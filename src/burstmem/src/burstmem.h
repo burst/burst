@@ -41,7 +41,7 @@ class burstmem:public
     bool        isMemoryMapRunning();
     int         getNumberOfVariables();
     std::string getVarNameByIndex(int i);
-
+    
     /**
      * version
      * @return The version number of recorder
@@ -65,6 +65,18 @@ class burstmem:public
 
   private:
 
+    // Battery checking functionality
+
+    static const int CHARGER_UNKNOWN, CHARGER_CONNECTED, CHARGER_DISCONNECTED;
+    int lastBatteryStatus;
+    void checkBatteryStatus();
+
+    void announceChargerChange( int status );
+
+    void subscribeToDataChange();
+
+    void updateMemoryMappedVariables();
+
     bool                            m_copying;
     bool                            m_memory_mapped;
 
@@ -81,6 +93,9 @@ class burstmem:public
 
     //proxy to the memory module
     ALPtr < AL::ALMemoryProxy > m_memory;
+
+    // Proxy to the TextToSpeech module
+    ALPtr < AL::ALProxy > textToSpeechProxy;
 
 };
 #endif // __BURSTMEM_H__
