@@ -16,11 +16,14 @@ class SoapProtocol(Protocol):
         self.options = con.options
 
     def connectionMade(self):
-        #print "sending %s" % tosend
+        
+        if self.options.verbose_twisted:
+            print "sending %s" % self.tosend
         self.transport.write(self.tosend)
 
     def dataReceivedHeaders(self, data):
-        #print "YAY DATA", data[:10]
+        if self.options.verbose_twisted:
+            print "YAY DATA", data[:10]
         # at some point we will be done, then we call our deferred
         self._got.append(data)
         self._headers = ''.join(self._got)
@@ -34,6 +37,8 @@ class SoapProtocol(Protocol):
         self.dataReceived(data[left_bracket_pos:])
 
     def dataReceivedContent(self, data):
+        if self.options.verbose_twisted:
+            print "MORE DATA", data[:10]
         data_len = len(data)
         self._got_len += data_len
         self._got.append(data)
