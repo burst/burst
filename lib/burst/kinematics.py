@@ -19,6 +19,12 @@ from scipy.linalg import lu, lu_factor
 
 from burst_util import nicefloats
 
+from burst import options
+
+# TODO - pynaoqi'sm, should be factored out to some
+# joint object that both burst and pynaoqi will use,
+# inside burst. Like options.
+
 # Notes on numpy usage with matrix math.
 # I opted not to use the nicer matrix() * matrix() because
 # of the annoyance of multiplying a matrix with a row, so
@@ -115,8 +121,8 @@ def translation4D(dx, dy, dz):
     m[Z_AXIS,W_AXIS] = dz
     return m
 
-def vector4D(x, y, z):
-    return array([x, y, z, 0.0])
+def vector4D(x, y, z, w=1.0):
+    return array([x, y, z, w])
 
 def rotation4D(axis, angle):
     rot = identity()
@@ -258,7 +264,7 @@ class NaoPose(object):
     def __init__(self):
         self.cameraToWorldFrame = identity()
         self.focalPointInWorldFrame = identity()
-        self.comHeight = 33.1 # default
+        self.comHeight = 0 # MM cause that's the way they do it.
         self.cameraToHorizonFrame = identity()
         self.horizonSlope = 0.0
         self.horizonLeft = [0.0, 0.0]
@@ -323,9 +329,7 @@ class NaoPose(object):
         supportLegToBodyTransform = calculateForwardTransform(
                     supportLegChain, leg_angles)
 
-        print origin
         supportLegLocation = dot(supportLegToBodyTransform, origin)
-        print origin, supportLegLocation
 
         # At this time we trust inertial
         bodyInclinationX, bodyInclinationY = inclinationAngles
