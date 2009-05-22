@@ -1,5 +1,5 @@
 from math import atan2
-from consts import CM_TO_METER
+from consts import CM_TO_METER, IMAGE_HALF_HEIGHT, IMAGE_HALF_WIDTH
 import burst
 from burst.consts import *
 from burst_util import transpose, cumsum, BurstDeferred
@@ -8,7 +8,6 @@ from eventmanager import EVENT_MANAGER_DT
 import moves
 from world import World
 from walkparameters import WalkParameters
-
 
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
@@ -21,7 +20,7 @@ else:
     DEFAULT_STEPS_FOR_TURN = 60
     DEFAULT_STEPS_FOR_SIDEWAYS = 60
 
-MINIMAL_CHANGELOCATION_TURN = 0.20
+MINIMAL_CHANGELOCATION_TURN = 0.15
 MINIMAL_CHANGELOCATION_SIDEWAYS = 0.005
 MINIMAL_CHANGELOCATION_X = 0.01
 
@@ -29,6 +28,13 @@ KICK_TYPE_STRAIGHT_WITH_LEFT = 0
 KICK_TYPE_STRAIGHT_WITH_RIGHT = 1
 KICK_TYPES = {KICK_TYPE_STRAIGHT_WITH_LEFT: moves.GREAT_KICK_LEFT,
               KICK_TYPE_STRAIGHT_WITH_RIGHT: moves.GREAT_KICK_RIGHT}
+
+LOOKAROUND_QUICK = 0
+LOOKAROUND_FRONT = 1
+LOOKAROUND_AROUND = 2
+LOOKAROUND_TYPES = {LOOKAROUND_QUICK: moves.HEAD_SCAN_QUICK,
+                    LOOKAROUND_FRONT: moves.HEAD_SCAN_FRONT,
+                    LOOKAROUND_AROUND: moves.HEAD_SCAN_FRONT} # TODO: Add look around
 
 #######
 
@@ -54,7 +60,7 @@ class Journey(object):
     def __str__(self):
         return "<Journey %3.3f distance, %3.3f bearing>" % (self._distance, self._bearing)
 
-    def start(self, walk_param, steps_before_full_stop,
+    def start(self, walk, steps_before_full_stop,
             distance, bearing, delta_theta):
         """ Do first leg, if the distance is smaller than threshold do final
         leg, otherwise schedule the next leg """
@@ -64,9 +70,9 @@ class Journey(object):
         self._delta_theta = delta_theta
         self._distance_left = self._distance
         self._turn = turn = [None, None] # for duration estimation
-
-        self._time_per_steps = walk_param[WalkParameters.TimePerStep]
-        self._step_length = step_length = walk_param[WalkParameters.StepLength]
+        #import pdb; pdb.set_trace()
+        self._time_per_steps = walk.defaultSpeed
+        self._step_length = step_length = walk[WalkParameters.StepLength]
         if steps_before_full_stop == 0:
             self._leg_distance = self._distance
         else:
@@ -80,7 +86,7 @@ class Journey(object):
         self._duration = duration = (self._time_per_steps * distance / step_length +
                     (turn[0] and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
 
-        self._actions.setWalkConfig(walk_param)
+        self._actions.setWalkConfig(walk.walkParameters)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
         if turn[0]:
@@ -106,9 +112,9 @@ class Journey(object):
             self._motion.addTurn(self._turn[1], DEFAULT_STEPS_FOR_TURN)
         postid = self._motion.post.walk()
         # final leg will call the user's callbacks
-        # TODO - duration calculation for real
+        last_leg_duration = 1.0 # TODO - duration calculation for real
         self._world.robot.add_expected_walk_post(postid,
-            EVENT_CHANGE_LOCATION_DONE, 1.0
+            EVENT_CHANGE_LOCATION_DONE, last_leg_duration
                 ).onDone(self.callbackAndReset)
     
     def callbackAndReset(self):
@@ -121,9 +127,9 @@ class Journey(object):
         else:
             self.addSingleLeg()
             postid = self._motion.post.walk()
-            # TODO - compute duration correctly
+            leg_duration = 1.0 # TODO - compute duration correctly
             self._world.robot.add_expected_walk_post(postid,
-                EVENT_CHANGE_LOCATION_DONE, 1.0).onDone(self.onLegComplete)
+                EVENT_CHANGE_LOCATION_DONE, leg_duration).onDone(self.onLegComplete)
     
     def addSingleLeg(self):
         """ call _motion.addWalkStraight, for webots walk do a single type of walk,
@@ -156,23 +162,15 @@ class Actions(object):
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
 
-    def scanFront(self):
-        # TODO: Stop moving when both ball and goal found? 
-        return self.executeHeadMove(moves.BOTTOM_FRONT_SCAN)
-
-    def scanQuick(self):
-        return self.executeHeadMove(moves.BOTTOM_QUICK_SCAN)
-
-    def initPoseAndStiffness(self , isGoalie = False):
+    def lookaround(self, lookaround_type):
+        return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
+    
+    def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        if isGoalie:
-            self.executeSyncHeadMove(moves.BOTTOM_INIT_FAR) #BOTTOM_CENTER_H_MIN_V
-            self.executeSyncMove(moves.INITIAL_POS)
-        else:
-            self.executeSyncHeadMove(moves.BOTTOM_CENTER_H_MIN_V) #BOTTOM_INIT_FAR
-            self.executeSyncMove(moves.INITIAL_POS)
+        self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR)
+        self.executeSyncMove(moves.INITIAL_POS)
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self.clearFootsteps()
@@ -194,9 +192,8 @@ class Actions(object):
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation,
-            StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
-            ) = param[:14]
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
         self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude )
@@ -209,7 +206,7 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY )
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk_param=moves.FASTEST_WALK, steps_before_full_stop=0):
+        walk=moves.FASTEST_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -226,7 +223,7 @@ class Actions(object):
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
         bearing  = atan2(delta_y, delta_x)
 
-        return self._journey.start(walk_param=walk_param,
+        return self._journey.start(walk=walk,
             steps_before_full_stop = steps_before_full_stop,
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
@@ -237,7 +234,19 @@ class Actions(object):
         postid = self._motion.post.doMove(jointCodes, angles, times, 1)
         return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
 
-    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk_param=moves.FASTEST_WALK):
+    def turn(self, deltaTheta, walk=moves.FASTEST_WALK):
+        self.setWalkConfig(walk.walkParameters)
+        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+        
+        print "ADD TURN (deltaTheta): %f" % (deltaTheta)
+        self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN)
+        
+        duration = 1.0 # TODO - compute duration correctly
+        postid = self._motion.post.walk()
+        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
+        
+
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.FASTEST_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -255,9 +264,13 @@ class Actions(object):
 
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
-        self.setWalkConfig(walk_param)
-        steps = walk_param[WalkParameters.TimePerStep]
-        StepLength = walk_param[WalkParameters.StepLength] # TODO: encapsulate walk params
+        self.setWalkConfig(walk.walkParameters)
+        
+        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            self.setWalkConfig(moves.SIDESTEP_WALK.walkParameters)
+        
+        steps = walk.defaultSpeed
+        StepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (StepLength: %3.3f distance: %3.3f)" % (StepLength, distance)
@@ -305,8 +318,6 @@ class Actions(object):
         #print repr((joints, angles_matrix, durations_matrix))
         postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
-
-
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
@@ -401,9 +412,9 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
-        param = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
+        walk = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
 
-        self.setWalkConfig(param)
+        self.setWalkConfig(walk.walkParameters)
         self._motion.addWalkStraight( float(distance), 100 )
 
         postid = self._motion.post.walk()
@@ -414,6 +425,27 @@ class Actions(object):
         print "saying: %s" % message
         if not self._speech is None:
             self._speech.say(message)
+
+    def normalizeBallX(self, ballX):
+        return (IMAGE_HALF_WIDTH - ballX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
+
+    def normalizeBallY(self, ballY):
+        return (IMAGE_HALF_HEIGHT - ballY) / IMAGE_HALF_HEIGHT # between 1 (top) to -1 (bottom)
+
+    def executeTracking(self, target):
+        if not self._world.robot.isHeadMotionInProgress():
+            xNormalized = self.normalizeBallX(target.centerX)
+            yNormalized = self.normalizeBallY(target.centerY)
+            if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
+                CAM_X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
+                CAM_Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
+                deltaHeadYaw = xNormalized * CAM_X_TO_RAD_FACTOR
+                deltaHeadPitch = -yNormalized * CAM_Y_TO_RAD_FACTOR
+                #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
+                return self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
+                #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (deltaHeadYaw, deltaHeadPitch)            
+                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
+        
 
     def executeGettingUpBelly(self):
         return self.executeMoveChoreograph(moves.GET_UP_BELLY)

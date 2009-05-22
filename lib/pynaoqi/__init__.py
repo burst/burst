@@ -990,6 +990,7 @@ def getDefaultOptions():
     parser.add_option('--notwisted', action='store_false', dest='twisted', help='don\'t use twisted')
     parser.add_option('--locon', action='store_true', dest='localization_on_start', help='turn localization on')
     parser.add_option('--reportnew', action='store_true', dest='report_new_packet_sizes', help='debug - report new packet sizes')
+    parser.add_option('--verbosetwisted', action='store_true', dest='verbose_twisted', help='debug - show twisted communication')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
@@ -999,7 +1000,8 @@ def getDefaultOptions():
     for i, arg in enumerate(sys.argv):
         if arg in ['--ip', '--port']:
             todelete.extend([i, i+1])
-        if arg in ['--locon', '--twisted', '--notwisted', '--reportnew']:
+        if arg in ['--locon', '--twisted', '--notwisted', '--reportnew',
+            '--verbosetwisted']:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):

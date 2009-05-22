@@ -122,6 +122,20 @@ def parse_command_line_arguments():
 
 parse_command_line_arguments()
 
+# TODO - not in here
+robotname = {
+    '192.168.7.106'	: 'messi',
+    '192.168.7.107'	: 'gerrard',
+    '192.168.7.108'	: 'cech',
+    '192.168.7.177'	: 'hagi',
+    '192.168.7.109'	: 'raul',
+    '192.168.7.110'	: 'maldini',
+}.get(ip, ip)
+
+print "_"*80
+print "You are running with robotname = %s" % robotname
+print "-"*80
+
 # Set path only after reading command line arguments - we need them to know
 # if we are connecting to a simulator.
 

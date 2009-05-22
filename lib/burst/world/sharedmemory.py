@@ -11,15 +11,20 @@ class SharedMemoryReader(object):
     """ read from memory mapped file and not from ALMemory proxy, which
     is painfully slow (but only if the file is there - for example, we
     don't want to break running controllers not on the robot)
+    
+    The MMAP_VARIABLES_FILENAME is created by World only - there is still
+    a little code here to check it actually exists, but that's it.
+    The contents of that file is the list passed to the constructor
+    as varlist.
     """
 
     verbose = False
 
-    def __init__(self):
+    def __init__(self, varlist):
         if not self.isMMapAvailable():
             raise Exception("Don't initialize me if there is no MMAP!")
         self._shm_proxy = burst.ALProxy(BURST_SHARED_MEMORY_PROXY_NAME)
-        self._var_names = [l.strip() for l in linecache.getlines(MMAP_VARIABLES_FILENAME) if len(l.strip()) > 0 and l.strip()[:1] != '#']
+        self._var_names = varlist
         self.vars = dict((k, 0.0) for k in self._var_names)
         # TODO - this is slow (but still should be fast compared to ALMemory)
         self._unpack = 'f'*len(self._var_names)
@@ -78,5 +83,3 @@ class SharedMemoryReader(object):
             fd.close()
             assert(os.path.exists(MMAP_FILENAME))
             assert(os.stat(MMAP_FILENAME)[stat.ST_SIZE] == MMAP_LENGTH)
-
-
