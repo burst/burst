@@ -17,6 +17,23 @@ class RingBuffer(list):
 
 # Twisted-like Deferred and succeed
 
+def returnSucceed(f):
+    def wrapper(*args, **kw):
+        return succeed(f(*args, **kw))
+    return wrapper
+
+class WrapWithDeferreds(object):
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    def __getattr__(self, k):
+        # hack for 'post'
+        target = getattr(getattr(self, '_obj'), k)
+        if k == 'post':
+            return WrapWithDeferreds(target)
+        return returnSucceed(target)
+
 class MyDeferred(object):
     """ mimic in the most minimal way twisted.internet.defer.Deferred """
     def __init__(self):
@@ -34,18 +51,67 @@ class MyDeferred(object):
         self.called = True
         self.result = result
         if self._cb:
-            self._cb(result)
+            try:
+                self._cb(result)
+            except Exception, e:
+                print "Exception on deferred: %s" % str(e)
+                import pdb; pdb.set_trace()
 
 def succeed(result):
     d = Deferred()
     d.callback(result)
     return d
 
+# These functions are just plain copied from twisted - should work with my simplified Deferred too
+#/usr/local/lib/python2.6/dist-packages/Twisted-8.2.0-py2.6-linux-x86_64.egg/twisted/internet/defer.py
+
+class MyDeferredList(MyDeferred):
+    """ Very slim compared to the original. Minuses:
+    doesn't handle errback (nor does my Deferred implementation)
+    """
+
+    def __init__(self, deferreds):
+        self._deferreds = deferreds
+        self._count = len(deferreds)
+        # like twisted.internet.defer, collect pairs of (success, result),
+        # only here it is always (True, result)
+        self._results = [None for i in xrange(len(deferreds))]
+        for i, d in enumerate(self._deferreds):
+            d.addCallback(lambda result, i=i: self._onOne(result, i))
+
+    def _onOne(self, result, i):
+        self._count -= 1
+        self._results[i] = (True, result)
+        if self._count <= 0:
+            self.callback(None)
+
+def wrapDeferredWithBurstDeferred(d):
+    """ call with no parameters - the only use case so far """
+    bd = BurstDeferred(None)
+    d.addCallback(lambda result: bd.callOnDone())
+    return bd
+
 try:
     # use the real thing if it is there
-    from twisted.internet.defer import Deferred
+    from twisted.internet.defer import Deferred, DeferredList
 except:
     Deferred = MyDeferred
+    DeferredList = MyDeferredList
+
+def chainDeferreds(deferred_makers):
+    current = [0]
+    dlast = Deferred()
+
+    def _step(result):
+        d = deferred_makers[current[0]](result)
+        current[0] += 1
+        if current[0] >= len(deferred_makers):
+            d.addCallback(dlast.callback)
+        else:
+            d.addCallback(_step)
+
+    _step(None)
+    return dlast
 
 # Slightly less twisted like chain geared deferred implementation
 
