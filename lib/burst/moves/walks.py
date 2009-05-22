@@ -70,7 +70,7 @@ SLOW_WALK = Walk(WalkParameters([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00]),                  # 
+           0.00]),                  # ZmpOffsetY
            80          # 20ms count per step
     )
 
@@ -88,7 +88,7 @@ SIDESTEP_WALK = Walk(WalkParameters([
            0.04,                  # StepSide
            0.3,                   # MaxTurn
            0.015,                  # ZmpOffsetX
-           0.02]),                  # 
+           0.02]),                  # ZmpOffsetY
            25                   # 20ms count per step
     )
 

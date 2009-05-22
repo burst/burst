@@ -263,11 +263,11 @@ class Actions(object):
         did_sideways = None
 
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+
+        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            walk = moves.SIDESTEP_WALK
         
         self.setWalkConfig(walk.walkParameters)
-        
-        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            self.setWalkConfig(moves.SIDESTEP_WALK.walkParameters)
         
         steps = walk.defaultSpeed
         StepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params

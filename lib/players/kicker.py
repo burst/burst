@@ -105,7 +105,7 @@ class kicker(Player):
             self.doNextAction()
         ################## TODO: remove following, temporary for testing ########################################################################
         elif self.cachedBallDist:
-            print "goal and ball seen, moving head in ball direction"
+            print "goal and ball seen, moving head in ball direction 2"
             self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation)
             self.doBallTracking = True
             self.kp = True
@@ -115,8 +115,6 @@ class kicker(Player):
             print "goal and ball NOT seen, searching again..."
             self.searchLevel = actions.LOOKAROUND_FRONT
             self.searchBallAndGoal(self.searchLevel)
-        
-        return
         
     def onGoalSeen(self):
         if self.goal is None:
