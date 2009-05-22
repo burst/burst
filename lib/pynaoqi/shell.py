@@ -61,8 +61,8 @@ def watch(names):
         con.ALMemory.getListData(names).addCallback(prettyprint),
         title = '%s - %s' % (options.ip, minimal_title(names)))
 
-def plottime(names, limits=(0.0, 320.0)):
-    return GtkTimeTicker(lambda: con.ALMemory.getListData(names), limits=limits)
+def plottime(names, limits=(0.0, 320.0), dt=1.0):
+    return GtkTimeTicker(lambda: con.ALMemory.getListData(names), limits=limits, dt=dt)
 
 video_window = None
 def video():
@@ -79,17 +79,21 @@ EXAMPLES = """    # Show current identified ball location
     ball = refilter('^/.*Ball.*center', names)
     con.ALMemory.getListData(ball)
 
-    # Watch the location of ball over time, in text, in plot
+    # Vision Location of ball over time, in text, in plot
     watch(ball)
     plottime(ball)
 
-    # Watch the vision positions on a canvas
+    # Vision positions on a canvas
     vision = refilter('^/.*[cC]enter', names)
     canvaspairs(vision)
 
-    # Watch Battery in a plot
+    # Battery in a plot
     battery = refilter('Battery.*Value',names)
     plottime(battery, limits=[-1.0,1.0])
+
+    # Localization positions for self and ball on canvas
+    loc = refilter('[XY]Est',names)
+    canvaspairs(loc, limits=[-1000,1000,-1000,1000])
 """
 def examples():
     print EXAMPLES

@@ -207,12 +207,12 @@ def serializeToSoap(x):
         thetype = 'Array'
         children = [serializeToSoap(c) for c in x]
     else:
-        if isinstance(x, int):
+        if isinstance(x, bool):
+            thetype = 'xsd:boolean'
+        elif isinstance(x, int):
             thetype = 'xsd:int'
         elif isinstance(x, float):
             thetype = 'xsd:float'
-        elif isinstance(x, bool):
-            thetype = 'xsd:boolean'
         else:
             thetype = 'xsd:string'
         x = str(x)
@@ -600,6 +600,7 @@ class BaseNaoQiConnection(object):
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
         self._req = Requester(url)
+        self._is_webots = self._req._port == 9560
         self.s = None # socket to connect to broker. reusing - will it work?
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
