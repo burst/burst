@@ -57,7 +57,7 @@ class Rectangle(Player):
         self.startRecord()
         self._actions.initPoseAndStiffness()
         self._actions.changeLocationRelative(
-                    40.0, 0.0, 0.0, walk_param=moves.SLOW_WALK).onDone(
+                    40.0, 0.0, 0.0, walk=moves.SLOW_WALK).onDone(
                       self.stopRecord)
 
     def stopRecord(self):

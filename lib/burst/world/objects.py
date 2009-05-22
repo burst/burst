@@ -6,7 +6,7 @@ from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
-from burst_util import running_average, RingBuffer
+from burst_util import running_median, RingBuffer
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -64,8 +64,8 @@ class Locatable(object):
         self.missingFramesCounter = 0
         
         self.distSmoothed = 0.0
-        self.distRunningAverage = running_average(3) # TODO: Change to median AND/OR use ballEKF/ballLoc
-        self.distRunningAverage.next()
+        self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
+        self.distRunningMedian.next()
 
     HISTORY_LABELS = ['time', 'distance', 'bearing']
     def _record_current_state(self):
@@ -108,7 +108,7 @@ class Locatable(object):
         self.bearing = new_bearing
         self.dist = new_dist
         self._record_current_state()
-        self.distSmoothed = self.distRunningAverage.send(new_dist)
+        self.distSmoothed = self.distRunningMedian.send(new_dist)
         #if isinstance(self, Ball):
         #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
         
@@ -398,4 +398,3 @@ class GoalPost(Locatable):
                   new_x, new_y)
         self.seen = new_seen
         
-

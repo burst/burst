@@ -50,7 +50,7 @@ class personalWalkManualTweaker(Player):
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR)
         #self._actions.changeLocationRelative()
         t = getattr(self._actions, walkType)
-        t(walkDistance, walk_param=walkParams)
+        t(walkDistance, walk=walkParams)
     
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()
