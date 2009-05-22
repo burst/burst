@@ -203,11 +203,15 @@ class Ball(Movable):
         
         n = n - self.base_point_index #real number of valid points
         
-        if n > 4: #TODO: need some kind of col' for diffrent speeds....
-            #Least mean squares:
-            self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-            #print "ball intersection with body: " , self.body_isect
-            return True
+        
+#        if n > 4: #TODO: need some kind of col' for diffrent speeds....
+#            #Least mean squares:
+#            
+#            #!!!!!!!!!!!! ERAN: Following code causes "ZeroDivisionError: float division" when run on robot !!!!!!!!!!!!!!!!!!!!!!
+#            self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
+#            
+#            #print "ball intersection with body: " , self.body_isect
+#            return True
         return False 
                  
     
