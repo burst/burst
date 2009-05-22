@@ -6,17 +6,20 @@ import pynaoqi
 
 con = pynaoqi.getDefaultConnection()
 
-def getMemoryProxy():
+def getDCMProxy(deferred = False):
+    return con.DCM
+
+def getMemoryProxy(deferred = False):
     return con.ALMemory
 
-def getMotionProxy():
+def getMotionProxy(deferred = False):
     return con.ALMotion
 
 def getBroker():
     """ this is BROKEN """
     return con
 
-def getSpeechProxy():
+def getSpeechProxy(deferred = False):
     """ return None if nothing there """
     return hasattr(con, 'ALTextToSpeech') and con.ALTextToSpeech or None
 
