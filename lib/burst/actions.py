@@ -2,7 +2,8 @@ from math import atan2
 from consts import CM_TO_METER, IMAGE_HALF_HEIGHT, IMAGE_HALF_WIDTH
 import burst
 from burst.consts import *
-from burst_util import transpose, cumsum, BurstDeferred
+from burst_util import (transpose, cumsum,
+    BurstDeferred, Deferred, DeferredList, chainDeferreds)
 from events import *
 from eventmanager import EVENT_MANAGER_DT
 import moves
@@ -43,6 +44,9 @@ class Journey(object):
     """ Class used by changeLocationRelative. Breaks down a single walk
     into multiple legs. In the simplest case it acts like the old changeLocationRelative,
     i.e. does a single leg.
+
+    The extra complication arises from doing everything in deferred mode - every call to
+    a proxy is chained via addCallback.
     """
 
     SLOW_START_STEPS = 2 # The amount of steps one should take at a slower pace at the beginning.
@@ -64,6 +68,7 @@ class Journey(object):
             distance, bearing, delta_theta):
         """ Do first leg, if the distance is smaller than threshold do final
         leg, otherwise schedule the next leg """
+        self._cmds = [] # See comment on _addCommand
         self._deferred = BurstDeferred(None)
         self._distance = distance
         self._bearing = bearing
@@ -86,31 +91,54 @@ class Journey(object):
         self._duration = duration = (self._time_per_steps * distance / step_length +
                     (turn[0] and DEFAULT_STEPS_FOR_TURN or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
 
-        self._actions.setWalkConfig(walk.walkParameters)
-        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+        self._addCommand("walkconfig", lambda _: self._actions.setWalkConfig(walk.walkParameters))
+        self._addCommand("support mode", lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if turn[0]:
-            print "DEBUG: addTurn %3.3f" % bearing
-        print "DEBUG: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (
+            print "Journey: Planned: addTurn %3.3f" % turn[0]
+        print "Journey: Planned: Straight walk: StepLength: %3.3f distance: %3.3f est. duration: %3.3f" % (
             step_length, distance, duration)
         if turn[1]:
-            print "DEBUG: addTurn %3.3f" % final_turn
+            print "Journey: Planned: addTurn %3.3f" % turn[1]
 
         # Avoid turns
         if self._turn[0]:
-            self._motion.addTurn(self._turn[0], DEFAULT_STEPS_FOR_TURN)
+            self._addCommand("addTurn %3.3f" % self._turn[0],
+                lambda _: self._motion.addTurn(self._turn[0], DEFAULT_STEPS_FOR_TURN))
 
         self.onLegComplete()
 
         return self._deferred
+
+    def _addCommand(self, description, f):
+        """
+        we collect any call to a proxy here, for easy understanding
+        since we will want to chain them (make their execution sequential)
+        without resorting to breaking everything into callbacks due to the slightly
+        complex nature of this function
+        """
+        self._cmds.append((description, f))
+
+    def _executeAllCommands(self):
+        print "Executing Journey Queue:"
+        for desc, f in self._cmds:
+            print "          %s" % desc
+        print "End Journey Queue"
+        d = chainDeferreds([f for desc, f in self._cmds])
+        self._cmds = []
+        return d
 
     def lastLeg(self):
         # Now turn to the final angle, taking into account the turn we
         # already did
         self.addSingleLeg()
         if self._turn[1]:
-            self._motion.addTurn(self._turn[1], DEFAULT_STEPS_FOR_TURN)
-        postid = self._motion.post.walk()
+            self._addCommand("addTurn %3.3f" % self._turn[1],
+                lambda _: self._motion.addTurn(self._turn[1], DEFAULT_STEPS_FOR_TURN))
+        self._executeAllCommands().addCallback(
+            lambda _: self._motion.post.walk().addCallback(self.onLastLegPosted))
+
+    def onLastLegPosted(self, postid):
         # final leg will call the user's callbacks
         last_leg_duration = 1.0 # TODO - duration calculation for real
         self._world.robot.add_expected_walk_post(postid,
@@ -126,29 +154,33 @@ class Journey(object):
             self.lastLeg()
         else:
             self.addSingleLeg()
-            postid = self._motion.post.walk()
-            leg_duration = 1.0 # TODO - compute duration correctly
-            self._world.robot.add_expected_walk_post(postid,
-                EVENT_CHANGE_LOCATION_DONE, leg_duration).onDone(self.onLegComplete)
+            self._executeAllCommands().addCallback(
+                lambda _: self._motion.post.walk().addCallback(self._onLegCompletePosted))
+
+    def _onLegCompletePosted(self, postid):
+        leg_duration = 1.0 # TODO - compute duration correctly
+        self._world.robot.add_expected_walk_post(postid,
+            EVENT_CHANGE_LOCATION_DONE, leg_duration).onDone(self.onLegComplete)
     
+    def _addWalkStraight(self, desc_tmpl, dist, steps):
+        self._addCommand(desc_tmpl % dist, lambda _: self._motion.addWalkStraight(dist, steps))
+
     def addSingleLeg(self):
         """ call _motion.addWalkStraight, for webots walk do a single type of walk,
         for real robot do a slow walk for SLOW_START_STEPS and then a normal walk
         """
+        leg_distance = min(self._leg_distance, self._distance_left)
         if World.connected_to_nao:
-            slow_walk_distance = min(self._leg_distance,
-                self._step_length * self.SLOW_START_STEPS)
-            normal_walk_distance = self._leg_distance - slow_walk_distance
-            self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
-            print "Adding slow walk: %f" % slow_walk_distance # DBG
-            self._motion.addWalkStraight( normal_walk_distance, self._time_per_steps)
-            print "Adding normal walk: %f" % normal_walk_distance # DBG
+            slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
+            normal_walk_distance = leg_distance - slow_walk_distance
+            self._addWalkStraight( "slow walk: %f", slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+            self._addWalkStraight( "normal walk: %f", normal_walk_distance, self._time_per_steps)
         else:
-            self._motion.addWalkStraight( self._leg_distance, self._time_per_steps )
-            print "Adding normal walk: %f" % self._leg_distance
-        self._distance_left -= self._leg_distance
+            self._addWalkStraight( "same speed: %f", leg_distance, self._time_per_steps )
+        self._distance_left -= leg_distance
         if self._distance_left < 0.0:
             print "ERROR: Journey distance left calculation incorrect"
+            import pdb; pdb.set_trace()
             self._distance_left = 0.0
 
 #######
@@ -166,17 +198,21 @@ class Actions(object):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
     
     def initPoseAndStiffness(self):
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        dgens = []
+        dgens.append(lambda _: self._motion.setBodyStiffness(INITIAL_STIFFNESS))
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR)
-        self.executeSyncMove(moves.INITIAL_POS)
+        dgens.append(lambda _: self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR))
+        dgens.append(lambda _: self.executeSyncMove(moves.INITIAL_POS))
+        return chainDeferreds(dgens)
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        self.clearFootsteps()
-        self.executeSyncMove(moves.STAND)
-        self.executeSyncMove(moves.SIT_POS)
-        self._motion.setBodyStiffness(0)
+        ds = []
+        ds.append(lambda _: self.clearFootsteps())
+        ds.append(lambda _: self.executeSyncMove(moves.STAND))
+        ds.append(lambda _: self.executeSyncMove(moves.SIT_POS))
+        ds.append(lambda _: self._motion.setBodyStiffness(0))
+        return chainDeferreds(ds)
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
@@ -195,15 +231,18 @@ class Actions(object):
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
-        self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
-                                            ElbowMedian, ElbowAmplitude )
-        self._motion.setWalkArmsEnable(True)
+        ds = []
+        ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
+                                            ElbowMedian, ElbowAmplitude ))
+        ds.append(self._motion.setWalkArmsEnable(True))
 
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation )
+        ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
 
-        self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
-                                                    ZmpOffsetX, ZmpOffsetY )
+        ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
+                                                    ZmpOffsetX, ZmpOffsetY ))
+
+        return DeferredList(ds)
     
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=moves.FASTEST_WALK, steps_before_full_stop=0):
@@ -231,19 +270,29 @@ class Actions(object):
 
     def executeMoveChoreograph(self, (jointCodes, angles, times)):
         duration = max(col[-1] for col in times)
-        postid = self._motion.post.doMove(jointCodes, angles, times, 1)
-        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+        d = self._motion.post.doMove(jointCodes, angles, times, 1)
+        return self.bdFromPostIdDeferred(d, kind='motion',
+            event=EVENT_BODY_MOVE_DONE, duration=duration)
+
+    def bdFromPostIdDeferred(self, d, kind, event, duration):
+        post_handler = {'motion': self._world.robot.add_expected_motion_post,
+            'head':self._world.robot.add_expected_head_post,
+            'walk':self._world.robot.add_expected_walk_post}[kind]
+        bd = BurstDeferred(None)
+        d.addCallback(lambda postid: post_handler(postid, event, duration).onDone(bd.callOnDone))
+        return bd
 
     def turn(self, deltaTheta, walk=moves.FASTEST_WALK):
         self.setWalkConfig(walk.walkParameters)
-        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+        dgens = []
+        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
         
         print "ADD TURN (deltaTheta): %f" % (deltaTheta)
-        self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN)
+        dgens.append(lambda _: self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN))
         
         duration = 1.0 # TODO - compute duration correctly
-        postid = self._motion.post.walk()
-        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
+        d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
+        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
         
 
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.FASTEST_WALK):
@@ -262,12 +311,15 @@ class Actions(object):
         distance, sideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
         did_sideways = None
 
-        self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
+        dgens = [] # deferred generators. This is the DESIGN PATTERN to collect a bunch of
+                   # stuff that would have been synchronous and turn it asynchronous
+                   # All lambda's should have one parameter, the result of the last deferred.
+        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
             walk = moves.SIDESTEP_WALK
         
-        self.setWalkConfig(walk.walkParameters)
+        dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
         steps = walk.defaultSpeed
         StepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
@@ -278,24 +330,25 @@ class Actions(object):
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, StepLength*2)
             if World.connected_to_nao:
-                self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
-                self._motion.addWalkStraight( distance - slow_walk_distance, steps )
+                dgens.append(lambda _: self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK ))
+                dgens.append(lambda _: self._motion.addWalkStraight( distance - slow_walk_distance, steps ))
             else:
                 print "ADD WALK STRAIGHT: %f, %f" % (distance, steps)
-                self._motion.addWalkStraight( distance, steps )
+                dgens.append(lambda _: self._motion.addWalkStraight( distance, steps ))
 
         # Avoid minor sideways walking
         if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
             print "WALKING SIDEWAYS (%3.3f)" % sideways
             did_sideways = sideways
-            self._motion.addWalkSideways(sideways, DEFAULT_STEPS_FOR_SIDEWAYS)
+            dgens.append(lambda _: self._motion.addWalkSideways(sideways, DEFAULT_STEPS_FOR_SIDEWAYS))
             
         duration = (steps * distance / StepLength +
                     (did_sideways and DEFAULT_STEPS_FOR_SIDEWAYS or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
         print "Estimated duration: %3.3f" % (duration)
         
-        postid = self._motion.post.walk()
-        return self._world.robot.add_expected_walk_post(postid, EVENT_CHANGE_LOCATION_DONE, duration)
+        d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
+        return self.bdFromPostIdDeferred(d, kind='walk',
+            event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
@@ -316,8 +369,8 @@ class Actions(object):
         durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
@@ -338,8 +391,8 @@ class Actions(object):
         durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self._world.robot.add_expected_motion_post(postid, EVENT_BODY_MOVE_DONE, duration)
+        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of head angles
@@ -356,10 +409,10 @@ class Actions(object):
         angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
         durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
-        postid = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         duration = max(col[-1] for col in durations_matrix)
+        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         #print "executeHeadMove: duration = %s" % duration
-        return self._world.robot.add_expected_head_post(postid, EVENT_HEAD_MOVE_DONE, duration)
+        return self.bdFromPostIdDeferred(d, kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
     def executeSyncMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
@@ -380,7 +433,9 @@ class Actions(object):
         durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        # XXX: returns a Deferred, not a BurstDeferred - but no one expects to do anything
+        # with this return value anyway. Just a hack to let Twisted do a "sitPose" nicely.
+        return self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
 
     def executeSyncHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of head angles
@@ -397,10 +452,11 @@ class Actions(object):
         angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
         durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
-        self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        # XXX: see executeSyncMove return comment
+        return self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
  
     def clearFootsteps(self):
-        self._motion.clearFootsteps()
+        return self._motion.clearFootsteps()
 
     def moveHead(self, x, y):
         self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)

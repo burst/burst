@@ -6,7 +6,7 @@ import traceback
 import sys
 from time import time
 
-import burst.base
+import burst
 from burst_util import BurstDeferred
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
@@ -112,7 +112,7 @@ class EventManager(object):
     def quit(self):
         self._should_quit = True
 
-    def runonce(self):
+    def handlePendingEventsAndDeferreds(self):
         """ Call all callbacks registered based on the new events
         stored in self._world
         """
@@ -136,6 +136,7 @@ class BasicMainLoop(object):
     def __init__(self, playerclass):
         self._playerclass = playerclass
         self._ctrl_c_cb = None
+        self._actions = None
 
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
@@ -165,7 +166,7 @@ class BasicMainLoop(object):
         """ wrap the actual run in _run to allow profiling - from the command line
         use --profile
         """
-        if burst.base.options.profile:
+        if burst.options.profile:
             print "running via hotshot"
             import hotshot
             filename = "pythongrind.prof"
@@ -178,7 +179,7 @@ class BasicMainLoop(object):
     def _run(self):
         """ wrap the real loop to catch keyboard interrupt and network errors """
         ctrl_c_pressed, normal_quit = False, True # default is normal_quit so we sit
-        if burst.base.options.catch_player_exceptions:
+        if burst.options.catch_player_exceptions:
             try:
                 ctrl_c_pressed, normal_quit = self._run_exception_wrap()
             except Exception, e:
@@ -190,13 +191,23 @@ class BasicMainLoop(object):
         else:
             ctrl_c_pressed, normal_quit = self._run_exception_wrap()
         if ctrl_c_pressed:
-            if self._ctrl_c_cb:
-                self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
-                    world=self._world)
+            self.onCtrlCPressed()
         if normal_quit:
+            self.onNormalQuit()
+           
+    def onNormalQuit(self):
+        if self._actions:
             print "sitting, removing stiffness and quitting."
-            self._actions.sitPoseAndRelax()
-            
+            self._sit_deferred = self._actions.sitPoseAndRelax()
+            return True
+        print "quitting before starting are we?"
+        return False
+
+    def onCtrlCPressed(self):
+        if self._ctrl_c_cb:
+            self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
+                world=self._world)
+
     def _run_exception_wrap(self):
         """ returns (ctrl_c_pressed, normal_quit_happened)
         A normal quit is either: Ctrl-C or eventmanager.quit()
@@ -233,8 +244,8 @@ class BasicMainLoop(object):
         if burst.options.trace_proxies:
             # the strange number 66 is to line up with the LogCalls object.
             print "%3.3f  %s" % (self.cur_time - self.main_start_time, "-"*66)
-        self._world.update(self.cur_time)
-        self._eventmanager.runonce()
+        self._eventmanager.handlePendingEventsAndDeferreds()
+        self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
         self.cur_time = time()
         if self.cur_time > self.next_loop:
@@ -276,7 +287,26 @@ class SimpleMainLoop(BasicMainLoop):
 class TwistedMainLoop(BasicMainLoop):
 
     def __init__(self, playerclass):
+    
         super(TwistedMainLoop, self).__init__(playerclass = playerclass)
+        self._do_cleanup = True
+
+        from twisted.internet import reactor
+        orig_sigInt = reactor.sigInt
+        self._ctrl_c_presses = 0
+        def my_int_handler(reactor, *args):
+            self._ctrl_c_presses += 1
+            print "TwistedMainLoop: SIGBREAK caught"
+            if self._ctrl_c_presses == 1:
+                self.onCtrlCPressed()
+                self._do_cleanup = self.onNormalQuit()
+                self._startShutdown()
+            else:
+                print "Two ctrl-c - shutting down uncleanly"
+                orig_sigInt(*args)
+
+        reactor.sigInt = my_int_handler
+
         import pynaoqi
         self.con = pynaoqi.getDefaultConnection()
         self.con.modulesDeferred.addCallback(self._twistedStart)
@@ -285,22 +315,44 @@ class TwistedMainLoop(BasicMainLoop):
         self.initMainObjectsAndPlayer()
         from twisted.internet import reactor, task
         self.preMainLoopInit()
-        main_task = task.LoopingCall(self.onTimeStep)
-        main_task.start(EVENT_MANAGER_DT)
+        self._main_task = task.LoopingCall(self.onTimeStep)
+        self._main_task.start(EVENT_MANAGER_DT)
 
     def _run_loop(self):
-        print "running TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
+        pass # we override run too, work is done there.
+
+    def run(self):
+        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from twisted.internet import reactor
-        reactor.run()
+        reactor.run() #installSignalHandlers=0)
+        print "TwistedMainLoop: event loop done"
+
+    def _startShutdown(self):
+        # Stop our task loop
+        if hasattr(self, '_main_task'):
+            self._main_task.stop()
+        if self._do_cleanup:
+            # only reason not to is if we didn't complete initialization to begin with
+            self.cleanup()
+        if hasattr(self, '_sit_deferred'):
+            self._sit_deferred.addCallback(self._completeShutdown)
+        else:
+            import pdb; pdb.set_trace()
+            self._completeShutdown()
+
+    def _completeShutdown(self, result=None):
+        from twisted.internet import reactor
+        reactor.stop()
 
     def onTimeStep(self):
+        #print ">>>    twisted burst step     <<<"
         sleep_time = self.doSingleStep()
         if self._eventmanager._should_quit:
-            reactor.stop()
-            self.cleanup()
+            print "TwistedMainLoop: event manager initiated quit"
+            self._startShutdown()
 
 from burst_util import is64
-if is64():
+if is64() or burst.options.use_pynaoqi:
     MainLoop = TwistedMainLoop
 else:
     # default loop doesn't use twisted
