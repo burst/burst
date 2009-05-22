@@ -32,6 +32,7 @@ def test():
 
 # must be the first import - you can only import naoqi after this
 from base import *
+from options import *
 
 from burst_util import is64
 
