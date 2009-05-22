@@ -104,8 +104,8 @@ def parse_command_line_arguments():
         sys.argv=['fake']
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
-    parser.add_option('-p', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
+    parser.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
+    parser.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
     parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
     parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')

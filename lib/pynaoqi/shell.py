@@ -9,6 +9,7 @@ import sys, os, time
 import optparse
 import urllib2
 from math import log10
+import math
 
 # add path of burst library
 burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '../lib'))
@@ -43,7 +44,7 @@ if has_matplotlib:
 # Gui Widgets
 
 from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
-    CanvasTicker, VideoWindow)
+    CanvasTicker, VideoWindow, PlottingWindow)
 
 from pynaoqi.gui import Joints
 
@@ -74,7 +75,26 @@ def canvaspairs(l, limits=[0,320,0,320]):
 
 #############################################################################
 
-def main_twisted(con, my_ns):
+EXAMPLES = """    # Show current identified ball location
+    ball = refilter('^/.*Ball.*center', names)
+    con.ALMemory.getListData(ball)
+
+    # Watch the location of ball over time, in text, in plot
+    watch(ball)
+    plottime(ball)
+
+    # Watch the vision positions on a canvas
+    vision = refilter('^/.*[cC]enter', names)
+    canvaspairs(vision)
+
+    # Watch Battery in a plot
+    battery = refilter('Battery.*Value',names)
+    plottime(battery, limits=[-1.0,1.0])
+"""
+def examples():
+    print EXAMPLES
+
+def main_twisted(con, my_ns, use_pylab):
 
     from ipy import IPShellTwisted
 
@@ -88,11 +108,23 @@ To generate help, call con.makeHelp()
 To generate help on a single module, call con.ALMotion.makeHelp()"""
     print """Deferreds: Any operation returning a deferred will return immediately
 as expected, and additionally once its callback is called it will be
-printed and available as _d."""
+printed and available as _d.
+
+    Some Examples of usage:
+
+""" + EXAMPLES + """
+Use examples() to show this later.
+"""
     print "_"*80
 
     from twisted.internet import task
     import gtk
+
+    if use_pylab:
+        pylab = __import__('pylab')
+        pylab.interactive(True)
+        my_ns.update(pylab.__dict__)
+        my_ns['pylab'] = pylab
 
     def pr(x):
         print str(x)
@@ -105,6 +137,7 @@ printed and available as _d."""
     my_ns['plottime'] = plottime
     my_ns['canvaspairs'] = canvaspairs
     my_ns['video'] = video
+    my_ns['examples'] = examples
     # place holder until onDataListName works
     my_ns['names'] = 'fetching..'
 
@@ -172,7 +205,18 @@ def main():
         raise SystemExit
     globals()['con'] = con # <--- global connection object
 
+    # Fiasco: burst does it's own option parsing, which conflicts with IPython's
+    # so we remove some stuff from the options arguments.. ugly, but works.
+    old_argv = sys.argv
+    sys.argv = sys.argv[:]
+    bad_options = ['-pylab']
+    for opt in bad_options:
+        if opt in sys.argv:
+            del sys.argv[sys.argv.index(opt)]
     import burst.moves as moves
+    sys.argv = old_argv
+    # End of fiasco
+
     import burst_util
     import vision_definitions
 
@@ -188,8 +232,11 @@ def main():
         joints = Joints,
         )
 
+    my_ns.update(math.__dict__)
+    #my_ns.update(numpy.__dict__)
+
     if options.twisted:
-        main_twisted(con, my_ns)
+        main_twisted(con, my_ns, use_pylab='-pylab' in sys.argv)
     else:
         main_no_twisted(con, my_ns)
 

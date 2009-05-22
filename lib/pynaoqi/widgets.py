@@ -7,7 +7,7 @@ from pynaoqi import options
 
 try:
     import matplotlib
-    from matplotlib.backends.backend_gtk import FigureCanvasGTK
+    from matplotlib.backends.backend_gtk import FigureCanvasGTK, NavigationToolbar
     from matplotlib.pylab import Figure
 except:
     pass
@@ -133,12 +133,20 @@ class GtkTextLogger(TaskBaseWindow):
         self._w.show_all()
         tv.set_buffer(tb)
         self._startTaskFirstTime()
+        self._values = []
+        self._times = []
 
     def _update(self, result):
         #if not self._w.is_active(): return
         tb = self._tb
-        tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (
-            (time.time() - self._start), str(result)))
+        t = time.time() - self._start
+        self._times.append(t)
+        self._values.append(result)
+        tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (t, str(result)))
+
+    def plotme(self):
+        from pylab import plot, array
+        plot(array(self._times), array(self._values))
 
 class CanvasTicker(TaskBaseWindow):
     """ Draw many things against a single canvas """
@@ -146,7 +154,7 @@ class CanvasTicker(TaskBaseWindow):
     # Last gimmik. Really.
 
     def __init__(self, tick_cb, limits, title=None, dt=1.0):
-        super(CanvasTicker, self).__init__(tick_cb=tick_cb, dt=dt)
+        super(CanvasTicker, self).__init__(tick_cb=tick_cb, title=title, dt=dt)
         self._field = goocanvas.Canvas()
         self._field.set_size_request(400, 400)
         self._limits = limits # left, right, bottom, top
@@ -188,6 +196,16 @@ class CanvasTicker(TaskBaseWindow):
             x, y = self.results_to_screen(res_x, res_y)
             obj.set_property('center-x', x)
             obj.set_property('center-y', y)
+
+class PlottingWindow(BaseWindow):
+
+    def __init__(self):
+        super(PlottingWindow, self).__init__()
+        self._fig = fig = Figure()
+        self._gtkfig = FigureCanvasGTK(fig)
+        self._w.add(self._gtkfig)
+        self._w.set_size_request(300, 300)
+        self._w.show_all()
 
 class GtkTimeTicker(TaskBaseWindow):
     """ plot against time a specific item / set of items
@@ -255,7 +273,7 @@ class VideoWindow(TaskBaseWindow):
         self._w.add(gtkim)
         self._w.show_all()
 
-    def _finishInit(self):
+    def _finishInit(self, result):
         self._startTaskFirstTime()
 
     def getNew(self):
