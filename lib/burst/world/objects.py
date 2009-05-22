@@ -290,6 +290,7 @@ class Ball(Movable):
                     new_width) = ball_state = self._world.getVars(self._ball_vars)
         # getVars returns 'None' for non existant values. - TODO: check once on startup, not every iteration
         # calculate events.
+        print "Ball: %s, %s" % (new_bearing, new_dist)
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
             self.missingFramesCounter = 0

@@ -54,7 +54,7 @@ FASTEST_WALK_WEBOTS = Walk(WalkParameters([
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
            0.018]),                # 13 ZmpOffsetY 
-           54)                  # 14 20ms count per step
+           18)                  # 14 20ms count per step
 
 SLOW_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
@@ -72,6 +72,24 @@ SLOW_WALK = Walk(WalkParameters([
            0.01,                  # ZmpOffsetX
            0.00]),                  # 
            80          # 20ms count per step
+    )
+
+SIDESTEP_WALK = Walk(WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           20.0 * DEG_TO_RAD,  # ElbowMedian 
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) 
+           -4.5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           5.0,                   # TorsoYOrientation(degrees)
+           0.02,                  # StepLength
+           0.015,                  # StepHeight
+           0.04,                  # StepSide
+           0.3,                   # MaxTurn
+           0.015,                  # ZmpOffsetX
+           0.02]),                  # 
+           25                   # 20ms count per step
     )
 
 if World.connected_to_nao:

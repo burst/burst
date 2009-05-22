@@ -13,13 +13,16 @@ from burst.events import EVENT_BALL_IN_FRAME
 class headTrackingTester(Player):
     
     def onStart(self):
+        print "init post"
         self._actions.initPoseAndStiffness()
+        print "register to ball_in_frame events"
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
     
     def trackBall(self):
+        print "trackBall"
         self._actions.executeTracking(self._world.ball)
-   
-    
+
+
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop

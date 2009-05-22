@@ -167,6 +167,7 @@ class Actions(object):
     
     def initPoseAndStiffness(self):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
+        #self._motion.setChainStiffness('Head', INITIAL_STIFFNESS)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
         self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR)
@@ -265,6 +266,10 @@ class Actions(object):
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
         
         self.setWalkConfig(walk.walkParameters)
+        
+        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            self.setWalkConfig(moves.SIDESTEP_WALK.walkParameters)
+        
         steps = walk.defaultSpeed
         StepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
@@ -440,7 +445,9 @@ class Actions(object):
                 #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
                 return self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
                 #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (deltaHeadYaw, deltaHeadPitch)            
-                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
+                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
+        else:
+            print "Head motion already in progress..."
         
 
     def executeGettingUpBelly(self):

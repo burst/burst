@@ -76,6 +76,7 @@ class kicker(Player):
         self._actions.lookaround(searchLevel).onDone(self.onScanDone)
 
     def onBallInFrame(self):
+        print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         # do ball tracking
         if self.doBallTracking:
             self._actions.executeTracking(self._world.ball)
@@ -146,7 +147,9 @@ class kicker(Player):
         bearingThreshold = actions.MINIMAL_CHANGELOCATION_TURN # TODO: MOVE TO CONSTS AT TOP
         distanceThreshold = KICK_MINIMAL_DISTANCE_X
         
-        if self._world.ball.distSmoothed > KICK_DIST_FROM_BALL:
+        # TODO: Use either (x,y) or (dist,bearing), not both.
+        #if self._world.ball.distSmoothed > KICK_DIST_FROM_BALL or bearing-difference-too-large:
+        if target_x > KICK_MINIMAL_DISTANCE_X or abs(target_y) > KICK_MINIMAL_DISTANCE_Y:
             # if bearing isn't large or if near ball, don't turn and instead just advance
             if abs(self._world.ball.bearing) < bearingThreshold * 2 or self._world.ball.distSmoothed < KICK_DIST_FROM_BALL * 2:
                 print "Advancing towards ball!"
@@ -154,6 +157,9 @@ class kicker(Player):
                 if self._world.ball.distSmoothed > KICK_DIST_FROM_BALL*2:
                     print "only half way"
                     self._actions.changeLocationRelative(target_x/2, 0, 0).onDone(self.doNextAction)
+#                elif self._world.ball.distSmoothed > KICK_DIST_FROM_BALL:
+#                    print "all the way, just straight walk"
+#                    self._actions.changeLocationRelative(target_x, 0, 0).onDone(self.doNextAction)
                 else:
                     # if near ball, use forward/side-stepping to advance
                     print "all the way, including sideway walk"

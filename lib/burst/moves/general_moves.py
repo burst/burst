@@ -46,6 +46,7 @@ STAND = (((80.,40.,-50.,-70.),
 ''' HEAD POSITIONS (for bottom camera) '''
 HEAD_PITCH_DOWN_MAX = 30. * DEG_TO_RAD # NOTE: should have been 45 according to specs
 HEAD_PITCH_UP_MAX = -45. * DEG_TO_RAD
+HEAD_PITCH_UP_MOST = HEAD_PITCH_UP_MAX * 2 / 3
 HEAD_YAW_RANGE_MAX = 90. * DEG_TO_RAD
 HEAD_YAW_LEFT_MOST = HEAD_YAW_RANGE_MAX * 2 / 3
 HEAD_YAW_RIGHT_MOST = -HEAD_YAW_RANGE_MAX * 2 / 3
@@ -63,23 +64,23 @@ HEAD_MOVE_FRONT_FAR = ((HEAD_POS_FRONT_FAR, 0.5),)
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
 # TODO: check what's the fastest time for scanning where ball/goal is still detected (can save lots of time)
 HEAD_SCAN_FRONT = (
-    (HEAD_POS_FRONT_FAR, 0.2),
-    ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_DOWN_MAX), 0.2),
+    (HEAD_POS_FRONT_FAR, 0.3),
+    ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_DOWN_MAX), 0.3),
     ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_DOWN_MAX), 3.0),
-    ((HEAD_YAW_LEFT_MOST, 0), 0.2),
+    ((HEAD_YAW_LEFT_MOST, 0), 0.3),
     ((HEAD_YAW_RIGHT_MOST, 0), 3.0),
-    ((HEAD_YAW_RIGHT_MOST, -HEAD_PITCH_DOWN_MAX), 0.2),
-    ((HEAD_YAW_LEFT_MOST, -HEAD_PITCH_DOWN_MAX), 4.0),
-    ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_UP_MAX), 0.2),
+    ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_UP_MOST), 0.3),
+    ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_UP_MOST), 4.0),
+    ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_UP_MAX), 0.3),
     ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_UP_MAX), 3.0),
-    (HEAD_POS_FRONT_FAR, 0.2),
+    (HEAD_POS_FRONT_FAR, 0.3),
     )
 
 HEAD_SCAN_QUICK = (
-    (HEAD_POS_FRONT_FAR, 0.2),
+    (HEAD_POS_FRONT_FAR, 0.3),
     ((0.0, HEAD_PITCH_DOWN_MAX), 1.0),
     ((0.0, HEAD_PITCH_UP_MAX), 2.0),
-    (HEAD_POS_FRONT_FAR, 0.2),
+    (HEAD_POS_FRONT_FAR, 0.3),
     )
 
 
