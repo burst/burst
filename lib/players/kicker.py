@@ -76,7 +76,7 @@ class kicker(Player):
         self._actions.lookaround(searchLevel).onDone(self.onScanDone)
 
     def onBallInFrame(self):
-        print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+        #print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         # do ball tracking
         if self.doBallTracking:
             self._actions.executeTracking(self._world.ball)

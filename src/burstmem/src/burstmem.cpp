@@ -196,7 +196,7 @@ void burstmem::startMemoryMap ()
          << MMAP_LENGTH << std::endl;
     }
 
-    // important - crash GetVariables otherwise 
+    // important - crash GetVariables otherwise
     m_values.resize(m_varnames.size(), 0.0);
     std::cout << "burstmem: using " << m_values.size() << " variables" << std::endl;
 
@@ -284,9 +284,6 @@ burstmem::updateMemoryMappedVariables()
     if (!m_copying || !m_memory_mapped) return;
 
     try {
-        if (0) {
-            m_memoryfastaccess->GetValues (m_values);
-        }
         m_values = m_memory->getListData(m_varnames);
         // TODO: direct to the memory mapped file (or at least memcpy?)
         for (int i = 0 ; i < m_values.size(); ++i) {
@@ -320,12 +317,14 @@ burstmem::checkBatteryStatus ()
     }
 }
 
+#define ANNOUNCE_CONNECTED 0
+
 void
 burstmem::announceChargerChange( int status )
 {
-    if ( status == CHARGER_CONNECTED )
-        textToSpeechProxy->pCall("say", std::string("Connected."));
+    if ( status == CHARGER_CONNECTED && ANNOUNCE_CONNECTED )
+        textToSpeechProxy->pCall("say", std::string("Connected"));
     else if ( status == CHARGER_DISCONNECTED )
-        textToSpeechProxy->pCall("say", std::string("Disconnected."));
+        textToSpeechProxy->pCall("say", std::string("Disconnected"));
 }
 

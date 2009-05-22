@@ -218,7 +218,7 @@ class World(object):
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
-                self._shm = SharedMemoryReader()
+                self._shm = SharedMemoryReader(self._vars_to_getlist)
                 self._shm.open()
                 self.vars = self._shm.vars
                 self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
@@ -254,11 +254,10 @@ class World(object):
         self._vars_to_getlist ready, so call this after __init__ is done or
         at its end.
         """
-
         recreate = False
         if os.path.exists(MMAP_VARIABLES_FILENAME):
             existing_vars = [x.strip() for x in linecache.updatecache(MMAP_VARIABLES_FILENAME)]
-            if set(existing_vars) != self._vars_to_getlist_set:
+            if existing_vars != self._vars_to_getlist:
                 print "updating %s" % MMAP_VARIABLES_FILENAME
                 recreate = True
         else:
