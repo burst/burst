@@ -646,6 +646,8 @@ class BaseNaoQiConnection(object):
                 sys.stdout.flush()
             mod = self.getModule(modname)
             self._modules.append(mod)
+        if len(modules) > 0 and self.verbose:
+            print
         self.modules = ModulesHolder()
         for m in self._modules:
             self.__dict__[m.getName()] = m
@@ -986,6 +988,8 @@ def getDefaultOptions():
     from optparse import OptionParser
     parser = OptionParser()
     true_storers, false_storers, storers = [], [], []
+
+    # Some helper functions for argument parsing
     def collector(opt, col, kw_base, **kw):
         kwjoint = dict(kw_base)
         kwjoint.update(kw)
@@ -994,15 +998,25 @@ def getDefaultOptions():
     store_true =lambda opt, **kw: collector(opt, true_storers, {'action':'store_true'}, **kw)
     store_false =lambda opt, **kw: collector(opt, false_storers, {'action':'store_false'}, **kw)
     store = lambda opt, **kw: collector(opt, storers, {'action':'store'}, **kw)
-        
+
+    # Optional Arguments
     store('--ip', dest='ip', default='localhost', help='hostname to connect to')
-    store('--port', dest='port', default=None, help='port to connect to')
-    store_true('--twisted', dest='twisted', default=True, help='use twisted')
-    store_false('--notwisted', dest='twisted', help='don\'t use twisted')
-    store_true('--locon', dest='localization_on_start', help='turn localization on')
-    store_true('--reportnew', dest='report_new_packet_sizes', help='debug - report new packet sizes')
-    store_true('--verbosetwisted', dest='verbose_twisted', help='debug - show twisted communication')
-    store_true('--nogtk', dest='nogtk', help='debug - turn off gtk integration')
+    store('--port', dest='port', default=None,    help='port to connect to')
+
+    store_true('--twisted', dest='twisted', default=True,
+            help='use twisted')
+    store_false('--notwisted', dest='twisted',
+            help='don\'t use twisted')
+    store_true('--locon', dest='localization_on_start',
+            help='turn localization on')
+    store_true('--reportnew', dest='report_new_packet_sizes',
+            help='debug - report new packet sizes')
+    store_true('--verbosetwisted', dest='verbose_twisted',
+            help='debug - show twisted communication')
+    store_true('--manhole', dest='use_manhole',
+            help='use manhole shell instead of IPython')
+    store_true('--nogtk', dest='nogtk',
+            help='debug - turn off gtk integration (NOT WORKING)')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS

@@ -132,9 +132,9 @@ class GtkTextLogger(TaskBaseWindow):
         self._w.set_size_request(300,300)
         self._w.show_all()
         tv.set_buffer(tb)
-        self._startTaskFirstTime()
         self._values = []
         self._times = []
+        self._startTaskFirstTime()
 
     def _update(self, result):
         #if not self._w.is_active(): return
@@ -231,6 +231,9 @@ class GtkTimeTicker(TaskBaseWindow):
         self._startTaskFirstTime()
 
     def _update(self, result):
+        if len(result) == 0:
+            print "GtkTextLogger: empty length result, nothing to do\r\n"
+            return
         if len(result) > len(self._lines):
             for i in xrange(len(result) - len(self._lines)):
                 self._lines.append(self._axis.plot([],[])[0])
@@ -239,6 +242,7 @@ class GtkTimeTicker(TaskBaseWindow):
                 self._values = [[] for i in xrange(len(result))]
             if self._limits:
                 self.setYLimits(*self._limits)
+
         self._min_y, self._max_y = min(self._min_y, *result), max(self._max_y, *result)
         self._times.append(time.time() - self._start)
         for i, v in enumerate(result):

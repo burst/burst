@@ -98,6 +98,15 @@ EXAMPLES = """    # Show current identified ball location
 def examples():
     print EXAMPLES
 
+def start_names_request(my_ns):
+    # get the list of all variables - this can take a little
+    # while on the robot, but it is async, so it should be fine
+    def onDataListName(names):
+        my_ns['names'] = names
+
+    con.modulesDeferred.addCallback(
+        lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
+
 def make_shell_namespace(use_pylab):
     # Fiasco: burst does it's own option parsing, which conflicts with IPython's
     # so we remove some stuff from the options arguments.. ugly, but works.
@@ -154,16 +163,25 @@ def make_shell_namespace(use_pylab):
     # place holder until onDataListName works
     my_ns['names'] = 'fetching..'
 
-    # TODO - check that shell.user_ns -> my_ns is ok
-    # get the list of all variables - this can take a little
-    # while on the robot, but it is async, so it should be fine
-    def onDataListName(names):
-        my_ns['names'] = names
-
-    con.modulesDeferred.addCallback(
-        lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
-
     return my_ns
+
+def twisted_banner(print_own_deferred_help):
+    print "<"*30 + "o"*20 + ">"*30
+    print """Pynaoqi shell - con object holds everything.
+To generate help, call con.makeHelp()
+To generate help on a single module, call con.ALMotion.makeHelp()"""
+    if print_own_deferred_help:
+        print """Deferreds: Any operation returning a deferred will return immediately
+as expected, and additionally once its callback is called it will be
+printed and available as _d."""
+
+    print """
+    Some Examples of usage:
+
+""" + EXAMPLES + """
+Use examples() to show this later.
+"""
+    print "_"*80
 
 def main_twisted(con, my_ns):
 
@@ -174,20 +192,7 @@ def main_twisted(con, my_ns):
     shell = tshell.IP
     pimp_my_shell(shell, con)
 
-    print "<"*30 + "o"*20 + ">"*30
-    print """Pynaoqi shell - con object holds everything.
-To generate help, call con.makeHelp()
-To generate help on a single module, call con.ALMotion.makeHelp()"""
-    print """Deferreds: Any operation returning a deferred will return immediately
-as expected, and additionally once its callback is called it will be
-printed and available as _d.
-
-    Some Examples of usage:
-
-""" + EXAMPLES + """
-Use examples() to show this later.
-"""
-    print "_"*80
+    twisted_banner(print_own_deferred_help = True)
 
     # Start the mainloop, and add a hook to display deferred results when they
     # are available (also affects *any* deferred you try to print)
@@ -195,7 +200,7 @@ Use examples() to show this later.
     from IPython.hooks import result_display
     from IPython.genutils import Term
 
-    def pr(x):
+    def print_deferred(x):
         s = str(x)
         if len(s) > 1000:
             s = s[:1000] + '...'
@@ -203,14 +208,65 @@ Use examples() to show this later.
         shell.user_ns['_d'] = x
         return x
 
-    def display_defer(self, arg):
+    def display_deferred(self, arg):
         # don't display already called deferreds?
         if isinstance(arg, defer.Deferred):
-            arg.addCallback(pr)
+            arg.addCallback(print_deferred)
         else:
             result_display(self, arg)
-    shell.set_hook('result_display', display_defer)
+    shell.set_hook('result_display', display_deferred)
+
+    start_names_request(my_ns)
+
     tshell.mainloop()
+
+def runWithProtocol(klass):
+    import termios, tty
+    from twisted.internet import reactor, stdio
+    from twisted.conch.insults.insults import ServerProtocol
+
+    fd = sys.__stdin__.fileno()
+    oldSettings = termios.tcgetattr(fd)
+    tty.setraw(fd)
+    try:
+        p = ServerProtocol(klass)
+        stdio.StandardIO(p)
+        reactor.run()
+    finally:
+        termios.tcsetattr(fd, termios.TCSANOW, oldSettings)
+        #os.write(fd, "\r\x1bc\r")
+
+def main_twisted_manhole(con, my_ns):
+    from twisted.conch.stdio import ConsoleManhole
+
+    class PynaoqiConsole(ConsoleManhole):
+
+        """ For reference see:
+            twisted.conch.recvline.RecvLine
+
+        TODO: don't reset screen when ^D is called (doesn't happen
+        on raise SystemExit, but then an exception is unhandled)
+        """
+
+        def __init__(self):
+            super(PynaoqiConsole, self).__init__(namespace = my_ns)
+            self.updatePrompts()
+            con.modulesDeferred.addCallback(self.updatePrompts)
+
+        def updatePrompts(self):
+            # RecvLine actually reads these
+            self.ps = ("%s %s>>> " % (con.host, not con._modules and "NM " or ""), '... ')
+
+        def connectionMade(self):
+            super(PynaoqiConsole, self).connectionMade()
+            start_names_request(self.namespace)
+
+        def initializeScreen(self):
+            # Override RecvLine
+            self.terminal.write(self.ps[self.pn])
+            self.setInsertMode()
+
+    runWithProtocol(PynaoqiConsole)
 
 #############################################################################
 
@@ -248,7 +304,10 @@ def main():
     my_ns = make_shell_namespace(use_pylab = '-pylab' in sys.argv)
 
     if options.twisted:
-        main_twisted(con, my_ns)
+        if options.use_manhole:
+            main_twisted_manhole(con, my_ns)
+        else:
+            main_twisted(con, my_ns)
     else:
         main_no_twisted(con, my_ns)
 
