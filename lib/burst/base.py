@@ -50,7 +50,8 @@ def fix_sys_path():
         print """ERROR: naoqi is not installed. Please install it and make sure the AL_DIR environment
 variable points to it. See https://shwarma.cs.biu.ac.il/moin/NaoQi for OS specific instructions
 """
-        raise SystemExit
+        #raise SystemExit
+        print "ERROR: Ignored"
 
 # Set path only after reading command line arguments - we need them to know
 # if we are connecting to a simulator.

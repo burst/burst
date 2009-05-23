@@ -334,7 +334,7 @@ class TwistedMainLoop(BasicMainLoop):
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
             self._main_task.stop()
-        if _do_cleanup:
+        if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
         if hasattr(self, '_sit_deferred'):
