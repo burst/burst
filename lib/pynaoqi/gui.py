@@ -279,19 +279,19 @@ class Joints(object):
 
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
-            perstep = self._walkconfig[0]
-            return self.con.ALMotion.addWalkStraight(steps*perstep, 60).addCallback(
-                startWalkTest)
+            distance_per_step = self._walkconfig[0]
+            return self.con.ALMotion.addWalkStraight(steps * distance_per_step,
+                    60).addCallback(startWalkTest)
 
-        def doArc(angle):
+        def doArc(angle, radius=0.5, cycles_per_step=60):
             # angle [rad], radius [m], # 20ms cycles per step
-            return self.con.ALMotion.addWalkArc(angle, 0.5, 60).addCallback(
-                startWalkTest)
+            return self.con.ALMotion.addWalkArc(
+                angle, radius, steps).addCallback(startWalkTest)
 
-        def doTurn(angle):
+        def doTurn(angle, cycles_per_step=60):
             # angle [rad], # 20ms cycles per step
-            return self.con.ALMotion.addTurn(steps, 60).addCallback(
-                startWalkTest)
+            return self.con.ALMotion.addTurn(
+                angle, cycles_per_step).addCallback(startWalkTest)
 
         toggle_buttons_data = [
             ('all', self.onShowAll),

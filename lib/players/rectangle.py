@@ -1,14 +1,9 @@
 #!/usr/bin/python
 
-from math import pi, sqrt
+import player_init
 
+from math import pi, sqrt
 import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
 from burst.player import Player
 from burst.events import *

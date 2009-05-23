@@ -298,9 +298,7 @@ class TwistedMainLoop(BasicMainLoop):
             self._ctrl_c_presses += 1
             print "TwistedMainLoop: SIGBREAK caught"
             if self._ctrl_c_presses == 1:
-                self.onCtrlCPressed()
-                self._do_cleanup = self.onNormalQuit()
-                self._startShutdown()
+                self._startShutdown(normal_quit=True, ctrl_c_pressed=True)
             else:
                 print "Two ctrl-c - shutting down uncleanly"
                 orig_sigInt(*args)
@@ -327,11 +325,16 @@ class TwistedMainLoop(BasicMainLoop):
         reactor.run() #installSignalHandlers=0)
         print "TwistedMainLoop: event loop done"
 
-    def _startShutdown(self):
+    def _startShutdown(self, normal_quit, ctrl_c_pressed):
         # Stop our task loop
+        do_cleanup = False
         if hasattr(self, '_main_task'):
+            if ctrl_c_pressed:
+                self.onCtrlCPressed()
+            if normal_quit:
+                do_cleanup = self.onNormalQuit()
             self._main_task.stop()
-        if self._do_cleanup:
+        if _do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
         if hasattr(self, '_sit_deferred'):
@@ -349,7 +352,7 @@ class TwistedMainLoop(BasicMainLoop):
         sleep_time = self.doSingleStep()
         if self._eventmanager._should_quit:
             print "TwistedMainLoop: event manager initiated quit"
-            self._startShutdown()
+            self._startShutdown(normal_quit=True, ctrl_c_pressed=False)
 
 from burst_util import is64
 if is64() or burst.options.use_pynaoqi:

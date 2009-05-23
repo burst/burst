@@ -21,14 +21,13 @@ from burst_util import isnumeric, minimal_title, pairit
 # we use twisted in a thread if requested
 options = pynaoqi.getDefaultOptions()
 
-if options.twisted:
+if options.twisted and not options.nogtk:
+    print "DEBUG: USING GTK LOOP"
     # Try to throw in gtk support
     from twisted.internet import gtk2reactor
 
     # we should be the first to install it, so no need for try/except
     gtk2reactor.install()
-
-import gtk
 
 has_matplotlib = False
 try:
@@ -37,7 +36,8 @@ try:
 except:
     pass
 
-if has_matplotlib:
+if has_matplotlib and not options.nogtk:
+    print "DEBUG: USING MATPLOTLIB WITH GTK"
     matplotlib.use('GTK')
 
 ################################################################################
@@ -98,9 +98,77 @@ EXAMPLES = """    # Show current identified ball location
 def examples():
     print EXAMPLES
 
-def main_twisted(con, my_ns, use_pylab):
+def make_shell_namespace(use_pylab):
+    # Fiasco: burst does it's own option parsing, which conflicts with IPython's
+    # so we remove some stuff from the options arguments.. ugly, but works.
+    old_argv = sys.argv
+    sys.argv = sys.argv[:]
+    bad_options = ['-pylab']
+    for opt in bad_options:
+        if opt in sys.argv:
+            del sys.argv[sys.argv.index(opt)]
+    import burst.moves as moves
+    sys.argv = old_argv
+    # End of fiasco
 
-    from ipy import IPShellTwisted
+    import burst_util
+    import vision_definitions
+
+    my_ns = dict(
+        con = con,
+        pynaoqi = pynaoqi,
+        moves = moves,
+        vision_definitions = vision_definitions,
+        refilter = burst_util.refilter,
+        redir = burst_util.redir,
+        nicefloats = burst_util.nicefloats,
+        pairit = burst_util.pairit,
+        joints = Joints,
+        )
+
+    my_ns.update(math.__dict__)
+    #my_ns.update(numpy.__dict__)
+    if use_pylab:
+        pylab = __import__('pylab')
+        pylab.interactive(True)
+        my_ns.update(pylab.__dict__)
+        my_ns['pylab'] = pylab
+
+    def pr(x):
+        print str(x)
+
+    if not pynaoqi.options.nogtk:
+        import gtk
+        my_ns['gtk'] = gtk
+
+    from twisted.internet import task
+
+    my_ns['task'] = task
+    my_ns['pr'] = pr
+    my_ns['loop'] = GtkTextLogger
+    my_ns['watch'] = watch
+    my_ns['plottime'] = plottime
+    my_ns['canvaspairs'] = canvaspairs
+    my_ns['video'] = video
+    my_ns['examples'] = examples
+    # place holder until onDataListName works
+    my_ns['names'] = 'fetching..'
+
+    # TODO - check that shell.user_ns -> my_ns is ok
+    # get the list of all variables - this can take a little
+    # while on the robot, but it is async, so it should be fine
+    def onDataListName(names):
+        my_ns['names'] = names
+
+    con.modulesDeferred.addCallback(
+        lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
+
+    return my_ns
+
+def main_twisted(con, my_ns):
+
+    #from ipy import IPShellTwisted
+    from IPython.twshell import IPShellTwisted
 
     tshell = IPShellTwisted(argv=[], user_ns=my_ns)
     shell = tshell.IP
@@ -121,43 +189,11 @@ Use examples() to show this later.
 """
     print "_"*80
 
-    from twisted.internet import task
-    import gtk
-
-    if use_pylab:
-        pylab = __import__('pylab')
-        pylab.interactive(True)
-        my_ns.update(pylab.__dict__)
-        my_ns['pylab'] = pylab
-
-    def pr(x):
-        print str(x)
-
-    my_ns['gtk'] = gtk
-    my_ns['task'] = task
-    my_ns['pr'] = pr
-    my_ns['loop'] = GtkTextLogger
-    my_ns['watch'] = watch
-    my_ns['plottime'] = plottime
-    my_ns['canvaspairs'] = canvaspairs
-    my_ns['video'] = video
-    my_ns['examples'] = examples
-    # place holder until onDataListName works
-    my_ns['names'] = 'fetching..'
-
     # Start the mainloop, and add a hook to display deferred results when they
     # are available (also affects *any* deferred you try to print)
     import twisted.internet.defer as defer
     from IPython.hooks import result_display
     from IPython.genutils import Term
-
-    # get the list of all variables - this can take a little
-    # while on the robot, but it is async, so it should be fine
-    def onDataListName(names):
-        shell.user_ns['names'] = names
-
-    con.modulesDeferred.addCallback(
-        lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
 
     def pr(x):
         s = str(x)
@@ -209,38 +245,10 @@ def main():
         raise SystemExit
     globals()['con'] = con # <--- global connection object
 
-    # Fiasco: burst does it's own option parsing, which conflicts with IPython's
-    # so we remove some stuff from the options arguments.. ugly, but works.
-    old_argv = sys.argv
-    sys.argv = sys.argv[:]
-    bad_options = ['-pylab']
-    for opt in bad_options:
-        if opt in sys.argv:
-            del sys.argv[sys.argv.index(opt)]
-    import burst.moves as moves
-    sys.argv = old_argv
-    # End of fiasco
-
-    import burst_util
-    import vision_definitions
-
-    my_ns = dict(
-        con = con,
-        pynaoqi = pynaoqi,
-        moves = moves,
-        vision_definitions = vision_definitions,
-        refilter = burst_util.refilter,
-        redir = burst_util.redir,
-        nicefloats = burst_util.nicefloats,
-        pairit = burst_util.pairit,
-        joints = Joints,
-        )
-
-    my_ns.update(math.__dict__)
-    #my_ns.update(numpy.__dict__)
+    my_ns = make_shell_namespace(use_pylab = '-pylab' in sys.argv)
 
     if options.twisted:
-        main_twisted(con, my_ns, use_pylab='-pylab' in sys.argv)
+        main_twisted(con, my_ns)
     else:
         main_no_twisted(con, my_ns)
 
