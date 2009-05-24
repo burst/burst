@@ -32,11 +32,15 @@ def test():
 
 # must be the first import - you can only import naoqi after this
 from base import *
+from options import *
 
 from burst_util import is64
 
-if is64():
-    print "64 bit architecture - UNTESTED"
+if is64() or options.use_pynaoqi:
+    if is64():
+        print "64 bit architecture - LESS TESTED"
+    else:
+        print "32 bit + pynaoqi - LESS TESTED"
     from naoqi_pynaoqi import *
 
     def init(*args, **kw):

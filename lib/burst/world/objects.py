@@ -6,7 +6,7 @@ from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
-from burst_util import running_average, RingBuffer
+from burst_util import running_median, RingBuffer
 
 class Locatable(object):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -64,8 +64,8 @@ class Locatable(object):
         self.missingFramesCounter = 0
         
         self.distSmoothed = 0.0
-        self.distRunningAverage = running_average(3) # TODO: Change to median AND/OR use ballEKF/ballLoc
-        self.distRunningAverage.next()
+        self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
+        self.distRunningMedian.next()
 
     HISTORY_LABELS = ['time', 'distance', 'bearing']
     def _record_current_state(self):
@@ -108,7 +108,7 @@ class Locatable(object):
         self.bearing = new_bearing
         self.dist = new_dist
         self._record_current_state()
-        self.distSmoothed = self.distRunningAverage.send(new_dist)
+        self.distSmoothed = self.distRunningMedian.send(new_dist)
         #if isinstance(self, Ball):
         #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
         
@@ -146,11 +146,9 @@ class Ball(Movable):
         self.base_point = None
         self.base_point_index = None
     
-
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
         
-        #for working with self.history:
         T = 0
         DIST = 1
         BEARING = 2
@@ -158,9 +156,69 @@ class Ball(Movable):
         X = 1
         Y = 2
         
-        ERROR_VAL_X = 4
-        ERROR_VAL_Y = 4
-        HISTORY_NUM_POINTS = 10
+        ERROR_VAL_X = 3
+        ERROR_VAL_Y = 0
+        HISTORY_NUM_POINTS = 10 #history->meaning self.history
+        
+        #vars for least mean squares
+        sumX = 0
+        sumXY = 0
+        sumY = 0
+        sumSqrX = 0
+        
+        if self.history[0] != None:
+            self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
+            self.base_point_index = 1
+            last_point = self.base_point
+            sumX += last_point[X]
+            sumXY += last_point[X] * last_point[Y]
+            sumY += last_point[Y]
+            sumSqrX +=  last_point[X] * last_point[X]
+        else:
+            return False
+        
+        n = 0
+        for point in self.history:
+            if point != None:
+                if n == 0:
+                    n += 1
+                    continue #first point was calc already
+                if n <= self.base_point_index:
+                    n += 1
+                    continue #skipping nonrelevant point
+                n += 1
+                cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
+                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
+                    self.base_point = cor_point
+                    self.base_point_index = n
+                    return False 
+                sumX += cor_point[X]
+                sumXY += cor_point[X] * cor_point[Y]
+                sumY += cor_point[Y]
+                sumSqrX +=  cor_point[X] * cor_point[X]
+            else:
+                if n < 5: #TODO: need some kind of col' for diffrent speeds....
+                    return False
+                break
+        
+        n = n - self.base_point_index #real number of valid points
+        
+        
+#        if n > 4: #TODO: need some kind of col' for diffrent speeds....
+#            #Least mean squares:
+#            
+#            #!!!!!!!!!!!! ERAN: Following code causes "ZeroDivisionError: float division" when run on robot !!!!!!!!!!!!!!!!!!!!!!
+#            self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
+#            
+#            #print "ball intersection with body: " , self.body_isect
+#            return True
+        return False 
+                 
+    
+    
+    
+        """
+        
         
         if self.history[0] != None:
             self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
@@ -182,9 +240,14 @@ class Ball(Movable):
                         m= (self.base_point[Y] - cor_point[Y]) / (self.base_point[X] - cor_point[X])
                         y = cor_point[Y] - m * cor_point[X]
                         self.body_isect = y
+                        print "------------------------------------------------"
+                        print "cor_x=", cor_point[X], "  base_x=", self.base_point[X], "  cor_y=", cor_point[Y], "  base_y=", self.base_point[Y]
+                        print "------------------------------------------------"
                         print "ball intersection with body: " , y
+                        print "\n"
                         return True
         return False
+        """
 
 
 
@@ -339,4 +402,3 @@ class GoalPost(Locatable):
                   new_x, new_y)
         self.seen = new_seen
         
-

@@ -195,7 +195,7 @@ class KickerOLD(Player):
         delta_x, delta_y, delta_bearing = target_location
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
         return self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
-            walk_param = moves.FASTEST_WALK)
+            walk = moves.FASTEST_WALK)
 
 
     ##################### Debug Methods #########################

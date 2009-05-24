@@ -1,6 +1,6 @@
 from .objects import Movable
 from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
-from burst_util import BurstDeferred
+from burst_util import BurstDeferred, DeferredList, succeed
 
 class Motion(object):
     
@@ -45,22 +45,34 @@ class SerialPostQueue(object):
 
     def calc_events(self, events, deferreds):
         if len(self._posts) == 0: return
-        postid, event, deferred, duration = self._posts[0]
+
+        self._events, self._deferreds = events, deferreds # this will become usual for all these objects
+
+        postid, self._cur_event, self._cur_deferred, duration = self._posts[0]
     
         #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
         #    self._name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
         #)
-        if self._world.time >= self._start_time + duration and not self._motion.isRunning(postid):
-            #print "DEBUG: %s: deleting %s, left %s" % (self._name, postid, len(self._posts) - 1)
-            events.add(event)
-            deferreds.append(deferred)
-            del self._posts[0]
-            if len(self._posts) == 0:
-                self._start_time = None
-            else:
-                # DANGEROUS: We assume next head move starts immediately
-                # after the last.
-                self._start_time = self._world.time
+        if self._world.time >= self._start_time + duration:
+            if not isinstance(postid, int):
+                import pdb; pdb.set_trace()
+            self._motion.isRunning(postid).addCallback(self._onIsRunning)
+
+    def _onIsRunning(self, result):
+        if result: return
+        if not self._cur_event or not self._cur_deferred:
+            print "SerialPostQueue ERROR.. pdbing"
+            import pdb; pdb.set_trace()
+        self._events.add(self._cur_event)
+        self._deferreds.append(self._cur_deferred)
+        self._cur_deferred, self._cur_event = None, None # stupid safety measure?
+        del self._posts[0]
+        if len(self._posts) == 0:
+            self._start_time = None
+        else:
+            # DANGEROUS: We assume next head move starts immediately
+            # after the last.
+            self._start_time = self._world.time
 
 class Robot(Movable):
     _name = 'Robot'
@@ -104,25 +116,41 @@ class Robot(Movable):
          head   - only check the first event in the list 
         """
         def filter(dictionary, visitor):
-            deleted_posts = [(postid, motion) for postid, motion
-                        in dictionary.items() if visitor(postid, motion)]
-            for postid, motion in deleted_posts:
-                del dictionary[postid]
+            def collectResults(results):
+                deleted_posts = [result for success, result in results]
+                for postid in deleted_posts:
+                    if postid:
+                        #print "DOUBLE YAY deleting motion postid=%s" % postid
+                        del dictionary[postid]
+            DeferredList([visitor(postid, motion).addCallback(
+                lambda result, postid=postid: result and postid)
+                    for postid, motion in dictionary.items()]).addCallback(collectResults)
                 
         def isMotionFinished(postid, motion):
             m = motion
-            if m.duration > MOTION_FINISHED_MIN_DURATION:
-                if not m.has_started and self._motion.isRunning(postid):
-                    #print "DEBUG: motion <postid=%s> has started" % postid
-                    m.has_started = True
-                    m.start_time = self._world.time
-                    return False
-            if self._world.time >= m.start_time + m.duration and not self._motion.isRunning(postid):
-                events.add(m.event)
-                deferreds.append(m.deferred) # Note: order of deferred callbacks is determined here.. bugs expected
+            if ((m.duration > MOTION_FINISHED_MIN_DURATION and not m.has_started)
+                or (self._world.time >= m.start_time + m.duration)):
+                    if not isinstance(postid, int):
+                        import pdb; pdb.set_trace()
+                    return self._motion.isRunning(postid).addCallback(
+                        lambda result, m=m, postid=postid: onIsRunning(result, m, postid))
+            return succeed(False)
+        
+        def onIsRunning(isrunning, m, postid):
+            #print "DEBUG: motion <postid=%s> has started" % postid
+            if m.duration > MOTION_FINISHED_MIN_DURATION and not m.has_started and isrunning:
+                m.has_started = True
+                m.start_time = self._world.time
+                return False
+            if self._world.time >= m.start_time + m.duration and not isrunning:
+                #print "DEBUG: Robot Head Motions: %s done!" % postid
+                self._events.add(m.event)
+                self._deferreds.append(m.deferred) # Note: order of deferred callbacks is determined here.. bugs expected
                 return True
             return False
-        
+
+        self._events, self._deferreds = events, deferreds
+
         filter(self._motion_posts, isMotionFinished)
         self._head_posts.calc_events(events, deferreds)
         self._walk_posts.calc_events(events, deferreds)

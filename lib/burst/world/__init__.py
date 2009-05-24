@@ -136,9 +136,9 @@ class World(object):
             callWrapper = lambda name, obj: (obj and LogCalls(name, obj) or obj)
         else:
             callWrapper = lambda name, obj: obj
-        self._memory = callWrapper("ALMemory", burst.getMemoryProxy())
-        self._motion = callWrapper("ALMotion", burst.getMotionProxy())
-        self._speech = callWrapper("ALSpeech", burst.getSpeechProxy())
+        self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
+        self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
+        self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
         self._events = set()
         self._deferreds = []
         
@@ -149,8 +149,8 @@ class World(object):
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
         default_vars = self.getDefaultVars()
-        self._vars_to_getlist_set = set()
-        self._vars_to_getlist = list()
+        self._vars_to_get_set = set()
+        self._vars_to_get_list = list()
         self.vars = {} # no leading underscore - meant as a public interface (just don't write here, it will be overwritten every update)
         self.addMemoryVars(default_vars)
         self._shm = None
@@ -218,7 +218,7 @@ class World(object):
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
-                self._shm = SharedMemoryReader()
+                self._shm = SharedMemoryReader(self._vars_to_get_list)
                 self._shm.open()
                 self.vars = self._shm.vars
                 self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
@@ -232,7 +232,10 @@ class World(object):
         logged as a module, we look for some of the variables we export.
         """
         # note - blocking
-        if self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES)[0] in ['None', 'nil']:
+        self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults)
+
+    def onCheckManModuleResults(self, result):
+        if result[0] == 'None':
             print "WARNING " + "*"*60
             print "WARNING"
             print "WARNING >>>>>>> Man Isn't Running - naoload && naoqi restart <<<<<<<"
@@ -251,23 +254,22 @@ class World(object):
     def updateMmapVariablesFile(self):
         """
         create/update the MMAP_VARIABLES_FILENAME - must have
-        self._vars_to_getlist ready, so call this after __init__ is done or
+        self._vars_to_get_list ready, so call this after __init__ is done or
         at its end.
         """
-
         recreate = False
         if os.path.exists(MMAP_VARIABLES_FILENAME):
             existing_vars = [x.strip() for x in linecache.updatecache(MMAP_VARIABLES_FILENAME)]
-            if set(existing_vars) != self._vars_to_getlist_set:
+            if existing_vars != self._vars_to_get_list:
                 print "updating %s" % MMAP_VARIABLES_FILENAME
                 recreate = True
         else:
             print (("I see %s is missing. creating it for you." +
-                "it has %s variables") % (MMAP_VARIABLES_FILENAME, len(self._vars_to_getlist)))
+                "it has %s variables") % (MMAP_VARIABLES_FILENAME, len(self._vars_to_get_list)))
             recreate = True
         if recreate:
             fd = open(MMAP_VARIABLES_FILENAME, 'w+')
-            fd.write('\n'.join(self._vars_to_getlist))
+            fd.write('\n'.join(self._vars_to_get_list))
             fd.close()
 
     def calc_events(self, events, deferreds):
@@ -283,9 +285,9 @@ class World(object):
     def addMemoryVars(self, vars):
         # slow? but retains the order of the registration
         for v in vars:
-            if v not in self._vars_to_getlist_set:
-                self._vars_to_getlist.append(v)
-                self._vars_to_getlist_set.add(v)
+            if v not in self._vars_to_get_set:
+                self._vars_to_get_list.append(v)
+                self._vars_to_get_set.add(v)
                 self.vars[v] = self._default_proxied_variable_value
 
     def removeMemoryVars(self, vars):
@@ -293,9 +295,9 @@ class World(object):
         another object has added before, or you will probably break it
         """
         for v in vars:
-            if v in self._vars_to_getlist_set:
-                self._vars_to_getlist.remove(v)
-                self._vars_to_getlist_set.remove(v)
+            if v in self._vars_to_get_set:
+                self._vars_to_get_list.remove(v)
+                self._vars_to_get_set.remove(v)
                 del self.vars[v]
 
     def getVars(self, vars, returnNoneOnMissing=True):
@@ -314,18 +316,18 @@ class World(object):
         # TODO: optmize the heck out of this. Options include:
         #  * subscribeOnData / subscribeOnDataChange
         #  * module with alfastmemoryaccess, and shared memory with python
-        vars = self._vars_to_getlist
-        values = self._memory.getListData(vars)
-        for k, v in zip(vars, values):
-            # TODO - fix pynaoqi to return 'None' in this event,
-            # just like naoqi does. (currently returns 'nil')
-            if v in ['None', 'nil']:
+        vars = self._vars_to_get_list
+        self._memory.getListData(vars).addCallback(self._updateMemoryFromALMemory_onResults)
+
+    def _updateMemoryFromALMemory_onResults(self, values):
+        for k, v in zip(self._vars_to_get_list, values):
+            if v == 'None':
                 v = self._default_proxied_variable_value
             self.vars[k] = v
 
     _updateMemoryVariables = _updateMemoryVariablesFromALMemory
 
-    def update(self, cur_time):
+    def collectNewUpdates(self, cur_time):
         self.time = cur_time
         self._updateMemoryVariables() # must be first in update
         self._doRecord()

@@ -7,7 +7,7 @@ from pynaoqi import options
 
 try:
     import matplotlib
-    from matplotlib.backends.backend_gtk import FigureCanvasGTK
+    from matplotlib.backends.backend_gtk import FigureCanvasGTK, NavigationToolbar
     from matplotlib.pylab import Figure
 except:
     pass
@@ -132,30 +132,70 @@ class GtkTextLogger(TaskBaseWindow):
         self._w.set_size_request(300,300)
         self._w.show_all()
         tv.set_buffer(tb)
+        self._values = []
+        self._times = []
         self._startTaskFirstTime()
 
     def _update(self, result):
         #if not self._w.is_active(): return
         tb = self._tb
-        tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (
-            (time.time() - self._start), str(result)))
+        t = time.time() - self._start
+        self._times.append(t)
+        self._values.append(result)
+        tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (t, str(result)))
+
+    def plotme(self):
+        from pylab import plot, array
+        plot(array(self._times), array(self._values))
+
+def make_ellipse(parent, x, y, radius, fill_color):
+    return goocanvas.Ellipse(parent = parent,
+            center_x = x, center_y = y,
+            radius_x = radius, radius_y = radius,
+            fill_color = fill_color)
+
+def make_rect(parent, x, y, width, height, fill_color):
+    return goocanvas.Rect(parent = parent,
+            x = x, y = y,
+            width = width, height = height,
+            fill_color = fill_color)
 
 class CanvasTicker(TaskBaseWindow):
     """ Draw many things against a single canvas """
 
     # Last gimmik. Really.
 
-    def __init__(self, tick_cb, limits, title=None, dt=1.0):
-        super(CanvasTicker, self).__init__(tick_cb=tick_cb, dt=dt)
+    def __init__(self, tick_cb, limits, statics=None, title=None, dt=1.0):
+        super(CanvasTicker, self).__init__(tick_cb=tick_cb, title=title, dt=dt)
         self._field = goocanvas.Canvas()
         self._field.set_size_request(400, 400)
         self._limits = limits # left, right, bottom, top
         self._objects = []
+        self._radius = 3
         self._w.add(self._field)
         self._w.show_all()
         self._root = root = self._field.get_root_item()
         self._rect = goocanvas.Rect(parent=self._root)
         self._on_screen_resize()
+        # Safe to use results_to_screen now
+        if statics: # TODO - updates on screen resize
+            self._statics = statics
+            self._static_objects = []
+            for static in statics:
+                if len(static) == 4: # circle
+                    _x, _y, _r, color = static
+                    x, y = self.results_to_screen(_x, _y)
+                    obj = make_ellipse(parent=self._root,
+                        x=x, y=y, radius=_r, fill_color=color)
+                else: # rectangle
+                    ((_x, _y), _width, _height), color = static
+                    x, y = self.results_to_screen(_x, _y)
+                    width, height = self.width_height_to_screen(
+                        _width, _height)
+                    obj = make_rect(parent=self._root,
+                        x=x, y=y, width=width, height=height,
+                            fill_color=color)
+                self._static_objects.append(obj)
         self._startTaskFirstTime()
 
     def _on_screen_resize(self):
@@ -174,9 +214,12 @@ class CanvasTicker(TaskBaseWindow):
         left, bottom = self._limits[0], self._limits[2]
         return self._xf * (x - left), self._yf * (y - bottom)
 
+    def width_height_to_screen(self, width, height):
+        return self._xf * width, self._yf * height
+
     def _update(self, results):
         fill_color = 'black'
-        radius = 3
+        radius = self._radius
         parent = self._root
         if len(self._objects) != len(results):
             self._objects = [goocanvas.Ellipse(parent = parent,
@@ -186,8 +229,17 @@ class CanvasTicker(TaskBaseWindow):
                 for x, y, in results]
         for (res_x, res_y), obj in zip(results, self._objects):
             x, y = self.results_to_screen(res_x, res_y)
-            obj.set_property('center-x', x)
-            obj.set_property('center-y', y)
+            obj.set_properties(center_x=x, center_y=y)
+
+class PlottingWindow(BaseWindow):
+
+    def __init__(self):
+        super(PlottingWindow, self).__init__()
+        self._fig = fig = Figure()
+        self._gtkfig = FigureCanvasGTK(fig)
+        self._w.add(self._gtkfig)
+        self._w.set_size_request(300, 300)
+        self._w.show_all()
 
 class GtkTimeTicker(TaskBaseWindow):
     """ plot against time a specific item / set of items
@@ -213,6 +265,9 @@ class GtkTimeTicker(TaskBaseWindow):
         self._startTaskFirstTime()
 
     def _update(self, result):
+        if len(result) == 0:
+            print "GtkTextLogger: empty length result, nothing to do\r\n"
+            return
         if len(result) > len(self._lines):
             for i in xrange(len(result) - len(self._lines)):
                 self._lines.append(self._axis.plot([],[])[0])
@@ -221,6 +276,7 @@ class GtkTimeTicker(TaskBaseWindow):
                 self._values = [[] for i in xrange(len(result))]
             if self._limits:
                 self.setYLimits(*self._limits)
+
         self._min_y, self._max_y = min(self._min_y, *result), max(self._max_y, *result)
         self._times.append(time.time() - self._start)
         for i, v in enumerate(result):
@@ -249,12 +305,13 @@ class VideoWindow(TaskBaseWindow):
 
     def __init__(self, con):
         self._con = con
-        self._con.registerToCamera()
+        self._con.registerToCamera().addCallback(self._finishInit)
         super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
-        import twisted.internet.task as task
         self._im = gtkim = gtk.Image()
         self._w.add(gtkim)
         self._w.show_all()
+
+    def _finishInit(self, result):
         self._startTaskFirstTime()
 
     def getNew(self):

@@ -1,5 +1,6 @@
 """ Beginning of some vision computations - nothing useful here right now.
 """
+from consts import DEG_TO_RAD
 
 #### Vision constants
 FOV_X = 46.4 * DEG_TO_RAD

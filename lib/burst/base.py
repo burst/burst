@@ -23,30 +23,8 @@ predefined_sys_paths = [
  ),
 ]
 
-LOCALHOST_IP = '127.0.0.1'
-
 import os
 import sys
-try: # doesn't work on opennao
-    from socket import getaddrinfo # for resolving a hostname
-except:
-    getaddrinfo = lambda ip, port: [[None, None, None, [ip]]]
-
-def running_on_nao():
-    """ True if we are physically on the nao geode brain box """
-    return os.path.exists('/opt/naoqi/bin/naoqi')
-
-def connecting_to_webots():
-    """ True if we are connecting to webots """
-    global ip
-    #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    return not running_on_nao() and ip == LOCALHOST_IP
-
-def connecting_to_nao():
-    """ True if we are not connecting to webots.
-    Note that this doesn't imply running_on_nao, since we can
-    be connecting remotely """
-    return not connecting_to_webots()
 
 def fix_sys_path():
     naoqi_root = None
@@ -72,55 +50,8 @@ def fix_sys_path():
         print """ERROR: naoqi is not installed. Please install it and make sure the AL_DIR environment
 variable points to it. See https://shwarma.cs.biu.ac.il/moin/NaoQi for OS specific instructions
 """
-        raise SystemExit
-
-
-def get_default_ip():
-    # on the nao the ip should be something that would work - since naoqi by default
-    # doesn't listen to the loopback (why? WHY??), we need to find out the public address.
-    # "ip route get" does the trick
-    ip = LOCALHOST_IP
-    try:
-        import socket
-    except:
-        t = os.popen('ip route get 1.1.1.1').read()
-        ip = t[t.find('src')+3:].split()[0]
-    return ip
-
-# defaults - suitable for a locally running naoqi, like on a robot.
-ip = get_default_ip()
-port = 9559
-
-def host_to_ip(ip):
-    try:
-        ip = getaddrinfo(ip, None)[0][4][0]
-    except Exception, e:
-        print "Warning: can't resolve %r, assuming ip" % ip
-    return ip
-
-def parse_command_line_arguments():
-    import sys
-    if not hasattr(sys, 'argv'): # fix for bug when importing from within nao-man
-        sys.argv=['fake']
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option('-i', '--ip', dest='ip', help='ip address for broker, default is localhost')
-    parser.add_option('-p', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
-    parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
-    parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
-    parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
-    parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
-    parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
-    opts, args = parser.parse_args()
-    ip = opts.ip or get_default_ip()
-    ip = host_to_ip(ip)
-    port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)
-    port = int(port)
-    globals()['ip'] = ip
-    globals()['port'] = port
-    globals()['options'] = opts
-
-parse_command_line_arguments()
+        #raise SystemExit
+        print "ERROR: Ignored"
 
 # Set path only after reading command line arguments - we need them to know
 # if we are connecting to a simulator.

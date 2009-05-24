@@ -207,12 +207,12 @@ def serializeToSoap(x):
         thetype = 'Array'
         children = [serializeToSoap(c) for c in x]
     else:
-        if isinstance(x, int):
+        if isinstance(x, bool):
+            thetype = 'xsd:boolean'
+        elif isinstance(x, int):
             thetype = 'xsd:int'
         elif isinstance(x, float):
             thetype = 'xsd:float'
-        elif isinstance(x, bool):
-            thetype = 'xsd:boolean'
         else:
             thetype = 'xsd:string'
         x = str(x)
@@ -600,6 +600,7 @@ class BaseNaoQiConnection(object):
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
         self._req = Requester(url)
+        self._is_webots = self._req._port == 9560
         self.s = None # socket to connect to broker. reusing - will it work?
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
@@ -645,6 +646,8 @@ class BaseNaoQiConnection(object):
                 sys.stdout.flush()
             mod = self.getModule(modname)
             self._modules.append(mod)
+        if len(modules) > 0 and self.verbose:
+            print
         self.modules = ModulesHolder()
         for m in self._modules:
             self.__dict__[m.getName()] = m
@@ -984,12 +987,36 @@ def getDefaultOptions():
     if options is not None: return options
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option('--ip', action='store', dest='ip', default='localhost', help='hostname to connect to')
-    parser.add_option('--port', action='store', dest='port', default=None, help='port to connect to')
-    parser.add_option('--twisted', action='store_true', dest='twisted', default=True, help='use twisted')
-    parser.add_option('--notwisted', action='store_false', dest='twisted', help='don\'t use twisted')
-    parser.add_option('--locon', action='store_true', dest='localization_on_start', help='turn localization on')
-    parser.add_option('--reportnew', action='store_true', dest='report_new_packet_sizes', help='debug - report new packet sizes')
+    true_storers, false_storers, storers = [], [], []
+
+    # Some helper functions for argument parsing
+    def collector(opt, col, kw_base, **kw):
+        kwjoint = dict(kw_base)
+        kwjoint.update(kw)
+        parser.add_option(opt, **kwjoint)
+        true_storers.append(opt)
+    store_true =lambda opt, **kw: collector(opt, true_storers, {'action':'store_true'}, **kw)
+    store_false =lambda opt, **kw: collector(opt, false_storers, {'action':'store_false'}, **kw)
+    store = lambda opt, **kw: collector(opt, storers, {'action':'store'}, **kw)
+
+    # Optional Arguments
+    store('--ip', dest='ip', default='localhost', help='hostname to connect to')
+    store('--port', dest='port', default=None,    help='port to connect to')
+
+    store_true('--twisted', dest='twisted', default=True,
+            help='use twisted')
+    store_false('--notwisted', dest='twisted',
+            help='don\'t use twisted')
+    store_true('--locon', dest='localization_on_start',
+            help='turn localization on')
+    store_true('--reportnew', dest='report_new_packet_sizes',
+            help='debug - report new packet sizes')
+    store_true('--verbosetwisted', dest='verbose_twisted',
+            help='debug - show twisted communication')
+    store_true('--manhole', dest='use_manhole',
+            help='use manhole shell instead of IPython')
+    store_true('--nogtk', dest='nogtk',
+            help='debug - turn off gtk integration (NOT WORKING)')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
@@ -997,9 +1024,9 @@ def getDefaultOptions():
     # the parameters I used with OptionParser.. delegated option parsers anyone?
     todelete = []
     for i, arg in enumerate(sys.argv):
-        if arg in ['--ip', '--port']:
+        if arg in storers:
             todelete.extend([i, i+1])
-        if arg in ['--locon', '--twisted', '--notwisted', '--reportnew']:
+        if arg in true_storers + false_storers:
             todelete.append(i)
     for i in reversed(todelete):
         if i >= len(sys.argv):

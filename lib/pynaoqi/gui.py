@@ -171,7 +171,7 @@ class Scale(object):
             self._last[-1].addCallback(lambda _,
                     ind=ind, val=val: gotoAngle(ind, val))
 
-class Main(object):
+class Joints(object):
 
     def __init__(self):
         global start_time
@@ -181,6 +181,7 @@ class Main(object):
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
+        self.updater = task.LoopingCall(self.getAngles)
         self.vision = None
         self.inertial = None
         self.localization = None
@@ -202,7 +203,6 @@ class Main(object):
                     table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
                 # value-changed is raised also when set_value is called
                 # move-scaler - nothing?
-            self.updater = task.LoopingCall(self.getAngles)
             self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
             # we added a bunch of widgets, show them (this is async to __init__)
             w.show_all()
@@ -279,19 +279,19 @@ class Main(object):
 
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
-            perstep = self._walkconfig[0]
-            return self.con.ALMotion.addWalkStraight(steps*perstep, 60).addCallback(
-                startWalkTest)
+            distance_per_step = self._walkconfig[0]
+            return self.con.ALMotion.addWalkStraight(steps * distance_per_step,
+                    60).addCallback(startWalkTest)
 
-        def doArc(angle):
+        def doArc(angle, radius=0.5, cycles_per_step=60):
             # angle [rad], radius [m], # 20ms cycles per step
-            return self.con.ALMotion.addWalkArc(angle, 0.5, 60).addCallback(
-                startWalkTest)
+            return self.con.ALMotion.addWalkArc(
+                angle, radius, cycles_per_step).addCallback(startWalkTest)
 
-        def doTurn(angle):
+        def doTurn(angle, cycles_per_step=60):
             # angle [rad], # 20ms cycles per step
-            return self.con.ALMotion.addTurn(steps, 60).addCallback(
-                startWalkTest)
+            return self.con.ALMotion.addTurn(
+                angle, cycles_per_step).addCallback(startWalkTest)
 
         toggle_buttons_data = [
             ('all', self.onShowAll),
@@ -307,10 +307,10 @@ class Main(object):
             ('Walk: get config', updateWalkConfig),
             ('fw %s' % walk_steps, lambda _, steps=walk_steps: doWalk(walk_steps)),
             ('rev %s' % walk_steps, lambda _, steps=-walk_steps: doWalk(-walk_steps)),
-            ('rt 45', lambda _, steps=1: doTurn(pi / 4)),
-            ('lt 45', lambda _, steps=-1: doTurn(-pi / 4)),
-            ('arc right 1', lambda _, steps=1: doArc(1)),
-            ('arc left 1', lambda _, steps=-1: doArc(-1)),
+            ('rt 45', lambda _, steps=1: doTurn(-pi / 4)),
+            ('lt 45', lambda _, steps=-1: doTurn(pi / 4)),
+            ('arc right 1', lambda _, steps=1: doArc( -1 )),
+            ('arc left 1', lambda _, steps=-1: doArc(  1 )),
         ]
 
         top_strip, top_buttons       = create_button_strip(top_buttons_data)
@@ -363,8 +363,9 @@ class Main(object):
         self._walkconfig = arg
 
     def onDestroy(self, *args):
-        print "quitting.."
-        reactor.stop()
+        if self.updater.running:
+            print "stopping joints task"
+            self.updater.stop()
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):
@@ -416,8 +417,15 @@ class Main(object):
         j = self.cur_read_angles
         print repr([j[2:6], j[8:14], j[14:20], j[20:24]])
 
+class JointsMain(Joints):
+
+    def onDestroy(self, *args):
+        super(JointsMain, self).onDestroy()
+        print "quitting.."
+        reactor.stop()
+
 def main():
-    main = Main()
+    joints = JointsMain()
     reactor.run()
 
 if __name__ == '__main__':

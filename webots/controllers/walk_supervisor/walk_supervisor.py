@@ -1,12 +1,6 @@
-# File:         
-# Date:         
-# Description:  
-# Author:       
-# Modifications:
-
 import cPickle
 #from math import sin, cos, atan2
-from math import atan2
+from math import *
 
 from numpy import *
 from numpy.linalg import *
@@ -24,26 +18,37 @@ BASIC_TIME_STEP = 40
 class MyController (Supervisor):
 
     def run(self):
-    
+
+        f = open('out_params.txt','w')
         # Get some references - ball, oball (visualization), player
         player = self.getFromDef('PLAYER_1')
         player_trans = player.getField('translation')
         player_rot = player.getField('rotation')
-        player_trans.setSFVec3f([0.0,0.0,0.0]) # doesn't work for some reason
-        
-        old_v = zeros(4)
+        player_trans.setSFVec3f([0, 0.325, 0]) # doesn't work for some reason
+        player_new_pos = array(player_trans.getSFVec3f())
 
         counter = 0
+        run_num= 0
         # Main loop
         while True:
-            #self.label(repr(ball_trans.getSFVec3f()))
             counter += 1
-            dist = norm(array(player_trans.getSFVec3f()))
-            print "distance from start = %s" % dist
             if counter % 100 == 0:
-                player_trans.setSFVec3f([0.0, 0.0, 0.0])
+                player_old_pos = player_new_pos
+                player_new_pos = array(player_trans.getSFVec3f())
+                x_pos = array(player_trans.getSFVec3f())[0]
+                y_pos = array(player_trans.getSFVec3f())[2]
+                rotation = (player_rot.getSFRotation()[3])*180/math.pi
+                if norm(player_new_pos - player_old_pos) < 1e-4 and not ((x_pos >= -0.01 and x_pos <= 0.01) and (y_pos >= -0.01 and y_pos <= 0.01)):
+                    rotation += 90
+                    if rotation<0:
+                        rotation += 360
+                    print >>f, math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
+                    print math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
+                    f.flush()
+                    player_trans.setSFVec3f([0, 0.325, 0])
+                    player_rot.setSFRotation([0, -1, 0, 1.57])
+                    run_num += 1
             if self.step(BASIC_TIME_STEP) == -1: break
-        
         # Enter here exit cleanup code
 
     def label(self, s):
