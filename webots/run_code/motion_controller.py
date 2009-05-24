@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 ####
 # Import class Movement
 from motion_movement import Movement
@@ -9,15 +11,22 @@ import linecache
 
 OUT_FILE='out_times.txt'
 
-output_lines= len(linecache.getlines('out_times.txt'))
-f = open(OUT_FILE,'a+')
+output_lines= len(linecache.getlines(OUT_FILE))
+print "existing lines: %s" % output_lines
+f = open(OUT_FILE,'a')
 
 (x_init_pos, y_init_pos, yaw_init_pos,
  x_dest_pos, y_dest_pos, yaw_dest_pos)= [float(x.strip()) for x in 
     linecache.getlines('parameters.txt')]
 
+print "About to run for the following parameters:"
+print "X  : %s - %s" % (x_init_pos, x_dest_pos)
+print "Y  : %s - %s" % (y_init_pos, y_dest_pos)
+print "Yaw: %s - %s" % (yaw_init_pos, yaw_dest_pos)
+
 counter= 1
 x_pos= x_init_pos
+
 while x_pos <= x_dest_pos:
     y_pos= y_init_pos
     while y_pos <= y_dest_pos:
