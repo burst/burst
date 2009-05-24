@@ -37,23 +37,32 @@ class WrapWithDeferreds(object):
 class MyDeferred(object):
     """ mimic in the most minimal way twisted.internet.defer.Deferred """
     def __init__(self):
-        self._cb = None
+        self._callbacks = []
         self.called = 0
         # not setting self.result to mimic bug/feature in original
 
     def addCallback(self, f):
-        """ not implementing chained callbacks for now """
-        self._cb = f
+        """ Record or Apply a callback to the result.
+        Two paths:
+        self.called: apply f to existing result, update it in place
+        else       : append f to self.callbacks
+
+        both cases : return self
+        """
+        self._callbacks.append(f)
         if self.called: # call immediately
             self.result = f(self.result) # saved for filter effect
+        return self
 
     def callback(self, result):
         self.called = True
         self.result = result
-        if self._cb:
+        for cb in self._callbacks:
             try:
-                self._cb(result)
+                self.result = cb(self.result)
             except Exception, e:
+                # This is where an errback would have been triggered in
+                # the real t.i.d.Deferred
                 print "Exception on deferred: %s" % str(e)
                 import pdb; pdb.set_trace()
 
@@ -71,6 +80,7 @@ class MyDeferredList(MyDeferred):
     """
 
     def __init__(self, deferreds):
+        super(MyDeferredList, self).__init__()
         self._deferreds = deferreds
         self._count = len(deferreds)
         # like twisted.internet.defer, collect pairs of (success, result),
@@ -83,7 +93,7 @@ class MyDeferredList(MyDeferred):
         self._count -= 1
         self._results[i] = (True, result)
         if self._count <= 0:
-            self.callback(None)
+            self.callback(self._results)
 
 def wrapDeferredWithBurstDeferred(d):
     """ call with no parameters - the only use case so far """

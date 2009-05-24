@@ -17,9 +17,10 @@ from numpy import (sin, cos, zeros,
 from numpy.linalg import norm
 from scipy.linalg import lu, lu_factor
 
-from burst_util import nicefloats
+from burst_util import nicefloats, DeferredList
 
 from burst import options
+import burst
 
 # TODO - pynaoqi'sm, should be factored out to some
 # joint object that both burst and pynaoqi will use,
@@ -220,7 +221,7 @@ class NaoPose(object):
                          body height and horizon
     
       * pixEstimate()  - returns an estimate to a given x,y pixel, representing an
-                         object at a certain height from the ground. Takes untis of
+                         object at a certain height from the ground. Takes units of
                          CM, and returns in CM. See also bodyEstimate
     
       * bodyEstimate() - returns an estimate for a given x,y pixel, and a distance
@@ -272,26 +273,29 @@ class NaoPose(object):
         self._inclination_vars = [
             'Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
             'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
+        self._inclination = [0.0, 0.0]
         self.transform([0.0]*26, [0.0,0.0]) # init stuff
+        self._connecting_to_webots = burst.connecting_to_webots()
 
     # Helper Pynaoqi functions
 
     def update(self, con):
-        self._wait = 2
-        con.ALMemory.getListData(self._inclination_vars).addCallback(
-            self._storeInclination).addCallback(self._updated)
-        con.ALMotion.getBodyAngles().addCallback(
-            self._storeBodyAngles).addCallback(self._updated)
+        from pynaoqi.shell import onevision
+        DeferredList([
+            con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
+            con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
+            onevision(),
+            ]).addCallback(self._updated)
 
     def _storeInclination(self, result):
-        self._inclination = result
+        if not self._connecting_to_webots:
+            self._inclination = result
 
     def _storeBodyAngles(self, result):
         self._bodyAngles = result
 
     def _updated(self, result):
-        self._wait -= 1
-        if self._wait != 0: return
+        self._v = v = result[2][1]
         print "\nupdating pose"
         print nicefloats(self._inclination)
         print nicefloats(self._bodyAngles)
@@ -300,10 +304,22 @@ class NaoPose(object):
         print self.focalPointInWorldFrame
         print (self.cameraToWorldFrame*100).astype('int')
         print
+        for name, obj, objheight_cm in [
+            ('YGLP', v.YGLP, 80), ('YGRP', v.YGRP, 80), ('Ball', v.Ball, 10)]:
+            if obj.distance == 0.0:
+                print "%s not visible" % name
+                continue
+            else:
+                print name
+            estimate = self.pixEstimate(obj.x, obj.y, 0.0)
+            print "mine: pix=%3.3f, height=%3.3f, given: focDist=%3.3f, dist=%3.3f" % (
+                estimate.dist, self.pixHeightToDistance(obj.height, objheight_cm),
+                obj.focdist, obj.distance)
+            print "mine: bearing=%3.3f, given: bearing=%3.3f" % (estimate.bearing*180.0/pi, obj.bearingdeg)
 
     # NaoPose.cpp 
 
-    def transform(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN):
+    def transform(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
         """
         TOOD: get supportFoot from ALMotion (if it is our own walk engine should
         be easier)
@@ -314,6 +330,9 @@ class NaoPose(object):
         Then we calculate horizon and camera height which is necessary for the
         calculation of pix estimates.
         """
+
+        if debug:
+            import pdb; pdb.set_trace()
 
         # Make up bogus values
         HEAD_START, LLEG_START, RLEG_START = 0, 8, 14
@@ -482,20 +501,24 @@ class NaoPose(object):
         # negative of what it should be.
         return intersection
 
-    def pixEstimate(self, pixelX, pixelY, objectHeight):
+    def pixEstimate(self, pixelX, pixelY, objectHeight, debug=False):
         """
-         Method to determine where the physical point represented by a pixel is relative
-         to the world frame.
-        """
+         returns an estimate to a given x,y pixel, representing an
+                         object at a certain height from the ground. Takes units of
+                         CM, and returns in CM. See also bodyEstimate
+         """
+
+        if debug:
+            import pdb; pdb.set_trace()
 
         if (pixelX >= IMAGE_WIDTH or pixelX < 0 or
             pixelY >= IMAGE_HEIGHT or pixelY < 0):
             return NULL_ESTIMATE
 
         # declare x,y,z coordinate of pixel in relation to focal point
-        pixelInCameraFrame = array([FOCAL_LENGTH_MM,
+        pixelInCameraFrame = vector4D(FOCAL_LENGTH_MM,
                  (IMAGE_CENTER_X - float(pixelX)) * PIX_X_TO_MM,
-                 (IMAGE_CENTER_Y - float(pixelY)) * PIX_Y_TO_MM, 0.0])
+                 (IMAGE_CENTER_Y - float(pixelY)) * PIX_Y_TO_MM)
 
         # Declare x,y,z coordinate of pixel in relation to body center
         # transform camera coordinates to body frame coordinates for a test pixel
@@ -547,7 +570,7 @@ class NaoPose(object):
         Body estimate takes a pixel on the screen, and a vision calculated
         distance to that pixel, and calculates where that pixel is relative
         to the world frame.  It then returns an estimate to that position,
-        with units in cm.
+        with units in cm. See also pixEstimate
         """
         if dist <= 0.0:
             return NULL_ESTIMATE
@@ -625,14 +648,14 @@ class NaoPose(object):
 
         return pix_est
 
-    def pixHeightToDistance(pixHeight, cmHeight):
+    def pixHeightToDistance(self, pixHeight, cmHeight):
         """
         Return the distance to the object based on the image magnification of its
         height
         """
         return (FOCAL_LENGTH_MM / (pixHeight * PIX_Y_TO_MM)) * cmHeight
 
-    def pixWidthToDistance(pixWidth, cmWidth):
+    def pixWidthToDistance(self, pixWidth, cmWidth):
         """
         Return the distance to the object based on the image magnification of its
         height

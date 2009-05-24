@@ -16,7 +16,6 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 
 import pynaoqi
-from burst_util import isnumeric, minimal_title, pairit
 
 # we use twisted in a thread if requested
 options = pynaoqi.getDefaultOptions()
@@ -42,7 +41,24 @@ if has_matplotlib and not options.nogtk:
     print "DEBUG: USING MATPLOTLIB WITH GTK"
     matplotlib.use('GTK')
 
+def import_burst():
+    # Fiasco: burst does it's own option parsing, which conflicts with IPython's
+    # so we remove some stuff from the options arguments.. ugly, but works.
+    old_argv = sys.argv
+    sys.argv = sys.argv[:]
+    bad_options = ['-pylab']
+    for opt in bad_options:
+        if opt in sys.argv:
+            del sys.argv[sys.argv.index(opt)]
+    import burst.moves as moves
+    sys.argv = old_argv
+    # End of fiasco
+
 # IMPORTANT: this must happen after gtk2reactor, or bust.
+import_burst()
+import burst.moves as moves
+from burst_util import isnumeric, minimal_title, pairit
+
 from burst import field
 
 ################################################################################
@@ -89,29 +105,69 @@ def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
         limits=limits,
         statics=list(field.rects) + list(field.landmarks))
 
+class Data(object):
+
+    def __init__(self, d):
+        self.__dict__.update(d)
+        self._d = d
+
+    def __str__(self):
+        return str(self._d)
+
+    def __repr__(self):
+        return repr(self._d)
+
+from burst.consts import vision_vars
+#vision = refilter('^/.*[cC]enter', names)
+vision_vars_parts = [x.split('/')[3:] for x in vision_vars]
+
+def format_vision_vars(v):
+    d = {}
+    for parts, val in zip(vision_vars_parts, v):
+        k, k2 = parts[0], parts[1].lower() # make the data key lowercase
+                                           # (focDist->focdist)
+        recorded_k2 = {'dist':'distance', 'bearing':'bearingdeg'}.get(k2, k2)
+        if k not in d:
+            d[k] = {}
+        d[k][recorded_k2] = val
+    for k in d.keys():
+        d[k] = Data(d[k])
+    return Data(d)
+
+def onevision(d=None):
+    """ shortcut to get vision as a nice attribute laden class """
+    if not d:
+        d = con.ALMemory.getListData(vision_vars)
+    return d.addCallback(format_vision_vars)
+
 #############################################################################
 
-EXAMPLES = """    # Show current identified ball location
-    ball = refilter('^/.*Ball.*center', names)
-    con.ALMemory.getListData(ball)
+EXAMPLES = """# Show current identified ball location
+ball = refilter('^/.*Ball.*center', names)
+con.ALMemory.getListData(ball)
 
-    # Vision Location of ball over time, in text, in plot
-    watch(ball)
-    plottime(ball)
+# Vision Location of ball over time, in text, in plot
+watch(ball)
+plottime(ball)
 
-    # Vision positions on a canvas
-    vision = refilter('^/.*[cC]enter', names)
-    canvaspairs(vision)
+# Vision positions on a canvas
+vision = refilter('^/.*[cC]enter', names)
+canvaspairs(vision)
 
-    # Battery in a plot
-    battery = refilter('Battery.*Value',names)
-    plottime(battery, limits=[-1.0,1.0])
+# Battery in a plot
+battery = refilter('Battery.*Value',names)
+plottime(battery, limits=[-1.0,1.0])
 
-    # Localization positions for self and ball on canvas
-    loc = refilter('[XY]Est',names)
-    fieldpairs(loc)
-    fieldpairs(loc, limits=field.green_limits)
-    fieldpairs(loc, limits=field.white_limits)
+# Localization positions for self and ball on canvas
+loc = refilter('[XY]Est',names)
+fieldpairs(loc)
+fieldpairs(loc, limits=field.green_limits)
+fieldpairs(loc, limits=field.white_limits)
+
+# Kinematics (import takes some time, hence not done by default)
+import burst.kinematics as kin
+kin.pose.update(con)
+
 """
 def examples():
     print EXAMPLES
@@ -126,31 +182,47 @@ def start_names_request(my_ns):
         lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
 
 def make_shell_namespace(use_pylab):
-    # Fiasco: burst does it's own option parsing, which conflicts with IPython's
-    # so we remove some stuff from the options arguments.. ugly, but works.
-    old_argv = sys.argv
-    sys.argv = sys.argv[:]
-    bad_options = ['-pylab']
-    for opt in bad_options:
-        if opt in sys.argv:
-            del sys.argv[sys.argv.index(opt)]
-    import burst.moves as moves
-    sys.argv = old_argv
-    # End of fiasco
+    """
+    Returns a namespace prepopulated with any variable we want in the global
+    namespace for easy naoqi developing and debugging.
+    """
 
     import burst_util
     import vision_definitions
+    from twisted.internet import task
+    from twisted.internet import defer
+
+    def pr(x):
+        print str(x)
 
     my_ns = dict(
+        # globals
+        task = task,
+        succeed = defer.succeed,
+        # pynaoqi
         con = con,
         pynaoqi = pynaoqi,
+        joints = Joints,
+        pr = pr,
+        loop = GtkTextLogger,
+        watch = watch,
+        plottime = plottime,
+        canvaspairs = canvaspairs,
+        fieldpairs = fieldpairs,
+        video = video,
+        examples = examples,
+        format_vision_vars = format_vision_vars,
+        onevision = onevision,
+        # burst
         moves = moves,
+        field = field,
         vision_definitions = vision_definitions,
         refilter = burst_util.refilter,
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
         pairit = burst_util.pairit,
-        joints = Joints,
+        # place holder until onDataListName works
+        names = 'fetching..',
         )
 
     my_ns.update(math.__dict__)
@@ -161,29 +233,9 @@ def make_shell_namespace(use_pylab):
         my_ns.update(pylab.__dict__)
         my_ns['pylab'] = pylab
 
-    def pr(x):
-        print str(x)
-
     if not pynaoqi.options.nogtk:
         import gtk
         my_ns['gtk'] = gtk
-
-    from twisted.internet import task
-    from twisted.internet import defer
-
-    my_ns['field'] = field
-    my_ns['task'] = task
-    my_ns['pr'] = pr
-    my_ns['loop'] = GtkTextLogger
-    my_ns['watch'] = watch
-    my_ns['plottime'] = plottime
-    my_ns['canvaspairs'] = canvaspairs
-    my_ns['fieldpairs'] = fieldpairs
-    my_ns['video'] = video
-    my_ns['examples'] = examples
-    my_ns['succeed'] = defer.succeed
-    # place holder until onDataListName works
-    my_ns['names'] = 'fetching..'
 
     return my_ns
 
