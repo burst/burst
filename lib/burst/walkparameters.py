@@ -1,6 +1,6 @@
 
-D2R = DEG_TO_RAD = 0.0174532925199
-R2D = RAD_TO_DEG = 1/DEG_TO_RAD
+from consts import DEG_TO_RAD, RAD_TO_DEG
+
 
 
 class WalkParameters(list):
