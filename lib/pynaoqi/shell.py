@@ -26,8 +26,10 @@ if options.twisted and not options.nogtk:
     # Try to throw in gtk support
     from twisted.internet import gtk2reactor
 
-    # we should be the first to install it, so no need for try/except
-    gtk2reactor.install()
+    try:
+        gtk2reactor.install()
+    except:
+        pass
 
 has_matplotlib = False
 try:
@@ -39,6 +41,9 @@ except:
 if has_matplotlib and not options.nogtk:
     print "DEBUG: USING MATPLOTLIB WITH GTK"
     matplotlib.use('GTK')
+
+# IMPORTANT: this must happen after gtk2reactor, or bust.
+from burst import field
 
 ################################################################################
 # Gui Widgets
@@ -70,8 +75,19 @@ def video():
     if video_window is None:
         video_window = VideoWindow(con)
 
-def canvaspairs(l, limits=[0,320,0,320]):
-    return CanvasTicker(lambda: con.ALMemory.getListData(l).addCallback(pairit), limits=limits)
+def canvaspairs(l, limits=[0,320,0,320], statics=None):
+    from twisted.internet.defer import succeed
+    # test case - will also work without a nao connection
+    if l == []:
+        return CanvasTicker(lambda: succeed([]), limits=limits, statics=statics)
+    return CanvasTicker(lambda: con.ALMemory.getListData(l).addCallback(pairit), limits=limits, statics=statics)
+
+def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
+    # Note - statics needs to be z sorted - lowest object
+    # first, so rectangles go first, and green goes before white.
+    return CanvasTicker(lambda: con.ALMemory.getListData(l).addCallback(pairit),
+        limits=limits,
+        statics=list(field.rects) + list(field.landmarks))
 
 #############################################################################
 
@@ -93,7 +109,9 @@ EXAMPLES = """    # Show current identified ball location
 
     # Localization positions for self and ball on canvas
     loc = refilter('[XY]Est',names)
-    canvaspairs(loc, limits=[-1000,1000,-1000,1000])
+    fieldpairs(loc)
+    fieldpairs(loc, limits=field.green_limits)
+    fieldpairs(loc, limits=field.white_limits)
 """
 def examples():
     print EXAMPLES
@@ -151,15 +169,19 @@ def make_shell_namespace(use_pylab):
         my_ns['gtk'] = gtk
 
     from twisted.internet import task
+    from twisted.internet import defer
 
+    my_ns['field'] = field
     my_ns['task'] = task
     my_ns['pr'] = pr
     my_ns['loop'] = GtkTextLogger
     my_ns['watch'] = watch
     my_ns['plottime'] = plottime
     my_ns['canvaspairs'] = canvaspairs
+    my_ns['fieldpairs'] = fieldpairs
     my_ns['video'] = video
     my_ns['examples'] = examples
+    my_ns['succeed'] = defer.succeed
     # place holder until onDataListName works
     my_ns['names'] = 'fetching..'
 
