@@ -525,5 +525,8 @@ class Actions(object):
         return self.executeMoveChoreograph(moves.TURN_CW) 
 
     def executeTurnCCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CCW) 
+        return self.executeMoveChoreograph(moves.TURN_CCW)
+    
+    def executeToBellyFromLeapRight(self):
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT) 
 

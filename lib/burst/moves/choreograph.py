@@ -715,3 +715,113 @@ def TURN_CCW():
     angles.append([float(0.00000), float(0.00000)])
     times.append([float(0.26667), float(0.46667)])
     return jointCodes, angles, times
+
+@chorwrap
+def TO_BELLY_FROM_LEAP_RIGHT():
+    jointCodes = list()
+    angles = list()
+    times = list()
+    
+    jointCodes.append("HeadPitch")
+    angles.append([float(-0.26696)])
+    times.append([float(0.90000)])
+    
+    jointCodes.append("HeadYaw")
+    angles.append([float(-0.00618)])
+    times.append([float(0.90000)])
+    
+    jointCodes.append("LAnklePitch")
+    angles.append([float(0.55987), float(-0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LAnkleRoll")
+    angles.append([float(-0.14109), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LElbowRoll")
+    angles.append([float(0.00000), float(0.00000)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LElbowYaw")
+    angles.append([float(1.73184), float(1.64134)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LHand")
+    angles.append([float(-0.99852), float(-0.99779)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LHipPitch")
+    angles.append([float(-0.61969), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LHipRoll")
+    angles.append([float(0.15958), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LHipYawPitch")
+    angles.append([float(-0.05518), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LKneePitch")
+    angles.append([float(0.01376), float(0.00000)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LShoulderPitch")
+    angles.append([float(-0.09250), float(-1.55092)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LShoulderRoll")
+    angles.append([float(0.00000), float(0.39880)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("LWristYaw")
+    angles.append([float(0.01683), float(-0.01078)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RAnklePitch")
+    angles.append([float(0.77625), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RAnkleRoll")
+    angles.append([float(0.07828), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RElbowRoll")
+    angles.append([float(0.20406), float(0.20713)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RElbowYaw")
+    angles.append([float(0.63964), float(0.64731)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RHand")
+    angles.append([float(-0.99816), float(-0.99779)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RHipPitch")
+    angles.append([float(0.06899), float(-0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RHipRoll")
+    angles.append([float(0.21787), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RKneePitch")
+    angles.append([float(0.00000), float(0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RShoulderPitch")
+    angles.append([float(-1.55237), float(-1.54930)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RShoulderRoll")
+    angles.append([float(-0.08595), float(-0.08134)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    jointCodes.append("RWristYaw")
+    angles.append([float(-0.00004), float(-0.00004)])
+    times.append([float(0.90000), float(10.20000)])
+    
+    return jointCodes, angles, times
+
+

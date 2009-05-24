@@ -14,27 +14,49 @@ import burst.moves as moves
 from math import cos, sin
 import time
 
+GOAL_BORDER = 57
+ERROR_IN_LENGTH = 0
+
 class goalie(Player):
+    
     
 #    def onStop(self):
 #        super(Goalie, self).onStop()
 
     def onStart(self):
         self.kp = None
-
+            
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
         self._actions.initPoseAndStiffness()
         
         #self._eventmanager.register(EVENT_BALL_IN_FRAME,
         #    lambda target=self._world.ball: self._actions.executeTracking(target)
         #)
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
         
         #self.doMoveHead(self._world.ball.bearing, -self._world.ball.elevation)
         #self._actions.executeLeapLeft()
-        #self._actions.executeLeapRight()
         #self.walkStartTime = time.time()
         #self.test()
+        self.watchIncomingBall()
+        
+        
+    def watchIncomingBall(self):
+        self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
+        
+    def leap(self):
+        self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
+        print self._world.ball.body_isect
+        if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
+            self._actions.executeLeapRight()
+            self._eventmanager.setTimeoutEventParams(3.0, oneshot=True, cb=self.gettingUpRight)
+        else:
+            self.watchIncomingBall()
+        
+        
+    def gettingUpRight(self):
+        self._actions.executeToBellyFromLeapRight()
+        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall())
     
     def trackBall(self):
         self._actions.executeTracking(self._world.ball)
