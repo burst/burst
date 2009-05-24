@@ -286,7 +286,7 @@ class Joints(object):
         def doArc(angle, radius=0.5, cycles_per_step=60):
             # angle [rad], radius [m], # 20ms cycles per step
             return self.con.ALMotion.addWalkArc(
-                angle, radius, steps).addCallback(startWalkTest)
+                angle, radius, cycles_per_step).addCallback(startWalkTest)
 
         def doTurn(angle, cycles_per_step=60):
             # angle [rad], # 20ms cycles per step
@@ -307,10 +307,10 @@ class Joints(object):
             ('Walk: get config', updateWalkConfig),
             ('fw %s' % walk_steps, lambda _, steps=walk_steps: doWalk(walk_steps)),
             ('rev %s' % walk_steps, lambda _, steps=-walk_steps: doWalk(-walk_steps)),
-            ('rt 45', lambda _, steps=1: doTurn(pi / 4)),
-            ('lt 45', lambda _, steps=-1: doTurn(-pi / 4)),
-            ('arc right 1', lambda _, steps=1: doArc(1)),
-            ('arc left 1', lambda _, steps=-1: doArc(-1)),
+            ('rt 45', lambda _, steps=1: doTurn(-pi / 4)),
+            ('lt 45', lambda _, steps=-1: doTurn(pi / 4)),
+            ('arc right 1', lambda _, steps=1: doArc( -1 )),
+            ('arc left 1', lambda _, steps=-1: doArc(  1 )),
         ]
 
         top_strip, top_buttons       = create_button_strip(top_buttons_data)
