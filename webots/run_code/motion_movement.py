@@ -27,6 +27,13 @@ except Exception,e:
 ####
 # Motion Config
 
+initial_angles = [-4.196167e-05, -4.196167e-05, 1.7453624000000001, 0.26179266000000001, -1.5707622000000001, -0.52362728000000003, -4.196167e-05, 0.0, 0.0033975868, -0.051347039999999997, -0.45210454, 0.80281532, -0.40540146999999999, 0.051335089, 0.0033975868, 0.035707463000000002, -0.45391422999999997, 0.80587136999999998, -0.40675569, -0.035815290999999999, 1.7453505, -0.26178071000000003, 1.5707741, 0.52361535999999997, -4.196167e-05, 0.0]
+
+def set_angles_to_walk_start():
+    print "Settings body angles to start of walk"
+    motionProxy.setBodyAngles(initial_angles)
+    print "done"
+
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
@@ -210,10 +217,13 @@ class Movement(object):
         else:
             self.turn(odiffangle)
         motionProxy.walk()
+
     def turn(self, yaw):
         motionProxy.addTurn(yaw*motion.TO_RAD,Movement.steps)
         motionProxy.walk()
-    def run(self):    
+
+    def run(self):
+        set_angles_to_walk_start()
         before_t= time.time()
         self.normalize()
         self.straight(Movement.x2,Movement.y2, Movement.yaw2)
@@ -231,3 +241,4 @@ class Movement(object):
         time3= after_t-before_t
         time.sleep(18)
         return [time1, time2, time3]
+
