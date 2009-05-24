@@ -279,7 +279,13 @@ class Actions(object):
             'head':self._world.robot.add_expected_head_post,
             'walk':self._world.robot.add_expected_walk_post}[kind]
         bd = BurstDeferred(None)
-        d.addCallback(lambda postid: post_handler(postid, event, duration).onDone(bd.callOnDone))
+        def onPostId(postid):
+            if not isinstance(postid, int):
+                print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
+                print "ERROR:  Did you forget to enable ALMotion perhaps?"
+                raise SystemExit
+            post_handler(postid, event, duration).onDone(bd.callOnDone)
+        d.addCallback(onPostId)
         return bd
 
     def turn(self, deltaTheta, walk=moves.FASTEST_WALK):
