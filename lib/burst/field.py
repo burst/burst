@@ -1,7 +1,7 @@
 """
 Field constants.
 
-Parts are shamelessly translated from FieldLines.cpp and
+Parts are shamelessly translated from FieldConstants.h and
 other files in nao-man repository:
 
 http://github.com/northern-bites
