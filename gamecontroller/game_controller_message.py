@@ -5,8 +5,6 @@
 
 import socket, struct
 
-InitialGameState = 0; ReadyGameState = 1; SetGameState = 2; PlayGameState = 3; FinishGameState = 4;
-TeamA = 0; TeamB = 1;
 
 
 class GameControllerMessage(object):
@@ -63,23 +61,27 @@ class GameControllerMessage(object):
         return struct.unpack("h", self.string[start:start+2])[0]
 
 
-host = "0.0.0.0"
-port = 3839
-buf = 1024
-addr = (host,port)
 
-UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-#UDPSock.setblocking(False)
-UDPSock.bind(addr)
-while True:
-    try:
-        data,addr = UDPSock.recvfrom(buf)
-        x = GameControllerMessage(data)
-        a, b = 1, 3
-        print x.getPenaltyStatus(a, b), x.getPenaltyTimeRemaining(a, b)
-#        print x.getTeamScore(1)
-    except socket.error:
-        pass
+if __name__ == '__main__':
+    welcome = 'Testing the GameControllerMessage module.'
+    print len(welcome)*'*' + '\n' + welcome + '\n' + len(welcome)*'*'
+    host = "0.0.0.0"
+    port = 3839
+    buf = 1024
+    addr = (host,port)
+
+    UDPSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    #UDPSock.setblocking(False)
+    UDPSock.bind(addr)
+    while True:
+        try:
+            data,addr = UDPSock.recvfrom(buf)
+            x = GameControllerMessage(data)
+            a, b = TeamA, 1
+            print x.getPenaltyStatus(a, b), x.getPenaltyTimeRemaining(a, b)
+    #        print x.getTeamScore(1)
+        except socket.error:
+            pass
 
 
 '''
