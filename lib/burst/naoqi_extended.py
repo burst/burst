@@ -63,15 +63,35 @@ def getBroker():
         raise InitException, "Must initialize the module first."
     return _broker
 
+class MissingProxy(object):
+    """ Wrapper to a proxy object that does nothing, here
+    to allow DCM tests by vova without drastic changes
+    to the rest of the library.
+    """
+
+    def __init__(self, name):
+        self._name = name
+        if not 'post' in name:
+            self.post = MissingProxy('%s.post' % self._name)
+
+    def __getattr__(self, k):
+        #print "missing %s.%s" % (self._name, k)
+        return lambda *args, **kw: None
+
 def getMotionProxy(deferred = False):
     global motionProxy, proxies, _broker
     if _broker is None:
         raise InitException, "Must initialize the module first."
     if motionProxy is None:
-        motionProxy = ALProxy("ALMotion")
+        try:
+            motionProxy = ALProxy("ALMotion")
+            proxies.append(motionProxy)
+        except Exception, e:
+            motionProxy = MissingProxy('ALMotion')
+            print "WARNING: Motion module is not available (Exception: %s)" % e
+        if deferred:
+            motionProxy = WrapWithDeferreds(motionProxy)
         proxies.append(motionProxy)
-    if deferred:
-        motionProxy = WrapWithDeferreds(motionProxy)
     return motionProxy
 
 def getSpeechProxy(deferred = False):
@@ -81,11 +101,12 @@ def getSpeechProxy(deferred = False):
     if speechProxy is None:
         try:
             speechProxy = ALProxy("ALTextToSpeech")
-            proxies.append(speechProxy)
         except Exception,e :
-            print "WARNING: Speech Proxy not available (Exception: %s)" % e
-    if deferred:
-        speechProxy = WrapWithDeferreds(speechProxy)
+            motionProxy = MissingProxy('ALTextToSpeech')
+            print "WARNING: Speech module not available (Exception: %s)" % e
+        if deferred:
+            speechProxy = WrapWithDeferreds(speechProxy)
+        proxies.append(speechProxy)
     return speechProxy
 
 
@@ -122,7 +143,6 @@ def getDCMProxy(deferred = False):
     if deferred:
         dcmProxy = WrapWithDeferreds(dcmProxy)
     return dcmProxy
-
 
 def shutdown():
     pass
