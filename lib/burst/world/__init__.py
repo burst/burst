@@ -30,6 +30,11 @@ from team import Team
 from computed import Computed
 from objects import Locatable
 
+sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
+from gamecontroller import GameControllerMessage, GameController
+sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
+import robot_settings
+
 def timeit(tmpl):
     def wrapper(f):
         def wrap(*args, **kw):
@@ -185,12 +190,10 @@ class World(object):
         self.computed = Computed(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
-        import robot_settings
         self.robotSettings = robot_settings
-        import gamecontroller, gamestatus
+        import gamestatus
         self.gameStatus = gamestatus.GameStatus(self.robotSettings)
-        self._gameController = gamecontroller.GameController(self.gameStatus)
+        self._gameController = GameController(self.gameStatus)
 
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
