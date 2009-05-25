@@ -185,12 +185,12 @@ class World(object):
         self.computed = Computed(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
-        import robot_settings
-        self.robotSettings = robot_settings
-        import gamecontroller, gamestatus
-        self.gameStatus = gamestatus.GameStatus(self.robotSettings)
-        self._gameController = gamecontroller.GameController(self.gameStatus)
+        #sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
+        #import robot_settings
+        #self.robotSettings = robot_settings
+        #import gamecontroller, gamestatus
+        #self.gameStatus = gamestatus.GameStatus(self.robotSettings)
+        #self._gameController = gamecontroller.GameController(self.gameStatus)
 
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
@@ -206,7 +206,7 @@ class World(object):
             # All basic objects that rely on just naoproxies should be in the
             # first list
             [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
-             self.robot, self.falldetector, self._gameController],
+             self.robot, self.falldetector],
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
