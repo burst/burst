@@ -546,18 +546,18 @@ class ALMotionExtended(NaoQiModule):
     def onBodyJointNames(self, joint_names):
         self._joint_names = joint_names
 
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, return_instead=False):
         """ Work like northern bites code using ALMotion.doMove
         """
         # minimal check just for allowed moves, not checking it is a list non zero length etc.
         if len(moves[0]) == 5 and len(moves[0][0]) == 4:
-            self.executeMove20(moves, interp_type)
+            return self.executeMove20(moves, interp_type, return_instead=return_instead)
         elif len(moves[0]) == 2 and len(moves[0][0]) == 2:
-            self.executeMoveHead(moves, interp_type)
+            return self.executeMoveHead(moves, interp_type, return_instead=return_instead)
         else:
             print "ERROR: ALMotionExtend.executeMove: unrecognized move"
 
-    def executeMove20(self, moves, interp_type):
+    def executeMove20(self, moves, interp_type, return_instead=False):
         """ for 20 joint moves (4 + 6 + 6 + 4)
         """
         joints = self._joint_names[2:]
@@ -568,14 +568,18 @@ class ALMotionExtended(NaoQiModule):
         durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        self.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        if return_instead:
+            return (joints, angles_matrix, durations_matrix, interp_type)
+        return self.doMove(joints, angles_matrix, durations_matrix, interp_type)
 
-    def executeMoveHead(self, moves, interp_type):
+    def executeMoveHead(self, moves, interp_type, return_instead=False):
         joints = self._joint_names[:2]
         n_joints = len(joints)
         angles_matrix = transpose([[x*DEG_TO_RAD for x in head] for head, interp_time in moves])
         durations_matrix = [list(cumsum(interp_time for head, interp_time in moves))] * n_joints
-        self.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        if return_instead:
+            return (joints, angles_matrix, durations_matrix, interp_type)
+        return self.doMove(joints, angles_matrix, durations_matrix, interp_type)
 
     def executeMoveByGoto(self, moves, interp_type = INTERPOLATION_SMOOTH):
         for move in moves:

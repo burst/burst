@@ -197,8 +197,11 @@ class BasicMainLoop(object):
            
     def onNormalQuit(self):
         if self._actions:
-            print "sitting, removing stiffness and quitting."
-            self._sit_deferred = self._actions.sitPoseAndRelax()
+            if burst.options.passive_ctrl_c or not self._world.connected_to_nao:
+                print "exiting"
+            else:
+                print "sitting, removing stiffness and quitting."
+                self._sit_deferred = self._actions.sitPoseAndRelax()
             return True
         print "quitting before starting are we?"
         return False
