@@ -93,6 +93,8 @@ void burstmem::readBatteryChargerWarningConfig()
 {
     std::vector < std::string > charger_config;
     readVariablesFile(CHARGER_CONFIG_FILENAME, charger_config);
+    std::cout << "read " << charger_config.size() << " variables from "
+              << CHARGER_CONFIG_FILENAME << std::endl;
     numberOfTicksBeforeAnnouncement = atoi(charger_config[0].c_str());
     ticksLastStatusHasHeld = 0;
 }
