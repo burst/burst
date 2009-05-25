@@ -5,6 +5,9 @@
 
 import socket, struct
 
+# TODO: This is compatible with my reverse engineering of the Java GameController. Is it also compatible with the header in
+# ~/src/burst/gamecontroller/GameController2006/sample/GameController/GameController/RoboCupGameControlData.h ?
+
 
 
 class GameControllerMessage(object):
