@@ -197,7 +197,7 @@ class BasicMainLoop(object):
            
     def onNormalQuit(self):
         if self._actions:
-            if burst.options.passive_ctrl_c:
+            if burst.options.passive_ctrl_c or not self._world.connected_to_nao:
                 print "exiting"
             else:
                 print "sitting, removing stiffness and quitting."
