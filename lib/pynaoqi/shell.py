@@ -103,7 +103,14 @@ def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
     # first, so rectangles go first, and green goes before white.
     return CanvasTicker(lambda: con.ALMemory.getListData(l).addCallback(pairit),
         limits=limits,
-        statics=list(field.rects) + list(field.landmarks))
+        statics=list(field.rects) + map(list, field.landmarks))
+
+def fieldshow(callback=None, limits=field.green_limits):
+    if callback is None:
+        import burst.kinematics as kinematics
+        callback = lambda: kinematics.pose.updateLocations(con)
+    return CanvasTicker(callback, limits=limits,
+        statics=list(field.rects) + map(list, field.landmarks))
 
 class Data(object):
 
@@ -163,6 +170,7 @@ loc = refilter('[XY]Est',names)
 fieldpairs(loc)
 fieldpairs(loc, limits=field.green_limits)
 fieldpairs(loc, limits=field.white_limits)
+fieldshow()
 
 # Kinematics (import takes some time, hence not done by default)
 import burst.kinematics as kin
@@ -209,10 +217,12 @@ def make_shell_namespace(use_pylab):
         plottime = plottime,
         canvaspairs = canvaspairs,
         fieldpairs = fieldpairs,
+        fieldshow = fieldshow,
         video = video,
         examples = examples,
         format_vision_vars = format_vision_vars,
         onevision = onevision,
+        CanvasTicker = CanvasTicker,
         # burst
         moves = moves,
         field = field,
