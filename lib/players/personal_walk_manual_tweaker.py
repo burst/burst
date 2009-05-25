@@ -13,30 +13,8 @@ from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
 import os
 
-outputFile = None
 
-
-walkType = 'changeLocationRelative'
-walkDistance = 200.0
-walkParams = Walk(WalkParameters([
-           100.0 * DEG_TO_RAD, # ShoulderMedian
-           15.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
-           -4.5,                  # RHipRoll(degrees)
-           0.22,                  # HipHeight(meters)
-           3.4,                   # TorsoYOrientation(degrees)
-           0.070,                  # StepLength
-           0.043,                  # StepHeight
-           0.03,                  # StepSide
-           0.3,                   # MaxTurn
-           0.01,                  # ZmpOffsetX
-           0.00]),                  # ZmpOffsetY 
-           100)                    # 20ms count per step
-
-
-class personalWalkManualTweaker(Player):
+class PersonalWalkManualTweaker(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
@@ -115,7 +93,7 @@ if __name__ == '__main__':
         print 'Please provide the robot\'s name, so that we can log the test\'s results.'
         exit()
     
-    mainloop = MainLoop(personalWalkManualTweaker)
+    mainloop = MainLoop(PersonalWalkManualTweaker)
     mainloop.setCtrlCCallback(moduleCleanup)
     mainloop.run()
     #burst.getMotionProxy().getRemainingFootStepCount()
