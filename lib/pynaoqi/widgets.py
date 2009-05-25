@@ -304,6 +304,9 @@ class GtkTimeTicker(TaskBaseWindow):
 class VideoWindow(TaskBaseWindow):
 
     def __init__(self, con):
+        if con.has_imops() is None:
+            print "Video window not openned, imops isn't working, please fix"
+            return
         self._con = con
         self._con.registerToCamera().addCallback(self._finishInit)
         super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)

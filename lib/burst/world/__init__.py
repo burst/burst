@@ -184,6 +184,14 @@ class World(object):
         self.team = Team(self)
         self.computed = Computed(self)
 
+        # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
+        #sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
+        #import robot_settings
+        #self.robotSettings = robot_settings
+        #import gamecontroller, gamestatus
+        #self.gameStatus = gamestatus.GameStatus(self.robotSettings)
+        #self._gameController = gamecontroller.GameController(self.gameStatus)
+
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
         # could use exactly their solution, and hence this todo. We have

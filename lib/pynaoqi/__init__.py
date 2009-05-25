@@ -841,17 +841,24 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._registered_to_camera = True
         return self._camera_name
 
-    def get_imops(self):
-        if hasattr(self, '_image_convertion'):
-            return self._image_convertion
+    def has_imops(self):
         import ctypes
         try:
             imops = ctypes.CDLL('imops.so')
         except:
             print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+            return None
+        return imops
+
+    def get_imops(self):
+        if hasattr(self, '_image_convertion'):
+            return self._image_convertion
             self._image_convertion = (None, None)
             return
         width, height, length = self._camera_param
+        imops = self.has_imops()
+        if not imops:
+            return None
         self._image_convertion = (imops, ' '*(length*3/2))
         return self._image_convertion
 

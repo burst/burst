@@ -198,13 +198,19 @@ class Actions(object):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
     
     def initPoseAndStiffness(self):
+        """ Sets stiffness, then sets initial position for body and head.
+        Returns a BurstDeferred.
+        """
         dgens = []
         dgens.append(lambda _: self._motion.setBodyStiffness(INITIAL_STIFFNESS))
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
-        dgens.append(lambda _: self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR))
-        dgens.append(lambda _: self.executeSyncMove(moves.INITIAL_POS))
-        return chainDeferreds(dgens)
+        dgens.append(lambda _: DeferredList([
+            self.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_FAR),
+            self.executeSyncMove(moves.INITIAL_POS)]))
+        bd = BurstDeferred(None)
+        chainDeferreds(dgens).addCallback(lambda _: bd.callOnDone())
+        return bd
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         ds = []
@@ -531,5 +537,12 @@ class Actions(object):
         return self.executeMoveChoreograph(moves.TURN_CW) 
 
     def executeTurnCCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CCW) 
+        return self.executeMoveChoreograph(moves.TURN_CCW)
+    
+    def executeToBellyFromLeapRight(self):
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT)
+
+    def executeToBellyFromLeapLeft(self):
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT)
+
 

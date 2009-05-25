@@ -66,7 +66,7 @@ public class Broadcast implements Runnable {
         try {   
             this.bcast = new DatagramSocket();             
             this.group = InetAddress.getByName(broadcast); 
-            this.port  = port;                             
+            this.port  = port + 1; // A little hack that makes it possible to run both the GC and a robot on the same machine.
             this.data  = data;                              
 
         } catch (Exception err) {

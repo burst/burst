@@ -7,7 +7,7 @@ import sys
 from time import time
 
 import burst
-from burst_util import BurstDeferred
+from burst_util import BurstDeferred, DeferredList
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -204,8 +204,11 @@ class BasicMainLoop(object):
         return False
 
     def onCtrlCPressed(self):
+        """ Returns None or the result of the callback, which may be a deferred.
+        In that case shutdown will wait for that deferred
+        """
         if self._ctrl_c_cb:
-            self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
+            return self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
                 world=self._world)
 
     def _run_exception_wrap(self):
@@ -328,20 +331,25 @@ class TwistedMainLoop(BasicMainLoop):
     def _startShutdown(self, normal_quit, ctrl_c_pressed):
         # Stop our task loop
         do_cleanup = False
+        ctrl_c_deferred = None
         if hasattr(self, '_main_task'):
             if ctrl_c_pressed:
-                self.onCtrlCPressed()
+                ctrl_c_deferred = self.onCtrlCPressed()
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
             self._main_task.stop()
         if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
+        pending = []
         if hasattr(self, '_sit_deferred'):
-            self._sit_deferred.addCallback(self._completeShutdown)
-        else:
-            import pdb; pdb.set_trace()
+            pending.append(self._sit_deferred)
+        if ctrl_c_deferred:
+            pending.append(ctrl_c_deferred)
+        if len(pending) == 0:
             self._completeShutdown()
+        else:
+            DeferredList(pending).addCallback(self._completeShutdown)
 
     def _completeShutdown(self, result=None):
         from twisted.internet import reactor
