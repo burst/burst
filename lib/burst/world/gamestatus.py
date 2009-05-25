@@ -56,7 +56,7 @@ class GameStatus(object):
         self.opposingTeamScore = message.getTeamScore(self.opposingTeamIdentifier)
         for team in xrange(2):
             for player in xrange(11):
-                self.players[team][player].setStatus(message.getPenaltyStatus(team, player), message.getPenaltyTimeRemaining(team, player))
+                self.players[team][player].setStatus(message.getPenaltyStatus(team, player+1), message.getPenaltyTimeRemaining(team, player+1))
 
     def _readNewMessage(self, message):
         # TODO: Currently, only calculating the interesting events.
@@ -73,7 +73,30 @@ class GameStatus(object):
                 self.newEvents.add(getattr(events, 'EVENT_SWITCHED_FROM_'+state.upper()+'_GAME_STATE'))
             if self.gameState != getattr(constants, state+'GameState') and message.getGameState() == getattr(constants, state+'GameState'):
                 self.newEvents.add(getattr(events, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
-
+        # Penalties:
+        for teamIdentifier in xrange(2):
+            for playerNumber in xrange(11):
+                player = self.players[teamIdentifier][playerNumber]
+                # If something's changed:
+                if player.status != message.getPenaltyStatus(teamIdentifier, playerNumber+1):
+                    # If switching to a penalty status:
+                    if message.getPenaltyStatus(teamIdentifier, playerNumber+1) in constants.Penalties and not player.status in constants.Penalties:
+                        if player.teamIdentifier == self.myTeamIdentifier:
+                            if player.playerNumber == self.mySettings.robotNumber:
+                                self.newEvents.add(events.EVENT_I_GOT_PENALIZED)
+                            else:
+                                self.newEvents.add(events.EVENT_TEAMMATE_PENALIZED)
+                        else:
+                            self.newEvents.add(events.EVENT_OPPONENT_PENALIZED)
+                    # If returning from a penalty status:
+                    if player.status in constants.Penalties and not message.getPenaltyStatus(teamIdentifier, playerNumber+1) in constants.Penalties:
+                        if player.teamIdentifier == self.myTeamIdentifier:
+                            if player.playerNumber == self.mySettings.robotNumber:
+                                self.newEvents.add(events.EVENT_I_GOT_UNPENALIZED)
+                            else:
+                                self.newEvents.add(events.EVENT_TEAMMATE_UNPENALIZED)
+                        else:
+                            self.newEvents.add(events.EVENT_OPPONENT_UNPENALIZED)
         # The next time around, the present is the past and the future is the present.
         self._recordMessage(message)
 

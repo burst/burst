@@ -46,24 +46,40 @@ class GameControllerMessage(object):
         return struct.unpack("I", self.string[16:20])[0]
 
     def getTeamNumber(self, team):
+        GameControllerMessage._validateTeam(team)
         return ord(self.string[20+team*(4+11*4)])
 
     def getTeamColor(self, team): # TODO: Appears to be constant.
+        GameControllerMessage._validateTeam(team)
         return ord(self.string[21+team*(4+11*4)])
 
     def getTeamScore(self, team):
+        GameControllerMessage._validateTeam(team)
         start = 22 + team*(4+11*4)
         return struct.unpack("h", self.string[start:start+2])[0]
 
     def getPenaltyStatus(self, team, player):
+        GameControllerMessage._validateTeam(team)
+        GameControllerMessage._validatePlayer(player)
         start = 24 + team*(4+11*4) + 4*(player-1)
         return struct.unpack("h", self.string[start:start+2])[0]
 
     def getPenaltyTimeRemaining(self, team, player): # TODO: Change this to status
+        GameControllerMessage._validateTeam(team)
+        GameControllerMessage._validatePlayer(player)
         start = 26 + team*(4+11*4) + 4*(player-1)
         return struct.unpack("h", self.string[start:start+2])[0]
 
+    @staticmethod
+    def _validateTeam(team):
+        if not 0 <= team <= 1:
+            raise Exception("Legal teams: 0, 1. Got: " + str(team))
 
+    @staticmethod
+    def _validatePlayer(player):
+        if not 1 <= player <= 11:
+            import pdb; pdb.set_trace()
+            raise Exception("Legal players: 1-11. Got: " + str(player))
 
 if __name__ == '__main__':
     welcome = 'Testing the GameControllerMessage module.'
@@ -80,7 +96,7 @@ if __name__ == '__main__':
         try:
             data,addr = UDPSock.recvfrom(buf)
             x = GameControllerMessage(data)
-            a, b = TeamA, 1
+            a, b = 0, 1
             print x.getPenaltyStatus(a, b), x.getPenaltyTimeRemaining(a, b)
     #        print x.getTeamScore(1)
         except socket.error:

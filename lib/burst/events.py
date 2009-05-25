@@ -46,6 +46,9 @@ EVENT_GOAL_SCORED_BY_OPPOSING_TEAM = counter; counter += 1
 EVENT_I_GOT_PENALIZED = counter; counter += 1
 EVENT_TEAMMATE_PENALIZED = counter; counter += 1
 EVENT_OPPONENT_PENALIZED = counter; counter += 1
+EVENT_I_GOT_UNPENALIZED = counter; counter += 1
+EVENT_TEAMMATE_UNPENALIZED = counter; counter += 1
+EVENT_OPPONENT_UNPENALIZED = counter; counter += 1
 # In/Out of the game:
 EVENT_I_AM_REENTERING_PLAY = counter; counter += 1
 EVENT_I_AM_LEAVING_PLAY = counter; counter += 1

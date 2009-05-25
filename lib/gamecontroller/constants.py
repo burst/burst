@@ -27,3 +27,5 @@ PickUpRequest = 7;
 LeavingField = 8;
 Damage = 9;
 Manual = 10 # TODO: Is this correct?
+
+Penalties = [BallHoldingPenalty, GoaliePushingPenalty, PlayerPushingPenalty, IllegalDefenderPenalty, IllegalDefensePenalty, ObstructionPenalty]
