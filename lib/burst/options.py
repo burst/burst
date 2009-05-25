@@ -87,7 +87,7 @@ parse_command_line_arguments()
 # will be 127.0.0.1 and the port 9559, in that case we
 # look at the hostname, currently via the "hostname" executable.
 if ip == LOCALHOST_IP and port == 9559:
-    robotname = os.popen('hostname').read().strip()
+    robotname = os.popen('hostname').read().strip().lower()
 elif port == 9560:
     robotname = 'webots'
 else:
