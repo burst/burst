@@ -29,10 +29,14 @@ def mirrorChoreographMove(jointCodes, angles, times):
     GET_UP_BACK_MIRROR = mirrorChoreographMove(GET_UP_BACK)
     """
     
-    # TODO!!! Fix mirror for YawPitch (it shouldn't flip the L/R)
-    
     # Flip Left/Right
-    newJointCodes = [{'L':'R','R':'L'}.get(jc[0], jc[0]) + jc[1:] for jc in jointCodes]
+    def flipLR(jointCode):
+        if jointCode in ['LHipYawPitch', 'RHipYawPitch']:
+            return jointCode
+        return {'L':'R','R':'L'}.get(jointCode[0], jointCode[0]) + jointCode[1:]
+        
+    newJointCodes = [flipLR(jointCode) for jointCode in jointCodes]
+    
     # Switch sign of Roll/Yaw joints
     newAngles = list(angles)
     for jointIndex, jointcode in enumerate(jointCodes):
