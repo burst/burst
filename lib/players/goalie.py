@@ -38,6 +38,10 @@ class goalie(Player):
         #self._actions.executeLeapLeft()
         #self.walkStartTime = time.time()
         #self.test()
+        
+        
+        
+        
         self.watchIncomingBall()
         
         
@@ -56,7 +60,7 @@ class goalie(Player):
         
     def gettingUpRight(self):
         self._actions.executeToBellyFromLeapRight()
-        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall())
+        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall)
     
     def trackBall(self):
         self._actions.executeTracking(self._world.ball)
