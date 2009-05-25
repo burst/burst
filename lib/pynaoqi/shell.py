@@ -180,6 +180,9 @@ kin.pose.update(con)
 def examples():
     print EXAMPLES
 
+def f():
+    return 42
+
 def start_names_request(my_ns):
     # get the list of all variables - this can take a little
     # while on the robot, but it is async, so it should be fine
@@ -231,6 +234,8 @@ def make_shell_namespace(use_pylab):
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
         pairit = burst_util.pairit,
+        # asaf
+        f = f,
         # place holder until onDataListName works
         names = 'fetching..',
         )
