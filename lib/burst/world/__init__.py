@@ -209,7 +209,7 @@ class World(object):
             # All basic objects that rely on just naoproxies should be in the
             # first list
             [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
-             self.robot, self.falldetector, self._gameController],
+             self.robot, self.falldetector],
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last

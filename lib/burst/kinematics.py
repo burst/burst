@@ -11,7 +11,7 @@ since I suspect they don't use the pitch correctly.
 
 import numpy
 import math
-from math import asin, hypot, atan, pi
+from math import asin, hypot, atan, pi, atan2
 from numpy import (sin, cos, zeros,
     tan, array, dot)
 from numpy.linalg import norm
@@ -19,7 +19,7 @@ from scipy.linalg import lu, lu_factor
 
 from burst_util import nicefloats, DeferredList
 
-from burst import options
+from burst import options, field
 import burst
 
 # TODO - pynaoqi'sm, should be factored out to some
@@ -276,16 +276,43 @@ class NaoPose(object):
         self._inclination = [0.0, 0.0]
         self.transform([0.0]*26, [0.0,0.0]) # init stuff
         self._connecting_to_webots = burst.connecting_to_webots()
+        self._location = None
+        self._ball_location = None
 
     # Helper Pynaoqi functions
 
-    def update(self, con):
+    def updateLocations(self, con):
+        """ Call update and return pairs of coordinates for interesting points.
+        Later return objects that contain:
+         * last known location
+         * location computation trail: this is mainly debugging, but it will
+          become a powerful tool for determining how to use the location, it should
+          be a succint explanation how NaoPose computed the current location:
+           - last frame saw all yellow goal (SAYG)
+           - 10 frames ago SAYG, stood still and turned head since then
+           - -10 SAYG, 5f stood still, 5f odo said 2 steps forward.
+           - friend?
+        """
+        def returnPairs(result):
+            results = []
+            if self._location:
+                #print "x %3.3f y %3.3f theta %3.3f" % self._location
+                results.append(self._location[:2])
+            return results
+
+        return self.update(con, returnPairs)
+
+    def update(self, con, cb=None):
         from pynaoqi.shell import onevision
-        DeferredList([
+        d = DeferredList([
             con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
             con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
-            onevision(),
-            ]).addCallback(self._updated)
+            onevision().addCallback(self._storeVision),
+            ]).addCallback(self._calcValues)
+        if cb is None:
+            cb = self._printUpdatedCalculations
+        d.addCallback(cb)
+        return d
 
     def _storeInclination(self, result):
         if not self._connecting_to_webots:
@@ -294,28 +321,143 @@ class NaoPose(object):
     def _storeBodyAngles(self, result):
         self._bodyAngles = result
 
-    def _updated(self, result):
-        self._v = v = result[2][1]
-        print "\nupdating pose"
-        print nicefloats(self._inclination)
-        print nicefloats(self._bodyAngles)
-        self.transform(self._bodyAngles, self._inclination)
-        print self.comHeight
-        print self.focalPointInWorldFrame
-        print (self.cameraToWorldFrame*100).astype('int')
+    def _storeVision(self, result):
+        self._v = result
+
+    def _printUpdatedCalculations(self, result):
+        print "inclination:", nicefloats(self._inclination)
+        print "joints:     ", nicefloats(self._bodyAngles)
+        print "comheight:  ", self.comHeight
+        print "focal WF:   ", self.focalPointInWorldFrame
+        print "cameraToWF: ", (self.cameraToWorldFrame*100).astype('int')
         print
+        v = self._v
+        for name, obj in [('YGLP', v.YGLP),
+                    ('YGRP', v.YGRP), ('Ball', v.Ball)]:
+            estimate, dist_height = self._estimates[name]
+            print "mine: pix=%3.3f, height=%3.3f, given: focDist=%3.3f, dist=%3.3f" % (
+                estimate.dist, dist_height, obj.focdist, obj.distance)
+            print "mine: bearing=%3.3f, given: bearing=%3.3f" % (
+                estimate.bearing*180.0/pi, obj.bearingdeg)
+        if self._location:
+            x, y, theta = self._location
+            theta *= 180.0/pi
+            print "Location: %3.3f %3.3f %3.3f" % (x, y, theta)
+
+    def _calcValues(self, result):
+        # update the transforms
+        self.transform(self._bodyAngles, self._inclination)
+        # calculate various objects distances
+        v = self._v
+        self._estimates = estimates = {}
         for name, obj, objheight_cm in [
             ('YGLP', v.YGLP, 80), ('YGRP', v.YGRP, 80), ('Ball', v.Ball, 10)]:
             if obj.distance == 0.0:
-                print "%s not visible" % name
                 continue
+            if name == 'Ball':
+                x, y = obj.centerx, obj.centery # ball doesn't record the bottom x and y
             else:
-                print name
-            estimate = self.pixEstimate(obj.x, obj.y, 0.0)
-            print "mine: pix=%3.3f, height=%3.3f, given: focDist=%3.3f, dist=%3.3f" % (
-                estimate.dist, self.pixHeightToDistance(obj.height, objheight_cm),
-                obj.focdist, obj.distance)
-            print "mine: bearing=%3.3f, given: bearing=%3.3f" % (estimate.bearing*180.0/pi, obj.bearingdeg)
+                x, y = obj.x, obj.y
+            estimate = self.pixEstimate(x, y, 0.0)
+            dist_height = self.pixHeightToDistance(obj.height, objheight_cm)
+            estimates[name] = (estimate, dist_height)
+        # Try to calculate our position in WF
+        self._updateXYTheta_from_twoDistOneAngle()
+
+    def _updateXYTheta_from_twoDistOneAngle(self,
+            top=None, bottom=None, debug=False):
+        """ Take two objects and update our self location in WF from it.
+        NOTE: the objects need to be ordered - top_y > bottom_y
+        
+        Defaults to Yellow Goal Left Post and Right Post (Top and Bottom
+        respectively)
+        """
+        if top is not None or bottom is not None:
+            raise NotIMplementedError('Not done yet')
+        yglp, ygrp = self._v.YGLP, self._v.YGRP
+        if yglp.distance != 0.0 and ygrp.distance != 0.0:
+            (e_left, r1), (e_right, r2) = (
+                self._estimates['YGLP'],
+                self._estimates['YGRP'])
+            p0 = field.yellow_goal.top_post.xy
+            p1 = field.yellow_goal.bottom_post.xy
+            d = field.CROSSBAR_CM_WIDTH / 2.0
+            if e_left.dist == 0.0:
+                #print "using given bearing"
+                a1 = - yglp.bearingdeg * pi / 180.0
+            else:
+                a1 = e_left.bearing
+            x, y, theta = self.xyt_from_two_dist_one_angle(
+                r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
+            self._location = (x, y, theta)
+            return x, y, theta
+        return None
+
+    # New Code! High level computations - compute world location (x,y,theta)
+    # from visual landmarks
+    def xyt_from_two_dist_one_angle(self, r1, r2, a1, d, p0, p1, debug=False):
+        """ Compute the location given two distances to known landmarks and
+        one angle to one of them. To be used with two posts, but would work
+        equally for any two things.  The computation is done in the Objects
+        Frame (OF), but returned in the World Frame (WF) in which p0 = (x0,
+        y0) and p1 = (x1, y1) are defined.
+
+        The OF is defined as follows: origin lies in the midsection of the
+        line connecting p0 and p1, d is half the distance to the first. Y is
+        the axis connecting p1 to p0, X is to the right.
+
+               (x0,y0) 0    -d- H   O     -d-     1 (x1,y1)
+                      /      ,-'           ,-----'
+                     /  a1,-'       ,-----'
+                    /  ,-'  ,------'
+                   /,------'
+                  X (x,y)
+
+        H is the intersection of the heading and the p0-p1 line.
+
+        a1 must be positive clockwise, zero if in the middle of the frame
+        (i.e. at the same direction as the bearing)
+        """
+        x0, y0 = p0;        x1, y1 = p1
+        O = ((x0 + x1) / 2, (y0 + y1)/2) # position of the origin in WF
+        #assert(almost_equal(4*d**2, (x1 - x0)**2 + (y1 - y0)**2))
+
+        # Compute in OF
+
+        if debug:
+            import pdb; pdb.set_trace()
+
+        # first x,y
+        r1_2 = r1**2
+        r2_2 = r2**2
+        y = ( r2_2 - r1_2 ) / 2 / d
+        x = - ( r1_2 - (y - d)**2 )**0.5
+        # then theta (heading)
+        gamma = atan2(y - d, -x)
+        theta = gamma + a1
+
+        # Transform back into WF
+
+        # Optimize for no rotation case
+        if x0 != x1:
+            two_d = 2 * d
+            delta_x, delta_y = x1 - x0, y1 - y0
+            y_unit_x, y_unit_y = delta_x / two_d, delta_y / two_d
+            x_unit_x, x_unit_y = -y_unit_y, y_unit_x
+            # Rotate
+            _x = ( x_unit_x ) * x + ( y_unit_x ) * y
+            _y = ( x_unit_y ) * x + ( y_unit_y ) * y
+            x, y = _x, _y
+            # rotate the heading - TODO: be nice to not need a tan^-1 here.
+            # TODO - not accurate for delta_x << 1 
+            obj_theta = atan2(x_unit_y, x_unit_x)
+            theta += obj_theta
+        # Translate
+        x, y = O[0] + x, O[1] + y
+        return x, y, -theta
+
+    def bearingFromPix(self, x, y):
+        raise NotImplementedError('TODO')
 
     # NaoPose.cpp 
 

@@ -243,7 +243,7 @@ def run():
     global robotStatus
     robotStatus = "at rest"
     joystick = JoystickWrapper(0,1)
-    burst.init(ip='gerrard',port=9559)
+    burst.init()
     
     while True:
         joystickStatus = joystick.getStatus()
@@ -255,8 +255,8 @@ def run():
         except QuitException:
             break
         time.sleep(0.001) # In either case, go to sleep for a while, so it's not THAT bad of a busy-wait.
-        
-    burst.shutdown()    
+
+    burst.shutdown()
 
 if __name__ == '__main__':
     run()

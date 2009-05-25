@@ -150,14 +150,16 @@ class BurstDeferred(object):
         self._parent = parent # DEBUG only
     
     def onDone(self, cb):
-        # TODO: shortcutting. How the fuck do I call the cb immediately without
-        # giving a chance to the caller to use the chain_deferred??
-
-        # will be called by cb's return deferred, if any
+        """ store a callback to be called when a result is complete.
+        If it is already complete then it will be called right away. 
+        """
         if cb is None:
             raise Exception("onDone called with cb == None")
         chain_deferred = BurstDeferred(data = None, parent=self)
         self._ondone = (cb, chain_deferred)
+        if self._completed:
+            chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
+            self.callOnDone()
         return chain_deferred
 
     def callOnDone(self):
