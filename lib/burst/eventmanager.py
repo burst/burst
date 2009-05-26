@@ -153,7 +153,7 @@ class BasicMainLoop(object):
         # main objects: world, eventmanager, actions and player
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
-        self._actions = actions.Actions(world = self._world)
+        self._actions = actions.Actions(eventmanager = self._eventmanager)
         self._player = self._playerclass(world = self._world, eventmanager = self._eventmanager,
             actions = self._actions)
 

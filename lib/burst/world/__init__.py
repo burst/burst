@@ -84,56 +84,6 @@ class World(object):
     'RElbowRoll', 'RWristYaw', 'RHand']
     chainnames = ['Head', 'LArm', 'RArm', 'LLeg', 'RLeg']
 
-    def getRecorderVariableNames(self):
-        joints = self.jointnames
-        chains = self.chainnames
-
-        # Recording of joints / sensors
-        dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
-        self._record_file = self._record_csv = None
-        # Center of mass (computed)
-        com = ['Motion/Spaces/World/Com/%s/%s' % args for args in cross(
-            ['Sensor', 'Command'], 'XYZ')] + ['Motion/BodyCommandAngles']
-        # various dcm stuff
-        dcm = ['DCM/Realtime', 'DCM/Time', 'DCM/TargetCycleTime',
-           'DCM/CycleTime', 'DCM/Simulation', 'DCM/hardnessMode',
-           'DCM/CycleTimeWarning']
-        # Joint positions
-        jsense = ['Device/SubDeviceList/%s/Position/Sensor/Value' % j for j in
-            joints]
-        # Actuator commanded position
-        actsense = ['Device/SubDeviceList/%s/%s/Value' % args for args in cross(
-            joints, ['ElectricCurrent/Sensor',
-                'Hardness/Actuator', 'Position/Actuator'])]
-        # inertial sensors
-        inert = ['Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % sense
-            for sense in [
-                'AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY',
-                'GyrRef', 'GyrX', 'GyrY']]
-        # Force SensoR
-        force = ['Device/SubDeviceList/%s/FSR/%s/Sensor/Value' % args for args in
-            cross(['RFoot', 'LFoot'],
-            ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'])]
-        # position of chains and __?
-        poschains = ['Motion/Spaces/Body/%s/Sensor/Position/%s' % args
-            for args in cross(chains, ['WX', 'WY', 'WZ', 'X', 'Y', 'Z'])]
-        transform = ['Motion/Spaces/World/Transform/%s' % coord for coord in
-            ['WX', 'WY', 'WZ', 'X', 'Y', 'Z']]
-        # Various other stuff
-        various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
-               'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
-        return (com + dcm + jsense + actsense + inert + force +
-                poschains + transform + various)
-
-    def getMemoryProxy(self):
-        return self._memory
-
-    def getMotionProxy(self):
-        return self._motion
-
-    def getSpeechProxy(self):
-        return self._speech
-
     def __init__(self):
         if burst.options.trace_proxies:
             print "INFO: Proxy tracing is on"
@@ -237,6 +187,56 @@ class World(object):
             print "world: using ALMemory"
 
         self.checkManModule()
+
+    def getRecorderVariableNames(self):
+        joints = self.jointnames
+        chains = self.chainnames
+
+        # Recording of joints / sensors
+        dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
+        self._record_file = self._record_csv = None
+        # Center of mass (computed)
+        com = ['Motion/Spaces/World/Com/%s/%s' % args for args in cross(
+            ['Sensor', 'Command'], 'XYZ')] + ['Motion/BodyCommandAngles']
+        # various dcm stuff
+        dcm = ['DCM/Realtime', 'DCM/Time', 'DCM/TargetCycleTime',
+           'DCM/CycleTime', 'DCM/Simulation', 'DCM/hardnessMode',
+           'DCM/CycleTimeWarning']
+        # Joint positions
+        jsense = ['Device/SubDeviceList/%s/Position/Sensor/Value' % j for j in
+            joints]
+        # Actuator commanded position
+        actsense = ['Device/SubDeviceList/%s/%s/Value' % args for args in cross(
+            joints, ['ElectricCurrent/Sensor',
+                'Hardness/Actuator', 'Position/Actuator'])]
+        # inertial sensors
+        inert = ['Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % sense
+            for sense in [
+                'AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY',
+                'GyrRef', 'GyrX', 'GyrY']]
+        # Force SensoR
+        force = ['Device/SubDeviceList/%s/FSR/%s/Sensor/Value' % args for args in
+            cross(['RFoot', 'LFoot'],
+            ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'])]
+        # position of chains and __?
+        poschains = ['Motion/Spaces/Body/%s/Sensor/Position/%s' % args
+            for args in cross(chains, ['WX', 'WY', 'WZ', 'X', 'Y', 'Z'])]
+        transform = ['Motion/Spaces/World/Transform/%s' % coord for coord in
+            ['WX', 'WY', 'WZ', 'X', 'Y', 'Z']]
+        # Various other stuff
+        various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
+               'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
+        return (com + dcm + jsense + actsense + inert + force +
+                poschains + transform + various)
+
+    def getMemoryProxy(self):
+        return self._memory
+
+    def getMotionProxy(self):
+        return self._motion
+
+    def getSpeechProxy(self):
+        return self._speech
     
     def checkManModule(self):
         """ report to user if the Man module isn't loaded. Since recently Man stopped being
