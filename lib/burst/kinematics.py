@@ -62,45 +62,45 @@ class Estimate(list):
             raise RuntimeError('Estimate must be made from a 5-tuple')
         super(Estimate, self).__init__(v)
 
-    @property
-    def dist(self):
+    def get_dist(self):
         return self[EST_DIST]
 
-    @dist.setter
     def set_dist(self, v):
         self[EST_DIST] = v
+        
+    dist = property(get_dist, set_dist)
 
-    @property
-    def elevation(self):
+    def get_elevation(self):
         return self[EST_ELEVATION]
 
-    @elevation.setter
     def set_elevation(self, v):
         self[EST_ELEVATION] = v
 
-    @property
-    def bearing(self):
+    elevation = property(get_elevation, set_elevation)
+
+    def get_bearing(self):
         return self[EST_BEARING]
 
-    @bearing.setter
     def set_bearing(self, v):
         self[EST_BEARING] = v
 
-    @property
-    def x(self):
+    bearing = property(get_bearing, set_bearing)
+
+    def get_x(self):
         return self[EST_X]
 
-    @x.setter
     def set_x(self, v):
         self[EST_X] = v
+    
+    x = property(get_x, set_x)
 
-    @property
-    def y(self):
+    def get_y(self):
         return self[EST_Y]
 
-    @y.setter
     def set_y(self, v):
         self[EST_Y] = v
+
+    y = property(get_y, set_y)
 
     def __str__(self):
         return 'dist %3.3f, elevation %3.3f, bearing %3.3f, x %3.3f, y %3.3f' % (

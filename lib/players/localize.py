@@ -81,8 +81,14 @@ class Localize(Player):
         self.yellow_top_dist, self.yellow_top_bearing = None, None
         self.yellow_bottom_dist = None
 
+        #for f in [self.onYellowBottomPosChange, self.onYellowTopPosChange]:
+        #    self._eventmanager.register(f.event, f)
+
+        self.registerDecoratedEventHandlers()
+        
+    def registerDecoratedEventHandlers(self):
         # register to events - see singletime
-        for f in [self.onYellowTopPosChange, self.onYellowBottomPosChange]:
+        for f in [f for f in self.__dict__.values() if hasattr(f, 'event')]:
             self._eventmanager.register(f.event, f)
 
     @eventhandler(EVENT_YGRP_POSITION_CHANGED)
