@@ -24,6 +24,9 @@ class GameController(object):
         except socket.error:
             raise Exception("Could not bind the DataGramSocket.")
 
+    def shutdown(self):
+        self.dataGramSocket.close()
+
     def _receive(self):
         try:
             message = self.dataGramSocket.recv(self.bufsize)
@@ -44,3 +47,4 @@ if __name__ == '__main__':
     welcome = "Testing the gamecontroller module."
     print len(welcome)*"*" + "\n" + welcome + "\n" + len(welcome)*"*"
     print "No tests have been implemented, thus far."
+

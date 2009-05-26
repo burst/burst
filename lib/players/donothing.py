@@ -11,7 +11,7 @@ from burst.eventmanager import AndEvent, SerialEvent
 def pr(s):
     print s
 
-class Template(Player):
+class Donothing(Player):
     
     def onStart(self):
         if hasattr(self._world, '_shm'):
@@ -31,5 +31,5 @@ class Template(Player):
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    MainLoop(Template).run()
+    MainLoop(Donothing).run()
 

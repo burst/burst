@@ -133,10 +133,15 @@ class EventManager(object):
 
 class BasicMainLoop(object):
     
+    __running_instance = None
+
     def __init__(self, playerclass):
         self._playerclass = playerclass
         self._ctrl_c_cb = None
         self._actions = None
+        if self.__running_instance:
+            raise SystemExit('BURST Event Loop constructed twice')
+        self.__running_instance = self
 
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
@@ -144,10 +149,6 @@ class BasicMainLoop(object):
         """
         import actions
         import world
-
-        # need to call burst.init first (also, this kinda makes sure
-        # there is only one EventManagerLoop)
-        burst.init()
 
         # main objects: world, eventmanager, actions and player
         self._world = world.World()
@@ -202,8 +203,10 @@ class BasicMainLoop(object):
             else:
                 print "sitting, removing stiffness and quitting."
                 self._sit_deferred = self._actions.sitPoseAndRelax()
+            self._world._gameController.shutdown()
             return True
         print "quitting before starting are we?"
+        self.__running_instance = None
         return False
 
     def onCtrlCPressed(self):
@@ -272,6 +275,10 @@ class SimpleMainLoop(BasicMainLoop):
 
     def __init__(self, playerclass):
         super(SimpleMainLoop, self).__init__(playerclass = playerclass)
+
+        # need to call burst.init first
+        burst.init()
+
         self.initMainObjectsAndPlayer()
 
     def _run_loop(self):
@@ -317,6 +324,7 @@ class TwistedMainLoop(BasicMainLoop):
         self.con.modulesDeferred.addCallback(self._twistedStart)
 
     def _twistedStart(self, _):
+        print "TwistedMainLoop: _twistedStart"
         self.initMainObjectsAndPlayer()
         from twisted.internet import reactor, task
         self.preMainLoopInit()
