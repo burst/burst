@@ -153,6 +153,30 @@ def get_list_of_players():
     return [x for x in [os.path.splitext(os.path.basename(x))[0]
         for x in glob.glob(os.path.dirname(players.__file__) + '/*.py')] if x[0] != '_']
 
+class PlayerRunner(object):
+
+    def __init__(self, players, name):
+        self.name = name
+        self._players = players
+
+    def start(self):
+        self.loop = startplayer(self.name)
+        self._players.last = self.loop
+        self._players.player = self.loop._player
+
+    def stop(self):
+        self.loop.shutdown()
+
+class Players(object):
+    """ Used by pynaoqi shell to let completion work it's magic
+    """
+    def __init__(self):
+        self.players_list = get_list_of_players()
+        for player in self.players_list:
+            self.__dict__[player] = PlayerRunner(self, player)
+
+players = Players()
+
 def startplayer(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
@@ -161,10 +185,12 @@ def startplayer(name, clazz=None):
     try:
         mod = __import__('players.%s' % name)
         playermod = getattr(mod, name)
-    except:
+    except SyntaxError, e:
+        raise # Ipython catches, clear win.
+    except ImportError:
         print "no such player"
         print "try one of:"
-        print ', '.join(get_list_of_players())
+        print ', '.join(players.players_list)
         return
     candidate_classes = [v for v in playermod.__dict__.values()
                             if isinstance(v, type) and issubclass(v, burst.player.Player)
@@ -185,7 +211,7 @@ def startplayer(name, clazz=None):
                 return None
     else:
         ctor = candidate_classes[0]
-    print "Initializing player %s" % ctor.__class__.__name__
+    print "Initializing player %s" % ctor.__name__
     # Finally, start the update task.
     import burst.eventmanager as eventmanager
     return eventmanager.TwistedMainLoop(ctor, control_reactor=False)
@@ -270,6 +296,7 @@ def make_shell_namespace(use_pylab):
         onevision = onevision,
         CanvasTicker = CanvasTicker,
         startplayer = startplayer,
+        players = players,
         # burst
         moves = moves,
         field = field,

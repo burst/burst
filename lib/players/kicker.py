@@ -58,29 +58,26 @@ DIST_RANGE = maximal kicking distance (delta from min) - farther away from leg, 
 LEFT = 0
 RIGHT = 1
 if World.connected_to_nao:
-    KICK_BEARING_MIN = (0.25, -0.33) 
-    KICK_BEARING_RANGE = (0.081, 0.081) #(-0.081, 0.081)
-    KICK_DIST_MIN = (15.6, 15.6)
-    KICK_DIST_RANGE = (4.4, 3.4)
+#    KICK_BEARING_MIN = (0.25, -0.33) 
+#    KICK_BEARING_RANGE = (0.081, 0.081) #(-0.081, 0.081)
+#    KICK_DIST_MIN = (15.6, 15.6)
+#    KICK_DIST_RANGE = (4.4, 3.4)
+    KICK_X_MIN = (28.0,28.0)
+    KICK_X_MAX = (32.5,32.5)
+    KICK_Y_MIN = (6.0,-13.0)
+    KICK_Y_MAX = (13.0,-6.0)
 else: #World.connected_to_webots
-    KICK_BEARING_MIN = (0.30, -0.30)
-    KICK_BEARING_RANGE = (0.10, 0.10)
-    KICK_DIST_MIN = (30.0, 30.0)
-    KICK_DIST_RANGE = (2.0, 2.0)
+#    KICK_BEARING_MIN = (0.30, -0.30)
+#    KICK_BEARING_RANGE = (0.10, 0.10)
+#    KICK_DIST_MIN = (30.0, 30.0)
+#    KICK_DIST_RANGE = (2.0, 2.0)
+    KICK_X_MIN = (28.0,28.0)
+    KICK_X_MAX = (32.5,32.5)
+    KICK_Y_MIN = (6.0,-13.0)
+    KICK_Y_MAX = (13.0,-6.0)
     
-    KICK_X_MIN = (29.5,29.5)
-    KICK_X_MAX = (32.0,32.0)
-    KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
-    KICK_Y_MIN = (-6.0,6.0)
-    KICK_Y_MAX = (-12.0,12.0)
-    KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
-
-
-
-print "KICK_DIST_RANGE[LEFT]: %3.3fcm" % KICK_DIST_RANGE[LEFT]
-print "KICK_BEARING_RANGE[LEFT]: %3.3fcm" % KICK_BEARING_RANGE[LEFT]
-print "KICK_DIST_RANGE[RIGHT]: %3.3fcm" % KICK_DIST_RANGE[RIGHT]
-print "KICK_BEARING_RANGE[RIGHT]: %3.3fcm" % KICK_BEARING_RANGE[RIGHT]
+KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
+KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
@@ -204,34 +201,28 @@ class Kicker(Player):
         else:
             print "RIGHT"
 
-#KICK_BEARING_MIN = (0.30, -0.30)
-#KICK_BEARING_RANGE = (0.10, 0.10)
-#KICK_DIST_MIN = (30.0, 30.0)
-#KICK_DIST_RANGE = (2.0, 2.0)
-#
-#KICK_X_MIN = (28.5,28.5)
-#KICK_X_MAX = (31.0,31.0)
-#KICK_Y_MIN = (6.0,6.0)
-#KICK_Y_MAX = (12.0,12.0)
-        
-        (target_x, target_y) = (ball_x - (KICK_X_MIN[side] + KICK_X_MAX[side])/2, ball_y + (KICK_Y_MIN[side] + KICK_Y_MAX[side])/2)
-        #(target_x, target_y) = (ball_x - KICK_X_OPT[side], ball_y + KICK_Y_OPT[side])
+        #(target_x, target_y) = (ball_x - (KICK_X_MIN[side] + KICK_X_MAX[side])/2, ball_y + (KICK_Y_MIN[side] + KICK_Y_MAX[side])/2)
+        (target_x, target_y) = (ball_x - KICK_X_OPT[side], ball_y + KICK_Y_OPT[side])
         print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
 
         (target_dist, target_bearing) = cart2polar(target_x, target_y)
         print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
 
+        print "KICK_X_MIN[side]: %3.3f" % KICK_X_MIN[side]
+        print "KICK_X_MAX[side]: %3.3f" % KICK_X_MAX[side]
+        print "KICK_Y_MIN[side]: %3.3f" % KICK_Y_MIN[side]
+        print "KICK_Y_MAX[side]: %3.3f" % KICK_Y_MAX[side]
+
         # Ball inside kicking area, kick it
-        if ballDist < (KICK_DIST_MIN[side] + KICK_DIST_RANGE[side]) and \
-                (KICK_BEARING_MIN[side]-KICK_BEARING_RANGE[side] < ballBearing < KICK_BEARING_MIN[side]+KICK_BEARING_RANGE[side]):
+        if (KICK_X_MIN[side] < ball_x < KICK_X_MAX[side]) and (KICK_Y_MIN[side] < ball_y < KICK_Y_MAX[side]):
             print "Kicking!"
 #            self.doKick()
+#            return
         else:
             pass
+        
 
-
-
-
+        
 
         # TODO: REMOVE!!!
         self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now

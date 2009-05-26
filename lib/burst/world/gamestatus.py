@@ -24,9 +24,16 @@ class PlayerStatus(object):
         self.status = status
         self.remainingTimeForPenalty = remainingTimeForPenalty
 
+    def isPenalized(self):
+        return self.status in constants.Penalties
+
 
 
 class GameStatus(object):
+    """
+    Each robot will host one instance of this class. It will be in charge of tracking the state of the game - who is penalized, what state
+    the game is in (ready/set/play...), what the score is, etc. It will fire the appropriate events.
+    """
 
     def __init__(self, mySettings):
         self.mySettings = mySettings
@@ -38,6 +45,7 @@ class GameStatus(object):
         if not self.firstMessageReceived:
             self.firstMessageReceived = True
             self._recordMessage(message)
+            self._fireInitialEvents()
         else:
             self._readNewMessage(message)
 
@@ -60,20 +68,29 @@ class GameStatus(object):
 
     def _readNewMessage(self, message):
         # TODO: Currently, only calculating the interesting events.
-        # Goals:
+        # Calculate events based on the difference between this message and the one before it:
+        self._calcGoalRelatedEvents(message)
+        self._calcGameStateRelatedEvents(message)
+        self._calcPenaltyRelatedEvents(message)
+        # The next time around, the present is the past and the future is the present.
+        self._recordMessage(message)
+
+    def _calcGoalRelatedEvents(self, message):
         if self.myTeamScore < message.getTeamScore(self.myTeamIdentifier):
             self.newEvents.add(events.EVENT_GOAL_SCORED_BY_MY_TEAM)
         if self.opposingTeamScore < message.getTeamScore(self.opposingTeamIdentifier):
             self.newEvents.add(events.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM)
         if events.EVENT_GOAL_SCORED_BY_MY_TEAM in self.newEvents or events.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM in self.newEvents:
             self.newEvents.add(events.EVENT_GOAL_SCORED)
-        # Game-state changes:
+
+    def _calcGameStateRelatedEvents(self, message):
         for state in ['Initial', 'Ready', 'Set', 'Play', 'Finish']:
             if self.gameState == getattr(constants, state+'GameState') and message.getGameState() != getattr(constants, state+'GameState'):
                 self.newEvents.add(getattr(events, 'EVENT_SWITCHED_FROM_'+state.upper()+'_GAME_STATE'))
             if self.gameState != getattr(constants, state+'GameState') and message.getGameState() == getattr(constants, state+'GameState'):
                 self.newEvents.add(getattr(events, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
-        # Penalties:
+
+    def _calcPenaltyRelatedEvents(self, message):
         for teamIdentifier in xrange(2):
             for playerNumber in xrange(11):
                 player = self.players[teamIdentifier][playerNumber]
@@ -97,8 +114,13 @@ class GameStatus(object):
                                 self.newEvents.add(events.EVENT_TEAMMATE_UNPENALIZED)
                         else:
                             self.newEvents.add(events.EVENT_OPPONENT_UNPENALIZED)
-        # The next time around, the present is the past and the future is the present.
-        self._recordMessage(message)
+
+    def _fireInitialEvents(self): # TODO: We'd might like to have the events fired in some predetermined order.
+        for state in ['Initial', 'Ready', 'Set', 'Play', 'Finish']:
+            if self.gameState == getattr(constants, state+'GameState'):
+                self.newEvents.add(getattr(events, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
+        if self.players[self.myTeamIdentifier][self.mySettings.robotNumber-1].isPenalized():
+            self.newEvents.add(events.EVENT_I_GOT_PENALIZED)
 
     def calc_events(self, events, deferreds):
         # Add any event you have inferred from the last message you got from the game controller.

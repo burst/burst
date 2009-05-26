@@ -18,6 +18,7 @@ from numpy.linalg import norm
 from scipy.linalg import lu, lu_factor
 
 from burst_util import nicefloats, DeferredList
+from burst.consts import HEAD_PITCH_JOINT_INDEX
 
 from burst import options, field
 import burst
@@ -61,45 +62,45 @@ class Estimate(list):
             raise RuntimeError('Estimate must be made from a 5-tuple')
         super(Estimate, self).__init__(v)
 
-    @property
-    def dist(self):
+    def get_dist(self):
         return self[EST_DIST]
 
-    @dist.setter
     def set_dist(self, v):
         self[EST_DIST] = v
+        
+    dist = property(get_dist, set_dist)
 
-    @property
-    def elevation(self):
+    def get_elevation(self):
         return self[EST_ELEVATION]
 
-    @elevation.setter
     def set_elevation(self, v):
         self[EST_ELEVATION] = v
 
-    @property
-    def bearing(self):
+    elevation = property(get_elevation, set_elevation)
+
+    def get_bearing(self):
         return self[EST_BEARING]
 
-    @bearing.setter
     def set_bearing(self, v):
         self[EST_BEARING] = v
 
-    @property
-    def x(self):
+    bearing = property(get_bearing, set_bearing)
+
+    def get_x(self):
         return self[EST_X]
 
-    @x.setter
     def set_x(self, v):
         self[EST_X] = v
+    
+    x = property(get_x, set_x)
 
-    @property
-    def y(self):
+    def get_y(self):
         return self[EST_Y]
 
-    @y.setter
     def set_y(self, v):
         self[EST_Y] = v
+
+    y = property(get_y, set_y)
 
     def __str__(self):
         return 'dist %3.3f, elevation %3.3f, bearing %3.3f, x %3.3f, y %3.3f' % (
@@ -303,6 +304,8 @@ class NaoPose(object):
         return self.update(con, returnPairs)
 
     def update(self, con, cb=None):
+        """ Development helper. Not to be confused with player usable code.
+        """
         from pynaoqi.shell import onevision
         d = DeferredList([
             con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
@@ -344,14 +347,25 @@ class NaoPose(object):
             theta *= 180.0/pi
             print "Location: %3.3f %3.3f %3.3f" % (x, y, theta)
 
+    def _returnDistances(self, _):
+        """ Tester for pixHeightToDistancePlus. To run do in pynaoqi:
+        import burst.kinematics as kin
+        loop(lambda: kin.pose.update(con, kin.pose._returnDistances).addCallback(nicefloats), dt=0.5)
+        """
+        def one(obj):
+            return self.pixHeightToDistancePlus(obj.height, obj.x, field.GOAL_POST_CM_HEIGHT, debug=True)
+        return one(self._v.YGRP) + one(self._v.YGLP)
+
     def _calcValues(self, result):
         # update the transforms
         self.transform(self._bodyAngles, self._inclination)
         # calculate various objects distances
         v = self._v
         self._estimates = estimates = {}
+        goal_post_height = field.GOAL_POST_CM_HEIGHT
         for name, obj, objheight_cm in [
-            ('YGLP', v.YGLP, 80), ('YGRP', v.YGRP, 80), ('Ball', v.Ball, 10)]:
+            ('YGLP', v.YGLP, goal_post_height),
+            ('YGRP', v.YGRP, goal_post_height), ('Ball', v.Ball, 10)]:
             if obj.distance == 0.0:
                 continue
             if name == 'Ball':
@@ -359,6 +373,10 @@ class NaoPose(object):
             else:
                 x, y = obj.x, obj.y
             estimate = self.pixEstimate(x, y, 0.0)
+            # pixHeightToDistancePlus DOESN'T WORK - solution right now is to only use
+            # value of pixel when the object is in bearing=0
+            #dist_height = self.pixHeightToDistancePlus(obj.height, x,
+            #    objheight_cm)
             dist_height = self.pixHeightToDistance(obj.height, objheight_cm)
             estimates[name] = (estimate, dist_height)
         # Try to calculate our position in WF
@@ -382,11 +400,12 @@ class NaoPose(object):
             p0 = field.yellow_goal.top_post.xy
             p1 = field.yellow_goal.bottom_post.xy
             d = field.CROSSBAR_CM_WIDTH / 2.0
-            if e_left.dist == 0.0:
+            # XXX: I think the YGLP is the BOTTOM, not the TOP
+            if e_right.dist == 0.0:
                 #print "using given bearing"
-                a1 = - yglp.bearingdeg * pi / 180.0
+                a1 = ygrp.bearingdeg * pi / 180.0
             else:
-                a1 = e_left.bearing
+                a1 = e_right.bearing
             x, y, theta = self.xyt_from_two_dist_one_angle(
                 r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
             self._location = (x, y, theta)
@@ -455,6 +474,46 @@ class NaoPose(object):
         # Translate
         x, y = O[0] + x, O[1] + y
         return x, y, -theta
+
+    def pixHeightToDistancePlus(self, pixHeight, pix_x, cmHeight,
+            debug=False, verbose=False):
+        """
+        approx. the same as ground plane intersection - actually
+        should give the same results.
+
+        h - object height
+        f - focal distance in mm
+        b - object height on the ccd in mm
+        c - object distance from image center along x axis on ccd in mm
+        x - distance of object center on ccd along x axis (perpendicular
+         to the height axis). Note that this is geared for the nao,
+         which only has pitch and no roll for the camera, assuming the body
+         frame is parallel to the ground (which should also be correct as
+         long as the robot isn't falling).
+        """
+        # TODO - do another calculation using the joint poses
+        # to make sure we are actually parallel to the ground - we
+        # already have the matrix. (cameraFrameToWorld or something)
+
+        # The joint has reversed sign compared to the camera's built in pitch.
+        pitch = CAMERA_PITCH_ANGLE + self._bodyAngles[HEAD_PITCH_JOINT_INDEX]
+        observed_height = cmHeight * cos(pitch)
+        if verbose:
+            print "pitch deg = %3.3f, cmHeight = %3.3f, observed_height = %3.3f" % (
+                pitch * 180.0 / pi, cmHeight, observed_height)
+        f = FOCAL_LENGTH_MM
+        c = PIX_X_TO_MM * (pix_x - IMAGE_WIDTH/2.0)
+        f_tilde = (c**2 + f**2)**0.5
+        if verbose:
+            print "c [mm]    = %3.3f, f [mm]   = %3.3f, f_tilde         = %3.3f" % (
+            c, f, f_tilde)
+        dist = observed_height * f_tilde / (pixHeight * PIX_Y_TO_MM)
+        if verbose:
+            print "dist = %3.3f. no pitch dist = %3.3f, no bearing dist = %3.3f" % (
+                dist, dist / cos(pitch), dist / cos(pitch) / f_tilde * f)
+        if debug:
+            return dist, dist / cos(pitch), dist / cos(pitch) / f_tilde * f
+        return dist
 
     def bearingFromPix(self, x, y):
         raise NotImplementedError('TODO')
