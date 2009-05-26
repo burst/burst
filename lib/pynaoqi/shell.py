@@ -6,6 +6,7 @@ a python only implementation.
 """
 
 import sys, os, time
+import glob
 import optparse
 import urllib2
 from math import log10
@@ -103,7 +104,14 @@ def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
     # first, so rectangles go first, and green goes before white.
     return CanvasTicker(lambda: con.ALMemory.getListData(l).addCallback(pairit),
         limits=limits,
-        statics=list(field.rects) + list(field.landmarks))
+        statics=list(field.rects) + map(list, field.landmarks))
+
+def fieldshow(callback=None, limits=field.green_limits):
+    if callback is None:
+        import burst.kinematics as kinematics
+        callback = lambda: kinematics.pose.updateLocations(con)
+    return CanvasTicker(callback, limits=limits,
+        statics=list(field.rects) + map(list, field.landmarks))
 
 class Data(object):
 
@@ -140,6 +148,48 @@ def onevision(d=None):
         d = con.ALMemory.getListData(vision_vars)
     return d.addCallback(format_vision_vars)
 
+def get_list_of_players():
+    import players
+    return [x for x in [os.path.splitext(os.path.basename(x))[0]
+        for x in glob.glob(os.path.dirname(players.__file__) + '/*.py')] if x[0] != '_']
+
+def startplayer(name, clazz=None):
+    """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
+    can use twisted to run previously naoqi only code, directly from pynaoqi shell.
+    """
+    import burst.player
+    try:
+        mod = __import__('players.%s' % name)
+        playermod = getattr(mod, name)
+    except:
+        print "no such player"
+        print "try one of:"
+        print ', '.join(get_list_of_players())
+        return
+    candidate_classes = [v for v in playermod.__dict__.values()
+                            if isinstance(v, type) and issubclass(v, burst.player.Player)
+                            and not v is burst.player.Player]
+    if len(candidate_classes) == 0:
+        print "%s contains no Player classes" % playermod.__name__
+        return None
+    if len(candidate_classes) > 1:
+        print "more then one Player in %s" % playermod.__name__
+        if clazz is None:
+            ctor = candidate_classes[0]
+            print "taking the first out of %s" % candidate_classes
+        else:
+            if hasattr(playermod, clazz):
+                ctor = getattr(playermod, clazz)
+            else:
+                print "no such class in %s" % playermod.__name__
+                return None
+    else:
+        ctor = candidate_classes[0]
+    print "Initializing player %s" % ctor.__class__.__name__
+    # Finally, start the update task.
+    import burst.eventmanager as eventmanager
+    return eventmanager.TwistedMainLoop(ctor, control_reactor=False)
+
 #############################################################################
 
 EXAMPLES = """# Show current identified ball location
@@ -163,6 +213,7 @@ loc = refilter('[XY]Est',names)
 fieldpairs(loc)
 fieldpairs(loc, limits=field.green_limits)
 fieldpairs(loc, limits=field.white_limits)
+fieldshow()
 
 # Kinematics (import takes some time, hence not done by default)
 import burst.kinematics as kin
@@ -171,6 +222,9 @@ kin.pose.update(con)
 """
 def examples():
     print EXAMPLES
+
+def f():
+    return 42
 
 def start_names_request(my_ns):
     # get the list of all variables - this can take a little
@@ -209,10 +263,13 @@ def make_shell_namespace(use_pylab):
         plottime = plottime,
         canvaspairs = canvaspairs,
         fieldpairs = fieldpairs,
+        fieldshow = fieldshow,
         video = video,
         examples = examples,
         format_vision_vars = format_vision_vars,
         onevision = onevision,
+        CanvasTicker = CanvasTicker,
+        startplayer = startplayer,
         # burst
         moves = moves,
         field = field,
@@ -221,6 +278,8 @@ def make_shell_namespace(use_pylab):
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
         pairit = burst_util.pairit,
+        # asaf
+        f = f,
         # place holder until onDataListName works
         names = 'fetching..',
         )

@@ -16,65 +16,49 @@ import time
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
+TIME_WAITING = 3 #time to wait when finishing the leap for getting up
 
 class goalie(Player):
-    
-    
 #    def onStop(self):
 #        super(Goalie, self).onStop()
 
     def onStart(self):
-        self.kp = None
-            
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        self._actions.initPoseAndStiffness()
-        
-        #self._eventmanager.register(EVENT_BALL_IN_FRAME,
-        #    lambda target=self._world.ball: self._actions.executeTracking(target)
-        #)
-        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
-        
-        #self.doMoveHead(self._world.ball.bearing, -self._world.ball.elevation)
-        #self._actions.executeLeapLeft()
-        #self.walkStartTime = time.time()
-        #self.test()
-        self.watchIncomingBall()
-        
-        
+   
+        self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
+
+    def goalieInitPos(self):
+        self._actions.executeMove(moves.SIT_POS).onDone(self.watchIncomingBall)   
+
     def watchIncomingBall(self):
         self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
-        
+
     def leap(self):
         self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapRight()
-            self._eventmanager.setTimeoutEventParams(3.0, oneshot=True, cb=self.gettingUpRight)
+            self._actions.executeLeapRight().onDone(self.watingOnRight)
+        elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
+            self._actions.executeLeapLeft().onDone(self.watingOnLeft)   
         else:
             self.watchIncomingBall()
-        
-        
+
+    def watingOnRight(self):
+        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpRight)
+
+    def watingOnLeft(self):
+        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpLeft)
+
+
     def gettingUpRight(self):
-        self._actions.executeToBellyFromLeapRight()
-        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall())
-    
-    def trackBall(self):
-        self._actions.executeTracking(self._world.ball)
-    
-    #def doMoveHead(self, deltaHeadYaw, deltaHeadPitch):
-    #    self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
-   
-    def test(self):
-        self._actions.changeLocationRelative(100.0)
-#        self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)
-#        self._actions.executeSyncMove(moves.GREAT_KICK_LEFT)
-#        self._actions.sitPoseAndRelax()
-#        self._eventmanager.quit()
-    
-    def onChangeLocationDone(self):
-        self.walkEndTime = time.time()
-        print "Walk Done! - tool approximately %f" % (self.walkEndTime - self.walkStartTime)
-        #self._eventmanager.quit()
+        self._actions.executeToBellyFromLeapRight().onDone(self.getUpBelly)
+
+    def gettingUpLeft(self):
+        self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
+
+    def getUpBelly(self):
+        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall)
+
+
 
 if __name__ == '__main__':
     import burst

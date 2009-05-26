@@ -27,6 +27,7 @@ from burst_util import cached, cached_deferred, Deferred
 
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
+DT_CHECK_BATTERY_LEVEL    = 10.0
 
 def toggle(initial=False):
     """ make a function into a toggle - this lets that function access a variable
@@ -182,6 +183,8 @@ class Joints(object):
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
         self.updater = task.LoopingCall(self.getAngles)
+        self.battery_level_task = task.LoopingCall(self.getBatteryLevel)
+
         self.vision = None
         self.inertial = None
         self.localization = None
@@ -217,6 +220,9 @@ class Joints(object):
         # initiate network request that will lead to slides creation.
         # do everything based on a initDeferred, otherwise methods will not be available.
         self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
+        # initiate battery task when pynaoqi finishes loading
+        self.con.modulesDeferred.addCallback(lambda _: self.battery_level_task.start(
+            DT_CHECK_BATTERY_LEVEL))
         w = gtk.Window()
         w.set_title('naojoints - %s' % self.con.host)
         self.c = c = gtk.VBox()
@@ -228,14 +234,21 @@ class Joints(object):
             button_box = gtk.HBox()
             buttons = []
             for label, cb in data:
-                b = gtk.Button(label)
+                if cb is None and not isinstance(label, str):
+                    b = label # masquarade as a place to put premade widgets, for battery meter
+                else:
+                    b = gtk.Button(label)
                 if cb:
                     b.connect("clicked", cb)
-                button_box.add(b)
+                try:
+                    button_box.add(b)
+                except:
+                    import pdb; pdb.set_trace()
                 buttons.append(b)
             return button_box, buttons
 
         top_buttons_data = [
+            (gtk.Label(),   None),
             ('print angles',    self.printAngles),
             ('stiffness on',    self.setStiffnessOn),
             ('stiffness off',   self.setStiffnessOff),
@@ -322,6 +335,8 @@ class Joints(object):
         walk_strip, walk_buttons     = create_button_strip(walk_buttons_data)
         toggle_strip, toggle_buttons = create_button_strip(toggle_buttons_data)
 
+        self._battery_level_button = top_buttons[0] # XXX - ugly
+
         # Python bug? if I don't set the result of ToggleButton to something
         # it is lost to the garbage collector.. very hard to debug, since you just
         # have a missing dictionary, but no actual error..
@@ -396,6 +411,13 @@ class Joints(object):
             self.localization_visible = True
             return
         self.toggleit(self.localization.w, 'localization_visible')
+
+    def getBatteryLevel(self):
+        self.con.ALSentinel.getBatteryLevel().addCallback(self._updateBatteryLevel)
+
+    def _updateBatteryLevel(self, value):
+         self._battery_level_button.set_markup(
+            '<span foreground="%s">BAT %s</span>' % (value > 3 and 'green' or 'red', value))
 
     def getAngles(self):
         """ TODO: callback from twisted

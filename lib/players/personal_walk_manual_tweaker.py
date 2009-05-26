@@ -2,6 +2,7 @@
 
 
 import player_init
+from burst_util import DeferredList
 from burst.player import Player
 from burst.events import *
 from burst.consts import *
@@ -12,31 +13,8 @@ from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
 import os
 
-OUTPUT_FILE_NAME = './testme.txt'
-outputFile = None
 
-
-walkType = 'changeLocationRelative'
-walkDistance = 200.0
-walkParams = Walk(WalkParameters([
-           100.0 * DEG_TO_RAD, # ShoulderMedian
-           15.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
-           -4.5,                  # RHipRoll(degrees)
-           0.22,                  # HipHeight(meters)
-           3.4,                   # TorsoYOrientation(degrees)
-           0.070,                  # StepLength
-           0.043,                  # StepHeight
-           0.03,                  # StepSide
-           0.3,                   # MaxTurn
-           0.01,                  # ZmpOffsetX
-           0.00]),                  # ZmpOffsetY 
-           100)                    # 20ms count per step
-
-
-class personalWalkManualTweaker(Player):
+class PersonalWalkManualTweaker(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
@@ -71,21 +49,29 @@ class personalWalkManualTweaker(Player):
 cleaned = False
 def moduleCleanup(eventmanager, actions, world):
     global cleaned
+    def onResults(results):
+        remaining_steps = results[0][1]
+        battery_charge = results[1][1]
+        global cleaned
+        if not cleaned:
+            if not robotName is None:
+                result = str(robotName)
+                result += ", " + str(battery_charge)
+                result += ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
+    #            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
+                distanceWalkedBeforeFallingDown = min(walkDistance, max(0.0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
+                result += str(distanceWalkedBeforeFallingDown)
+    #            print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
+                outputFile.write(result+"\n")
+            if not outputFile is None and not outputFile.closed:
+                outputFile.close()
+        cleaned = True
+    d = None
     if not cleaned:
-        if not robotName is None:
-            remaining_steps = world.getRemainingFootstepCount()
-            result = str(robotName)
-            result += ", " + str(world._memory.getData('Device/SubDeviceList/Battery/Charge/Sensor/Value',0))
-            result += ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
-#            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
-            distanceWalkedBeforeFallingDown = min(walkDistance, max(0.0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
-            result += str(distanceWalkedBeforeFallingDown)
-#            print "Recording %f as the distance the robot has walked before falling down." % distanceWalkedBeforeFallingDown
-            outputFile.write(result+"\n")
-        if not outputFile is None and not outputFile.closed:
-            outputFile.close()
-    cleaned = True
-
+        d = DeferredList([world.getRemainingFootstepCount(),
+            world._memory.getData('Device/SubDeviceList/Battery/Charge/Sensor/Value',0)])
+        d.addCallback(onResults)
+    return d
 
 if __name__ == '__main__':
 #    time.sleep(3)
@@ -107,7 +93,7 @@ if __name__ == '__main__':
         print 'Please provide the robot\'s name, so that we can log the test\'s results.'
         exit()
     
-    mainloop = MainLoop(personalWalkManualTweaker)
+    mainloop = MainLoop(PersonalWalkManualTweaker)
     mainloop.setCtrlCCallback(moduleCleanup)
     mainloop.run()
     #burst.getMotionProxy().getRemainingFootStepCount()

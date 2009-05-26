@@ -1,6 +1,7 @@
 import os
 import re
 from time import time
+from math import cos, sin, sqrt, atan2
 
 # Data Structures
 
@@ -150,14 +151,16 @@ class BurstDeferred(object):
         self._parent = parent # DEBUG only
     
     def onDone(self, cb):
-        # TODO: shortcutting. How the fuck do I call the cb immediately without
-        # giving a chance to the caller to use the chain_deferred??
-
-        # will be called by cb's return deferred, if any
+        """ store a callback to be called when a result is complete.
+        If it is already complete then it will be called right away. 
+        """
         if cb is None:
             raise Exception("onDone called with cb == None")
         chain_deferred = BurstDeferred(data = None, parent=self)
         self._ondone = (cb, chain_deferred)
+        if self._completed:
+            chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
+            self.callOnDone()
         return chain_deferred
 
     def callOnDone(self):
@@ -293,6 +296,46 @@ def cumsum(iter):
         s += t
         yield s
 
+# Some Trigo
+def polar2cart(dist, bearing):
+    return cos(bearing)*dist, sin(bearing)*dist
+
+def cart2polar(x, y):
+    return sqrt(x**2 + y**2), atan2(y, x)
+
+def calculate_middle((left_dist, left_bearing), (right_dist, right_bearing)):
+    target_x = (right_dist * cos(right_bearing) + left_dist * cos(left_bearing)) / 2.0
+    target_y = (right_dist * sin(right_bearing) + left_dist * sin(left_bearing)) / 2.0
+    return (target_x, target_y)
+
+def calculate_relative_pos((waypoint_x, waypoint_y), (target_x, target_y), offset):
+    """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point 
+    in the middle of the target (e.g., goal) and the waypoint in the outward direction.
+
+    The coordinate system is the standard: the x axis is to the front,
+    the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
+    
+    computation:
+     target - target center (e.g., middle of goal)
+     waypoint - waypoint (e.g., ball) - should be of type Locatable (support dist/bearing
+     normal - normal pointing from target (goal center) to waypoint (ball)
+     result - return result (x, y, bearing)
+    """
+    
+    normal_x, normal_y = waypoint_x - target_x, waypoint_y - target_y # normal is a vector pointing from center to ball
+    normal_norm = sqrt(normal_x**2 + normal_y**2)
+    normal_x, normal_y = normal_x / normal_norm, normal_y / normal_norm
+    result_x, result_y = waypoint_x + offset * normal_x, waypoint_y + offset * normal_y
+    #result_norm = (result_x**2 + result_y**2)**0.5
+    result_bearing = atan2(-normal_y, -normal_x)
+    #print "rel_pos: waypoint(%3.3f, %3.3f), target(%3.3f, %3.3f), n(%3.3f, %3.3f), result(%3.3f, %3.3f, %3.3f)" % (
+    #    waypoint_x, waypoint_y, target_x, target_y, normal_x, normal_y, result_x, result_y, result_bearing)
+    return result_x, result_y, result_bearing
+
+''' Transform our value into the range of -1..1 '''
+def normalize2(value, range):
+    return (range - value) / range
+
 # Text/String/Printing utils
 
 def nicefloats(l):
@@ -348,9 +391,9 @@ def get_hostname():
 def getip():
     return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
 
-def not_on_nao():
-    #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    return os.path.exists('/opt/naoqi/bin/naoqi')
+#def not_on_nao():
+#    #is_nao = os.popen("uname -m").read().strip() == 'i586'
+#    return os.path.exists('/opt/naoqi/bin/naoqi')
 
 # ELF util
 

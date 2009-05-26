@@ -23,7 +23,7 @@ void readVariablesFile(const char* file_name, std::vector<std::string>& out)
     while (!varfile.eof ()) {
         std::string line;
         getline (varfile, line);
-        if (line.size () <= 1) {
+        if (line.size () <= 0) {
             continue;
         }
         out.push_back (line);    // TODO - algorithms, copy?

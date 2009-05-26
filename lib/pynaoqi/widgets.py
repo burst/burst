@@ -211,7 +211,10 @@ class CanvasTicker(TaskBaseWindow):
             width=x2-x1, height = y2-y1)
 
     def results_to_screen(self, x, y):
-        left, bottom = self._limits[0], self._limits[2]
+        left, right, bottom, top= self._limits
+        if not (left <= x <= right) or not (bottom <= y <= top):
+            print "CanvasTicker: object out of bounds (%3.3f %3.3f %3.3f %3.3f): x=%3.3f, y=%3.3f" % (
+                left, right, bottom, top, x, y)
         return self._xf * (x - left), self._yf * (y - bottom)
 
     def width_height_to_screen(self, width, height):
@@ -223,10 +226,10 @@ class CanvasTicker(TaskBaseWindow):
         parent = self._root
         if len(self._objects) != len(results):
             self._objects = [goocanvas.Ellipse(parent = parent,
-            center_x = 0, center_y = 0,
-            radius_x = radius, radius_y = radius,
-            fill_color = fill_color)
-                for x, y, in results]
+                center_x = 0, center_y = 0,
+                radius_x = radius, radius_y = radius,
+                fill_color = fill_color)
+                    for x, y, in results]
         for (res_x, res_y), obj in zip(results, self._objects):
             x, y = self.results_to_screen(res_x, res_y)
             obj.set_properties(center_x=x, center_y=y)
@@ -266,9 +269,10 @@ class GtkTimeTicker(TaskBaseWindow):
 
     def _update(self, result):
         if len(result) == 0:
-            print "GtkTextLogger: empty length result, nothing to do\r\n"
+            print "GtkTimeTicker: empty length result, nothing to do\r\n"
             return
         if len(result) > len(self._lines):
+            print "updating GtkTimeTicker to %s lines" % len(result)
             for i in xrange(len(result) - len(self._lines)):
                 self._lines.append(self._axis.plot([],[])[0])
             if len(self._values) != len(result):
@@ -304,6 +308,9 @@ class GtkTimeTicker(TaskBaseWindow):
 class VideoWindow(TaskBaseWindow):
 
     def __init__(self, con):
+        if con.has_imops() is None:
+            print "Video window not openned, imops isn't working, please fix"
+            return
         self._con = con
         self._con.registerToCamera().addCallback(self._finishInit)
         super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)

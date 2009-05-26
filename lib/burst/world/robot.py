@@ -31,6 +31,8 @@ class SerialPostQueue(object):
         self._world = world
         self._motion = world._motion
         self._start_time = None
+        # print stuff
+        self.verbose = False
 
     def isNotEmpty(self):
         return len(self._posts) > 0
@@ -48,7 +50,10 @@ class SerialPostQueue(object):
 
         self._events, self._deferreds = events, deferreds # this will become usual for all these objects
 
-        postid, self._cur_event, self._cur_deferred, duration = self._posts[0]
+        postid, event, deferred, duration = self._posts[0]
+        if event is None and deferred is None:
+            print "ERROR: SerialPostQueue: handling an empty post?"
+            import pdb; pdb.set_trace()
     
         #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
         #    self._name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
@@ -56,16 +61,27 @@ class SerialPostQueue(object):
         if self._world.time >= self._start_time + duration:
             if not isinstance(postid, int):
                 import pdb; pdb.set_trace()
-            self._motion.isRunning(postid).addCallback(self._onIsRunning)
+            self._motion.isRunning(postid).addCallback(
+                lambda result, postid=postid, event=event, deferred=deferred:
+                    self._onIsRunning(result, postid, event, deferred))
 
-    def _onIsRunning(self, result):
+    def _onIsRunning(self, result, postid, event, deferred):
+        # We could be called a second time with the same postid after actually having finished.
+        # this can happend when using the twisted event loop, since we issue the isRunning
+        # code async to the callbacks, possibly several callbacks will be fired at once.
+        # so the upshot is being careful about checking if we are still relevant.
+        # TODO: the real fix is not calling isRunning while an outgoing call is in progress.
         if result: return
-        if not self._cur_event or not self._cur_deferred:
-            print "SerialPostQueue ERROR.. pdbing"
+        if len(self._posts) == 0:
+            if self.verbose:
+                print "FIXME: SerialPostQueue._onIsRunning called twice for postid = %s" % postid
+            return
+        if self._posts[0][0] != postid:
             import pdb; pdb.set_trace()
-        self._events.add(self._cur_event)
-        self._deferreds.append(self._cur_deferred)
-        self._cur_deferred, self._cur_event = None, None # stupid safety measure?
+        self._events.add(event)
+        self._deferreds.append(deferred)
+        if self.verbose:
+            print "SerialPostQueue: (%s) Deleting %s" % ([x[0] for x in self._posts], postid)
         del self._posts[0]
         if len(self._posts) == 0:
             self._start_time = None

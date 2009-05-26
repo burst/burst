@@ -7,7 +7,7 @@ import sys
 from time import time
 
 import burst
-from burst_util import BurstDeferred
+from burst_util import BurstDeferred, DeferredList
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -197,15 +197,21 @@ class BasicMainLoop(object):
            
     def onNormalQuit(self):
         if self._actions:
-            print "sitting, removing stiffness and quitting."
-            self._sit_deferred = self._actions.sitPoseAndRelax()
+            if burst.options.passive_ctrl_c or not self._world.connected_to_nao:
+                print "exiting"
+            else:
+                print "sitting, removing stiffness and quitting."
+                self._sit_deferred = self._actions.sitPoseAndRelax()
             return True
         print "quitting before starting are we?"
         return False
 
     def onCtrlCPressed(self):
+        """ Returns None or the result of the callback, which may be a deferred.
+        In that case shutdown will wait for that deferred
+        """
         if self._ctrl_c_cb:
-            self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
+            return self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
                 world=self._world)
 
     def _run_exception_wrap(self):
@@ -286,10 +292,11 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, playerclass):
+    def __init__(self, playerclass, control_reactor=True):
     
         super(TwistedMainLoop, self).__init__(playerclass = playerclass)
         self._do_cleanup = True
+        self._control_reactor = control_reactor
 
         from twisted.internet import reactor
         orig_sigInt = reactor.sigInt
@@ -320,30 +327,44 @@ class TwistedMainLoop(BasicMainLoop):
         pass # we override run too, work is done there.
 
     def run(self):
+        if not self._control_reactor:
+            print "TwistedMainLoop: not in control of reactor"
+            return
         print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from twisted.internet import reactor
         reactor.run() #installSignalHandlers=0)
         print "TwistedMainLoop: event loop done"
 
+    def shutdown(self):
+        """ helper method - this doesn't get called normally, only when debugging,
+        but it acts as a shortcut for doing self._eventmanager.quit() """
+        self._eventmanager.quit()
+
     def _startShutdown(self, normal_quit, ctrl_c_pressed):
         # Stop our task loop
         do_cleanup = False
+        ctrl_c_deferred = None
         if hasattr(self, '_main_task'):
             if ctrl_c_pressed:
-                self.onCtrlCPressed()
+                ctrl_c_deferred = self.onCtrlCPressed()
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
             self._main_task.stop()
         if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
+        pending = []
         if hasattr(self, '_sit_deferred'):
-            self._sit_deferred.addCallback(self._completeShutdown)
-        else:
-            import pdb; pdb.set_trace()
+            pending.append(self._sit_deferred)
+        if ctrl_c_deferred:
+            pending.append(ctrl_c_deferred)
+        if len(pending) == 0:
             self._completeShutdown()
+        else:
+            DeferredList(pending).addCallback(self._completeShutdown)
 
     def _completeShutdown(self, result=None):
+        if not self._control_reactor: return
         from twisted.internet import reactor
         reactor.stop()
 

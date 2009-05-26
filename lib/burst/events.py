@@ -34,12 +34,38 @@ EVENT_BGLP_POSITION_CHANGED = counter; counter+=1
 EVENT_BGRP_POSITION_CHANGED = counter; counter+=1
 EVENT_YGLP_POSITION_CHANGED = counter; counter+=1
 EVENT_YGRP_POSITION_CHANGED = counter; counter+=1
-
 EVENT_ALL_BLUE_GOAL_SEEN = counter; counter+=1
 EVENT_ALL_YELLOW_GOAL_SEEN = counter; counter+=1
 
+# Events calculated according to the messages received from the Game Controller
+# Goals:
+EVENT_GOAL_SCORED = counter; counter += 1
+EVENT_GOAL_SCORED_BY_MY_TEAM = counter; counter += 1
+EVENT_GOAL_SCORED_BY_OPPOSING_TEAM = counter; counter += 1
+# Penalties:
+EVENT_I_GOT_PENALIZED = counter; counter += 1
+EVENT_TEAMMATE_PENALIZED = counter; counter += 1
+EVENT_OPPONENT_PENALIZED = counter; counter += 1
+EVENT_I_GOT_UNPENALIZED = counter; counter += 1
+EVENT_TEAMMATE_UNPENALIZED = counter; counter += 1
+EVENT_OPPONENT_UNPENALIZED = counter; counter += 1
+# In/Out of the game:
+EVENT_I_AM_REENTERING_PLAY = counter; counter += 1
+EVENT_I_AM_LEAVING_PLAY = counter; counter += 1
+# Game-state changes:
+EVENT_SWITCHED_TO_INITIAL_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_FROM_INITIAL_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_TO_READY_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_FROM_READY_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_TO_SET_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_FROM_SET_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_TO_PLAY_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_FROM_PLAY_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_TO_FINISH_GAME_STATE = counter; counter += 1
+EVENT_SWITCHED_FROM_FINISH_GAME_STATE = counter; counter += 1
+
 ##### Computed events
-EVENT_KP_CHANGED = counter; counter+=1
+#EVENT_KP_CHANGED = counter; counter+=1
 
 ##### Time based events
 # Please don't use these! it makes puppies cry.
