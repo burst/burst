@@ -2,7 +2,7 @@ from math import atan2
 from consts import CM_TO_METER, IMAGE_HALF_HEIGHT, IMAGE_HALF_WIDTH
 import burst
 from burst.consts import *
-from burst_util import (transpose, cumsum,
+from burst_util import (transpose, cumsum, normalize2,
     BurstDeferred, Deferred, DeferredList, chainDeferreds)
 from events import *
 from eventmanager import EVENT_MANAGER_DT
@@ -52,6 +52,7 @@ class Journey(object):
     SLOW_START_STEPS = 2 # The amount of steps one should take at a slower pace at the beginning.
 
     def __init__(self, actions):
+        self._printQueueBeforeExecution = False
         self._actions = actions
         self._world = self._actions._world
         self._motion = self._actions._motion
@@ -120,10 +121,11 @@ class Journey(object):
         self._cmds.append((description, f))
 
     def _executeAllCommands(self):
-        print "Executing Journey Queue:"
-        for desc, f in self._cmds:
-            print "          %s" % desc
-        print "End Journey Queue"
+        if self._printQueueBeforeExecution:
+            print "Executing Journey Queue:"
+            for desc, f in self._cmds:
+                print "          %s" % desc
+                print "End Journey Queue"
         d = chainDeferreds([f for desc, f in self._cmds])
         self._cmds = []
         return d
@@ -213,16 +215,16 @@ class Actions(object):
         return bd
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        ds = []
-        ds.append(lambda _: self.clearFootsteps())
-        ds.append(lambda _: self.executeSyncMove(moves.STAND))
-        ds.append(lambda _: self.executeSyncMove(moves.SIT_POS))
-        ds.append(lambda _: self._motion.setBodyStiffness(0))
-        return chainDeferreds(ds)
+        dgens = []
+        dgens.append(lambda _: self.clearFootsteps())
+        dgens.append(lambda _: self.executeSyncMove(moves.STAND))
+        dgens.append(lambda _: self.executeSyncMove(moves.SIT_POS))
+        dgens.append(lambda _: self._motion.setBodyStiffness(0))
+        return chainDeferreds(dgens)
 
-    def changeHeadAnglesRelative(self, delta_yaw, delta_pitch):
+    def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw, self._world.getAngle("HeadPitch")+delta_pitch),0.15),) )
+        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw, self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
@@ -328,8 +330,8 @@ class Actions(object):
                    # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
-        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            walk = moves.SIDESTEP_WALK
+#        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+#            walk = moves.SIDESTEP_WALK
         
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
@@ -353,6 +355,8 @@ class Actions(object):
             print "WALKING SIDEWAYS (%3.3f)" % sideways
             did_sideways = sideways
             dgens.append(lambda _: self._motion.addWalkSideways(sideways, DEFAULT_STEPS_FOR_SIDEWAYS))
+        else:
+            print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % sideways
             
         duration = (steps * distance / StepLength +
                     (did_sideways and DEFAULT_STEPS_FOR_SIDEWAYS or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
@@ -494,16 +498,13 @@ class Actions(object):
         if not self._speech is None:
             self._speech.say(message)
 
-    def normalizeBallX(self, ballX):
-        return (IMAGE_HALF_WIDTH - ballX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
-
-    def normalizeBallY(self, ballY):
-        return (IMAGE_HALF_HEIGHT - ballY) / IMAGE_HALF_HEIGHT # between 1 (top) to -1 (bottom)
-
     def executeTracking(self, target):
         if not self._world.robot.isHeadMotionInProgress():
-            xNormalized = self.normalizeBallX(target.centerX)
-            yNormalized = self.normalizeBallY(target.centerY)
+            # Normalize ball X between 1 (left) to -1 (right)
+            xNormalized = normalize2(target.centerX, IMAGE_HALF_WIDTH)
+            # Normalize ball Y between 1 (top) to -1 (bottom)
+            yNormalized = normalize2(target.centerY, IMAGE_HALF_HEIGHT)
+            
             if abs(xNormalized) > 0.05 or abs(yNormalized) > 0.05:
                 CAM_X_TO_RAD_FACTOR = 23.2/2 * DEG_TO_RAD #46.4/2
                 CAM_Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2

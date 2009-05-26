@@ -59,7 +59,7 @@ HEAD_POS_FRONT_BOTTOM = (0., HEAD_PITCH_DOWN_MAX) # look down
 ''' HEAD MOVES / SCANS (for bottom camera) '''
 HEAD_MOVE_FRONT_FAR = ((HEAD_POS_FRONT_FAR, 0.5),)
 #HEAD_MOVE_FRONT_CLOSE = ((HEAD_POS_FRONT_CLOSE, 0.5),)
-#HEAD_MOVE_FRONT_BOTTOM = ((HEAD_POS_FRONT_BOTTOM, 0.5),)
+HEAD_MOVE_FRONT_BOTTOM = ((HEAD_POS_FRONT_BOTTOM, 0.5),)
 
 # Start from bottom part (closer is probably more important), continue with middle, finish with top
 # TODO: check what's the fastest time for scanning where ball/goal is still detected (can save lots of time)

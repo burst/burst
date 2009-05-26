@@ -22,7 +22,7 @@ class Template(Player):
         # uncomment this for real work - but for just getting events you probably want to keep it commented.
         self._actions.initPoseAndStiffness()
         self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
+        #self._eventmanager.register(EVENT_KP_CHANGED, self.onKickPointViable)
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         # Serial event example: do one, then the other, call a cb on each
         #self._actions.turn(0.2)
@@ -43,8 +43,8 @@ class Template(Player):
     def onStop(self):
         super(Template, self).onStop()
 
-    def onKickPointViable(self):
-        print "Kick point viable:", self._world.computed.kp
+#    def onKickPointViable(self):
+#        print "Kick point viable:", self._world.computed.kp
 
     def onBallSeen(self):
         print "Ball Seen!"

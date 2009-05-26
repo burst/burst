@@ -3,13 +3,14 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST, EVENT_KP_CHANGED, EVENT_CHANGE_LOCATION_DONE, EVENT_ALL_YELLOW_GOAL_SEEN
+from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST, EVENT_CHANGE_LOCATION_DONE, EVENT_ALL_YELLOW_GOAL_SEEN
 from burst.consts import DEG_TO_RAD, IMAGE_HALF_WIDTH, IMAGE_HALF_HEIGHT
 from burst.player import Player
 import burst.actions as actions
 import burst.moves as moves
 from burst.world import World
-from math import cos, sin, sqrt, pi, fabs, atan, atan2
+from math import cos, sin
+from burst_util import calculate_middle, calculate_relative_pos, polar2cart, cart2polar
 
 """
     Logic for Kicker:
@@ -34,21 +35,69 @@ Handle case where ball isn't seen after front scan (add full scan inc. turning a
 Obstacle avoidance
 """
 
+#if World.connected_to_nao:
+    #KICK_MINIMAL_DISTANCE_X = 1.3*4 #1.6 is closest perceivable distance (x)
+    #KICK_MINIMAL_DISTANCE_Y = 0.3*2 #0.3 is closest perceivable bearing (y)
+    # values that minimizes KICK_MINIMAL_DISTANCE_X and KICK_MINIMAL_DISTANCE_Y (yet keeps them POSITIVE)
+    #KICK_DIST_FROM_BALL = 13.0
+    #KICK_OFFSET_MID_BODY = 0.3
+#else: #World.connected_to_webots
+    #KICK_MINIMAL_DISTANCE_X = 1.1
+    #KICK_MINIMAL_DISTANCE_Y = 1.2
+    # values that minimizes KICK_MINIMAL_DISTANCE_X and KICK_MINIMAL_DISTANCE_Y (yet keeps them POSITIVE)
+    #KICK_DIST_FROM_BALL = 31.0
+    #KICK_OFFSET_MID_BODY = 1.0
+
+''' Kick consts (Measurements acquired via headTrackingTester)
+# First value is for LEFT, second for RIGHT
+BEARING_MIN = minimal kicking bearing (as centralized as possible) - best possible straight kick
+BEARING_RANGE = maximal kicking bearing (delta from min, to either direction) - not centralized, yet still acceptable kick
+DIST_MIN = minimal kicking distance (as close to leg as possible) - best possible straight kick
+DIST_RANGE = maximal kicking distance (delta from min) - farther away from leg, yet still acceptable kick
+'''
+LEFT = 0
+RIGHT = 1
 if World.connected_to_nao:
-    KICK_MINIMAL_DISTANCE_X = 1.3*4 #1.6 is closest perceivable distance (x)
-    KICK_MINIMAL_DISTANCE_Y = 0.3*2 #0.3 is closest perceivable bearing (y)
-    KICK_DIST_FROM_BALL = 13.0
-    KICK_OFFSET_MID_BODY = 0.3
-    KICK_NEAR_BALL_DISTANCE_X = 10.0
-    KICK_NEAR_BALL_DISTANCE_Y = 10.0
-else:
-    KICK_MINIMAL_DISTANCE_X = 1.1
-    KICK_MINIMAL_DISTANCE_Y = 1.2
-    KICK_DIST_FROM_BALL = 32.0
-    KICK_OFFSET_MID_BODY = 1.0
-    KICK_NEAR_BALL_DISTANCE_X = 10.0
-    KICK_NEAR_BALL_DISTANCE_Y = 10.0
+    KICK_BEARING_MIN = (0.25, -0.33) 
+    KICK_BEARING_RANGE = (0.081, 0.081) #(-0.081, 0.081)
+    KICK_DIST_MIN = (15.6, 15.6)
+    KICK_DIST_RANGE = (4.4, 3.4)
+else: #World.connected_to_webots
+    KICK_BEARING_MIN = (0.30, -0.30)
+    KICK_BEARING_RANGE = (0.10, 0.10)
+    KICK_DIST_MIN = (30.0, 30.0)
+    KICK_DIST_RANGE = (2.0, 2.0)
     
+    KICK_X_MIN = (29.5,29.5)
+    KICK_X_MAX = (32.0,32.0)
+    KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
+    KICK_Y_MIN = (-6.0,6.0)
+    KICK_Y_MAX = (-12.0,12.0)
+    KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
+
+
+
+print "KICK_DIST_RANGE[LEFT]: %3.3fcm" % KICK_DIST_RANGE[LEFT]
+print "KICK_BEARING_RANGE[LEFT]: %3.3fcm" % KICK_BEARING_RANGE[LEFT]
+print "KICK_DIST_RANGE[RIGHT]: %3.3fcm" % KICK_DIST_RANGE[RIGHT]
+print "KICK_BEARING_RANGE[RIGHT]: %3.3fcm" % KICK_BEARING_RANGE[RIGHT]
+
+KICK_TURN_ANGLE = 45 * DEG_TO_RAD
+KICK_SIDEWAYS_DISTANCE = 10.0
+
+#KICK_TARGET_X = (cos(KICK_BEARING_MIN[LEFT]+KICK_BEARING_RANGE[LEFT]/2)*(KICK_DIST_MIN[LEFT]+KICK_DIST_RANGE[LEFT]/2), 
+#                 cos(KICK_BEARING_MIN[RIGHT]+KICK_BEARING_RANGE[RIGHT]/2)*(KICK_DIST_MIN[RIGHT]+KICK_DIST_RANGE[RIGHT]/2))
+#
+#KICK_TARGET_Y = (sin(KICK_BEARING_MIN[LEFT]+KICK_BEARING_RANGE[LEFT]/2)*(KICK_DIST_MIN[LEFT]+KICK_DIST_RANGE[LEFT]/2), 
+#                 sin(KICK_BEARING_MIN[RIGHT]+KICK_BEARING_RANGE[RIGHT]/2)*(KICK_DIST_MIN[RIGHT]+KICK_DIST_RANGE[RIGHT]/2))
+#
+#print "KICK_TARGET_X: %3.3fcm, %3.3fcm" % (KICK_TARGET_X[LEFT], KICK_TARGET_X[RIGHT])
+#print "KICK_TARGET_Y: %3.3fcm, %3.3fcm" % (KICK_TARGET_Y[LEFT], KICK_TARGET_Y[RIGHT])
+
+#CAMERA_BEARING_OFFSET = 0.04 # cech = 0.04
+
+OFFSET_FROM_BALL = 12
+
 class Kicker(Player):
     
     def onStart(self):
@@ -58,6 +107,7 @@ class Kicker(Player):
         self.cachedBallElevation = None
         self.goal = None
         self.doBallTracking = False
+        self.searchLevel = actions.LOOKAROUND_QUICK
         
         self._eventmanager.unregister_all()
 
@@ -86,39 +136,41 @@ class Kicker(Player):
         self.cachedBallBearing = self._world.ball.bearing
         self.cachedBallElevation = self._world.ball.elevation
         #print "Ball seen at dist/bearing/elevation: %3.3f %3.3f %3.3f" % (self.cachedBallDist, self.cachedBallBearing, self.cachedBallElevation)
-
+        
     def onScanDone(self):
         print "\nScan done!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         print "******************"
         
         # if both goal and ball seen during scan
-        if self.goal and self.cachedBallDist:
-            print "goal and ball seen, moving head in ball direction"
-            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation)#.onDone(lambda:setattr(self,'doBallTracking',True))
-            self.doBallTracking = True
-            
-            # compute kicking-point
-            #goal = self.calculate_middle(self._team.left_post, self._team.right_post)
-            ball = (self.cachedBallDist * cos(self.cachedBallBearing), self.cachedBallDist * sin(self.cachedBallBearing))
-            self.kp = self.calculate_relative_pos(ball, self.goal, 12)
-            print "self.kp: ", self.kp
-            self.doNextAction()
-        ################## TODO: remove following, temporary for testing ########################################################################
-        elif self.cachedBallDist:
-            print "goal and ball seen, moving head in ball direction 2"
-            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation)
-            self.doBallTracking = True
-            self.kp = True
-            self.doNextAction()
+        if self.goal or self.cachedBallDist:
+            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation, 1.0).onDone(self.calcKP)
         else:
             # otherwise, do a more thorough scan
             print "goal and ball NOT seen, searching again..."
             self.searchLevel = actions.LOOKAROUND_FRONT
             self.searchBallAndGoal(self.searchLevel)
+    
+    def calcKP(self):
+        self.doBallTracking = True
         
+        if self.goal and self.cachedBallDist:
+            print "goal and ball seen, moving head in ball direction"
+            # compute kicking-point
+            #goal = self.calculate_middle(self._team.left_post, self._team.right_post)
+            ball = (self.cachedBallDist * cos(self.cachedBallBearing), self.cachedBallDist * sin(self.cachedBallBearing))
+            self.kp = calculate_relative_pos(ball, self.goal, OFFSET_FROM_BALL)
+            print "self.kp: ", self.kp
+        elif self.cachedBallDist:
+            ################## TODO: remove following, temporary for testing ########################################################################
+            print "ball seen, moving head in ball direction"
+            self.kp = True
+        
+        self.doNextAction()
+    
     def onGoalSeen(self):
         if self.goal is None:
-            self.goal = self.calculate_middle(self._world.team.left_post, self._world.team.right_post)
+            self.goal = calculate_middle((self._world.team.left_post.dist, self._world.team.left_post.bearing),
+                                          (self._world.team.right_post.dist, self._world.team.right_post.bearing))
             print self.goal
 
     def doNextAction(self):
@@ -136,58 +188,102 @@ class Kicker(Player):
 #        if not self._world.ball.seen:
 #            print "BALL NOT SEEN!"
 
-        # for now, just directly approach ball and kick it wherever (closed-loop style)
-
         # ball is visible, let's approach it
-        (target_x, target_y) = self.convertBallPosToFinalKickPoint(self._world.ball.distSmoothed, self._world.ball.bearing)
-        print "Final Kick point: (target_x: %3.3fcm, target_y: %3.3fcm)" % (target_x, target_y)
+
+        # for now, just directly approach ball and kick it wherever (closed-loop style)
+        ballBearing = self._world.ball.bearing
+        ballDist = self._world.ball.distSmoothed
         
-        bearingThreshold = actions.MINIMAL_CHANGELOCATION_TURN # TODO: MOVE TO CONSTS AT TOP
-        distanceThreshold = KICK_MINIMAL_DISTANCE_X
+        (ball_x, ball_y) = polar2cart(ballDist, ballBearing)
+        print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
         
-        # TODO: Use either (x,y) or (dist,bearing), not both.
-        #if self._world.ball.distSmoothed > KICK_DIST_FROM_BALL or bearing-difference-too-large:
-        if target_x > KICK_MINIMAL_DISTANCE_X or abs(target_y) > KICK_MINIMAL_DISTANCE_Y:
-            # if bearing isn't large or if near ball, don't turn and instead just advance
-            if abs(self._world.ball.bearing) < bearingThreshold * 2 or self._world.ball.distSmoothed < KICK_DIST_FROM_BALL * 2:
-                print "Advancing towards ball!"
-                # if away from ball, advance half-way without turning/side-stepping
-                if self._world.ball.distSmoothed > KICK_DIST_FROM_BALL*2:
-                    print "only half way"
-                    self._actions.changeLocationRelative(target_x/2, 0, 0).onDone(self.doNextAction)
-#                elif self._world.ball.distSmoothed > KICK_DIST_FROM_BALL:
-#                    print "all the way, just straight walk"
-#                    self._actions.changeLocationRelative(target_x, 0, 0).onDone(self.doNextAction)
+        # determine kicking leg
+        side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
+        if (side == LEFT):
+            print "LEFT"
+        else:
+            print "RIGHT"
+
+#KICK_BEARING_MIN = (0.30, -0.30)
+#KICK_BEARING_RANGE = (0.10, 0.10)
+#KICK_DIST_MIN = (30.0, 30.0)
+#KICK_DIST_RANGE = (2.0, 2.0)
+#
+#KICK_X_MIN = (28.5,28.5)
+#KICK_X_MAX = (31.0,31.0)
+#KICK_Y_MIN = (6.0,6.0)
+#KICK_Y_MAX = (12.0,12.0)
+        
+        (target_x, target_y) = (ball_x - (KICK_X_MIN[side] + KICK_X_MAX[side])/2, ball_y + (KICK_Y_MIN[side] + KICK_Y_MAX[side])/2)
+        #(target_x, target_y) = (ball_x - KICK_X_OPT[side], ball_y + KICK_Y_OPT[side])
+        print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
+
+        (target_dist, target_bearing) = cart2polar(target_x, target_y)
+        print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
+
+        # Ball inside kicking area, kick it
+        if ballDist < (KICK_DIST_MIN[side] + KICK_DIST_RANGE[side]) and \
+                (KICK_BEARING_MIN[side]-KICK_BEARING_RANGE[side] < ballBearing < KICK_BEARING_MIN[side]+KICK_BEARING_RANGE[side]):
+            print "Kicking!"
+#            self.doKick()
+        else:
+            pass
+
+
+
+
+
+        # TODO: REMOVE!!!
+        self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
+        return
+
+        
+        
+        
+        
+        
+        # target x,y are computed as the difference between the ball bearing/dist and the optimal kick bearing/dist
+        target_x = ballDist * cos(ballBearing) - KICK_DIST_MIN[side] * cos(KICK_BEARING_MIN[side])
+        target_y = ballDist * sin(ballBearing) - KICK_DIST_MIN[side] * sin(KICK_BEARING_MIN[side])
+        print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
+        
+        (target_dist, target_bearing) = cart2polar(target_x, target_y)
+        print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
+
+        # TODO: USE JUST X,Y FOR ENTIRE LOGIC?
+        
+        # Ball inside kicking area, kick it
+        if ballDist < (KICK_DIST_MIN[side] + KICK_DIST_RANGE[side]) and \
+                (KICK_BEARING_MIN[side]-KICK_BEARING_RANGE[side] < ballBearing < KICK_BEARING_MIN[side]+KICK_BEARING_RANGE[side]):
+            print "Kicking!"
+#            self.doKick()
+        else:
+            # Ball between legs, advance using straight+sideways
+            if (side == LEFT and KICK_BEARING_MIN[side]-KICK_BEARING_RANGE[side] > ballBearing) or \
+                (side == RIGHT and KICK_BEARING_MIN[side]+KICK_BEARING_RANGE[side] < ballBearing):
+                print "Ball between legs!"            
+            
+            # Ball bearing too large, turn towards ball
+            if abs(target_bearing) > KICK_TURN_ANGLE:
+                print "Bearing too large, Distance ignored -> turning towards ball!"
+#                self._actions.turn(target_bearing*3/4).onDone(self.doNextAction)
+            else:
+                if target_dist > KICK_SIDEWAYS_DISTANCE:
+                    # if away from ball, advance half-way without turning/side-stepping
+                    print "Bearing OK, Distance large -> advancing straight (half way)"
+#                    self._actions.changeLocationRelative(target_x*3/4, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
+                elif abs(target_bearing) > KICK_TURN_ANGLE/4:
+                    # if bearing too large, use side-stepping to advance
+                    print "Bearing a little large, Distance OK -> advancing sideways only"
+#                    self._actions.changeLocationRelativeSideways(0, target_y*3/4).onDone(self.doNextAction)
                 else:
                     # if near ball, use forward/side-stepping to advance
-                    print "all the way, including sideway walk"
-                    self._actions.changeLocationRelativeSideways(target_x, target_y).onDone(self.doNextAction)
-                
-            elif abs(self._world.ball.bearing) > bearingThreshold:
-                print "Turning towards ball!"
-                self._actions.turn(self._world.ball.bearing).onDone(self.doNextAction)
-                #self._actions.changeLocationRelative(0, 0, self._world.ball.bearing).onDone(self.doNextAction)
-        else:
-            print "Kicking!"
-            self.doKick()
-
-#        # if ball is far, advance (turn/forward/turn)
-#        if target_x > 50.0 or abs(target_y) > 50.0:
-#            self.gotoLocation(self.kp)
-#        else:
-#            # if ball within kick distance, kick it
-#            if target_x <= KICK_MINIMAL_DISTANCE_X and abs(target_y) <= KICK_MINIMAL_DISTANCE_Y: # target_x <= 1.0 and abs(target_y) <= 2.0
-#                self.doKick()
-#            # if ball is near us, advance (forward/side-stepping)
-#            elif target_x <= KICK_NEAR_BALL_DISTANCE_X and abs(target_y) <= KICK_NEAR_BALL_DISTANCE_Y:
-#                #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-#                self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-#                self._actions.changeLocationRelativeSideways(target_x, target_y)
-#            # if ball a bit far, advance (forward only)
-#            else: #if target_x <= 50.:
-#                self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-#                self._actions.changeLocationRelativeSideways(target_x, 0.)
+                    print "Bearing almost OK, Distance almost OK -> advance straight with sideways"
+#                    self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
             
+        # TODO: REMOVE!!!
+        self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
+
     def doKick(self):
         self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
         
@@ -201,26 +297,24 @@ class Kicker(Player):
             self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self._eventmanager.quit)
         
         # TEMP
-        self._actions.sitPoseAndRelax()
+        #self._actions.sitPoseAndRelax()
         self._eventmanager.quit()
-    
-    # TODO: MOVE TO WORLD? ACTIONS? BALL? Needs to take into account selected kick & kicking leg...
-    def convertBallPosToFinalKickPoint(self, dist, bearing):
-        kick_offset_mid_body = bearing < 0 and -KICK_OFFSET_MID_BODY or KICK_OFFSET_MID_BODY
 
-        cosBearing = cos(bearing)
-        sinBearing = sin(bearing)
-        # UGLY PATCH: the "/ 2" is a patch since ball perception near right/left optimal kicking point (on real Nao) do not seem symmetric.
-        # ----------- we better use something like a (robot specific?) camera offset to fix this
-        target_x = cosBearing * (dist - KICK_DIST_FROM_BALL) + kick_offset_mid_body * sinBearing / 2
-        target_y = sinBearing * (dist - KICK_DIST_FROM_BALL) / 2 - kick_offset_mid_body * cosBearing
-        
-        if target_x > dist:
-            print "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ do we have a problem here?"
-            print "dist: %3.3f bearing: %3.3f" % (dist, bearing)
-            print "target_x: %3.3f target_y: %3.3f" % (target_x, target_y) 
-        
-        return target_x, target_y
+
+#    def convertBallPosToFinalKickPoint(self, dist, bearing):
+#        kick_leg = bearing < 0 # 0 = LEFT, 1 = RIGHT
+#
+#        cosBearing = cos(bearing)
+#        sinBearing = sin(bearing)
+#        target_x = cosBearing * (dist - KICK_TARGET_X[kick_leg]) + KICK_TARGET_Y[kick_leg] * sinBearing
+#        target_y = sinBearing * (dist - KICK_TARGET_X[kick_leg]) - KICK_TARGET_Y[kick_leg] * cosBearing
+#        
+#        if target_x > dist:
+#            print "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ do we have a problem here?"
+#            print "dist: %3.3f bearing: %3.3f" % (dist, bearing)
+#            print "target_x: %3.3f target_y: %3.3f" % (target_x, target_y) 
+#        
+#        return target_x, target_y
 
 #    def onChangeLocationDone(self):
 #        print "Change Location Done!"
@@ -242,48 +336,6 @@ class Kicker(Player):
 #
 #        if target_x <= KICK_MINIMAL_DISTANCE_X and abs(target_y) <= KICK_MINIMAL_DISTANCE_Y:
 #            print "KICK POSSIBLE! *********************************************************"
-
-
-    ##################### Computational Methods #########################
-   
-    def normalizeBallX(self, ballX):
-        return (IMAGE_HALF_WIDTH - ballX) / IMAGE_HALF_WIDTH # between 1 (left) to -1 (right)
-
-    def normalizeBallY(self, ballY):
-        return (IMAGE_HALF_HEIGHT - ballY) / IMAGE_HALF_HEIGHT # between 1 (top) to -1 (bottom)
-
-
-    ### Calculate kicking-point, move functions to a utility class
-
-    def calculate_middle(self, left_object, right_object):
-        target_x = (right_object.dist * cos(right_object.bearing) + left_object.dist * cos(left_object.bearing)) / 2.0
-        target_y = (right_object.dist * sin(right_object.bearing) + left_object.dist * sin(left_object.bearing)) / 2.0
-        return (target_x, target_y)
-    
-    def calculate_relative_pos(self, (waypoint_x, waypoint_y), (target_x, target_y), offset):
-        """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point 
-        in the middle of the target (e.g., goal) and the waypoint in the outward direction.
-
-        The coordinate system is the standard: the x axis is to the front,
-        the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
-        
-        computation:
-         target - target center (e.g., middle of goal)
-         waypoint - waypoint (e.g., ball) - should be of type Locatable (support dist/bearing
-         normal - normal pointing from target (goal center) to waypoint (ball)
-         result - return result (x, y, bearing)
-        """
-        
-        normal_x, normal_y = waypoint_x - target_x, waypoint_y - target_y # normal is a vector pointing from center to ball
-        normal_norm = sqrt(normal_x**2 + normal_y**2)
-        normal_x, normal_y = normal_x / normal_norm, normal_y / normal_norm
-        result_x, result_y = waypoint_x + offset * normal_x, waypoint_y + offset * normal_y
-        #result_norm = (result_x**2 + result_y**2)**0.5
-        result_bearing = atan2(-normal_y, -normal_x)
-        #print "rel_pos: waypoint(%3.3f, %3.3f), target(%3.3f, %3.3f), n(%3.3f, %3.3f), result(%3.3f, %3.3f, %3.3f)" % (
-        #    waypoint_x, waypoint_y, target_x, target_y, normal_x, normal_y, result_x, result_y, result_bearing)
-        return result_x, result_y, result_bearing
-
 
 if __name__ == '__main__':
     import burst
