@@ -1,2 +1,5 @@
 #!/bin/bash
-vim $AL_DIR/modules/lib/autoload.ini
+if [ "x$EDITOR" == "x" ]; then
+	EDITOR=vim
+fi
+$EDITOR $AL_DIR/modules/lib/autoload.ini
