@@ -9,6 +9,16 @@ import burst.behavior_params as params
 from consts import LEFT
 
 #===============================================================================
+#    Logic for Kicking behavior:
+# 
+# 1. Scan for goal & ball
+# 2. Calculate kicking-point (correct angle towards opponent goal), go as quickly as possible towards it (turn-walk-turn)
+# 3. When near ball, go only straight and side-ways (align against leg closer to ball, and use relevant kick)
+# 4. When close enough - kick!
+# 
+#===============================================================================
+
+#===============================================================================
 # TODO's:
 # 
 # 1. replace cachedBall... with values from world, since world does the same 
@@ -16,6 +26,19 @@ from consts import LEFT
 # 2. add to world: keep last full ball position when ball within a certain frame 
 #    (away from outer-bound by threshold)
 # 3. add multiple event registration support (not here... in eventmanager...)
+#
+# Add "ball moved" detection, robot moves incorrectly detection
+# Add "k-p relevant" flag (to be made FALSE on start, when ball moves). Might not be necessary once localization kicks in
+# Take bearing into account when kicking
+# When finally approaching ball, use side-stepping instead of turning (only for a certain degree difference)
+# When calculating k-p, take into account the kicking leg (use the one closer to opponent goal)
+# 
+# Add ball position cache (same as k-p local cache)
+# Handle negative target location (walk backwards instead of really big turns...)
+# What to do when near ball and k-p wasn't calculated?
+# Handle case where ball isn't seen after front scan (add full scan inc. turning around) - hopefully will be overridden with ball from comm.
+# Obstacle avoidance
+#
 #===============================================================================
 
 class BallKicker(BurstDeferred):
