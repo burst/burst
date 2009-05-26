@@ -1,3 +1,10 @@
+"""
+This file must include any constant that is not personal to any robot, and
+doesn't change during the life of the program. (i.e., constant).
+
+For instance, don't put any moves in here, or any parameters that are personal.
+"""
+
 import math
 
 # Proxy names
@@ -67,6 +74,11 @@ BALL_REAL_DIAMETER = 8.7 # cm
 ROBOT_DIAMETER = 58.0    # this is from Appendix A of Getting Started - also, doesn't hands raised into account
 GOAL_POST_HEIGHT = 80.0
 GOAL_POST_DIAMETER = 80.0 # TODO: name? this isn't the radius*2 of the base, it is the diameter in the sense of longest line across an image of the post.
+
+LEFT = 0
+RIGHT = 1
+DOWN = 2
+UP = 3
 
 # Robot constants
 MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
