@@ -149,7 +149,7 @@ class BallKicker(BurstDeferred):
         if (params.KICK_X_MIN[side] < ball_x < params.KICK_X_MAX[side]) and (abs(params.KICK_Y_MIN[side]) < abs(ball_y) < abs(params.KICK_Y_MAX[side])):
             print "Kicking!"
             self.doKick(side)
-#            return
+            return
         else:
             # Ball between legs, advance using straight+sideways
             if abs(ball_y) < abs(params.KICK_Y_MIN[side]):
