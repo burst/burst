@@ -292,10 +292,11 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, playerclass):
+    def __init__(self, playerclass, control_reactor=True):
     
         super(TwistedMainLoop, self).__init__(playerclass = playerclass)
         self._do_cleanup = True
+        self._control_reactor = control_reactor
 
         from twisted.internet import reactor
         orig_sigInt = reactor.sigInt
@@ -326,10 +327,18 @@ class TwistedMainLoop(BasicMainLoop):
         pass # we override run too, work is done there.
 
     def run(self):
+        if not self._control_reactor:
+            print "TwistedMainLoop: not in control of reactor"
+            return
         print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from twisted.internet import reactor
         reactor.run() #installSignalHandlers=0)
         print "TwistedMainLoop: event loop done"
+
+    def shutdown(self):
+        """ helper method - this doesn't get called normally, only when debugging,
+        but it acts as a shortcut for doing self._eventmanager.quit() """
+        self._eventmanager.quit()
 
     def _startShutdown(self, normal_quit, ctrl_c_pressed):
         # Stop our task loop
@@ -355,6 +364,7 @@ class TwistedMainLoop(BasicMainLoop):
             DeferredList(pending).addCallback(self._completeShutdown)
 
     def _completeShutdown(self, result=None):
+        if not self._control_reactor: return
         from twisted.internet import reactor
         reactor.stop()
 

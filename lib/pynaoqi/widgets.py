@@ -269,9 +269,10 @@ class GtkTimeTicker(TaskBaseWindow):
 
     def _update(self, result):
         if len(result) == 0:
-            print "GtkTextLogger: empty length result, nothing to do\r\n"
+            print "GtkTimeTicker: empty length result, nothing to do\r\n"
             return
         if len(result) > len(self._lines):
+            print "updating GtkTimeTicker to %s lines" % len(result)
             for i in xrange(len(result) - len(self._lines)):
                 self._lines.append(self._axis.plot([],[])[0])
             if len(self._values) != len(result):

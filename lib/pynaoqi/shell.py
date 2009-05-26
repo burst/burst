@@ -6,6 +6,7 @@ a python only implementation.
 """
 
 import sys, os, time
+import glob
 import optparse
 import urllib2
 from math import log10
@@ -147,6 +148,48 @@ def onevision(d=None):
         d = con.ALMemory.getListData(vision_vars)
     return d.addCallback(format_vision_vars)
 
+def get_list_of_players():
+    import players
+    return [x for x in [os.path.splitext(os.path.basename(x))[0]
+        for x in glob.glob(os.path.dirname(players.__file__) + '/*.py')] if x[0] != '_']
+
+def startplayer(name, clazz=None):
+    """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
+    can use twisted to run previously naoqi only code, directly from pynaoqi shell.
+    """
+    import burst.player
+    try:
+        mod = __import__('players.%s' % name)
+        playermod = getattr(mod, name)
+    except:
+        print "no such player"
+        print "try one of:"
+        print ', '.join(get_list_of_players())
+        return
+    candidate_classes = [v for v in playermod.__dict__.values()
+                            if isinstance(v, type) and issubclass(v, burst.player.Player)
+                            and not v is burst.player.Player]
+    if len(candidate_classes) == 0:
+        print "%s contains no Player classes" % playermod.__name__
+        return None
+    if len(candidate_classes) > 1:
+        print "more then one Player in %s" % playermod.__name__
+        if clazz is None:
+            ctor = candidate_classes[0]
+            print "taking the first out of %s" % candidate_classes
+        else:
+            if hasattr(playermod, clazz):
+                ctor = getattr(playermod, clazz)
+            else:
+                print "no such class in %s" % playermod.__name__
+                return None
+    else:
+        ctor = candidate_classes[0]
+    print "Initializing player %s" % ctor.__class__.__name__
+    # Finally, start the update task.
+    import burst.eventmanager as eventmanager
+    return eventmanager.TwistedMainLoop(ctor, control_reactor=False)
+
 #############################################################################
 
 EXAMPLES = """# Show current identified ball location
@@ -226,6 +269,7 @@ def make_shell_namespace(use_pylab):
         format_vision_vars = format_vision_vars,
         onevision = onevision,
         CanvasTicker = CanvasTicker,
+        startplayer = startplayer,
         # burst
         moves = moves,
         field = field,
