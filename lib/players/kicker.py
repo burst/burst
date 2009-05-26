@@ -49,7 +49,7 @@ else:
     KICK_NEAR_BALL_DISTANCE_X = 10.0
     KICK_NEAR_BALL_DISTANCE_Y = 10.0
     
-class kicker(Player):
+class Kicker(Player):
     
     def onStart(self):
         self.kp = None
@@ -288,4 +288,4 @@ class kicker(Player):
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    MainLoop(kicker).run()
+    MainLoop(Kicker).run()
