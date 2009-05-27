@@ -1,0 +1,15 @@
+import replot
+from numpy import *
+r1=250.28602485333849
+r2=337.46430317304066
+a1=-0.28841638460346003
+d = 80.0
+x1, y1 = r1*cos(a1), r1*sin(a1)
+x2, y2 = x1, y1 - d
+p = replot.Axes()
+p.plot([0.0, x1, x2], [0.0, y1, y2], 'x')
+p.set_aspect('equal')
+p.set_xlim([0,300])
+p.set_ylim([-300,0])
+p
+
