@@ -1,15 +1,14 @@
 from math import cos, sin
-
-from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
-        polar2cart, cart2polar)
-from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
-    EVENT_CHANGE_LOCATION_DONE)
+from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos, polar2cart, cart2polar)
 
 # local imports
 import burst
+from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
-import burst.behavior_params as params
-from burst.consts import LEFT
+from burst.behavior_params import (KICK_OFFSET_FROM_BALL, KICK_X_OPT, KICK_Y_OPT, 
+                                   KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
+                                   BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, BALL_SIDE, BALL_DIAGONAL)
+from burst.consts import LEFT, RIGHT
 
 #===============================================================================
 #    Logic for Kicking behavior:
@@ -115,7 +114,7 @@ class BallKicker(BurstDeferred):
             # compute kicking-point
             #goal = self.calculate_middle(self._team.left_post, self._team.right_post)
             ball = (self.cachedBallDist * cos(self.cachedBallBearing), self.cachedBallDist * sin(self.cachedBallBearing))
-            self.kp = calculate_relative_pos(ball, self.goal, params.KICK_OFFSET_FROM_BALL)
+            self.kp = calculate_relative_pos(ball, self.goal, KICK_OFFSET_FROM_BALL)
             print "self.kp: ", self.kp
         elif self.cachedBallDist:
             ################## TODO: remove following, temporary for testing ########################################################################
@@ -160,35 +159,50 @@ class BallKicker(BurstDeferred):
         else: print "RIGHT"
 
         #(target_x, target_y) = (ball_x - (KICK_X_MIN[side] + KICK_X_MAX[side])/2, ball_y + (KICK_Y_MIN[side] + KICK_Y_MAX[side])/2)
-        (target_x, target_y) = (ball_x - params.KICK_X_OPT[side], ball_y - params.KICK_Y_OPT[side])
+        (target_x, target_y) = (ball_x - KICK_X_OPT[side], ball_y - KICK_Y_OPT[side])
         print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
 
         (target_dist, target_bearing) = cart2polar(target_x, target_y)
         print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
-
-        print "KICK_X_MIN[side]: %3.3f" % params.KICK_X_MIN[side]
-        print "KICK_X_MAX[side]: %3.3f" % params.KICK_X_MAX[side]
-        print "KICK_Y_MIN[side]: %3.3f" % params.KICK_Y_MIN[side]
-        print "KICK_Y_MAX[side]: %3.3f" % params.KICK_Y_MAX[side]
+        
+        # ball location, as defined at behavior params (front, side, etc...)
+        ball_location = self.calcBallLocation(ball_x, ball_y, side)
+        
+        DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE', 'BALL_DIAGONAL')
+        print "AREA: %s" % DEBUG_AREA[ball_location]
         
         # Ball inside kicking area, kick it
-        if (params.KICK_X_MIN[side] < ball_x < params.KICK_X_MAX[side]) and (abs(params.KICK_Y_MIN[side]) < abs(ball_y) < abs(params.KICK_Y_MAX[side])):
+        if ball_location == BALL_IN_KICKING_AREA:
             print "Kicking!"
             self.doKick(side)
-            return
         else:
-            # Ball between legs, advance using straight+sideways
-            if abs(ball_y) < abs(params.KICK_Y_MIN[side]):
-                print "Ball between legs!"
-            pass
+            print "advancing!"
+            #self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
+            
+            # TODO: TEMP!!! REMOVE!!!
+            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+            
+#        elif ball_location == BALL_BETWEEN_LEGS:
+#            print "Bearing almost OK, Distance small -> advancing straight (with side-stepping)"
+#            self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4, 0).onDone(self.doNextAction)
+#        elif ball_location == BALL_FRONT:
+#            print "Bearing almost OK, Distance large -> advancing straight (without turning/side-stepping)"
+#            self._actions.changeLocationRelative(target_x*3/4, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
+#        elif ball_location == BALL_SIDE:
+#            print "Bearing too large, Distance ignored -> turning towards ball"
+#            self._actions.turn(target_bearing*3/4).onDone(self.doNextAction)
+#        else: #if ball_location == BALL_DIAGONAL:
+#            print "Bearing almost OK, Distance small -> advancing straight (with side-stepping)"
+#            self._actions.changeLocationRelative(target_x*3/4, target_y*3/4, 0).onDone(self.doNextAction)
+            
         
-        # TODO: REMOVE!!!
-        self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
-        return
+#        # TODO: REMOVE!!!
+#        self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
+#        return
 
 #        # target x,y are computed as the difference between the ball bearing/dist and the optimal kick bearing/dist
-#        target_x = ballDist * cos(ballBearing) - params.KICK_DIST_MIN[side] * cos(params.KICK_BEARING_MIN[side])
-#        target_y = ballDist * sin(ballBearing) - params.KICK_DIST_MIN[side] * sin(params.KICK_BEARING_MIN[side])
+#        target_x = ballDist * cos(ballBearing) - KICK_DIST_MIN[side] * cos(KICK_BEARING_MIN[side])
+#        target_y = ballDist * sin(ballBearing) - KICK_DIST_MIN[side] * sin(KICK_BEARING_MIN[side])
 #        print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
 #        
 #        (target_dist, target_bearing) = cart2polar(target_x, target_y)
@@ -212,7 +226,7 @@ class BallKicker(BurstDeferred):
 #            else:
 #                if target_dist > KICK_SIDEWAYS_DISTANCE:
 #                    # if away from ball, advance half-way without turning/side-stepping
-#                    print "Bearing OK, Distance large -> advancing straight (half way)"
+#                    print "Bearing OK, Distance large -> advancing straight (not all the way)"
 ##                    self._actions.changeLocationRelative(target_x*3/4, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
 #                elif abs(target_bearing) > KICK_TURN_ANGLE/4:
 #                    # if bearing too large, use side-stepping to advance
@@ -222,15 +236,26 @@ class BallKicker(BurstDeferred):
 #                    # if near ball, use forward/side-stepping to advance
 #                    print "Bearing almost OK, Distance almost OK -> advance straight with sideways"
 ##                    self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
-            
-        # TODO: REMOVE!!!
-        self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction) # removed target_x/2 for now
 
+    def calcBallLocation(self, ball_x, ball_y, side):
+        if (KICK_X_MIN[side] < ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])):
+            return BALL_IN_KICKING_AREA
+        elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT]:
+            if ball_x <= KICK_X_MAX[side]:
+                return BALL_BETWEEN_LEGS
+            else: #ball_x > KICK_X_MAX[side]
+                return BALL_FRONT
+        else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
+            if ball_x <= KICK_X_MAX[side]:
+                return BALL_SIDE
+            else: #ball_x > KICK_X_MAX[side]
+                return BALL_DIAGONAL
+            
     def doKick(self, side):
         self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
         
         self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.onKickDone)
-        
+
 #        if self._world.ball.bearing > 0.0:
 #            # Kick with left
 #            print "Left kick!"
