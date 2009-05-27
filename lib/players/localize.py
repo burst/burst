@@ -63,7 +63,10 @@ def eventhandler(event):
 class Localize(Player):
     
     def onError(self, result):
-        print self._all_data_in.result.getTraceback()
+        if self._all_data_in.result is None:
+            print "TODO - deferred threw exception, but the error object wasn't stored in result"
+        else:
+            print self._all_data_in.result.getTraceback()
 
     def onStart(self):
         #    print "setting shared memory to verbose mode"
@@ -88,7 +91,8 @@ class Localize(Player):
         
     def registerDecoratedEventHandlers(self):
         # register to events - see singletime
-        for f in [f for f in self.__dict__.values() if hasattr(f, 'event')]:
+        for fname in [fname for fname in dir(self) if hasattr(getattr(self, fname), 'event')]:
+            f = getattr(self, fname)
             self._eventmanager.register(f.event, f)
 
     @eventhandler(EVENT_YGRP_POSITION_CHANGED)

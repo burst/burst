@@ -143,6 +143,9 @@ class BasicMainLoop(object):
             raise SystemExit('BURST Event Loop constructed twice')
         self.__running_instance = self
 
+        # flags for external use
+        self.finished = False       # True when quit has been called
+
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
         created at will.
@@ -158,6 +161,7 @@ class BasicMainLoop(object):
             actions = self._actions)
 
     def cleanup(self):
+        self.finished = True # set here so an exception later doesn't change it
         self._world.cleanup()
 
     def setCtrlCCallback(self, ctrl_c_cb):
@@ -299,7 +303,7 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, playerclass, control_reactor=True):
+    def __init__(self, playerclass, control_reactor=True, startRightNow=True):
     
         super(TwistedMainLoop, self).__init__(playerclass = playerclass)
         self._do_cleanup = True
@@ -321,7 +325,13 @@ class TwistedMainLoop(BasicMainLoop):
 
         import pynaoqi
         self.con = pynaoqi.getDefaultConnection()
+        self.started = False        # True when setStartCallback has been called
+        if startRightNow:
+            self.start()
+
+    def start(self):
         self.con.modulesDeferred.addCallback(self._twistedStart)
+        self.started = True
 
     def _twistedStart(self, _):
         print "TwistedMainLoop: _twistedStart"
