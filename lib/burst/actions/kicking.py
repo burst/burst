@@ -98,7 +98,7 @@ class BallKicker(BurstDeferred):
         
         # if both goal and ball seen during scan
         # TODO: NEED TO REPLACE WITH AND, changed temporarily for just going to ball
-        if self.goal or self.cachedBallDist:
+        if self.cachedBallDist: # and self.goal    
             self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation, 1.0).onDone(self.calcKP)
         else:
             # otherwise, do a more thorough scan
@@ -175,6 +175,10 @@ class BallKicker(BurstDeferred):
         if ball_location == BALL_IN_KICKING_AREA:
             print "Kicking!"
             self.doKick(side)
+            
+            # TODO: TEMP!!! REMOVE!!!
+            #self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+            
         else:
             print "advancing!"
             #self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
