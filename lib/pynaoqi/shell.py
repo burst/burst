@@ -228,6 +228,7 @@ plottime(ball)
 
 # Vision positions on a canvas
 vision = refilter('^/.*[cC]enter', names)
+yellow=refilter('^/.*YG.P.*Center',names)
 canvaspairs(vision)
 
 # Battery in a plot
@@ -244,6 +245,11 @@ fieldshow()
 # Kinematics (import takes some time, hence not done by default)
 import burst.kinematics as kin
 kin.pose.update(con)
+
+# Running a player (BROKEN)
+players.localize.start()
+players.localize.stop()
+players.localize.init() # for inspecting, doesn't start, just constructs
 
 """
 def examples():
