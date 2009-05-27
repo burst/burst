@@ -6,12 +6,8 @@ from datetime import datetime
 import os
 import sys
 
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
+# DONT IMPORT BURST BEFORE import player_init
+import player_init
 
 from burst.player import Player
 from burst.events import *
@@ -25,8 +21,27 @@ def pr(s):
 def debugme():
     import pdb; pdb.set_trace()
 
-class Rectangle(Player):
-    
+class WalkRecorder(Player):
+    """ Use recorder module to record a walk
+    """
+
+    WALK_DISTANCE   = 40.0
+    WALK_PARAMETERS = moves.SLOW_WALK
+
+    def onStart(self):
+
+        # hack to avoid moving arms with raul's broken RShoulderPitch joint
+        if self._world.hostname == 'raul':
+            print "on raul - arms will not be moved during walk"
+            self._world._motion.setWalkArmsEnable(False)
+
+        now = datetime.now()
+        self.startRecord()
+        self._actions.initPoseAndStiffness()
+        self._actions.changeLocationRelative(
+                    self.WALK_DISTANCE, 0.0, 0.0, walk=self.WALK_PARAMETERS).onDone(
+                      self.stopRecord)
+
     def _recordWithWorld(self):
         self._world.startRecordAll('walk_%04d%02d%02d_%02d%02d%02d' % (
             now.year, now.month, now.day, now.hour, now.minute, now.second))
@@ -46,20 +61,6 @@ class Rectangle(Player):
     startRecord = _recordWithRecorder
     stopRecord_helper = _stopRecordWithRecorder
 
-    def onStart(self):
-
-        # hack to avoid moving arms with raul's broken RShoulderPitch joint
-        if self._world.hostname == 'raul':
-            print "on raul - arms will not be moved during walk"
-            self._world._motion.setWalkArmsEnable(False)
-
-        now = datetime.now()
-        self.startRecord()
-        self._actions.initPoseAndStiffness()
-        self._actions.changeLocationRelative(
-                    40.0, 0.0, 0.0, walk=moves.SLOW_WALK).onDone(
-                      self.stopRecord)
-
     def stopRecord(self):
         print "done - stopping recording"
         self.stopRecord_helper()
@@ -71,7 +72,6 @@ class Rectangle(Player):
 
 if __name__ == '__main__':
     import burst
-    from burst.eventmanager import EventManagerLoop
-    burst.init()
-    EventManagerLoop(Rectangle).run()
+    from burst.eventmanager import MainLoop
+    MainLoop(WalkRecorder).run()
 
