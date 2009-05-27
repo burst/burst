@@ -398,9 +398,15 @@ class Actions(object):
 
     def executeLeapLeft(self):
         return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT)
+    
+    def executeLeapLeftSafe(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE)
 
     def executeLeapRight(self):
         return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT)
+    
+    def executeLeapRightSafe(self):
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE)
 
     def executeCircleStrafer(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)

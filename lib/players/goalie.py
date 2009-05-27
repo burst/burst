@@ -36,13 +36,13 @@ class goalie(Player):
         self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapRight().onDone(self.watingOnRight)
+            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapLeft().onDone(self.watingOnLeft)   
+            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft)   
         else:
             self.watchIncomingBall()
 
-    def watingOnRight(self):
+    def waitingOnRight(self):
         self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpRight)
 
     def watingOnLeft(self):
