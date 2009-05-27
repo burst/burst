@@ -2,11 +2,14 @@ from math import cos, sin
 
 from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
         polar2cart, cart2polar)
-from events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
+from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_CHANGE_LOCATION_DONE)
-import actions
+
+# local imports
+import burst
+import burst.actions
 import burst.behavior_params as params
-from consts import LEFT
+from burst.consts import LEFT
 
 #===============================================================================
 #    Logic for Kicking behavior:
@@ -58,7 +61,7 @@ class BallKicker(BurstDeferred):
         self.cachedBallElevation = None
         self.goal = None
         self.doBallTracking = False
-        self.searchLevel = actions.LOOKAROUND_QUICK
+        self.searchLevel = burst.actions.LOOKAROUND_QUICK
         
         self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
         
@@ -101,7 +104,7 @@ class BallKicker(BurstDeferred):
         else:
             # otherwise, do a more thorough scan
             print "goal and ball NOT seen, searching again..."
-            self.searchLevel = actions.LOOKAROUND_FRONT
+            self.searchLevel = burst.actions.LOOKAROUND_FRONT
             self.searchBallAndGoal(self.searchLevel)
     
     def calcKP(self):
@@ -135,7 +138,7 @@ class BallKicker(BurstDeferred):
         if self.kp is None:
             print "kicking-point unknown, searching for ball & opponent goal"
             # do a quick search for kicking point
-            self.searchLevel = actions.LOOKAROUND_QUICK
+            self.searchLevel = burst.actions.LOOKAROUND_QUICK
             self.searchBallAndGoal(self.searchLevel)
             return
 
@@ -226,16 +229,16 @@ class BallKicker(BurstDeferred):
     def doKick(self, side):
         self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
         
-        self._actions.kick(actions.KICK_TYPE_STRAIGHT, side).onDone(self.onKickDone)
+        self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.onKickDone)
         
 #        if self._world.ball.bearing > 0.0:
 #            # Kick with left
 #            print "Left kick!"
-#            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_LEFT).onDone(self.onKickDone)
+#            self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT_WITH_LEFT).onDone(self.onKickDone)
 #        else:
 #            # Kick with right
 #            print "Right kick!"
-#            self._actions.kick(actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self.onKickDone)
+#            self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT_WITH_RIGHT).onDone(self.onKickDone)
 
 
 
