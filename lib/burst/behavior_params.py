@@ -1,4 +1,5 @@
 from burst.consts import LEFT, RIGHT, DEG_TO_RAD
+from burst.world import World
 
 #===============================================================================
 # This file contains the behavior parameters. The default values are for the
