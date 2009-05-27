@@ -133,7 +133,7 @@ class Ball(Movable):
     def __init__(self, world):
         super(Ball, self).__init__(world,
             real_length=BALL_REAL_DIAMETER)
-        self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "bearing centerX centerY confidence dist elevation focDist height width".split()]
+        self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "BearingDeg CenterX CenterY Confidence Distance ElevationDeg FocDist Height Width".split()]
         self._world.addMemoryVars(self._ball_vars)
 
         self.centerX = 0.0

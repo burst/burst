@@ -67,7 +67,7 @@ class World(object):
 
     # Some variable we are sure to export if Man module (man) is
     # actually running on the robot / webots.
-    MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES = ['/BURST/Vision/Ball/bearing']
+    MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES = ['/BURST/Vision/Ball/BearingDeg']
 
     # TODO - move this to __init__?
     connected_to_nao = burst.connecting_to_nao()
@@ -243,15 +243,19 @@ class World(object):
         logged as a module, we look for some of the variables we export.
         """
         # note - blocking
+        print "Checking for Man module by getting a vision variable: %s" % self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES
         self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults)
 
     def onCheckManModuleResults(self, result):
+        print "onCheckManModuleResults: %r" % (result,)
         if result[0] == 'None':
             print "WARNING " + "*"*60
             print "WARNING"
             print "WARNING >>>>>>> Man Isn't Running - naoload && naoqi restart <<<<<<<"
             print "WARNING"
             print "WARNING " + "*"*60
+        else:
+            print "Man is there, vision should be good. Famous last words."
 
     def getDefaultVars(self):
         """ return list of variables we want anyway, regardless of what
