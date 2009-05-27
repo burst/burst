@@ -1046,6 +1046,9 @@ def getDefaultOptions():
         del sys.argv[i]
     on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
     options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
+    import burst_target
+    burst_target.ip = options.ip
+    burst_target.port = options.port
     return options
 
 default_connection = None

@@ -81,6 +81,16 @@ port = 9559
 # now override them (possibly)
 parse_command_line_arguments()
 
+# Now a twist - at the end the ip and port are taken from
+# burst_target.ip, burst_target.port
+# if they are not None, we take them as is. This allows for
+# working with pynaoqi nicely.
+
+import burst_target
+if burst_target.ip is not None:
+    ip = burst_target.ip
+    port = burst_target.port
+
 # Two ways to get robot name: If port is 9559 and ip isn't
 # '127.0.0.1' (LOCALHOST_IP), then we are connecting remotely,
 # and we get the robotname from the ip address.
@@ -100,6 +110,8 @@ else:
         '192.168.7.109'	: 'raul',
         '192.168.7.110'	: 'maldini',
     }.get(ip, ip)
+
+burst_target.robotname = robotname
 
 print "_"*80
 print "You are running with robotname = %s" % robotname
