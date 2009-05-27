@@ -27,12 +27,18 @@ from burst.world import World
 # First value is for LEFT leg, second for RIGHT leg
 if World.connected_to_nao:
     # Parameters for Gerrard, latest nao-man from 27.05
-    KICK_X_MIN = (32.5, 32.5)
-    KICK_X_MAX = (35.5, 35.5)
-    KICK_Y_MIN = (3.0, 1.8)
-    KICK_Y_MAX = (1.8, 0.5)
+#    KICK_X_MIN = (32.5, 32.5)
+#    KICK_X_MAX = (35.5, 35.5)
+#    KICK_Y_MIN = (3.0, 1.8)
+#    KICK_Y_MAX = (1.8, 0.5)
+    
+    # Parameters for Gerrard, latest nao-man with motion & localization enabled
+    KICK_X_MIN = (14,14)
+    KICK_X_MAX = (18,18)
+    KICK_Y_MIN = (4.0,-2.5)
+    KICK_Y_MAX = (6.0,-4.5)
 else:
-    # TODO: Check! these values are with nao-man localization turned on, the ones after that are with nao-man localization off (Alon) 
+    # PREVIOUS VALUES:
 #    KICK_X_MIN = (28.0,28.0)
 #    KICK_X_MAX = (32.5,32.5)
 #    KICK_Y_MIN = (6.0,-6.0)

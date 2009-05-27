@@ -186,7 +186,7 @@ class BallKicker(BurstDeferred):
             
         else:
             print "advancing!"
-            #self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
+            #self._actions.changeLocationRelative(target_x*3/4).onDone(self.doNextAction)
             
             # TODO: TEMP!!! REMOVE!!!
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
