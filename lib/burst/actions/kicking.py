@@ -166,10 +166,15 @@ class BallKicker(BurstDeferred):
         print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
         
         # ball location, as defined at behavior params (front, side, etc...)
-        ball_location = self.calcBallLocation(ball_x, ball_y, side)
+        ball_location = self.calcBallArea(ball_x, ball_y, side)
         
         DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE', 'BALL_DIAGONAL')
         print "AREA: %s" % DEBUG_AREA[ball_location]
+        
+        
+        # REMOVE!!!!!!!!!!!!!!!!!!!
+        print "KICK_X_MIN: %3.3f" % KICK_X_MIN[0]
+        
         
         # Ball inside kicking area, kick it
         if ball_location == BALL_IN_KICKING_AREA:
@@ -241,8 +246,8 @@ class BallKicker(BurstDeferred):
 #                    print "Bearing almost OK, Distance almost OK -> advance straight with sideways"
 ##                    self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
 
-    def calcBallLocation(self, ball_x, ball_y, side):
-        if (KICK_X_MIN[side] < ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])):
+    def calcBallArea(self, ball_x, ball_y, side):
+        if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
             return BALL_IN_KICKING_AREA
         elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT]:
             if ball_x <= KICK_X_MAX[side]:
