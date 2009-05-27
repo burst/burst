@@ -50,22 +50,43 @@ class MyDeferred(object):
 
         both cases : return self
         """
-        self._callbacks.append(f)
         if self.called: # call immediately
             self.result = f(self.result) # saved for filter effect
+        else:
+            self._callbacks.append((f,None))
         return self
+
+    def addErrback(self, f):
+        if self.called:
+            return
+        else:
+            self._callbacks.append((None, f))
 
     def callback(self, result):
         self.called = True
         self.result = result
-        for cb in self._callbacks:
-            try:
-                self.result = cb(self.result)
-            except Exception, e:
-                # This is where an errback would have been triggered in
-                # the real t.i.d.Deferred
-                print "Exception on deferred: %s" % str(e)
-                import pdb; pdb.set_trace()
+        last_success = True
+        handled = False
+        for cb, eb in self._callbacks:
+            if last_success:
+                try:
+                    self.result = cb(self.result)
+                except Exception, e:
+                    print "deferred problem %s" % str(e)
+                    last_success = False
+                    handled = False
+            else:
+                try:
+                    self.result = eb(e)
+                except Exception, e:
+                    pass
+                else:
+                    handled = True
+        if not last_success and not handled:
+            # My fallback for when an errback hasn't been called,
+            # but an exception has been raised.
+            print "Unhandled Exception on deferred: %s" % str(e)
+            import pdb; pdb.set_trace()
 
 def succeed(result):
     d = Deferred()
