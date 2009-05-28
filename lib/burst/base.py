@@ -31,15 +31,16 @@ def fix_sys_path():
     al_dir = os.environ.get('AL_DIR', None)
     if al_dir != None:
         if not os.path.exists(al_dir):
-            print "AL_DIR set to nonexistant path!\nAL_DIR = %s\nQuitting." % al_dir
-            raise SystemExit
-        base = os.path.join(al_dir, 'extern', 'python')
-        dirpath, dirnames, filenames = os.walk(base).next()
-        for dirpath in dirnames:
-            if os.path.split(dirpath)[-1] != 'proxies':
-                second = os.path.join(base, dirpath)
-                break
-        predefined_sys_paths.insert(0, (base, os.path.join(base, 'aldebaran'), second))
+            print "AL_DIR set to nonexistant path!\nAL_DIR = %s." % al_dir
+        else:
+            base = os.path.join(al_dir, 'extern', 'python')
+            dirpath, dirnames, filenames = os.walk(base).next()
+            for dirpath in dirnames:
+                if os.path.split(dirpath)[-1] != 'proxies':
+                    second = os.path.join(base, dirpath)
+                    break
+            predefined_sys_paths.insert(0,
+                (base, os.path.join(base, 'aldebaran'), second))
     for paths in predefined_sys_paths:
         if all([os.path.exists(path) for path in paths]):
             sys.path.extend(paths)

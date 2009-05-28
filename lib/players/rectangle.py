@@ -38,7 +38,7 @@ class Rectangle(Player):
 
         side = 40
         clr = lambda x, y, t: self._actions.changeLocationRelative(
-                    x, y, t, walk=moves.FASTEST_WALK, steps_before_full_stop=2)
+                    x, y, t, walk=moves.STRAIGHT_WALK, steps_before_full_stop=2)
 
         self._actions.initPoseAndStiffness()
         
