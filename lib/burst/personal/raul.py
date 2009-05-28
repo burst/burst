@@ -31,21 +31,27 @@ import burst
 
 def raulSetBodyStiffness(realproxy, orig_setbodystiffness, num):
     # set everything except the faulty arm
-    orig_setbodystiffness(num)
+    d = orig_setbodystiffness(num)
     realproxy.setJointStiffness('LShoulderRoll', 0.0)
+    return d
 
 orig_getMotionProxy = burst.getMotionProxy
 
-def getRaulMotionProxy():
+def getRaulMotionProxy(deferred=True):
 
     class RaulMotionProxy(object):
 
-        def __init__(self):
-            self._p = orig_getMotionProxy()
+        def __init__(self, deferred):
+            self._p = orig_getMotionProxy(deferred)
             self._orig_setbodystiffness = self._p.setBodyStiffness
 
         def setBodyStiffness(self, num):
-            raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
+            return raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
+        
+        def __getattr__(self, k):
+            return getattr(self._p, k)
+    
+    return RaulMotionProxy(deferred)
 
 burst.getMotionProxy = getRaulMotionProxy
 
