@@ -33,15 +33,24 @@ def test():
 # must be the first import - you can only import naoqi after this
 from base import *
 from options import *
+import burst_target as target
+
+# Finally we load the networking/ipc library to connect to naoqi which does
+# actually talk to the hardware. We have two implementations and two development
+# hosts, namely 64 bit and 32bit, so this gets a little complex.
 
 from burst_util import is64
+import sys
 
-if is64() or options.use_pynaoqi:
+using_pynaoqi = False
+
+if 'pynaoqi' in sys.modules or is64() or options.use_pynaoqi:
     if is64():
         print "64 bit architecture - LESS TESTED"
     else:
         print "32 bit + pynaoqi - LESS TESTED"
     from naoqi_pynaoqi import *
+    using_pynaoqi = True
 
     def init(*args, **kw):
         pass
@@ -60,6 +69,27 @@ else:
 
     def init(**kw):
         naoqi_extended.init(**kw)
+
+# Personalization happens here, after all of the burst namespace is
+# setup, but before burst has finished __init__.py, so user couldn't
+# have used it yet.
+#
+# That means anyone who imports burst gets a personalized version.
+
+print "Loading Personalization for %s.." % target.robotname,
+personal_filename = 'burst.personal.%s' % target.robotname
+try:
+    __import__(personal_filename)
+except ImportError, e:
+    print "\nERROR: Personalization missing: %s" % e
+    raise SystemExit
+except Exception, e:
+    print "\nERROR: Problem with file %s: %s" % (personal_filename, e)
+    raise SystemExit
+
+print "Done"
+
+
 
 if __name__ == '__main__':
     test()

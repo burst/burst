@@ -265,6 +265,9 @@ def cached(filename):
 
 # Some Math
 
+def clip(minim, maxim, val):
+    return min(maxim, max(minim, val))
+
 def dh_matrix(a, alpha, d, theta):
     """ Denavit Hartenberg Parameters
     a - link length

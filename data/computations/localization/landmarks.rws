@@ -2,14 +2,20 @@ import replot
 from numpy import *
 r1=250.28602485333849
 r2=337.46430317304066
+r1=455.06549973334273
+r2=258.91657743448809
 a1=-0.28841638460346003
-d = 80.0
-x1, y1 = r1*cos(a1), r1*sin(a1)
-x2, y2 = x1, y1 - d
+d = 70.0 # half goal width (maybe 75 - if outer width)
+y = (r2**2 - r1**2) / (4*d)
+y
+r1, y-d
+x = -(r1**2 - (y-d)**2)**0.5
+x
+(x**2+(y-d)**2)**0.5, (x**2+(y+d)**2)**0.5
 p = replot.Axes()
-p.plot([0.0, x1, x2], [0.0, y1, y2], 'x')
+p.plot([-y, -d, +d], [x, 0, 0], 'x')
 p.set_aspect('equal')
-p.set_xlim([0,300])
-p.set_ylim([-300,0])
+p.set_xlim([-200,200])
+p.set_ylim([-300,10])
 p
 
