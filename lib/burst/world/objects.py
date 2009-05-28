@@ -20,7 +20,7 @@ class Locatable(object):
     _name = "Locatable" # override to get nicer %s / %r
 
     REPORT_JUMP_ERRORS = False
-    HISTORY_SIZE = 10
+    HISTORY_SIZE = 20
 
     def __init__(self, world, real_length):
         """
@@ -63,6 +63,7 @@ class Locatable(object):
         self.seen = False
         self.missingFramesCounter = 0
         
+        # smoothed variables
         self.distSmoothed = 0.0
         self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
         self.distRunningMedian.next()
@@ -93,7 +94,7 @@ class Locatable(object):
         if dt < 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
             raise SystemExit
-        body_x, body_y = new_dist * sin(new_bearing), new_dist * cos(new_bearing)
+        body_x, body_y = new_dist * cos(new_bearing), new_dist * sin(new_bearing)
         dx, dy = body_x - self.body_x, body_y - self.body_y
         if dx**2 + dy**2 > (dt * self.upper_v_limit)**2:
             # no way this body jumped that quickly
@@ -158,7 +159,6 @@ class Ball(Movable):
         
         ERROR_VAL_X = 3
         ERROR_VAL_Y = 0
-        HISTORY_NUM_POINTS = 10 #history->meaning self.history
         
         #vars for least mean squares
         sumX = 0
