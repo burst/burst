@@ -21,6 +21,7 @@ from burst_util import nicefloats, DeferredList
 from burst.consts import HEAD_PITCH_JOINT_INDEX
 
 from burst import options, field
+from burst.consts import *
 import burst
 
 # TODO - pynaoqi'sm, should be factored out to some
@@ -436,7 +437,14 @@ class NaoPose(object):
 
         a1 must be positive clockwise, zero if in the middle of the frame
         (i.e. at the same direction as the bearing)
+
+        Also, |r1 - r2| <= 2*d must hold.. if it doesn't, caller
+        needs to rethink it's inputs.
+
+        RETURN VALUE: (None, None, None) on error, (x,y,theta) otherwise
         """
+        if abs(r1 - r2) > 2 * d:
+            return (None, None, None)
         x0, y0 = p0;        x1, y1 = p1
         O = ((x0 + x1) / 2, (y0 + y1)/2) # position of the origin in WF
         #assert(almost_equal(4*d**2, (x1 - x0)**2 + (y1 - y0)**2))
@@ -449,7 +457,7 @@ class NaoPose(object):
         # first x,y
         r1_2 = r1**2
         r2_2 = r2**2
-        y = ( r2_2 - r1_2 ) / 2 / d
+        y = ( r2_2 - r1_2 ) / 4 / d
         x = - ( r1_2 - (y - d)**2 )**0.5
         # then theta (heading)
         gamma = atan2(y - d, -x)
@@ -870,27 +878,6 @@ def correctDistance(uncorrectedDist):
 
 # Numerics
 INFTY = 1E+37
-
-# Image Parameters
-FOV_X = 46.4 * DEG_TO_RAD
-FOV_Y = 34.8 * DEG_TO_RAD
-# image width / height source: OV7670 Datasheet
-IMAGE_WIDTH_MM = 2.36
-IMAGE_HEIGHT_MM = 1.76
-FOCAL_LENGTH_MM = IMAGE_WIDTH_MM/2 / tan(FOV_X/2)
-
-IMAGE_WIDTH = 320.0
-IMAGE_HEIGHT = 240.0
-
-MM_TO_PIX_X = IMAGE_WIDTH/IMAGE_WIDTH_MM
-MM_TO_PIX_Y = IMAGE_HEIGHT/IMAGE_HEIGHT_MM
-PIX_X_TO_MM = 1.0 / MM_TO_PIX_X
-PIX_Y_TO_MM = 1.0 / MM_TO_PIX_Y
-IMAGE_CENTER_X = (IMAGE_WIDTH  - 1) / 2.0
-IMAGE_CENTER_Y = (IMAGE_HEIGHT - 1) / 2.0
-
-PIX_TO_RAD_X = FOV_X / IMAGE_WIDTH
-PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
 # Screen edge coordinates in the camera coordinate frame
 topLeft = vector4D(FOCAL_LENGTH_MM, IMAGE_WIDTH_MM/2, IMAGE_HEIGHT_MM/2)

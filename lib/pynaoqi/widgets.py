@@ -2,6 +2,8 @@ import time
 
 import gtk, goocanvas
 
+from twisted.internet.defer import Deferred, succeed
+
 from pynaoqi.consts import *
 from pynaoqi import options
 
@@ -11,6 +13,9 @@ try:
     from matplotlib.pylab import Figure
 except:
     pass
+
+from burst.consts import DEG_TO_RAD, RAD_TO_DEG
+import burst.consts as consts
 
 #############################################################################
 
@@ -315,11 +320,55 @@ class VideoWindow(TaskBaseWindow):
         self._con.registerToCamera().addCallback(self._finishInit)
         super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
         self._im = gtkim = gtk.Image()
+        # you don't get button press on gtk.Image(), setting add_events on window
+        # and gtkim doesn't cause propogation, don't know what does.
+        self._dmove = succeed(None)
+        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self._w.connect("button-press-event", self._onButtonClick)
+        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
+        self._w.connect("motion-notify-event", self._onMouseMotion)
         self._w.add(gtkim)
         self._w.show_all()
 
     def _finishInit(self, result):
         self._startTaskFirstTime()
+
+    def _updateTarget(self, x, y):
+        """ x and y in pixels in 0~IMAGE_WIDTH-1, 0~IMAGE_HEIGHT-1 range
+        target for yaw is positive if x is to the left of the picture, as then
+        the change would have been negative
+        """
+        self._target = ((consts.IMAGE_HALF_WIDTH - x) * consts.PIX_TO_RAD_X
+                , (y - consts.IMAGE_HALF_HEIGHT) * consts.PIX_TO_RAD_Y)
+
+    def _onMouseMotion(self, widget, event):
+        self._updateTarget(event.x, event.y)
+        yaw, pitch = self._target
+        self.set_title('%s, %s (%d, %d)' % (
+            event.x, event.y, int(yaw*RAD_TO_DEG), pitch*RAD_TO_DEG))
+
+    def _onButtonClick(self, widget, event):
+        print "click: ", event.x, event.y
+        if not self._dmove.called: return
+        self._updateTarget(event.x, event.y)
+        self._dmove = Deferred() # to be replaced later
+        MIN_PITCH_MOVE = MIN_YAW_MOVE = 3 * DEG_TO_RAD
+        cmd_yaw, cmd_pitch = self._target
+        if abs(cmd_yaw) > MIN_YAW_MOVE or abs(cmd_pitch) > MIN_PITCH_MOVE:
+            #print "commanding: yaw %3.3f, pitch %3.3f" % (cmd_yaw*RAD_TO_DEG, cmd_pitch*RAD_TO_DEG)
+            self._dmove = Deferred()
+            self._con.ALMotion.getBodyAngles().addCallback(self._onButtonClick_onBodyAngles)
+
+    def _onButtonClick_onBodyAngles(self, result):
+        yaw, pitch = result[consts.HEAD_YAW_JOINT_INDEX], result[consts.HEAD_PITCH_JOINT_INDEX]
+        cmd_yaw, cmd_pitch = self._target
+        tgt_yaw, tgt_pitch = yaw + cmd_yaw, pitch + cmd_pitch
+        print "moving yaw %3.1f->%3.1f, pitch %3.1f->%3.1f" % (yaw*RAD_TO_DEG, pitch*RAD_TO_DEG,
+            tgt_yaw*RAD_TO_DEG, tgt_pitch*RAD_TO_DEG)
+        self._dmove = self._con.ALMotion.gotoAnglesWithSpeed(
+            ['HeadYaw', 'HeadPitch'], [tgt_yaw, tgt_pitch],
+            50, # percent of max speed 1~100
+            consts.INTERPOLATION_SMOOTH)
 
     def getNew(self):
         #import pdb; pdb.set_trace()

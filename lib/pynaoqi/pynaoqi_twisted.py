@@ -1,3 +1,4 @@
+from time import time
 from xml.dom import minidom
 
 from twisted.internet.protocol import Protocol, ClientFactory, ClientCreator
@@ -13,6 +14,7 @@ class SoapConnectionManager(object):
 
     def __init__(self, con):
         self._protocols = []
+        self._errors_connecting = 0
         self.con = con
         if LOG_HEADERS:
             self.con.log = open('headers.txt', 'a+')
@@ -20,13 +22,17 @@ class SoapConnectionManager(object):
     def _makeNewProtocol(self, tosend, deferred):
         ClientCreator(reactor, lambda: SoapProtocol(con=self.con,
             tosend=tosend, deferred=deferred)).connectTCP(host=self.con._req._host, port=self.con._req._port
-            ).addCallback(self._newProtocolConnected)
+            ).addCallbacks(self._newProtocolConnected, self._onConnectionError)
         return deferred
 
     def _newProtocolConnected(self, protocol):
         self._protocols.append(protocol)
         if DEBUG:
             print "DEBUG: SoapConnectionManager: protocols: %s" % len(self._protocols)
+
+    def _onConnectionError(self, error):
+        self._errors_connecting += 1
+        self._last_connection_error = time()
 
     def sendPacket(self, tosend):
         deferred = Deferred()

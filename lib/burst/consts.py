@@ -6,6 +6,7 @@ For instance, don't put any moves in here, or any parameters that are personal.
 """
 
 import math
+from math import tan
 
 # Proxy names
 BURST_SHARED_MEMORY_PROXY_NAME = "burstmem"
@@ -48,11 +49,28 @@ CM_TO_METER = 100. # yeah, seems stupid, but probably better than using 100 thro
 
 # Camera / Vision constants
 
+# Image Parameters
+FOV_X = 46.4 * DEG_TO_RAD
+FOV_Y = 34.8 * DEG_TO_RAD
+# image width / height source: OV7670 Datasheet
+IMAGE_WIDTH_MM = 2.36
+IMAGE_HEIGHT_MM = 1.76
+FOCAL_LENGTH_MM = IMAGE_WIDTH_MM/2 / tan(FOV_X/2)
+
 IMAGE_WIDTH = 320.0
 IMAGE_HEIGHT = 240.0
-
 IMAGE_HALF_WIDTH = IMAGE_WIDTH / 2
 IMAGE_HALF_HEIGHT = IMAGE_HEIGHT / 2
+
+MM_TO_PIX_X = IMAGE_WIDTH/IMAGE_WIDTH_MM
+MM_TO_PIX_Y = IMAGE_HEIGHT/IMAGE_HEIGHT_MM
+PIX_X_TO_MM = 1.0 / MM_TO_PIX_X
+PIX_Y_TO_MM = 1.0 / MM_TO_PIX_Y
+IMAGE_CENTER_X = (IMAGE_WIDTH  - 1) / 2.0
+IMAGE_CENTER_Y = (IMAGE_HEIGHT - 1) / 2.0
+
+PIX_TO_RAD_X = FOV_X / IMAGE_WIDTH
+PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
 # Shared memory constants
 

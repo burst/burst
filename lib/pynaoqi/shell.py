@@ -1,4 +1,4 @@
-#!/usr/bin/python 
+#!/usr/bin/python
 """
 Shell for playing with Nao Robots through the Naoqi SOAP protocol using
 a python only implementation.
@@ -20,13 +20,14 @@ import pynaoqi
 # we use twisted in a thread if requested
 options = pynaoqi.getDefaultOptions()
 
+using_gtk = False
 if options.twisted and not options.nogtk:
-    print "DEBUG: USING GTK LOOP"
     # Try to throw in gtk support
-    from twisted.internet import gtk2reactor
-
     try:
+        from twisted.internet import gtk2reactor
         gtk2reactor.install()
+        print "DEBUG: USING GTK LOOP"
+        using_gtk = True
     except:
         pass
 
@@ -64,10 +65,11 @@ from burst import field
 ################################################################################
 # Gui Widgets
 
-from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
-    CanvasTicker, VideoWindow, PlottingWindow)
+if using_gtk:
+    from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
+        CanvasTicker, VideoWindow, PlottingWindow)
 
-from pynaoqi.gui import Joints
+    from pynaoqi.gui import Joints
 
 def watch(names):
     """ watch multiple variables. For instance:
@@ -90,6 +92,7 @@ def video():
     global video_window
     if video_window is None:
         video_window = VideoWindow(con)
+    return video_window
 
 def canvaspairs(l, limits=[0,320,0,320], statics=None):
     from twisted.internet.defer import succeed
@@ -111,6 +114,9 @@ def fieldshow(callback=None, limits=field.green_limits):
         callback = lambda: kinematics.pose.updateLocations(con)
     return CanvasTicker(callback, limits=limits,
         statics=list(field.rects) + map(list, field.landmarks))
+
+################################################################################
+# Vision Helpers
 
 class Data(object):
 
@@ -146,6 +152,9 @@ def onevision(d=None):
     if not d:
         d = con.ALMemory.getListData(vision_vars)
     return d.addCallback(format_vision_vars)
+
+################################################################################
+# Support for Debugging Players from within pynaoqi
 
 def get_list_of_players():
     import players
@@ -250,6 +259,10 @@ players.localize.start()
 players.localize.stop()
 players.localize.init() # for inspecting, doesn't start, just constructs
 
+# See the Nack/Ack bug
+bug=refilter('ChestBoard/[NA][ac]',names)
+watch(bug)
+
 """
 
 STRANGE_ONES="""
@@ -282,6 +295,7 @@ def make_shell_namespace(use_pylab):
     """
 
     import burst_util
+    import burst.consts as consts
     import vision_definitions
     from twisted.internet import task
     from twisted.internet import defer
@@ -296,26 +310,19 @@ def make_shell_namespace(use_pylab):
         # pynaoqi
         con = con,
         pynaoqi = pynaoqi,
-        naojoints = Joints,
         pr = pr,
-        loop = GtkTextLogger,
-        watch = watch,
-        plottime = plottime,
-        canvaspairs = canvaspairs,
-        fieldpairs = fieldpairs,
-        fieldshow = fieldshow,
-        video = video,
         examples = examples,
         strange_ones = strange_ones,
         format_vision_vars = format_vision_vars,
         onevision = onevision,
-        CanvasTicker = CanvasTicker,
         startplayer = startplayer,
         players = players,
         # burst
         moves = moves,
         field = field,
+        consts = consts,
         vision_definitions = vision_definitions,
+        # utilities
         refilter = burst_util.refilter,
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
@@ -326,6 +333,21 @@ def make_shell_namespace(use_pylab):
         names = 'fetching..',
         )
 
+    if using_gtk:
+        import gtk
+        my_ns.update(dict(
+            naojoints = Joints,
+            loop = GtkTextLogger,
+            watch = watch,
+            plottime = plottime,
+            canvaspairs = canvaspairs,
+            fieldpairs = fieldpairs,
+            fieldshow = fieldshow,
+            video = video,
+            CanvasTicker = CanvasTicker,
+            gtk = gtk,
+        ))
+
     my_ns.update(math.__dict__)
     #my_ns.update(numpy.__dict__)
     if use_pylab:
@@ -333,10 +355,6 @@ def make_shell_namespace(use_pylab):
         pylab.interactive(True)
         my_ns.update(pylab.__dict__)
         my_ns['pylab'] = pylab
-
-    if not pynaoqi.options.nogtk:
-        import gtk
-        my_ns['gtk'] = gtk
 
     return my_ns
 

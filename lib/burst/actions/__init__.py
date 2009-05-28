@@ -70,6 +70,22 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
+    def headTracker(self, target):
+        class HeadTracker(object):
+            def __init__(self, target, actions):
+                self._target = target
+                self._actions = actions
+                self.stop = False
+                self.trackingStep()
+            def trackingStep(self):
+                self._actions.executeTracking(self._target).onDone(self.continueTracking)
+            def continueTracking(self):
+                if self.stop:
+                    return
+                else:
+                    self.trackingStep()
+        return HeadTracker(target, self._actions)
+
     def executeTracking(self, target):
         if not self._world.robot.isHeadMotionInProgress():
             # Normalize ball X between 1 (left) to -1 (right)
@@ -82,10 +98,18 @@ class Actions(object):
                 CAM_Y_TO_RAD_FACTOR = 17.4/2 * DEG_TO_RAD #34.8/2
                 deltaHeadYaw = xNormalized * CAM_X_TO_RAD_FACTOR
                 deltaHeadPitch = -yNormalized * CAM_Y_TO_RAD_FACTOR
-                #self._actions.changeHeadAnglesRelative(deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"), deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")) # yaw (left-right) / pitch (up-down)
-                return self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch) # yaw (left-right) / pitch (up-down)
-                #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (deltaHeadYaw, deltaHeadPitch)            
-                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
+                #self._actions.changeHeadAnglesRelative(
+                # deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"),
+                # deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")
+                # ) # yaw (left-right) / pitch (up-down)
+                return self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
+                            # yaw (left-right) / pitch (up-down)
+                #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (
+                #       deltaHeadYaw, deltaHeadPitch)            
+                #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
+                #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
+        return succeed(False)
+
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks

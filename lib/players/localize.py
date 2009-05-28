@@ -98,8 +98,9 @@ class Localize(Player):
     @eventhandler(EVENT_YGRP_POSITION_CHANGED)
     def onYellowTopPosChange(self):
         obj = self._world.ygrp # Yellow Right is Top - since it's goalie looks towards minus x
+        if obj.x == 0.0: return
         dx = abs(obj.x - IMAGE_CENTER_X)
-        print "yellow top - dx = %s" % dx
+        print "yellow top    - dx = %5s, x = %5s" % (dx, obj.x)
         if dx < MAX_PIXELS_FROM_CENTER_FOR_DISTANCE_ESTIMATE:
             print "yellow TOP DONE"
             self.yellow_top_dist = self._pose.pixHeightToDistance(obj.height, GOAL_POST_CM_HEIGHT)
@@ -110,8 +111,9 @@ class Localize(Player):
     @eventhandler(EVENT_YGLP_POSITION_CHANGED)
     def onYellowBottomPosChange(self):
         obj = self._world.yglp # Yellow Left is Bottom - since it's goalie looks towards minus x
+        if obj.x == 0.0: return
         dx = abs(obj.x - IMAGE_CENTER_X)
-        print "yellow bottom - dx = %s" % dx
+        print "yellow bottom - dx = %5s, x = %5s" % (dx, obj.x)
         if abs(obj.x - IMAGE_CENTER_X) < MAX_PIXELS_FROM_CENTER_FOR_DISTANCE_ESTIMATE:
             print "yellow BOTTOM DONE"
             self.yellow_bottom_dist = self._pose.pixHeightToDistance(obj.height, GOAL_POST_CM_HEIGHT)
@@ -123,9 +125,16 @@ class Localize(Player):
         d = CROSSBAR_CM_WIDTH / 2.0
         p0 = yellow_goal.top_post.xy
         p1 = yellow_goal.bottom_post.xy
+        r1, r2, a1 = (self.yellow_top_dist, self.yellow_bottom_dist,
+            self.yellow_top_bearing)
+        if abs(r1 - r2) > 2*d:
+            print "inputs are bad, need to recalculate"
+            # This is fun: which value do I throw away? I could start collecting a bunch first,
+            # and only if it is well localized (looks like a nice normal distribution) I use
+            # it..
+            self.
         x, y, theta = self._pose.xyt_from_two_dist_one_angle(
-            r1=self.yellow_top_dist, r2=self.yellow_bottom_dist, a1=self.yellow_top_bearing,
-            d = d, p0=p0, p1=p1)
+            r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
         print "GOT %3.3f %3.3f heading %3.3f deg" % (x, y, theta*RAD_TO_DEG)
 
 if __name__ == '__main__':
