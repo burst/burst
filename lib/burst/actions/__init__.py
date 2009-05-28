@@ -92,7 +92,7 @@ class Actions(object):
     #===============================================================================
 
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk=moves.FASTEST_WALK, steps_before_full_stop=0):
+        walk=moves.STRAIGHT_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -114,7 +114,7 @@ class Actions(object):
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
         
-    def turn(self, deltaTheta, walk=moves.FASTEST_WALK):
+    def turn(self, deltaTheta, walk=moves.STRAIGHT_WALK):
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
@@ -126,7 +126,7 @@ class Actions(object):
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
         return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.FASTEST_WALK):
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -147,8 +147,8 @@ class Actions(object):
                    # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
-#        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-#            walk = moves.SIDESTEP_WALK
+        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            walk = moves.SIDESTEP_WALK
         
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
@@ -180,8 +180,7 @@ class Actions(object):
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self.bdFromPostIdDeferred(d, kind='walk',
-            event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def initPoseAndStiffness(self):
         """ Sets stiffness, then sets initial position for body and head.
@@ -367,7 +366,7 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
-        walk = moves.SLOW_WALK # FASTER_WALK / FAST_WALK
+        walk = moves.STRAIGHT_WALK
 
         self.setWalkConfig(walk.walkParameters)
         self._motion.addWalkStraight( float(distance), 100 )

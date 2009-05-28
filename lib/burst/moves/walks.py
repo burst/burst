@@ -1,9 +1,7 @@
 from burst.consts import DEG_TO_RAD
-from burst.world import World
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 
-
-class Walk(list):
+class Walk(object):
 
     SlowestSpeed, FastestSpeed, DefaultSpeed = object(), object(), object()
 
@@ -39,24 +37,7 @@ class Walk(list):
 
 
 # WALKS
-FASTEST_WALK_WEBOTS = Walk(WalkParameters([
-           100.0 * DEG_TO_RAD, # 0 ShoulderMedian
-           10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
-           30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
-           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
-           2.5,                  # 4 LHipRoll(degrees) 
-           -2.5,                 # 5 RHipRoll(degrees)
-           0.23,                 # 6 HipHeight(meters)
-           3.0,                  # 7 TorsoYOrientation(degrees)
-           0.07,                 # 8 StepLength
-           0.042,                 # 9 StepHeight
-           0.06,                 # 10 StepSide (was 0.02)
-           0.3,                  # 11 MaxTurn
-           0.015,                # 12 ZmpOffsetX
-           0.018]),                # 13 ZmpOffsetY 
-           18)                  # 14 20ms count per step
-
-SLOW_WALK = Walk(WalkParameters([
+STRAIGHT_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
@@ -91,15 +72,6 @@ SIDESTEP_WALK = Walk(WalkParameters([
            0.02]),                  # ZmpOffsetY
            25                   # 20ms count per step
     )
-
-if World.connected_to_nao:
-    FASTEST_WALK = SLOW_WALK
-else:
-    FASTEST_WALK = FASTEST_WALK_WEBOTS
-
-
-
-
 
 
 '''

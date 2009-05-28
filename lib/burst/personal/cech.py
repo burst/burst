@@ -10,20 +10,20 @@ walks.SIT_POS = [2,3,4]
 
 # GOOD
 import moves.walks as walks
-del walks.SIT_POS[:]
-walks.SIT_POS.extend([3,4,5])
+walks.SIT_POS[:] = [2,3,4]
 
 # ALSO GOOD
 walks.SIT_POS[2] = 10
 
 """
 
-# 
-#from .walks import SLOW_WALK
-#SLOW_WALK.defaultSpeed = 100
-
 ## Walks
 
 import burst.moves.walks as walks
-walks.SLOW_WALK.defaultSpeed = 100
+walks.STRAIGHT_WALK.defaultSpeed = 100
 
+import burst.behavior_params as params
+params.KICK_X_MIN[:] = [14,14]
+params.KICK_X_MAX[:] = [18,18]
+params.KICK_Y_MIN[:] = [4.0,-2.5]
+params.KICK_Y_MAX[:] = [6.0,-4.5]

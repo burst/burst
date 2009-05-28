@@ -9,14 +9,9 @@ from burst.consts import LEFT, RIGHT, DOWN, UP
 INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
-if World.connected_to_nao:
-    DEFAULT_STEPS_FOR_TURN = 150
-    DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
-    DEFAULT_STEPS_FOR_SIDEWAYS = 60
-else:
-    DEFAULT_STEPS_FOR_TURN = 60
-    DEFAULT_STEPS_FOR_WALK = 60
-    DEFAULT_STEPS_FOR_SIDEWAYS = 60
+DEFAULT_STEPS_FOR_TURN = 150
+DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
+DEFAULT_STEPS_FOR_SIDEWAYS = 60
 
 MINIMAL_CHANGELOCATION_TURN = 0.15
 MINIMAL_CHANGELOCATION_SIDEWAYS = 0.005

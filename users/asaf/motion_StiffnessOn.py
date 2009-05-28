@@ -40,7 +40,7 @@ TimeInterpolation = 0.05
 #**************************
 
 print "Setting body stiffness to 1"
-motionProxy.setBodyStiffness(1.0,TimeInterpolation)
+motionProxy.setBodyStiffness(1.0)
 
 #**************************
 # CHAIN 
