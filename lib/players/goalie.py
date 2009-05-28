@@ -21,19 +21,42 @@ TIME_WAITING = 3 #time to wait when finishing the leap for getting up
 class goalie(Player):
 #    def onStop(self):
 #        super(Goalie, self).onStop()
+    
 
     def onStart(self):
-   
+        self.isPenalty = True
+        
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.watchIncomingBall)   
+        self._actions.executeMove(moves.SIT_POS).onDone(self.whitchBehavior)
+        
+    def whitchBehavior (self):
+        if self.isPenalty:
+            self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
+        else:
+            self.watchIncomingBall()
 
-    def watchIncomingBall(self):
+    def watchIncomingBall(self):            
         self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
+        self.isTrackingBall = True
+        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        
+    def leapPenalty(self):
+        self._eventmanager.unregister(BALL_MOVING_PENALTY)
+        self.isTrackingBall = False
+        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        print self._world.ball.dy
+        if self._world.ball.dy < 0:
+            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+        else:
+            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft) 
+            
 
     def leap(self):
         self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
+        self.isTrackingBall = False
+        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
@@ -57,8 +80,10 @@ class goalie(Player):
 
     def getUpBelly(self):
         self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall)
-
-
+        
+    def trackBall(self):
+        if self.isTrackingBall:
+            self._actions.executeTracking(self._world.ball)
 
 if __name__ == '__main__':
     import burst
