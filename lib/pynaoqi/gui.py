@@ -23,7 +23,8 @@ sys.path.append(burst_lib)
 import pynaoqi
 from pynaoqi.widgets import Localization, Inertial
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
-from burst_util import cached, cached_deferred, Deferred, clip
+from burst_util import (cached, cached_deferred, Deferred, clip,
+    DeferredList)
 
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
@@ -172,6 +173,26 @@ class Scale(object):
             self._last[-1].addCallback(lambda _,
                     ind=ind, val=val: gotoAngle(ind, val))
 
+# TODO - use burst.actions.Actions.setWalkConfig directly, don't copy.
+def setWalkConfig(con, param):
+    """ param should be one of the moves.WALK_X """
+    (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
+        LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+        StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
+
+    ds = []
+    ds.append(con.ALMotion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
+                                        ElbowMedian, ElbowAmplitude ))
+    ds.append(con.ALMotion.setWalkArmsEnable(True))
+
+    # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
+    ds.append(con.ALMotion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
+
+    ds.append(con.ALMotion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
+                                                ZmpOffsetX, ZmpOffsetY ))
+
+    return DeferredList(ds)
+
 class Joints(object):
 
     def __init__(self):
@@ -219,7 +240,9 @@ class Joints(object):
 
         # initiate network request that will lead to slides creation.
         # do everything based on a initDeferred, otherwise methods will not be available.
-        self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
+        self.con.modulesDeferred.addCallback(lambda result:
+            self.con.ALMotion.initDeferred.addCallback(lambda _: getJointData(self.con).addCallback(onJointData))
+            )
         # initiate battery task when pynaoqi finishes loading
         self.con.modulesDeferred.addCallback(lambda _: self.battery_level_task.start(
             DT_CHECK_BATTERY_LEVEL))
@@ -268,12 +291,13 @@ class Joints(object):
 
         # XXX - import burst here so it doesn't parse sys.argv
         import burst.moves as moves
+        import burst
 
         moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
             self.con.ALMotion.executeMove(move))
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
 
-        self._walkconfig = [0.05, 0.02, 0.02, 0.35, 0.015, 0.018]
+        self._walkconfig = burst.moves.walks.STRAIGHT_WALK.walkParameters
 
         def updateWalkConfig(_):
             self.con.ALMotion.getWalkConfig().addCallback(self.setWalkConfig)
@@ -293,8 +317,10 @@ class Joints(object):
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
             distance_per_step = self._walkconfig[0]
-            return self.con.ALMotion.addWalkStraight(steps * distance_per_step,
-                    60).addCallback(startWalkTest)
+            return setWalkConfig(self.con, self._walkconfig).addCallback(
+                lambda result: self.con.ALMotion.addWalkStraight(
+                    steps * distance_per_step, 60).addCallback(startWalkTest)
+                    )
 
         def doArc(angle, radius=0.5, cycles_per_step=60):
             # angle [rad], radius [m], # 20ms cycles per step
