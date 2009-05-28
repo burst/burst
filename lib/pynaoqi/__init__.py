@@ -93,7 +93,7 @@ class XMLObject(object):
 
     def __str__(self):
         spacer = self._attrs and ' ' or ''
-        return '<%s%s%s>%s</%s>' % (self._name, spacer, ' '.join('%s="%s"' % (k, v) for k, v in self._attrs), '\n'.join(str(c) for c in self._children), self._name)
+        return '<%s%s%s>%s</%s>' % (self._name, spacer, ' '.join('%s="%s"' % (k, v) for k, v in self._attrs), ''.join(str(c) for c in self._children), self._name)
 
     def __getitem__(self, k):
         return self._d[k]
@@ -105,19 +105,16 @@ class Requester(object):
         self._host, self._port, self._path = re.search('://(.*):([0-9]*)(.*)', url).groups()
         self._hostport = '%s:%s' % (self._host, self._port)
         self._port = int(self._port)
+        self._basepacket = '\r\n'.join(['POST %(path)s HTTP/1.1',
+                'Host: %(host)s', 'User-Agent: burst/1123', 'Content-Type: text/xml; charset=utf-8',
+                'Content-Length: %(content_length)s', 'Connection: %(keepalive)s', 'SOAPAction: ""',
+                '', '%(body)s'])
 
-    def make(self, xmlobject):
-        body = str(xmlobject)
-        return """POST %(path)s HTTP/1.1
-Host: %(host)s
-User-Agent: mysoap/epsilon
-Content-Type: text/xml; charset=utf-8
-Content-Length: %(content_length)s
-Connection: close
-SOAPAction: ""
-
-<?xml version="1.0" encoding="UTF-8"?>
-%(body)s""" % {'path':self._path, 'host':self._hostport, 'content_length': len(body), 'body': body}
+    def make(self, xmlobject, keepalive=False):
+        body = '<?xml version="1.0" encoding="UTF-8"?>\n' + str(xmlobject)
+        keepalive = {False:'close', True:'keep-alive'}[keepalive]
+        return self._basepacket % {'path':self._path, 'host':self._hostport, 'content_length': len(body), 'body': body,
+               'keepalive': keepalive}
 
 X = XMLObject
 
@@ -622,8 +619,8 @@ class BaseNaoQiConnection(object):
             else:
                 print "twisted found, using self._twistedSendRequest"
                 self._sendRequest = self._twistedSendRequest
-                from .pynaoqi_twisted import SoapRequestFactory
-                self.SoapRequestFactory = SoapRequestFactory
+                from .pynaoqi_twisted import SoapConnectionManager
+                self.connection_manager = SoapConnectionManager(self)
                 NaoQiModule.VERBOSE = False
 
         self._initModules()
@@ -684,7 +681,7 @@ class BaseNaoQiConnection(object):
             self.s = socket.socket()
             self.s.connect((self._req._host, self._req._port))
         s = self.s
-        tosend = self._req.make(o)
+        tosend = self._req.make(o, keepalive=True)
         if DEBUG:
             print "***     Sending:     ***\n%s" % tosend
         s.send(tosend)
@@ -732,11 +729,8 @@ class BaseNaoQiConnection(object):
         """ send a request for object o, return deferred to be called with result as soapbody
         instance
         """
-        from twisted.internet import reactor
-        deferred = Deferred()
-        reactor.connectTCP(host=self._req._host, port=self._req._port,
-            factory=self.SoapRequestFactory(con=self, tosend=self._req.make(o), deferred=deferred))
-        return deferred
+        tosend = self._req.make(o, keepalive=True)
+        return self.connection_manager.sendPacket(tosend)
 
     # Reflection api - getMethods, getModules
 

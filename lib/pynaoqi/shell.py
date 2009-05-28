@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+#!/usr/bin/python 
 """
 Shell for playing with Nao Robots through the Naoqi SOAP protocol using
 a python only implementation.
@@ -252,8 +251,17 @@ players.localize.stop()
 players.localize.init() # for inspecting, doesn't start, just constructs
 
 """
+
+STRANGE_ONES="""
+loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
+"""
+
 def examples():
     print EXAMPLES
+
+def strange_ones():
+    """ Slightly weirder examples """
+    return STRANGE_ONES
 
 def f():
     return 42
@@ -288,7 +296,7 @@ def make_shell_namespace(use_pylab):
         # pynaoqi
         con = con,
         pynaoqi = pynaoqi,
-        joints = Joints,
+        naojoints = Joints,
         pr = pr,
         loop = GtkTextLogger,
         watch = watch,
@@ -298,6 +306,7 @@ def make_shell_namespace(use_pylab):
         fieldshow = fieldshow,
         video = video,
         examples = examples,
+        strange_ones = strange_ones,
         format_vision_vars = format_vision_vars,
         onevision = onevision,
         CanvasTicker = CanvasTicker,

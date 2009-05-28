@@ -23,7 +23,7 @@ sys.path.append(burst_lib)
 import pynaoqi
 from pynaoqi.widgets import Localization, Inertial
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
-from burst_util import cached, cached_deferred, Deferred
+from burst_util import cached, cached_deferred, Deferred, clip
 
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
@@ -155,7 +155,7 @@ class Scale(object):
             #print "joint %s, ind %s, value %s %s" % (
             #            self.name, ind, s.get_value(), val)
             if ind == self._waiting_callbacks:
-                d = con.ALMotion.gotoAngleWithSpeed(self.name, val, 50, 1)
+                d = con.ALMotion.gotoAngleWithSpeed(self.name, clip(-pi, pi, val), 50, 1)
             else:
                 #print "not moving, %s != %s" % (ind, self._waiting_callbacks)
                 d = succeed(0)
