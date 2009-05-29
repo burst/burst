@@ -41,7 +41,7 @@ class SharedMemoryReader(object):
         data = open(MMAP_FILENAME, 'r')
         self._fd = fd = data.fileno()
         self._buf = mmap.mmap(fd, MMAP_LENGTH, mmap.MAP_SHARED | mmap.ACCESS_READ, mmap.PROT_READ)
-        print "world: shared memory openned successfully"
+        print "world: shared memory opened successfully"
     
     def close(self):
         if self._fd is None: return
