@@ -25,8 +25,8 @@ class WalkRecorder(Player):
     """ Use recorder module to record a walk
     """
 
-    WALK_DISTANCE   = 40.0
-    WALK_PARAMETERS = moves.SLOW_WALK
+    WALK_DISTANCE = 40.0
+    WALK_PARAMETERS = moves.STRAIGHT_WALK
 
     def onStart(self):
 

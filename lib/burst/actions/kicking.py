@@ -5,6 +5,7 @@ from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
 import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
+import burst.moves as moves
 from burst.behavior_params import (KICK_OFFSET_FROM_BALL, KICK_X_OPT, KICK_Y_OPT, 
                                    KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, BALL_SIDE, BALL_DIAGONAL)
@@ -98,8 +99,8 @@ class BallKicker(BurstDeferred):
         
         # if both goal and ball seen during scan
         # TODO: NEED TO REPLACE WITH AND, changed temporarily for just going to ball
-        if self.cachedBallDist: # and self.goal    
-            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation, 1.0).onDone(self.calcKP)
+        if self.cachedBallDist: # and self.goal
+            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation*1.2, 1.0).onDone(self.calcKP)
         else:
             # otherwise, do a more thorough scan
             print "goal and ball NOT seen, searching again..."
@@ -172,7 +173,7 @@ class BallKicker(BurstDeferred):
         print "AREA: %s" % DEBUG_AREA[ball_location]
         
         
-        # REMOVE!!!!!!!!!!!!!!!!!!!
+        # REMOVE!!!!!!!!!!!!!!!!!!! used just for debugging different KICK_ parameters per robot
         print "KICK_X_MIN: %3.3f" % KICK_X_MIN[0]
         
         
@@ -183,13 +184,30 @@ class BallKicker(BurstDeferred):
             
             # TODO: TEMP!!! REMOVE!!!
             #self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
-            
         else:
             print "advancing!"
-            #self._actions.changeLocationRelative(target_x*3/4).onDone(self.doNextAction)
+#            if ball_location == BALL_FRONT:
+#                self._actions.changeLocationRelativeSideways(target_x*3/4).onDone(self.doNextAction)
+#            elif ball_location in (BALL_SIDE, BALL_DIAGONAL):
+#                self._actions.turn(target_bearing*2/3).onDone(self.doNextAction)
+#            elif ball_location == BALL_BETWEEN_LEGS:
+#                self._actions.changeLocationRelativeSideways(0.0, target_y*3/4, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
+
             
-            # TODO: TEMP!!! REMOVE!!!
+################################### TESTING WALKS:
+#            if ball_location == BALL_BETWEEN_LEGS:
+#                self._actions.changeLocationRelativeSideways(0.0, target_y*3/4, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
+#                return
+#            if ball_location == BALL_DIAGONAL:
+#                self._actions.turn(target_bearing*2/3).onDone(self.doNextAction)
+#                #self._actions.changeLocationRelative(target_x*3/4, 0.0, 0.0).onDone(self.doNextAction) # removed target_x/2 for now
+#                return
+                            
+            #self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
+
+######### TODO: TEMP!!! REMOVE!!!
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+
             
 #        elif ball_location == BALL_BETWEEN_LEGS:
 #            print "Bearing almost OK, Distance small -> advancing straight (with side-stepping)"
@@ -249,11 +267,10 @@ class BallKicker(BurstDeferred):
     def calcBallArea(self, ball_x, ball_y, side):
         if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
             return BALL_IN_KICKING_AREA
-        elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT]:
-            if ball_x <= KICK_X_MAX[side]:
-                return BALL_BETWEEN_LEGS
-            else: #ball_x > KICK_X_MAX[side]
-                return BALL_FRONT
+        elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT] and ball_x <= KICK_X_MAX[side]:
+            return BALL_BETWEEN_LEGS
+        elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
+            return BALL_FRONT
         else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
             if ball_x <= KICK_X_MAX[side]:
                 return BALL_SIDE
@@ -301,7 +318,7 @@ class BallKicker(BurstDeferred):
 #        delta_x, delta_y, delta_bearing = target_location
 #        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
 #        return self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
-#            walk = moves.FASTEST_WALK)
+#            walk = moves.STRAIGHT_WALK)
 
 #    def doTestFinalKP(self):
 #        print "\nTest info: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)

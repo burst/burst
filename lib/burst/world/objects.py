@@ -5,7 +5,7 @@ from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
-    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED)
+    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
 from burst_util import running_median, RingBuffer
 
 class Locatable(object):
@@ -63,6 +63,7 @@ class Locatable(object):
         self.seen = False
         self.missingFramesCounter = 0
         
+        # smoothed variables
         self.distSmoothed = 0.0
         self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
         self.distRunningMedian.next()
@@ -93,7 +94,7 @@ class Locatable(object):
         if dt < 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
             raise SystemExit
-        body_x, body_y = new_dist * sin(new_bearing), new_dist * cos(new_bearing)
+        body_x, body_y = new_dist * cos(new_bearing), new_dist * sin(new_bearing)
         dx, dy = body_x - self.body_x, body_y - self.body_y
         if dx**2 + dy**2 > (dt * self.upper_v_limit)**2:
             # no way this body jumped that quickly
@@ -144,7 +145,12 @@ class Ball(Movable):
         self.width = 0.0
         self.body_isect = None
         self.base_point = None
-        self.base_point_index = None
+        self.base_point_index = 0
+        self.velocity = None
+        self.avrYplace = None
+        self.avrYplace_index = 0
+        self.sumY = 0
+        self.dy = 0
     
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
@@ -152,20 +158,19 @@ class Ball(Movable):
         T = 0
         DIST = 1
         BEARING = 2
-        
+       
         X = 1
         Y = 2
-        
+       
         ERROR_VAL_X = 3
         ERROR_VAL_Y = 0
-        HISTORY_NUM_POINTS = 10 #history->meaning self.history
-        
+       
         #vars for least mean squares
         sumX = 0
         sumXY = 0
         sumY = 0
         sumSqrX = 0
-        
+       
         if self.history[0] != None:
             self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
             self.base_point_index = 1
@@ -176,7 +181,7 @@ class Ball(Movable):
             sumSqrX +=  last_point[X] * last_point[X]
         else:
             return False
-        
+       
         n = 0
         for point in self.history:
             if point != None:
@@ -191,7 +196,7 @@ class Ball(Movable):
                 if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
                     self.base_point = cor_point
                     self.base_point_index = n
-                    return False 
+                    return False
                 sumX += cor_point[X]
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
@@ -200,88 +205,35 @@ class Ball(Movable):
                 if n < 5: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
-        
+       
         n = n - self.base_point_index #real number of valid points
-        
-        
+       
+       
         if n > 4 and fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: #TODO: need some kind of col' for diffrent speeds....
             #Least mean squares:
             self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-            
+           
             #print "ball intersection with body: " , self.body_isect
             return True
-        return False 
+        return False  
                  
     
-    
-    
-        """
+    def movingBallPenalty(self):
+        
+        ERROR_IN_Y = 4
         
         
-        if self.history[0] != None:
-            self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
-            self.base_point_index = 1
-        else:
-            return False
-       
-        i = 0
-        for point in self.history:
-            if point != None:
-                i = i +1
-                cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
-                if i > self.base_point_index :
-                    if  cor_point[X] - self.base_point[X] > ERROR_VAL_X:
-                        self.base_point = cor_point
-                        self.base_point_index = i
-                        return False
-                    if fabs(self.base_point[X] - cor_point[X]) > ERROR_VAL_X and fabs(self.base_point[Y] - cor_point[Y]) > ERROR_VAL_Y and self.base_point[X] > cor_point[X]:
-                        m= (self.base_point[Y] - cor_point[Y]) / (self.base_point[X] - cor_point[X])
-                        y = cor_point[Y] - m * cor_point[X]
-                        self.body_isect = y
-                        print "------------------------------------------------"
-                        print "cor_x=", cor_point[X], "  base_x=", self.base_point[X], "  cor_y=", cor_point[Y], "  base_y=", self.base_point[Y]
-                        print "------------------------------------------------"
-                        print "ball intersection with body: " , y
-                        print "\n"
-                        return True
-        return False
-        """
-
-
-
-
-
-        """
-        ERROR_VAL = 0.1 # acceptable change that doesn't trigger an update
-        dist, bearing = self.dist, self.bearing
-        last_dist, last_bearing = self.last_dist, self.last_bearing
-        x1 = dist * cos(bearing)
-        y1 = dist * sin(bearing)
-        x2 = last_dist * cos(last_bearing)
-        y2 = last_dist * sin(last_bearing)
-        if self.DEBUG_INTERSECTION:
-            print "\n"
-            print "------------------------------------------------"
-            print "x1=", x1, "  x2=", x2, "  y1=", y1, "  y2=", y2
-            print "bearing=" ,bearing,"  dist=",dist
-            print "last_bearing=", last_bearing, "  last_dist=", last_dist
-            print "------------------------------------------------"
-            print "\n"
-        if (fabs(x1 - x2) > ERROR_VAL and fabs(y1 - y2) > ERROR_VAL):
-            m = (y1 - y2) / (x1 - x2)
-            if isX :
-                x = (-y1 + m * x1) / m
-                self.body_isect = x
+        if self.avrYplace_index >= 20:
+            self.dy = (self.dist * sin(self.bearing)) - self.avrYplace
+            if (fabs(self.dy) - self.avrYplace) > ERROR_IN_Y:
                 return True
-            elif  x1 < x2 :#and fabs(y1-y2) < 1.5:
-                y = y1 - m * x1
-                self.body_isect = y
-                print "ball intersection with body: " , y
-                print "History" , self.history
-                return True
-            #theta=atan(m)
+        
+        self.avrYplace_index += 1
+        self.sumY += self.dist * sin(self.bearing)
+        self.avrYplace = self.sumY / self.avrYplace_index
+
         return False
-        """
+
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
@@ -304,6 +256,11 @@ class Ball(Movable):
             self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
             if self.compute_intersection_with_body():
                 events.add(EVENT_BALL_BODY_INTERSECT_UPDATE)
+            if self.movingBallPenalty():
+                self.avrYplace = None
+                self.avrYplace_index = 0
+                self.sumY = 0
+                events.add(BALL_MOVING_PENALTY)
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
         else:

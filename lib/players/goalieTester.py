@@ -16,52 +16,31 @@ import time
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
-TIME_WAITING = 3 #time to wait when finishing the leap for getting up
+TIME_WAITING = 6 #time to finish leap and waiting
 
 class goalie(Player):
 #    def onStop(self):
 #        super(Goalie, self).onStop()
-    
 
     def onStart(self):
-        self.isPenalty = True
-        
+   
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.whitchBehavior)
-        
-    def whitchBehavior (self):
-        if self.isPenalty:
-            self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
-        else:
-            self.watchIncomingBall()
+        self._actions.executeMove(moves.SIT_POS).onDone(self.watchIncomingBall)   
 
-    def watchIncomingBall(self):            
+    def watchIncomingBall(self):
         self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
-        self.isTrackingBall = True
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
-        
-    def leapPenalty(self):
-        self._eventmanager.unregister(BALL_MOVING_PENALTY)
-        self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-        print self._world.ball.dy
-        if self._world.ball.dy < 0:
-            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
-        else:
-            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft) 
-            
 
     def leap(self):
         self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+            self._actions.say("leap right")
+            self.waitingOnRight()
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft)   
+            self._actions.say("leap left")
+            self.watingOnLeft()   
         else:
             self.watchIncomingBall()
 
@@ -73,17 +52,18 @@ class goalie(Player):
 
 
     def gettingUpRight(self):
-        self._actions.executeToBellyFromLeapRight().onDone(self.getUpBelly)
+        #self._actions.say("up right").onDone(self.getUpBelly)
+        self.getUpBelly()
 
     def gettingUpLeft(self):
-        self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
+        #self._actions.say("up left").onDone(self.getUpBelly)
+        self.getUpBelly()
 
     def getUpBelly(self):
-        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall)
-        
-    def trackBall(self):
-        if self.isTrackingBall:
-            self._actions.executeTracking(self._world.ball)
+        #self._actions.say("up Belly").onDone(self.watchIncomingBall)
+        self.watchIncomingBall()
+
+
 
 if __name__ == '__main__':
     import burst

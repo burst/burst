@@ -10,18 +10,23 @@ walks.SIT_POS = [2,3,4]
 
 # GOOD
 import moves.walks as walks
-del walks.SIT_POS[:]
-walks.SIT_POS.extend([3,4,5])
+walks.SIT_POS[:] = [2,3,4]
 
 # ALSO GOOD
 walks.SIT_POS[2] = 10
 
 """
 
-import burst.moves.walks as walks
-walks.SLOW_WALK.defaultSpeed = 90
-
 import burst
+
+import burst.moves.walks as walks
+walks.STRAIGHT_WALK.defaultSpeed = 90
+
+import burst.behavior_params as params
+params.KICK_X_MIN[:] = [14,14]
+params.KICK_X_MAX[:] = [18,18]
+params.KICK_Y_MIN[:] = [4.0,-2.5]
+params.KICK_Y_MAX[:] = [6.0,-4.5]
 
 ####### UGLY CHANGE, RAUL ONLY, FAULTY JOINT #########
 # I have two different sets of proxies, and it is a pain
@@ -31,21 +36,27 @@ import burst
 
 def raulSetBodyStiffness(realproxy, orig_setbodystiffness, num):
     # set everything except the faulty arm
-    orig_setbodystiffness(num)
+    d = orig_setbodystiffness(num)
     realproxy.setJointStiffness('LShoulderRoll', 0.0)
+    return d
 
 orig_getMotionProxy = burst.getMotionProxy
 
-def getRaulMotionProxy():
+def getRaulMotionProxy(deferred=True):
 
     class RaulMotionProxy(object):
 
-        def __init__(self):
-            self._p = orig_getMotionProxy()
+        def __init__(self, deferred):
+            self._p = orig_getMotionProxy(deferred)
             self._orig_setbodystiffness = self._p.setBodyStiffness
 
         def setBodyStiffness(self, num):
-            raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
+            return raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
+        
+        def __getattr__(self, k):
+            return getattr(self._p, k)
+    
+    return RaulMotionProxy(deferred)
 
 burst.getMotionProxy = getRaulMotionProxy
 
