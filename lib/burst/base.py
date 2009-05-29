@@ -82,7 +82,7 @@ def find_naoqi():
             print_warning = True
 
     if print_warning:
-        print "burst did it's best to find naoqi - you are probably either"
+        print "burst did its best to find naoqi - you are probably either"
         print "forgetting to setup AL_DIR or on a 64 bit machine. Either way"
         print "burst will let you continue, but expect everything to explode."
 

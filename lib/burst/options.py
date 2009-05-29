@@ -97,7 +97,7 @@ if burst_target.ip is not None:
 # On the other hand, if we are connecting locally the ip
 # will be 127.0.0.1 and the port 9559, in that case we
 # look at the hostname, currently via the "hostname" executable.
-if ip == 'localhost' or ip == LOCALHOST_IP and port == 9559:
+if (ip == 'localhost' or ip == LOCALHOST_IP) and port == 9559:
     robotname = os.popen('hostname').read().strip().lower()
 elif port == 9560:
     robotname = 'webots'

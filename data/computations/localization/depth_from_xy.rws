@@ -1,0 +1,32 @@
+import pylab
+from numpy import *
+from replot import *
+t=linspace(-pi/2,pi/2,30)
+p=zeros((2,30))
+
+pitch=0.01
+h=-0.50 # 50 cm above ground
+f=2.75/100 # m focal distance
+im_width=2.36/100 # m image width
+im_height=1.76/100 # m image height
+r = (sin(t)*im_height/4)+im_height/4 # a ball in the upper part of the image
+x=r*sin(pitch) - f * cos(pitch)
+z=r*cos(pitch) + f * sin(pitch)
+p[0,:]=x
+p[1,:]=z
+min(z) # needs to be > 0 for results to make sense
+min(x), max(x), x[0], x[-1]
+F=zeros((2,30))
+#(F[1,:]+h)/(p[1,:]-F[1,:])
+T=F+(F-p)*(F[1,:]-h)/(p[1,:]-F[1,:])
+max(T[0,:]),min(T[0,:])
+#T
+#plot(p[0,:],p[1,:])
+#plot(p[0,:],p[1,:],T[0,:],T[1,:])
+pl=Axes()
+pl.plot([p[0,0],p[0,-1],0.0,T[0,-1],T[0,0],p[0,0]],[p[1,0],p[1,-1],0.0,T[1,-1],T[1,0],p[1,0]],'-',[0.0],[0.0],'x')
+pl.set_xlabel('X Axis')
+pl.set_ylabel('Y Axis')
+pl.set_xlim(-0.2*1.6,1.2*1.6)
+pl.set_ylim(-1.2,0.2)
+pl
