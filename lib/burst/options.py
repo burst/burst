@@ -10,7 +10,7 @@ __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
 try: # doesn't work on opennao
     from socket import getaddrinfo # for resolving a hostname
 except:
-    getaddrinfo = lambda ip, port: [[None, None, None, [ip]]]
+    getaddrinfo = lambda ip, port: [[None, None, None, None, [ip]]]
     print "WARNING: socket is missing. Did you follow https://shwarma.cs.biu.ac.il/moin/InstallingNaoMan?"
 
 def running_on_nao():
@@ -21,7 +21,7 @@ def connecting_to_webots():
     """ True if we are connecting to webots """
     global ip
     #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    return not running_on_nao() and ip == LOCALHOST_IP
+    return not running_on_nao() and ip == LOCALHOST_IP or ip == 'localhost'
 
 def connecting_to_nao():
     """ True if we are not connecting to webots.

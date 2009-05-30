@@ -5,6 +5,8 @@ doesn't change during the life of the program. (i.e., constant).
 For instance, don't put any moves in here, or any parameters that are personal.
 """
 
+import os # for HOME
+
 import math
 from math import tan
 
@@ -61,6 +63,9 @@ IMAGE_WIDTH = 320.0
 IMAGE_HEIGHT = 240.0
 IMAGE_HALF_WIDTH = IMAGE_WIDTH / 2
 IMAGE_HALF_HEIGHT = IMAGE_HEIGHT / 2
+
+IMAGE_WIDTH_INT = int(IMAGE_WIDTH)
+IMAGE_HEIGHT_INT = int(IMAGE_HEIGHT)
 
 MM_TO_PIX_X = IMAGE_WIDTH/IMAGE_WIDTH_MM
 MM_TO_PIX_Y = IMAGE_HEIGHT/IMAGE_HEIGHT_MM
@@ -204,4 +209,10 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
+# Color tables filenames
+WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
+                'src/nao-man/tables/maverick/webots.mtb')
+
+DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
+                'src/nao-man/tables/maverick/default.mtb')
 

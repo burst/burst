@@ -1,4 +1,4 @@
-CFLAGS=-fPIC
+CFLAGS=-fPIC -ggdb
 
 all: install
 

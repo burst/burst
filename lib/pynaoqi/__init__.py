@@ -873,7 +873,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         w.show_all()
 
         def getNew():
-            width, height, rgb = self.getRGBRemoteFromYUV422()
+            rgb, width, height = self.getRGBRemoteFromYUV422()
             pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
             gtkim.set_from_pixbuf(pixbuf)
             return True
@@ -887,7 +887,7 @@ class NaoQiConnection(BaseNaoQiConnection):
             if not imops:
                 d.callback(None) # TODO - errback?
             imops.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
-            d.callback((width, height, rgb))
+            d.callback((rgb, width, height))
         self.getImageRemoteRaw().addCallback(onImageRemoteRaw)
         return d
 
@@ -915,9 +915,10 @@ class NaoQiConnection(BaseNaoQiConnection):
 
     def getImageRemoteFromRGB(self, debug_file_name = None):
         rgb, width, height = self.getImageRemoteRaw()
-        return self.imageFromRGB(width, height, rgb, debug_file_name = debug_file_name)
+        return self.imageFromRGB((rgb, width, height),
+                            debug_file_name = debug_file_name)
 
-    def imageFromRGB(self, (width, height, rgb), debug_file_name = None):
+    def imageFromRGB(self, (rgb, width, height), debug_file_name = None):
         image = Image.fromstring('RGB', (width, height), rgb)
         if debug_file_name:
             if debug_file_name[:1] != '/':

@@ -16,6 +16,7 @@ except:
 
 from burst.consts import DEG_TO_RAD, RAD_TO_DEG
 import burst.consts as consts
+import burst.image as image
 
 #############################################################################
 
@@ -30,9 +31,12 @@ class BaseWindow(object):
         self._w = w = gtk.Window()
         w.connect("delete-event", self._onDestroy)
         self.counter += 1
+        self.onClose = Deferred()
 
     def _onDestroy(self, target, event):
+        print "closing window"
         self._w.destroy()
+        self.onClose.callback(self)
 
     def show(self):
         self._w.show()
@@ -316,9 +320,10 @@ class VideoWindow(TaskBaseWindow):
         if con.has_imops() is None:
             print "Video window not opened, imops isn't working, please fix"
             return
+        super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
+        self._threshold = False # to threshold or not to threshold
         self._con = con
         self._con.registerToCamera().addCallback(self._finishInit)
-        super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
         self._im = gtkim = gtk.Image()
         # you don't get button press on gtk.Image(), setting add_events on window
         # and gtkim doesn't cause propogation, don't know what does.
@@ -327,11 +332,51 @@ class VideoWindow(TaskBaseWindow):
         self._w.connect("button-press-event", self._onButtonClick)
         self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
         self._w.connect("motion-notify-event", self._onMouseMotion)
-        self._w.add(gtkim)
+        c = gtk.VBox()
+        bottom = gtk.HBox()
+        self._status = gtk.Label('        ')
+        c.add(self._im)
+        c.pack_start(bottom, False, False, 0)
+        bottom.add(self._status)
+        self._threshold_button = gtk.Button('threshold')
+        self._threshold_button.connect('clicked', self.threshold)
+        bottom.pack_start(self._threshold_button)
+        self._w.add(c)
         self._w.show_all()
 
+    def _load_table(self, attr_name, table_name):
+        if not hasattr(self, attr_name):
+            with open(table_name) as fd:
+                setattr(self, attr_name, fd.read())
+
+    def webots_table(self):
+        """ switch to webots colortable """
+        self._load_table('_webots_table', consts.WEBOTS_TABLE_FILENAME)
+        self._table = self._webots_table
+
+    def default_table(self):
+        """ switch to default colortable """
+        self._load_table('_default_table', consts.DEFAULT_TABLE_FILENAME)
+        self._table = self._default_table
+
+    def installed_table(self):
+        self._table = self._installed_table
+
     def _finishInit(self, result):
+        # get the library, initialize the arrays
+        self._imops, self._rgb = self._con.get_imops()
+        self._thresholded = ' '*(consts.IMAGE_WIDTH_INT*consts.IMAGE_HEIGHT_INT)
+        # store some of the required functions (or bust if something is wrong)
+        self.yuv422_to_rgb888 = self._imops.yuv422_to_rgb888
+        self.yuv422_to_thresholded = self._imops.yuv422_to_thresholded
+        self.thresholded_to_rgb = self._imops.thresholded_to_rgb
+        self.write_index_to_rgb = self._imops.write_index_to_rgb
+        self._table = self._installed_table = image.get_nao_mtb()
         self._startTaskFirstTime()
+
+    def color(self, index, r, g, b):
+        s = chr(r)+chr(g)+chr(b)
+        self.write_index_to_rgb(s, index, index+1)
 
     def _updateTarget(self, x, y):
         """ x and y in pixels in 0~IMAGE_WIDTH-1, 0~IMAGE_HEIGHT-1 range
@@ -342,42 +387,67 @@ class VideoWindow(TaskBaseWindow):
                 , (y - consts.IMAGE_HALF_HEIGHT) * consts.PIX_TO_RAD_Y)
 
     def _onMouseMotion(self, widget, event):
+        ind = int((event.y*consts.IMAGE_WIDTH+event.x)*3)
+        if (ind+3 > len(self._rgb)): return
         self._updateTarget(event.x, event.y)
         yaw, pitch = self._target
         self.set_title('%s, %s (%d, %d)' % (
             event.x, event.y, int(yaw*RAD_TO_DEG), pitch*RAD_TO_DEG))
+        r, g, b = self._rgb[ind:ind+3]
+        r, g, b = ord(r), ord(g), ord(b)
+        self._status.set_label('%02X %02X %02X (%d %d %d)' % (r, g, b, r, g, b))
 
     def _onButtonClick(self, widget, event):
         print "click: ", event.x, event.y
         if not self._dmove.called: return
         self._updateTarget(event.x, event.y)
-        self._dmove = Deferred() # to be replaced later
         MIN_PITCH_MOVE = MIN_YAW_MOVE = 3 * DEG_TO_RAD
         cmd_yaw, cmd_pitch = self._target
         if abs(cmd_yaw) > MIN_YAW_MOVE or abs(cmd_pitch) > MIN_PITCH_MOVE:
             #print "commanding: yaw %3.3f, pitch %3.3f" % (cmd_yaw*RAD_TO_DEG, cmd_pitch*RAD_TO_DEG)
-            self._dmove = Deferred()
+            self._dmove = Deferred() # to be replaced later
             self._con.ALMotion.getBodyAngles().addCallback(self._onButtonClick_onBodyAngles)
 
     def _onButtonClick_onBodyAngles(self, result):
-        yaw, pitch = result[consts.HEAD_YAW_JOINT_INDEX], result[consts.HEAD_PITCH_JOINT_INDEX]
+        yaw, pitch = (result[consts.HEAD_YAW_JOINT_INDEX],
+                      result[consts.HEAD_PITCH_JOINT_INDEX])
         cmd_yaw, cmd_pitch = self._target
         tgt_yaw, tgt_pitch = yaw + cmd_yaw, pitch + cmd_pitch
-        print "moving yaw %3.1f->%3.1f, pitch %3.1f->%3.1f" % (yaw*RAD_TO_DEG, pitch*RAD_TO_DEG,
-            tgt_yaw*RAD_TO_DEG, tgt_pitch*RAD_TO_DEG)
+        print "moving yaw(%3.1f) %3.1f->%3.1f, pitch(%3.1f) %3.1f->%3.1f" % (
+            cmd_yaw*RAD_TO_DEG, yaw*RAD_TO_DEG, tgt_yaw*RAD_TO_DEG,
+            cmd_pitch*RAD_TO_DEG, pitch*RAD_TO_DEG, tgt_pitch*RAD_TO_DEG)
         self._dmove = self._con.ALMotion.gotoAnglesWithSpeed(
             ['HeadYaw', 'HeadPitch'], [tgt_yaw, tgt_pitch],
             50, # percent of max speed 1~100
             consts.INTERPOLATION_SMOOTH)
 
+    # getters / setters
+    def threshold(self, *args):
+        self._threshold = not self._threshold
+
+    # Getting the Image
+
     def getNew(self):
         #import pdb; pdb.set_trace()
-        return self._con.getRGBRemoteFromYUV422()
+        return self._con.getImageRemoteRaw()
+        #return self._con.getRGBRemoteFromYUV422()
 
-    def _update(self, result):
-        width, height, rgb = result
+    def onYUV(self, (yuv, width, height)):
+        """ In preperation to put this in a different thread """
+        self._yuv = yuv
+        yuv, rgb = self._yuv, self._rgb
+        if self._threshold:
+            thresholded = self._thresholded
+            self.yuv422_to_thresholded(self._table, yuv, thresholded)
+            self.thresholded_to_rgb(thresholded, rgb)
+        else:
+            self.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
         pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
+        self._rgb = rgb
         self._im.set_from_pixbuf(pixbuf)
+        
+    def _update(self, result):
+        self.onYUV(result)
 
 ################################################################################
 

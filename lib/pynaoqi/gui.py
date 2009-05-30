@@ -377,9 +377,6 @@ class Joints(object):
         self._joints_widgets = set([])
         self._all_widgets = self._buttons_widgets.union(self._joints_widgets)
 
-        # Create walk buttons (later need to allow hiding them)
-        button_box = gtk.HBox()
-
         w.resize(700, 400)
         w.show_all()
         w.connect("destroy", self.onDestroy)

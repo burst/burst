@@ -87,12 +87,19 @@ def watch(names):
 def plottime(names, limits=(0.0, 320.0), dt=1.0):
     return GtkTimeTicker(lambda: con.ALMemory.getListData(names), limits=limits, dt=dt)
 
+##### Allow for a single video window to be open ########
 video_window = None
+def _onVideoClose(window):
+    global video_window
+    video_window = None
+
 def video():
     global video_window
     if video_window is None:
         video_window = VideoWindow(con)
+        video_window.onClose.addCallback(_onVideoClose)
     return video_window
+#########################################################
 
 def canvaspairs(l, limits=[0,320,0,320], statics=None):
     from twisted.internet.defer import succeed
@@ -294,8 +301,10 @@ def make_shell_namespace(use_pylab):
     namespace for easy naoqi developing and debugging.
     """
 
+    import burst
     import burst_util
     import burst.consts as consts
+    import burst.image as image
     import vision_definitions
     from twisted.internet import task
     from twisted.internet import defer
@@ -318,10 +327,12 @@ def make_shell_namespace(use_pylab):
         startplayer = startplayer,
         players = players,
         # burst
+        burst = burst,
         moves = moves,
         field = field,
         consts = consts,
         vision_definitions = vision_definitions,
+        image = image,
         # utilities
         refilter = burst_util.refilter,
         redir = burst_util.redir,
