@@ -1,0 +1,5 @@
+#!/bin/sh
+cd $HOME/src/burst/webots/controllers/
+#gdb -x $HOME/src/burst/bin/gdbnao.commands nao_in_webots64/bin/nao_in_webots
+gdb -x $HOME/src/burst/bin/gdbnao.commands nao_in_webots/bin/nao_in_webots
+

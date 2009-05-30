@@ -1,0 +1,5 @@
+#!/bin/sh
+
+#vim $HOME/src/burst/webots/controllers/nao_in_webots64/nao_in_webots32
+vim $HOME/src/burst/webots/controllers/nao_in_webots/nao_in_webots
+
