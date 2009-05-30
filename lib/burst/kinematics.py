@@ -722,6 +722,8 @@ class NaoPose(object):
             pixelY >= IMAGE_HEIGHT or pixelY < 0):
             return NULL_ESTIMATE
 
+        objectHeight = objectHeight_cm * CM_TO_MM
+
         # declare x,y,z coordinate of pixel in relation to focal point
         pixelInCameraFrame = vector4D(FOCAL_LENGTH_MM,
                  (IMAGE_CENTER_X - float(pixelX)) * PIX_X_TO_MM,
@@ -737,7 +739,7 @@ class NaoPose(object):
         # In most cases, this plane is the ground plane, which is comHeight below the
         # origin of the world frame. If we call this method with objectHeight != 0,
         # then the plane is at a different height.
-        object_z_in_world_frame = -self.comHeight + objectHeight_cm * CM_TO_MM
+        object_z_in_world_frame = -self.comHeight + objectHeight
 
         # We are going to parameterize the line with one variable t. We find the t
         # for which the line goes through the plane, then evaluate the line at t for
@@ -762,12 +764,15 @@ class NaoPose(object):
         #then we need to make sure that the pixel in world frame is lower than
         #the focal point, or else, we will get odd results, since the point
         #of intersection with that plane will be behind us.
-        if (objectHeight_cm*CM_TO_MM < self.comHeight + self.focalPointInWorldFrame[Z]
+        if (objectHeight < self.comHeight + self.focalPointInWorldFrame[Z]
             and pixelInWorldFrame[Z] > self.focalPointInWorldFrame[Z]):
             return NULL_ESTIMATE
 
         est = self.getEstimate(objectInWorldFrame)
-        est[EST_DIST] = correctDistance(est[EST_DIST])
+        # TODO: why that function? it seems to be perfectly fine without
+        # that correction. It is basically a parabola. Why those parameters?
+        # did they do any sort of measurement?
+        #est[EST_DIST] = correctDistance(est[EST_DIST])
 
         return est
 
