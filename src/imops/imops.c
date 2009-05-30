@@ -1,18 +1,20 @@
 /*
+BURST Image Processing Operations
+imops.c
+
+
 Any image processing operation that is not easy / fast enough to do
 in straight python goes into here. They should all be easily callable
 using the ctypes wrapper, which I hope will be enought till the end
 of this competition.
 */
 
+#include <stdio.h>
 #include <string.h>
 
-/* Pass a YUV image in 422 through a YUV lookup table
-Currently the values for the offsets are hardcoded.
- - but there is a nice function to write to this from outside,
- say from some python code.
-*/
-
+// Color Table definitions. The color table is YMAXxUMAXxVMAX, and
+// to lookup in it you take a YUV tripplet and shift them with
+// YSHIFT, USHIFT and VSHIFT respectively.
 #define YMAX 128
 #define UMAX 128
 #define VMAX 128
@@ -54,7 +56,10 @@ Currently the values for the offsets are hardcoded.
 #define MAGENTA 26
 #define PURPLE 27
 
-// index to rgb table
+// index to rgb table - for debugging, no required
+// relation to the original colors in the color table (i.e.,
+// this is not the median of the color or anything of the sort,
+// just something that should look similar to the name in question).
 unsigned char indexed_as_rgb[][3] = {
 // GREY 0
     {127, 127, 127},
@@ -115,11 +120,42 @@ unsigned char indexed_as_rgb[][3] = {
 
 };
 
+// Used by python code to update the table the indexed_to_rgb function uses.
 void write_index_to_rgb(char* index_to_rgb, int color_start, int color_end) {
     if (color_end < color_start) return;
     if (color_start < 0 || color_end < 0) return;
     if (color_end > sizeof(indexed_as_rgb)/3) return;
     memcpy(&indexed_as_rgb[color_start], index_to_rgb, (color_end-color_start)*3);
+}
+
+// Debugging only - image continues with the thresholded image, but
+// we need to show ourselves the image, it is much easier with an
+// RGB one where the indices have been mapped into the RGB we
+// assigned to them earlier (sort of the inverse of thresholding)
+
+void thresholded_to_rgb(unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH],
+    unsigned char rgb[IMAGE_HEIGHT*IMAGE_WIDTH*3])
+{
+    // rgb output is actually width first, not later, so we keep
+    // two pointers
+    unsigned char* src = &thresholded[0][0];
+    unsigned char* tgt = &rgb[0];
+    unsigned char *color;
+    int i = IMAGE_HEIGHT*IMAGE_WIDTH;
+
+    for (i = IMAGE_HEIGHT*IMAGE_WIDTH; i > 0; --i, tgt+=3, ++src) {
+        color = indexed_as_rgb[*src];
+        tgt[0] = color[0];
+        tgt[1] = color[1];
+        tgt[2] = color[2];
+        /*
+        if (src_x >= IMAGE_WIDTH) {
+            src_x = 0;
+            src_y += 1;
+            tgt = &rgb[0] + src_y*3;
+        }
+        */
+    }
 }
 
 
@@ -130,7 +166,7 @@ void write_index_to_rgb(char* index_to_rgb, int color_start, int color_end) {
 //   planes are either 1 byte ahead or 3 bytes ahead, usually YUYV which means
 //   1 and 3 respectively. If inverted, that would be 1, 3.
 
-// thresholded - Threshold.h::Threshold::thresholded
+// thresholded - copied from Threshold.h::Threshold::thresholded with some minor changes.
 void yuv422_to_thresholded(unsigned char bigTable[YMAX][UMAX][VMAX], unsigned char* yplane, unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH])
 {
     // My loop variables
@@ -186,36 +222,6 @@ void yuv422_to_thresholded(unsigned char bigTable[YMAX][UMAX][VMAX], unsigned ch
     }
 }
 
-// Debugging only - image continues with the thresholded image, but
-// we need to show ourselves the image, it is much easier with an
-// RGB one where the indices have been mapped into the RGB we
-// assigned to them earlier (sort of the inverse of thresholding)
-
-void thresholded_to_rgb(unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH],
-    unsigned char rgb[IMAGE_HEIGHT*IMAGE_WIDTH*3])
-{
-    // rgb output is actually width first, not later, so we keep
-    // two pointers
-    unsigned char* src = &thresholded[0][0];
-    unsigned char* tgt = &rgb[0];
-    unsigned char *color;
-    int i = IMAGE_HEIGHT*IMAGE_WIDTH;
-
-    for (i = IMAGE_HEIGHT*IMAGE_WIDTH; i > 0; --i, tgt+=3, ++src) {
-        color = indexed_as_rgb[*src];
-        tgt[0] = color[0];
-        tgt[1] = color[1];
-        tgt[2] = color[2];
-        /*
-        if (src_x >= IMAGE_WIDTH) {
-            src_x = 0;
-            src_y += 1;
-            tgt = &rgb[0] + src_y*3;
-        }
-        */
-    }
-}
-
 
 /*
 Convert a string of YUY422 to RGB888
@@ -230,12 +236,6 @@ pixels, except the y's which are one for each pixel.
 Note that this is actually Y C_b C_r and not YUV (talking colour spaces)
 see for instance http://fourcc.org/fccyvrgb.php
 */
-#include <stdio.h>
-
-void init_lookups()
-{
-    // TODO
-}
 
 /* We assume that yuv and rgb are both readable and writable, and preallocated.
 rgb needs to be 1.5 times size!

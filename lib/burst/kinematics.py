@@ -39,8 +39,6 @@ import burst
 # matrix by col: same!
 #  dot(X,col)
 
-DEG_TO_RAD = pi/180.0
-
 M_TO_CM  = 100.0
 CM_TO_M  = 0.01
 CM_TO_MM = 10.0
@@ -710,7 +708,7 @@ class NaoPose(object):
         # negative of what it should be.
         return intersection
 
-    def pixEstimate(self, pixelX, pixelY, objectHeight, debug=False):
+    def pixEstimate(self, pixelX, pixelY, objectHeight_cm, debug=False):
         """
          returns an estimate to a given x,y pixel, representing an
                          object at a certain height from the ground. Takes units of
@@ -739,7 +737,7 @@ class NaoPose(object):
         # In most cases, this plane is the ground plane, which is comHeight below the
         # origin of the world frame. If we call this method with objectHeight != 0,
         # then the plane is at a different height.
-        object_z_in_world_frame = -self.comHeight + objectHeight * CM_TO_MM
+        object_z_in_world_frame = -self.comHeight + objectHeight_cm * CM_TO_MM
 
         # We are going to parameterize the line with one variable t. We find the t
         # for which the line goes through the plane, then evaluate the line at t for
@@ -764,7 +762,7 @@ class NaoPose(object):
         #then we need to make sure that the pixel in world frame is lower than
         #the focal point, or else, we will get odd results, since the point
         #of intersection with that plane will be behind us.
-        if (objectHeight*CM_TO_MM < self.comHeight + self.focalPointInWorldFrame[Z]
+        if (objectHeight_cm*CM_TO_MM < self.comHeight + self.focalPointInWorldFrame[Z]
             and pixelInWorldFrame[Z] > self.focalPointInWorldFrame[Z]):
             return NULL_ESTIMATE
 

@@ -1,7 +1,7 @@
 from math import atan2
 import burst
 from burst.consts import *
-from burst_util import (transpose, cumsum, normalize2,
+from burst_util import (transpose, cumsum, normalize2, succeed,
     BurstDeferred, Deferred, DeferredList, chainDeferreds)
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT

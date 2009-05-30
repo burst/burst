@@ -270,6 +270,14 @@ players.localize.init() # for inspecting, doesn't start, just constructs
 bug=refilter('ChestBoard/[NA][ac]',names)
 watch(bug)
 
+# Watch the thresholded image
+v=video()
+v.threshold()
+
+# display a single image (need to run with -pylab)
+a=frombuffer(v._thresholded,dtype=uint8).reshape((240,320))
+imshow(a)
+
 """
 
 STRANGE_ONES="""
