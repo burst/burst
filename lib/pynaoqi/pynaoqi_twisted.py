@@ -35,10 +35,18 @@ class SoapConnectionManager(object):
         self._last_connection_error = time()
 
     def sendPacket(self, tosend):
+        """ reuse this method to also clean up closed sockets at the same time.
+        note that this is not a solution to why they were closed in the first place. """
         deferred = Deferred()
-        for prot in self._protocols:
+        to_delete = []
+        for i, prot in enumerate(self._protocols):
+            if prot.transport.disconnected:
+                to_delete.append(i)
             if prot.ready:
                 return prot.sendPacket(tosend, deferred)
+        for i in reversed(to_delete):
+            print "deleting protocol %s, tosend = %s" % (i, self._protocol[i].tosend)
+            del self._protocols[i]
         # no existing protocol
         self._makeNewProtocol(tosend=tosend, deferred=deferred)
         return deferred

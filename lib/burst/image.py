@@ -5,13 +5,16 @@ Image processing utilities
 import os
 
 import burst
-if burst.connecting_to_nao():
+if burst.running_on_nao():
     base='/opt/naoqi/'
 else:
     base=os.environ['AL_DIR']
-TABLE=os.path.join(base, 'modules/etc/table.mtb')
-with open(os.path.join(base, 'modules/etc/whichtable.txt')) as fd:
-    which=fd.read().strip()
+TABLE = os.path.join(base, 'modules/etc/table.mtb')
+WHICH = os.path.join(base, 'modules/etc/whichtable.txt')
+which = 'undefined'
+if not os.path.exists(WHICH):
+    with open(WHICH) as fd:
+        which=fd.read().strip()
 
 if (('webots' in which and burst.connecting_to_nao()) or
     ('webots' not in which and burst.connecting_to_webots())):

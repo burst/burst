@@ -341,6 +341,7 @@ def make_shell_namespace(use_pylab):
         players = players,
         # burst
         burst = burst,
+        burst_util = burst_util,
         moves = moves,
         field = field,
         consts = consts,

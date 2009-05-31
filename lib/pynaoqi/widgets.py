@@ -14,6 +14,7 @@ try:
 except:
     pass
 
+import burst
 from burst.consts import DEG_TO_RAD, RAD_TO_DEG
 import burst.consts as consts
 import burst.image as image
@@ -369,6 +370,10 @@ class VideoWindow(TaskBaseWindow):
         self._table = self._installed_table
 
     def _finishInit(self, result):
+        """ called after we have a camera registration and can start receiving
+        images. Does all initialization that can be postponed (read the imops
+        library, read the color tables), and actually starts the task to retrieve
+        images (which consumes loads of bandwidth) """
         # get the library, initialize the arrays
         self._imops, self._rgb = self._con.get_imops()
         self._thresholded = ' '*(consts.IMAGE_WIDTH_INT*consts.IMAGE_HEIGHT_INT)
@@ -377,7 +382,14 @@ class VideoWindow(TaskBaseWindow):
         self.yuv422_to_thresholded = self._imops.yuv422_to_thresholded
         self.thresholded_to_rgb = self._imops.thresholded_to_rgb
         self.write_index_to_rgb = self._imops.write_index_to_rgb
+        self.default_table()
+        self.webots_table()
         self._table = self._installed_table = image.get_nao_mtb()
+        #actually, let's set the correct table here:
+        if burst.connecting_to_webots():
+            self.webots_table()
+        else:
+            self.default_table()
         self._startTaskFirstTime()
 
     def color(self, index, r, g, b):

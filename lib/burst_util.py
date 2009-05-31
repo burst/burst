@@ -323,6 +323,12 @@ def cumsum(iter):
         s += t
         yield s
 
+def grid_points(x_range, y_range):
+    from pylab import meshgrid, resize
+    n = len(x_range) * len(y_range)
+    x, y = meshgrid(x_range, y_range)
+    return zip(resize(x,n).tolist(), resize(y,n).tolist())
+
 # Some Trigo
 def polar2cart(dist, bearing):
     return cos(bearing)*dist, sin(bearing)*dist

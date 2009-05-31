@@ -19,7 +19,7 @@ from scipy.linalg import lu, lu_factor
 
 import twisted.python.log as log
 
-from burst_util import nicefloats, DeferredList
+from burst_util import nicefloats, DeferredList, grid_points
 from burst.consts import HEAD_PITCH_JOINT_INDEX
 
 from burst import options, field
@@ -720,6 +720,30 @@ class NaoPose(object):
         # negative of what it should be.
         return intersection
 
+    def testPixEstimateMany(self):
+        from pylab import linalg, linspace, array
+        return [(linalg.norm(array((px,py)) -
+            (lambda x: (x.x, x.y))(self.testPixEstimateStraightForward(px,py)))
+                for px,py in grid_points(linspace(200,300,20), linspace(-100,100,20))]
+
+    def testPixEstimateStraightForward(self, x, y):
+        """ Reset our orientation to a fixed way - have the camera looking straight forward.
+        Test that target_location_WF is recreated correctly
+
+        Notice: when camera looks straight ahead, ditance is x, y becomes the x axis,
+        and z (height) becomes the x axis.
+        """
+        ang=[0.0 for i in xrange(26)]
+        ang[1] = -CAMERA_PITCH_ANGLE
+        # todo - assert self.cameraToWorldFrame == identity()
+        self.transform(ang, [0.0, 0.0])
+        z = bottom_cemera_height_when_level = (176.1075 + 331) / 10 # cm
+        pix_x, pix_y = (float(y) / x * FOCAL_LENGTH_MM / PIX_X_TO_MM + IMAGE_CENTER_X,
+                        float(z) / x * FOCAL_LENGTH_MM / PIX_Y_TO_MM + IMAGE_CENTER_Y)
+        print pix_x, pix_y
+        est = self.pixEstimate(pix_x, pix_y, 0.0)
+        return est
+
     def pixEstimate(self, pixelX, pixelY, objectHeight_cm, debug=False):
         """
          returns an estimate to a given x,y pixel, representing an
@@ -1029,16 +1053,19 @@ jointsMaxVelAvg = [
 #mDHNames
 ALPHA, L, THETA, D = 0, 1, 2, 3
 
-#                                  (alpha,  a ,  theta ,   d  )
-HEAD_MDH_PARAMS = [[0.0 , 0.0,  0.0 , 0.0],
+#        (alpha,  a ,  theta ,   d  )
+HEAD_MDH_PARAMS = [
+    [0.0 , 0.0,  0.0 , 0.0],
     [-pi/2, 0.0, -pi/2 , 0.0]]
 
-LEFT_ARM_MDH_PARAMS = [[-pi/2,0.0,0.0,0.0],
+LEFT_ARM_MDH_PARAMS = [
+    [-pi/2,0.0,0.0,0.0],
     [ pi/2,0.0,pi/2,0.0],
     [ pi/2,0.0,0.0,UPPER_ARM_LENGTH],
     [-pi/2,0.0,0.0,0.0]]
 
-LEFT_LEG_MDH_PARAMS = [[ -3*pi/4, 0.0,  -pi/2, 0.0],
+LEFT_LEG_MDH_PARAMS = [
+    [ -3*pi/4, 0.0,  -pi/2, 0.0],
     [ -pi/2,   0.0,   pi/4, 0.0],
     [ pi/2,    0.0,     0.0, 0.0],
 #[ pi/2,-THIGH_LENGTH,0.0, 0.0],
@@ -1046,7 +1073,8 @@ LEFT_LEG_MDH_PARAMS = [[ -3*pi/4, 0.0,  -pi/2, 0.0],
     [   0.0,-TIBIA_LENGTH,0.0, 0.0],
     [-pi/2,    0.0,     0.0, 0.0]]
 
-RIGHT_LEG_MDH_PARAMS= [[ -pi/4,  0.0,   -pi/2, 0.0],
+RIGHT_LEG_MDH_PARAMS= [
+    [ -pi/4,  0.0,   -pi/2, 0.0],
     [ -pi/2,   0.0,  -pi/4, 0.0],
     [  pi/2,    0.0,    0.0, 0.0],
 #[  pi/2,-THIGH_LENGTH,0.0,0.0],
@@ -1054,7 +1082,8 @@ RIGHT_LEG_MDH_PARAMS= [[ -pi/4,  0.0,   -pi/2, 0.0],
     [0.0,-TIBIA_LENGTH,0.0,0.0],
     [-pi/2,0.0,0.0,0.0]]
 
-RIGHT_ARM_MDH_PARAMS = [[-pi/2, 0.0,0.0,0.0],
+RIGHT_ARM_MDH_PARAMS = [
+    [-pi/2, 0.0,0.0,0.0],
     [ pi/2, 0.0,pi/2,0.0],
     [ pi/2, 0.0,0.0,UPPER_ARM_LENGTH],
     [-pi/2, 0.0,0.0,0.0]]
