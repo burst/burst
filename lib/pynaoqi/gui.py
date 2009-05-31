@@ -193,6 +193,45 @@ def setWalkConfig(con, param):
 
     return DeferredList(ds)
 
+class ScalePane(object):
+
+    """ single object with multiple scales, for easy hiding """
+
+    def __init__(self, parent, name, table, start_joint_num, joints, cur_angles):
+        self._name = name
+        self._parent = parent
+        self._joints = joints
+        self._toggle = gtk.Button(self._name)
+        self._toggle.connect('clicked', self._onToggleClicked)
+        self._visible = True
+        # update visibility toggling lists
+        self._widgets = []
+        for i, (joint_name, cur_a) in enumerate(zip(joints, cur_angles)):
+            start_i = start_joint_num + i
+            min_val, max_val, max_change_per_step = self._parent.joint_limits[joint_name]
+            s = Scale(start_i, joint_name, min_val, max_val, cur_a)
+            parent.scales[joint_name] = s # for updating
+            for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), Scale.ROW_OPTIONS):
+                table.attach(obj, start_i, start_i+1, row, row+1, xoptions, yoptions)
+            self._widgets.extend(s.col)
+            # value-changed is raised also when set_value is called
+            # move-scaler - nothing?
+
+    def toggle(self):
+        return self._toggle
+
+    def _onToggleClicked(self, event):
+        {True:self.hide, False:self.show}[self._visible]()
+        self._visible = not self._visible
+
+    def show(self):
+        for w in self._widgets:
+            w.show_all()
+
+    def hide(self):
+        for w in self._widgets:
+            w.hide_all()
+
 class Joints(object):
 
     def __init__(self):
@@ -214,19 +253,23 @@ class Joints(object):
 
         # Create the joint controlling and displaying slides (called by onJointData)
         def onBodyAngles(cur_angles):
-            table = gtk.Table(rows=Scale.NUM_ROWS, columns=len(self.joint_names), homogeneous=False)
-            # update visibility toggling lists
+            self._joint_panes = []
+            self._joints_table = table = gtk.Table(
+                    rows=Scale.NUM_ROWS, columns=len(self.joint_names), homogeneous=False)
+            # put all the toggle buttons on the top
+            togglebox = gtk.HBox()
+            for name, start, end in [('Head', 0,2), ('LArm', 2, 8), ('LLeg', 8, 14),
+                    ('RLeg', 14, 20), ('RArm', 20, 26)]:
+                joints, angles = self.joint_names[start:end], cur_angles[start:end]
+                pane = ScalePane(parent=self, name=name, table=table, start_joint_num=start,
+                    joints=joints, cur_angles=angles)
+                self._joint_panes.append(pane)
+                # update visibility toggling lists
+                togglebox.add(pane.toggle())
+            self._joints_container.pack_start(togglebox, False, False, 0)
+            self._joints_container.add(table)
             self._joints_widgets.add(table)
             self._all_widgets.add(table)
-            c.add(table)
-            for i, (joint_name, cur_a) in enumerate(zip(self.joint_names, cur_angles)):
-                min_val, max_val, max_change_per_step = self.joint_limits[joint_name]
-                s = Scale(i, joint_name, min_val, max_val, cur_a)
-                scales[joint_name] = s
-                for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), Scale.ROW_OPTIONS):
-                    table.attach(obj, i, i+1, row, row+1, xoptions, yoptions)
-                # value-changed is raised also when set_value is called
-                # move-scaler - nothing?
             self.updater.start(DT_CHECK_FOR_NEW_ANGLES)
             # we added a bunch of widgets, show them (this is async to __init__)
             w.show_all()
@@ -249,6 +292,7 @@ class Joints(object):
         w = gtk.Window()
         w.set_title('naojoints - %s' % self.con.host)
         self.c = c = gtk.VBox()
+        self._joints_container = gtk.VBox() # top - buttons, bottom - joints sliders table
         w.add(c)
 
         # Create Many Buttons on Top
@@ -270,8 +314,13 @@ class Joints(object):
                 buttons.append(b)
             return button_box, buttons
 
+        bat_stat_eventbox = gtk.EventBox()
+        self._battery_level_button = battery_status_label = gtk.Label()
+        bat_stat_eventbox.connect('button-press-event', self._toggleAllButtonsExceptBattery)
+        bat_stat_eventbox.add(battery_status_label)
+
         top_buttons_data = [
-            (gtk.Label(),   None),
+            (bat_stat_eventbox,   None),
             ('print angles',    self.printAngles),
             ('stiffness on',    self.setStiffnessOn),
             ('stiffness off',   self.setStiffnessOff),
@@ -361,8 +410,6 @@ class Joints(object):
         walk_strip, walk_buttons     = create_button_strip(walk_buttons_data)
         toggle_strip, toggle_buttons = create_button_strip(toggle_buttons_data)
 
-        self._battery_level_button = top_buttons[0] # XXX - ugly
-
         # Python bug? if I don't set the result of ToggleButton to something
         # it is lost to the garbage collector.. very hard to debug, since you just
         # have a missing dictionary, but no actual error..
@@ -372,15 +419,25 @@ class Joints(object):
         for button_strip in [top_strip, toggle_strip, stiffness_off, stiffness_on, moves_strip, walk_strip]:
             c.pack_start(button_strip, False, False, 0)
     
+        # add the joints container after all the buttons
+        c.add(self._joints_container)
+
         # lists for toggling visibility with appropriate callbacks
         self._buttons_widgets = set([stiffness_off, stiffness_on, moves_strip, walk_strip])
         self._joints_widgets = set([])
         self._all_widgets = self._buttons_widgets.union(self._joints_widgets)
+        self._all_but_bat_label = self._all_widgets.union(set(top_buttons[1:]))
 
         w.resize(700, 400)
         w.show_all()
         w.connect("destroy", self.onDestroy)
     
+    def _toggleAllButtonsExceptBattery(self, widget, event, state=[True]):
+        op = {True: lambda w: w.hide_all(),
+         False: lambda w: w.show_all()}[state[0]]
+        state[0] = not state[0]
+        map(op, self._all_but_bat_label)
+
     def onShowAll(self, _):
         for w in self._all_widgets:
             w.show_all()

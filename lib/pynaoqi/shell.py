@@ -284,6 +284,9 @@ imshow(a)
 
 STRANGE_ONES="""
 loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
+
+# Not strange, just ugly.
+loop(lambda: kin.pose.update(con).addCallback(lambda _: nicefloats([kin.pose._estimates['YGLP'][0][0], kin.pose._estimates['YGRP'][0][0]] + kin.pose.cameraToWorldFrame[0].tolist() + kin.pose._bodyAngles[:2] + [kin.pose._v.YGRP.height+kin.pose._v.YGRP.y, kin.pose._v.YGRP.x, kin.pose._v.YGLP.height+kin.pose._v.YGLP.y, kin.pose._v.YGLP.x+kin.pose._v.YGLP.width])))
 """
 
 def examples():

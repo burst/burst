@@ -24,7 +24,8 @@ import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions
 if DEBUG:
     import memory
 
-from burst_util import succeed, Deferred, whichlib
+from burst_util import (succeed, Deferred, whichlib, is64,
+    is_64bit_elf)
 
 #########################################################################
 # Constants
@@ -842,11 +843,15 @@ class NaoQiConnection(BaseNaoQiConnection):
 
     def has_imops(self):
         import ctypes
-        imops = whichlib('imops.so')
+        imops_fname = whichlib('imops.so')
         HOME = os.environ['HOME']
         src_imops = '%s/src/burst/src/imops/imops.c' % HOME
-        if not imops or os.stat(imops)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]:
-            # make it
+        bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
+        if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
+            or bad_architecture):
+            if bad_architecture: # force make to remake the so file
+                os.system('cd %s/src/burst/src/imops; make clean' % HOME)
+            # make it (either it doesn't exist, is too old, or doesn't match the architecture)
             os.system('cd %s/src/burst/src/imops; make' % HOME)
         try:
             imops = ctypes.CDLL('imops.so')

@@ -758,8 +758,8 @@ class NaoPose(object):
         # the x,y,z coordinate
         t = 0
 
-        # calculate t knowing object_z_in_body_frame
-        if ((self.focalPointInWorldFrame[Z] - pixelInWorldFrame[Z]) != 0):
+        # calculate t knowing object_z_in_body_frame (don't calculate if looking up)
+        if ((self.focalPointInWorldFrame[Z] - pixelInWorldFrame[Z]) > 0):
             t = ( object_z_in_world_frame - pixelInWorldFrame[Z]
                 ) / ( self.focalPointInWorldFrame[Z] - pixelInWorldFrame[Z] )
 

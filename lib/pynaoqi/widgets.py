@@ -316,11 +316,17 @@ class GtkTimeTicker(TaskBaseWindow):
 
 class VideoWindow(TaskBaseWindow):
 
+    """ Display the RGB of the received YUV image from NaoCam module directly
+    or after thresholding, allow changing of angle to a specific point (comands
+    head pitch and yaw only). Access to pixmaps and thresholded image in
+    self._yuv, self._rgb, self._thresholded
+    """
+
     def __init__(self, con):
+        super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
         if con.has_imops() is None:
             print "Video window not opened, imops isn't working, please fix"
             return
-        super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
         self._threshold = False # to threshold or not to threshold
         self._con = con
         self._con.registerToCamera().addCallback(self._finishInit)
@@ -435,7 +441,7 @@ class VideoWindow(TaskBaseWindow):
     def onYUV(self, (yuv, width, height)):
         """ In preperation to put this in a different thread """
         self._yuv = yuv
-        yuv, rgb = self._yuv, self._rgb
+        rgb = self._rgb
         if self._threshold:
             thresholded = self._thresholded
             self.yuv422_to_thresholded(self._table, yuv, thresholded)

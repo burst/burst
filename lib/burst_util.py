@@ -433,7 +433,7 @@ def is_64bit_elf(filename):
     return ei_class == ELFCLASS64
 
 def is64():
-    return sys.maxint != 2**32-1 # actually it's "not is32()" but it is the same
+    return sys.maxint != 2**31-1 # actually it's "not is32()" but it is the same
 
 # Python language util
 
