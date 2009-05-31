@@ -1,7 +1,10 @@
 import os
+import sys
 import re
 from time import time
 from math import cos, sin, sqrt, atan2
+import linecache
+import glob
 
 # Data Structures
 
@@ -422,12 +425,15 @@ def getip():
 # ELF util
 
 ELFCLASS32, ELFCLASS64 = chr(1), chr(2) # taken from the ELF spec
-def is64():
-    fd = open('/bin/sh') # some executable that should be on all systems
+def is_64bit_elf(filename):
+    fd = open(filename)
     header = fd.read(16) # size of ELF header
     fd.close()
     ei_class = header[4]
     return ei_class == ELFCLASS64
+
+def is64():
+    return sys.maxint != 2**32-1 # actually it's "not is32()" but it is the same
 
 # Python language util
 
@@ -467,4 +473,34 @@ class LogCalls(object):
             if k == 'post':
                 return LogCalls('%s.%s' % (self._name, k), f)
         return f
+
+# File utils
+def read_ld_so_conf():
+    def clean(ls):
+        return [x for x in [x.strip() for x in ls] if x!='' and x[:1] != '#']
+    conf = clean(linecache.getlines('/etc/ld.so.conf'))
+    dirs = [x for x in conf if x != '' and not x.startswith('include')]
+    for x in conf:
+        if x.startswith('include'):
+            for f in glob.glob(x.split()[1]):
+                dirs.extend(clean(linecache.getlines(f)))
+    return dirs
+LD_DEFAULT_PATHS = list(set(['/lib', '/usr/lib'] + read_ld_so_conf()))
+
+def find_in_paths(paths, fname, realpath=True):
+    for p in paths:
+        p = os.path.join(p, fname)
+        if realpath:
+            p = os.path.realpath(p)
+        if os.path.exists(p):
+            return p
+    return None
+
+def which(fname, realpath=True):
+    return find_in_paths(os.environ['PATH'].split(':'), fname, realpath=realpath)
+
+def whichlib(fname, realpath=True):
+    default_dirs = LD_DEFAULT_PATHS
+    all_dirs = default_dirs + os.environ['LD_LIBRARY_PATH'].split(':')
+    return find_in_paths(all_dirs, fname, realpath=realpath)
 
