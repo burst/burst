@@ -260,6 +260,8 @@ fieldshow()
 # Kinematics (import takes some time, hence not done by default)
 import burst.kinematics as kin
 kin.pose.update(con)
+# Watch distance estimates to field goal posts
+loop(lambda: kin.pose.update(con).addCallback(lambda _: (kin.pose._estimates['YGLP'][0][0], kin.pose._estimates['YGRP'][0][0])))
 
 # Running a player (BROKEN)
 players.localize.start()

@@ -17,6 +17,8 @@ from numpy import (sin, cos, zeros,
 from numpy.linalg import norm
 from scipy.linalg import lu, lu_factor
 
+import twisted.python.log as log
+
 from burst_util import nicefloats, DeferredList
 from burst.consts import HEAD_PITCH_JOINT_INDEX
 
@@ -300,9 +302,9 @@ class NaoPose(object):
                 results.append(self._location[:2])
             return results
 
-        return self.update(con, returnPairs)
+        return self.update(con).addCallback(returnPairs)
 
-    def update(self, con, cb=None):
+    def update(self, con):
         """ Development helper. Not to be confused with player usable code.
         """
         from pynaoqi.shell import onevision
@@ -310,11 +312,11 @@ class NaoPose(object):
             con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
             con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
             onevision().addCallback(self._storeVision),
-            ]).addCallback(self._calcValues)
-        if cb is None:
-            cb = self._printUpdatedCalculations
-        d.addCallback(cb)
+            ], fireOnOneErrback=True).addCallbacks(self._updateFromVisionAndAngles, log.err)
         return d
+
+    def update_print(self, con):
+        return self.update(con).addCallback(self._printUpdatedCalculations)
 
     def _storeInclination(self, result):
         if not self._connecting_to_webots:
@@ -331,7 +333,7 @@ class NaoPose(object):
         print "joints:     ", nicefloats(self._bodyAngles)
         print "comheight:  ", self.comHeight
         print "focal WF:   ", self.focalPointInWorldFrame
-        print "cameraToWF: ", (self.cameraToWorldFrame*100).astype('int')
+        print "cameraToWF:\n", (self.cameraToWorldFrame*100).astype('int')
         print
         v = self._v
         for name, obj in [('YGLP', v.YGLP),
@@ -355,7 +357,12 @@ class NaoPose(object):
             return self.pixHeightToDistancePlus(obj.height, obj.x, field.GOAL_POST_CM_HEIGHT, debug=True)
         return one(self._v.YGRP) + one(self._v.YGLP)
 
-    def _calcValues(self, result):
+    def _updateFromVisionAndAngles(self, result):
+        """ update all estimations and localization information, ultimately also the
+        any EKF/MCL code, here. Can be called iteratively for same input, should be
+        called on any new information (joints, inclinations, vision objects pixel
+        location).
+        """
         # update the transforms
         self.transform(self._bodyAngles, self._inclination)
         # calculate various objects distances
@@ -366,11 +373,15 @@ class NaoPose(object):
             ('YGLP', v.YGLP, goal_post_height),
             ('YGRP', v.YGRP, goal_post_height), ('Ball', v.Ball, 10)]:
             if obj.distance == 0.0:
+                estimates[name] = (NULL_ESTIMATE, 0.0)
                 continue
             if name == 'Ball':
                 x, y = obj.centerx, obj.centery # ball doesn't record the bottom x and y
             else:
-                x, y = obj.x, obj.y
+                # obj.y is actually the top in the image, would generate a null
+                # estimate every time since the goal post is higher then the
+                # robot
+                x, y = obj.centerx, obj.y + obj.height
             estimate = self.pixEstimate(x, y, 0.0)
             # pixHeightToDistancePlus DOESN'T WORK - solution right now is to only use
             # value of pixel when the object is in bearing=0
@@ -380,6 +391,7 @@ class NaoPose(object):
             estimates[name] = (estimate, dist_height)
         # Try to calculate our position in WF
         self._updateXYTheta_from_twoDistOneAngle()
+        return self
 
     def _updateXYTheta_from_twoDistOneAngle(self,
             top=None, bottom=None, debug=False):
