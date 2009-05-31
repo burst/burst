@@ -45,10 +45,10 @@ class SoapConnectionManager(object):
                 to_delete.append(i)
                 # TODO - call the callback with an empty response, let it handle it?
                 # should probably start using errbacks, perfect for this.
-            if prot.ready and not returned:
+            elif prot.ready and not returned:
                 returned = prot.sendPacket(tosend, deferred)
         for i in reversed(to_delete):
-            print "deleting protocol %s, tosend = %s" % (i, self._protocol[i].tosend)
+            print "deleting protocol %s, tosend = %s" % (i, self._protocols[i].tosend)
             del self._protocols[i]
         if returned:
             return returned

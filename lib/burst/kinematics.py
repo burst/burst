@@ -720,17 +720,17 @@ class NaoPose(object):
         # negative of what it should be.
         return intersection
 
-    def testPixEstimateMany(self, pitch=0.0, acceptable_error=1):
+    def testPixEstimateMany(self, camera_pitch=0.0, acceptable_error=1):
         """
         Return results that are incorrect - those that have an error in position
         larger then acceptable_error and should be visible.
         """
         from pylab import linalg, linspace, array
-        results = [(self.testPixEstimateStraightForward(px,py), px, py)
+        results = [(self.testPixEstimateStraightForward(px, py, camera_pitch), px, py)
                 for px,py in grid_points(linspace(200,300,20), linspace(-100,100,20))]
         results = [(linalg.norm(array((px,py)) - (res[0].x, res[0].y)), res, px, py) for res, px, py
                     in results]
-        return [(err, est, pixel_x, pixel_y, px, py) for err, (est, pixel_x, piexl_y), px, py in
+        return [(err, est, pixel_x, pixel_y, px, py) for err, (est, pixel_x, pixel_y), px, py in
             results if err > acceptable_error and
                 0 <= pixel_x <= IMAGE_WIDTH and 0 <= pixel_y <= IMAGE_HEIGHT]
 
@@ -748,19 +748,20 @@ class NaoPose(object):
         """
         camera_pitch = -CAMERA_PITCH_ANGLE + camera_pitch # positive is looking down
         ang=[0.0 for i in xrange(26)]
-        ang[1] = camera_pitch
+        ang[1] = camera_pitch # here positive is looking down
         # todo - assert self.cameraToWorldFrame == identity()
         self.transform(ang, [0.0, 0.0])
+        foc_x, foc_y, foc_z = self.focalPointInWorldFrame # we aren't testing this..
         # first get values in WF but with Camera origin - this is almost the values we gave, but
         # we give values compared to body, so we need to fix them a little
-        z = bottom_cemera_height_when_level = (176.1075 + 331) * MM_TO_CM
+        z = bottom_cemera_height_when_level = (foc_z + 331) * MM_TO_CM
         x = x - self.focalPointInWorldFrame[X] * MM_TO_CM # compensate for distance camera is looking forward
         # now rotate by pitch - doesn't affect y at all, just x, and possibly what's in the frame
-        pitch = camera_pitch + CAMERA_PITCH_ANGLE
+        pitch = -camera_pitch - CAMERA_PITCH_ANGLE # in this calculation positive pitch is looking up
         cp, sp = cos(pitch), sin(pitch)
         x_tag = x * cp - z * sp
-        z_tag = x * sp - z * sp
-        if camera_pitch < 0: assert(z_tag < z)
+        z_tag = x * sp + z * cp
+        if pitch < 0: assert(z_tag < z)
         y = -y # keep right handed coordinate system. x is forward, y is to the left.
         pix_x, pix_y = (float(y) / x_tag * FOCAL_LENGTH_MM / PIX_X_TO_MM + IMAGE_CENTER_X,
                         float(z_tag) / x_tag * FOCAL_LENGTH_MM / PIX_Y_TO_MM + IMAGE_CENTER_Y)

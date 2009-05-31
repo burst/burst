@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import time
+import glob
 
 import gtk, goocanvas
 
@@ -16,8 +17,9 @@ try:
 except:
     pass
 
+import burst_util
 import burst
-from burst.consts import DEG_TO_RAD, RAD_TO_DEG
+from burst.consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
 import burst.consts as consts
 import burst.image as image
 
@@ -330,6 +332,7 @@ class VideoWindow(TaskBaseWindow):
         if con.has_imops() is None:
             print "Video window not opened, imops isn't working, please fix"
             return
+        self._reading_nbfrm = False
         self._threshold = False # to threshold or not to threshold
         self._con = con
         self._con.registerToCamera().addCallback(self._finishInit)
@@ -353,6 +356,8 @@ class VideoWindow(TaskBaseWindow):
         self._w.add(c)
         self._w.show_all()
 
+    # Color table support
+
     def _load_table(self, attr_name, table_name):
         if not hasattr(self, attr_name):
             with open(table_name) as fd:
@@ -370,6 +375,36 @@ class VideoWindow(TaskBaseWindow):
 
     def installed_table(self):
         self._table = self._installed_table
+
+    # Reading external images support
+
+    def read_nbfrm(self, filename):
+        self._reading_nbfrm = True
+        self.stop()
+        # stop updates from ticker
+        yuv, version, joints, sensors = burst_util.read_nbfrm(filename)
+        self.onYUV((yuv, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT))
+
+    def read_glob(self, expr):
+        self.read_bunch(glob.glob(expr))
+
+    def read_bunch(self, filenames):
+        self._index = 0
+        self._files = filenames
+        self._read_cur_nbfrm()
+
+    def _read_cur_nbfrm(self):
+        self.read_nbfrm(self._files[self._index])
+
+    def nbfrm_next(self):
+        self._index = (self._index + 1) % len(self._files)
+        self._read_cur_nbfrm()
+
+    def nbfrm_prev(self):
+        self._index = (self._index - 1) % len(self._files)
+        self._read_cur_nbfrm()
+
+    # Initialization
 
     def _finishInit(self, result):
         """ called after we have a camera registration and can start receiving
@@ -444,10 +479,14 @@ class VideoWindow(TaskBaseWindow):
     # getters / setters
     def threshold(self, *args):
         self._threshold = not self._threshold
+        self.onYUV((self._yuv, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT))
 
     # Getting the Image
 
+    # this is the registered task
     def getNew(self):
+        if self._reading_nbfrm: # short circuit if we aren't really listening.
+            return succeed((self.yuv, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT))
         #import pdb; pdb.set_trace()
         return self._con.getImageRemoteRaw()
         #return self._con.getRGBRemoteFromYUV422()
