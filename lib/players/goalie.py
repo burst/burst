@@ -34,6 +34,8 @@ class goalie(Player):
     def whitchBehavior (self):
         if self.isPenalty:
             self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
+            self.isTrackingBall = True
+            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
         else:
             self.watchIncomingBall()
 
