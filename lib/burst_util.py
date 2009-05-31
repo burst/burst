@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import os
 import sys
 import re
@@ -509,4 +511,32 @@ def whichlib(fname, realpath=True):
     default_dirs = LD_DEFAULT_PATHS
     all_dirs = default_dirs + os.environ['LD_LIBRARY_PATH'].split(':')
     return find_in_paths(all_dirs, fname, realpath=realpath)
+
+# Northern Bites specific, but still standalone
+
+def read_nbfrm(filename, width=320, height=240):
+    # doesn't check the version
+    # format from Sun May 31 22:34:05 IDT 2009
+    # yuv422 image dump (width*height*2 pixels)
+    # followed *immediately* by version number as ascii integer,
+    # then joints as floats in ascii with one space apart,
+    # then all sensors with one space apart
+    # currently that's 49 = 1 (version) + 26 + 22
+    # sensors:
+    #  fsr's: left  foot (front_left, front_right, rear_left, rear_right)   4
+    #       : right foot (front_left, front_right, rear_left, rear_right)   4
+    #  left foot bumpers (left, right), right foot bumpers (left, right)    4
+    #  inertial: accel x, y, z , gyro x, y, angles (computed by naoqi) x, y 7
+    #  ultrasound distance, ultrasound sound mode, supportfoot              3
+    #                                                                total 22
+    sensor_num = 22
+    with open(filename) as fd:
+        txt = fd.read()
+        img_end = width*height*2
+        yuv = txt[:img_end]
+        variables = txt[img_end:].split()
+        version   = int(variables[0])
+        variables = map(float, variables[1:])
+        joints, sensors = variables[:-sensor_num], variables[-sensor_num:]
+    return yuv, version, joints, sensors
 

@@ -202,7 +202,8 @@ class ScalePane(object):
         self._parent = parent
         self._joints = joints
         self._toggle = gtk.Button(self._name)
-        self._toggle.connect('clicked', self._onToggleClicked)
+        self._toggle.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self._toggle.connect('button-press-event', self._onToggleClicked)
         self._visible = True
         # update visibility toggling lists
         self._widgets = []
@@ -220,18 +221,50 @@ class ScalePane(object):
     def toggle(self):
         return self._toggle
 
-    def _onToggleClicked(self, event):
-        {True:self.hide, False:self.show}[self._visible]()
-        self._visible = not self._visible
+    def _onToggleClicked(self, widget, event):
+        if event.button == 2:
+            {True:self.hide, False:self.show}[self._visible]()
+        elif event.button == 3:
+            self._parent.showAllJoints()
+        else: # default
+            self._parent.toggleAllJointPanesButOne(self)
 
     def show(self):
         for w in self._widgets:
             w.show_all()
+        self._visible = True
 
     def hide(self):
         for w in self._widgets:
-            w.hide_all()
+            w.hide()
+        self._visible = False
 
+def create_button_strip(data):
+    """ despite the name this takes a iterable of (label, cb)
+    where label can also be a constructed widget, if it isn't
+    a string it is left untouched and added to a HBox as is,
+    otherwise a button is constructed. If cb is not None then the
+    clicked signal will call it.
+    """
+    button_box = gtk.HBox()
+    buttons = []
+    for label, cb in data:
+        if cb is None and not isinstance(label, str):
+            b = label # masquarade as a place to put premade widgets, for battery meter
+        else:
+            b = gtk.Button(label)
+        if cb:
+            b.connect("clicked", cb)
+        try:
+            button_box.add(b)
+        except:
+            import pdb; pdb.set_trace()
+        buttons.append(b)
+    return button_box, buttons
+
+################################################################################
+#### Main Class
+################################################################################
 class Joints(object):
 
     def __init__(self):
@@ -296,23 +329,6 @@ class Joints(object):
         w.add(c)
 
         # Create Many Buttons on Top
-
-        def create_button_strip(data):
-            button_box = gtk.HBox()
-            buttons = []
-            for label, cb in data:
-                if cb is None and not isinstance(label, str):
-                    b = label # masquarade as a place to put premade widgets, for battery meter
-                else:
-                    b = gtk.Button(label)
-                if cb:
-                    b.connect("clicked", cb)
-                try:
-                    button_box.add(b)
-                except:
-                    import pdb; pdb.set_trace()
-                buttons.append(b)
-            return button_box, buttons
 
         bat_stat_eventbox = gtk.EventBox()
         self._battery_level_button = battery_status_label = gtk.Label()
@@ -432,6 +448,17 @@ class Joints(object):
         w.show_all()
         w.connect("destroy", self.onDestroy)
     
+    def showAllJoints(self):
+        for pane in self._joint_panes:
+            pane.show()
+
+    def toggleAllJointPanesButOne(self, show_pane):
+        if show_pane:
+            show_pane.show()
+        for pane in self._joint_panes:
+            if show_pane is not pane:
+                pane.hide()
+
     def _toggleAllButtonsExceptBattery(self, widget, event, state=[True]):
         op = {True: lambda w: w.hide_all(),
          False: lambda w: w.show_all()}[state[0]]
