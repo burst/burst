@@ -3,6 +3,7 @@
 import math
 import re
 import os
+import stat
 import sys
 import socket
 import base64 # for getRemoteImage
@@ -23,7 +24,7 @@ import vision_definitions # copied from $AL_DIR/extern/python/vision_definisions
 if DEBUG:
     import memory
 
-from burst_util import succeed, Deferred
+from burst_util import succeed, Deferred, whichlib
 
 #########################################################################
 # Constants
@@ -841,6 +842,12 @@ class NaoQiConnection(BaseNaoQiConnection):
 
     def has_imops(self):
         import ctypes
+        imops = whichlib('imops.so')
+        HOME = os.environ['HOME']
+        src_imops = '%s/src/burst/src/imops/imops.c' % HOME
+        if not imops or os.stat(imops)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]:
+            # make it
+            os.system('cd %s/src/burst/src/imops; make' % HOME)
         try:
             imops = ctypes.CDLL('imops.so')
         except:
