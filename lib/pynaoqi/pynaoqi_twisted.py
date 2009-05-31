@@ -39,14 +39,19 @@ class SoapConnectionManager(object):
         note that this is not a solution to why they were closed in the first place. """
         deferred = Deferred()
         to_delete = []
+        returned = None
         for i, prot in enumerate(self._protocols):
             if prot.transport.disconnected:
                 to_delete.append(i)
-            if prot.ready:
-                return prot.sendPacket(tosend, deferred)
+                # TODO - call the callback with an empty response, let it handle it?
+                # should probably start using errbacks, perfect for this.
+            elif prot.ready and not returned:
+                returned = prot.sendPacket(tosend, deferred)
         for i in reversed(to_delete):
-            print "deleting protocol %s, tosend = %s" % (i, self._protocol[i].tosend)
+            print "deleting protocol %s, tosend = %s" % (i, self._protocols[i].tosend)
             del self._protocols[i]
+        if returned:
+            return returned
         # no existing protocol
         self._makeNewProtocol(tosend=tosend, deferred=deferred)
         return deferred

@@ -19,7 +19,7 @@ class Journey(object):
     SLOW_START_STEPS = 2 # The amount of steps one should take at a slower pace at the beginning.
 
     def __init__(self, actions):
-        self._printQueueBeforeExecution = False
+        self._printQueueBeforeExecution = True
         self._actions = actions
         self._world = self._actions._world
         self._motion = self._actions._motion
@@ -88,7 +88,7 @@ class Journey(object):
         self._cmds.append((description, f))
 
     def _executeAllCommands(self):
-        if self._printQueueBeforeExecution:
+        if self._printQueueBeforeExecution and len(self._cmds) > 4: # 3 - walkconfig, support, single leg (slow+regular walk).
             print "Executing Journey Queue:"
             for desc, f in self._cmds:
                 print "          %s" % desc

@@ -19,15 +19,6 @@ walks.SIT_POS[2] = 10
 import burst.moves.walks as walks
 walks.STRAIGHT_WALK.defaultSpeed = 80
 
-walks.SIT_POS = (((0.,91.,0.,0.),
-            (0.,0.,-55.,125.7,-75.7,0.),
-            (0.,0.,-55.,125.7,-75.7,0.),
-            (0.,-90.,0.,0.),3.0),
-           ((90.,0.,-65.,-57.),
-            (0.,0.,-55.,125.7,-75.7,0.),
-            (0.,0.,-55.,125.7,-75.7,0.),
-            (90.,0.,65.,57.),1.5))
-
 import burst.behavior_params as params
 params.KICK_X_MIN[:] = [14,14]
 params.KICK_X_MAX[:] = [18,18]
