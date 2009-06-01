@@ -164,7 +164,7 @@ class Actions(object):
         """
         
         print "changeLocationRelativeSideways (delta_x: %3.3f delta_y: %3.3f)" % (delta_x, delta_y)
-        distance, sideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
+        distance, distanceSideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
         did_sideways = None
 
         dgens = [] # deferred generators. This is the DESIGN PATTERN to collect a bunch of
@@ -172,36 +172,36 @@ class Actions(object):
                    # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
-        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+        if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
             walk = moves.SIDESTEP_WALK
         
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
-        steps = walk.defaultSpeed
-        StepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
+        defaultSpeed = walk.defaultSpeed
+        stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
-            print "WALKING STRAIGHT (StepLength: %3.3f distance: %3.3f)" % (StepLength, distance)
+            print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f)" % (stepLength, distance)
             
             # Vova trick - start with slower walk, then do the faster walk.
-            slow_walk_distance = min(distance, StepLength*2)
+            slow_walk_distance = min(distance, stepLength*2)
             if World.connected_to_nao:
                 dgens.append(lambda _: self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK ))
-                dgens.append(lambda _: self._motion.addWalkStraight( distance - slow_walk_distance, steps ))
+                dgens.append(lambda _: self._motion.addWalkStraight( distance - slow_walk_distance, defaultSpeed ))
             else:
-                print "ADD WALK STRAIGHT: %f, %f" % (distance, steps)
-                dgens.append(lambda _: self._motion.addWalkStraight( distance, steps ))
+                print "ADD WALK STRAIGHT: %f, %f" % (distance, defaultSpeed)
+                dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
 
         # Avoid minor sideways walking
-        if abs(sideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            print "WALKING SIDEWAYS (%3.3f)" % sideways
-            did_sideways = sideways
-            dgens.append(lambda _: self._motion.addWalkSideways(sideways, DEFAULT_STEPS_FOR_SIDEWAYS))
+        if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            print "WALKING SIDEWAYS (%3.3f)" % distanceSideways
+            did_sideways = distanceSideways
+            dgens.append(lambda _: self._motion.addWalkSideways(distanceSideways, defaultSpeed))
         else:
-            print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % sideways
+            print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % distanceSideways
             
-        duration = (steps * distance / StepLength +
-                    (did_sideways and DEFAULT_STEPS_FOR_SIDEWAYS or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+        duration = (defaultSpeed * distance / stepLength +
+                    (did_sideways and defaultSpeed or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
