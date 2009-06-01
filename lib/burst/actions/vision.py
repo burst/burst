@@ -2,6 +2,11 @@ from burst.events import *
 import burst
 from burst_util import BurstDeferred, Deferred
 
+# This is used for stuff like Localization, where there is an error
+# that is reduced by having a smaller error - otoh tracker will take longer
+# (possibly)
+TRACKER_DONE_MAX_PIXELS_FROM_CENTER = 5 # TODO - calibrate? there is an optimal number.
+
 class Tracker(object):
     
     """ track objects by moving the head """
@@ -12,15 +17,34 @@ class Tracker(object):
         self._eventmanager = actions._eventmanager
         self._stop = True
         self._on_lost = None
-        self._lost_event = self._in_frame_event = None
+        self._lost_event = None
+        self._in_frame_event = None
+        # if _centering_done != None then on centering it is called and tracking
+        # is stopped
+        self._centering_done = None
     
     def stopped(self):
         return self._stop
     
-    def track(self, target, on_lost_callback=None):
-        # don't track objects that are not seen
-        if not target.seen:
+    def center(self, target):
+        """
+        Center on target, returns a BurstDeferred.
+        """
+        # TODO - what happens if the target is lost during the centerring,
+        #  but it doesn't have an associated "lost" event? lost can
+        # happen because of occlusion, and because of vision problems (which
+        # can be minimized maybe).
+        if not target.seen: # sanity check (also makes sure we get the
+                            # lost event when it happens
             return
+        self._start(target, self._centeringOnLost)
+        self._centering_done = BurstDeferred()
+        self._centeringStep()
+
+    def _centeringOnLost(self):
+        print "Centering and Lost target? - target = %s" % self._target._name
+
+    def _start(self, target, on_lost_callback):
         self._target = target
         self._stop = False
         if hasattr(target, 'lost_event'):
@@ -29,8 +53,17 @@ class Tracker(object):
                 self._on_lost = BurstDeferred(self)
                 self._on_lost.onDone(on_lost_callback)
             self._eventmanager.register(self._lost_event, self.onLost)
+
+    def track(self, target, on_lost_callback=None):
+        """ Continuous tracking: keep the target in sight.
+        """
+        # don't track objects that are not seen
+        if not target.seen:
+            return
+        self._start(target, on_lost_callback)
+        self._centering_done = None
         self._in_frame_event = target.in_frame_event
-        self.trackingStep()
+        self._trackingStep()
     
     def onLost(self):
         self._eventmanager.unregister(self._lost_event)
@@ -39,13 +72,27 @@ class Tracker(object):
             self._on_lost.callOnDone()
     
     def stop(self):
+        # don't erase any deferreds here! stop is called
+        # before issuing the callbacks, allowing deferred's callee to
+        # correctly check that tracker is not operating.
         self._stop = True
         if self._in_frame_event:
             self._eventmanager.unregister(self._in_frame_event)
     
-    def trackingStep(self, need_to_register=True):
+    def _centeringStep(self):
         if self._stop: return
-        maybe_bd = self._actions.executeTracking(self._target)
+        centered, maybe_bd = self._actions.executeTracking(self._target)
+        if centered:
+            self.stop()
+            self._centering_done.callOnDone()
+        elif maybe_bd:
+            maybe_bd.onDone(self._centeringStep)
+        else:
+            print "HUGE TODO - centering isn't centered, but can't move, what todo?"
+
+    def _trackingStep(self, need_to_register=True):
+        if self._stop: return
+        centered, maybe_bd = self._actions.executeTracking(self._target)
         # Three possible states:
         if maybe_bd:
             # we initiated a new action - wait for it to complete
@@ -59,13 +106,13 @@ class Tracker(object):
     
     def onTargetInFrame(self):
         if self._stop: return
-        self.trackingStep(need_to_register=False)
+        self._trackingStep(need_to_register=False)
     
     def continueTracking(self):
         if self._stop:
             return
         else:
-            self.trackingStep()
+            self._trackingStep()
 
 class SearchResults(object):
     

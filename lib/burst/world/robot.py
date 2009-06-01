@@ -137,7 +137,11 @@ class Robot(Movable):
                 for postid in deleted_posts:
                     if postid:
                         #print "DOUBLE YAY deleting motion postid=%s" % postid
-                        del dictionary[postid]
+                        if postid in dictionary:
+                            del dictionary[postid]
+                        else:
+                            print "DEBUG ME: postid to be deleted but not in dictionary"
+                            import pdb; pdb.set_trace()
             DeferredList([visitor(postid, motion).addCallback(
                 lambda result, postid=postid: result and postid)
                     for postid, motion in dictionary.items()]).addCallback(collectResults)

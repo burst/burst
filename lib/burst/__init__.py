@@ -84,7 +84,7 @@ except ImportError, e:
     print "\nERROR: Personalization missing: %s" % e
     raise SystemExit
 except Exception, e:
-    print "\nERROR: Problem with file %s: %s" % (personal_filename, e)
+    print "\nERROR: Exception while importing %s: %s" % (personal_filename, e)
     import traceback
     import sys
     traceback.print_tb(sys.exc_info()[2])

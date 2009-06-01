@@ -25,9 +25,9 @@ class walkTester(Player):
 
     def test(self):
         self._actions.changeLocationRelative(100.0)
-#        self._actions.executeSyncMove(moves.GREAT_KICK_RIGHT)
-#        self._actions.executeSyncMove(moves.GREAT_KICK_LEFT)
-#        self._actions.sitPoseAndRelax()
+#        self._actions.executeMove(moves.GREAT_KICK_RIGHT).onDone(
+#           lambda: self._actions.executeMove(moves.GREAT_KICK_LEFT)).onDone(
+#           lambda: self._actions.sitPoseAndRelax())
 #        self._eventmanager.quit()
     
     def onChangeLocationDone(self):

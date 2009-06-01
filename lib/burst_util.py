@@ -183,7 +183,7 @@ class BurstDeferred(object):
         if cb is None:
             raise Exception("onDone called with cb == None")
         chain_deferred = BurstDeferred(data = None, parent=self)
-        self._ondone = (cb, chain_deferred)
+        self._ondone = (cb, chain_deferred)     # No chained callbacks like Deferred
         if self._completed:
             chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
             self.callOnDone()
@@ -202,7 +202,19 @@ class BurstDeferred(object):
             if isinstance(ret, BurstDeferred):
                 ret.onDone(chain_deferred.callOnDone)
 
+    def onDoneCallDeferred(self, d):
+        """ Helper for t.i.d.Deferred mingling - will call this deferred when
+        we are done """
+        self.onDone(lambda: d.callback(None))
 
+    def getDeferred(self):
+        """ Helper for chaining usine DeferredList of chainDeferreds, to avoid
+        writing another BurstDeferred version. Returns a Deferred that is called
+        when callOnDone is called.
+        """
+        self._d = Deferred()
+        self.onDone(lambda: self._d.callback(None))
+        return self._d
 
 # D* - Cacheing
 
@@ -367,9 +379,11 @@ def calculate_relative_pos((waypoint_x, waypoint_y), (target_x, target_y), offse
     #    waypoint_x, waypoint_y, target_x, target_y, normal_x, normal_y, result_x, result_y, result_bearing)
     return result_x, result_y, result_bearing
 
-''' Transform our value into the range of -1..1 '''
 def normalize2(value, range):
-    return (range - value) / range
+    """ Transform our value into the range of -1..1
+    value is assumed within [0,2*range]
+    """
+    return (value - range) / range
 
 # Text/String/Printing utils
 

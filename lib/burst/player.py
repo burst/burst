@@ -56,3 +56,23 @@ class Player(object):
         print "Getting up done!"
         self._eventmanager.register(EVENT_ON_BELLY, self.onOnBelly)
 
+    # Utilities
+
+    def registerDecoratedEventHandlers(self):
+        """
+        Intended usage: if you have a clear method -> event in your player, you can
+        mark each such method with the event it handles like so:
+        @eventhandler(EVENT_YGRP_POSITION_CHANGED)
+        def my_method(self):
+            ...
+
+        You will then have access to self.my_method.event as the event you gave,
+        and this utility method uses that to register all of those events without
+        having to redclare the event name -> method pairing.
+        """
+        # register to events - see singletime
+        for fname in [fname for fname in dir(self) if hasattr(getattr(self, fname), 'event')]:
+            f = getattr(self, fname)
+            self._eventmanager.register(f.event, f)
+
+

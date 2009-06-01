@@ -17,9 +17,13 @@ class Donothing(Player):
         self._eventmanager.register(EVENT_STEP, self.onStep)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
-        self._eventmanager.setTimeoutEventParams(5.0, oneshot=True, cb=self.onTimeout)
+        self._actions.initPoseAndStiffness().onDone(self.startWaiting)
         self._max = 10
         self._count = 0
+
+    def startWaiting(self):
+        print "doNothing: Starting to wait"
+        self._eventmanager.setTimeoutEventParams(2.0, oneshot=True, cb=self.onTimeout)
 
     def onStep(self):
         self._count += 1
@@ -31,6 +35,11 @@ class Donothing(Player):
 
     def onTimeout(self):
         print "timed out at t = %s" % self._world.time
+        self._eventmanager.unregister(EVENT_STEP)
+        self._actions.sitPoseAndRelax().onDone(self.onQuit)
+
+    def onQuit(self):
+        print "doNothing: quiting"
         self._eventmanager.quit()
 
 if __name__ == '__main__':
