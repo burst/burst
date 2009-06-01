@@ -373,8 +373,14 @@ def normalize2(value, range):
 
 # Text/String/Printing utils
 
+def nicefloat(x):
+    try:
+        return '%3.3f' % x
+    except:
+        return str(x)
+
 def nicefloats(l):
-    return (' '.join(['%3.3f']*len(l))) % tuple(l)
+    return (' '.join(map(nicefloat, l)))
 
 def trim(s, l):
     """ trims at 3 bytes larger then the supplied value,
@@ -542,4 +548,10 @@ def read_nbfrm(filename, width=320, height=240):
         variables = map(float, variables[1:])
         joints, sensors = variables[:-sensor_num], variables[-sensor_num:]
     return yuv, version, joints, sensors
+
+def write_nbfrm(filename, yuv, version, joints, sensors):
+    with open(filename, 'w+') as fd:
+        fd.write(yuv)
+        fd.write(str(version) + ' ')
+        fd.write(' '.join('%f' % f for f in list(joints) + list(sensors)))
 
