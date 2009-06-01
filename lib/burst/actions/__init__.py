@@ -13,6 +13,7 @@ from burst.walkparameters import WalkParameters
 from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
+from vision import Tracker, Searcher
 
 #######
 
@@ -38,6 +39,8 @@ class Actions(object):
         self._speech = world.getSpeechProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
+        self.tracker = Tracker(self)
+        self.searcher = Searcher(self)
 
     #===============================================================================
     #    High Level - anything that uses vision
@@ -70,24 +73,24 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
-    def headTracker(self, target):
-        class HeadTracker(object):
-            def __init__(self, target, actions):
-                self._target = target
-                self._actions = actions
-                self.stop = False
-                self.trackingStep()
-            def trackingStep(self):
-                self._actions.executeTracking(self._target).onDone(self.continueTracking)
-            def continueTracking(self):
-                if self.stop:
-                    return
-                else:
-                    self.trackingStep()
-        return HeadTracker(target, self._actions)
+    def track(self, target, on_lost_callback=None):
+        """ Track an object that is seen. If the object is not seen,
+        does nothing. """
+        if not self.searcher.stopped():
+            raise Exception("Can't start tracking while searching")
+        self.tracker.track(target, on_lost_callback=on_lost_callback)
+
+    def search(self, targets):
+        if not self.tracker.stopped():
+            raise Exception("Can't start searching while tracking")
+        return self.searcher.search(targets)
 
     def executeTracking(self, target):
+        """ do a single tracking step. If we actually move the head,
+        return a BurstDeferred for that movement. Otherwise, return None
+        """
         if not self._world.robot.isHeadMotionInProgress():
+            # TODO - using target.centerX and target.centerY without looking at newness is broken.
             # Normalize ball X between 1 (left) to -1 (right)
             xNormalized = normalize2(target.centerX, IMAGE_HALF_WIDTH)
             # Normalize ball Y between 1 (top) to -1 (bottom)
@@ -107,9 +110,7 @@ class Actions(object):
                 #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (
                 #       deltaHeadYaw, deltaHeadPitch)            
                 #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
-                #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)                
-        return succeed(False)
-
+                #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
@@ -254,7 +255,8 @@ class Actions(object):
     
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw, self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
+        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw,
+                                        self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)

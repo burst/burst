@@ -128,6 +128,8 @@ class Movable(Locatable):
 class Ball(Movable):
 
     _name = 'Ball'
+    in_frame_event = EVENT_BALL_IN_FRAME
+    lost_event = EVENT_BALL_LOST
 
     DEBUG_INTERSECTION = False
 
@@ -315,6 +317,7 @@ class GoalPost(Locatable):
         self.width = 0.0
         self.x = 0.0
         self.y = 0.0
+        self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """

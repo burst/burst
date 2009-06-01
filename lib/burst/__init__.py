@@ -85,6 +85,9 @@ except ImportError, e:
     raise SystemExit
 except Exception, e:
     print "\nERROR: Problem with file %s: %s" % (personal_filename, e)
+    import traceback
+    import sys
+    traceback.print_tb(sys.exc_info()[2])
     raise SystemExit
 
 print "Done"

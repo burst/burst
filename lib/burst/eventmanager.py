@@ -188,11 +188,10 @@ class BasicMainLoop(object):
             try:
                 ctrl_c_pressed, normal_quit = self._run_exception_wrap()
             except Exception, e:
-                print "caught player exception:"
-                if hasattr(sys, 'last_traceback'):
-                    traceback.print_tb(sys.last_traceback)
-                else:
-                    print "no traceback, bare exception:", e
+                print "caught player exception: %s" % e
+                import traceback
+                import sys
+                traceback.print_tb(sys.exc_info()[2])
         else:
             ctrl_c_pressed, normal_quit = self._run_exception_wrap()
         if ctrl_c_pressed:

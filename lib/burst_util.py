@@ -474,6 +474,9 @@ class LogCalls(object):
 
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
+        # TODO: use callbacks for motion (isRunning) 
+        if k in ('getListData', 'isRunning'):
+            return f
         if callable(f):
             return CallLogger('%s.%s' % (self._name, k), f)
         else:

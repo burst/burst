@@ -33,7 +33,8 @@ KICK_TYPES = {(KICK_TYPE_STRAIGHT, LEFT): moves.GREAT_KICK_LEFT,
 
 (LOOKAROUND_QUICK,
  LOOKAROUND_FRONT,
- LOOKAROUND_AROUND) = range(3)
+ LOOKAROUND_AROUND) = range(3) # must be zero based - some code depends on it!
 LOOKAROUND_TYPES = {LOOKAROUND_QUICK: moves.HEAD_SCAN_QUICK,
                     LOOKAROUND_FRONT: moves.HEAD_SCAN_FRONT,
                     LOOKAROUND_AROUND: moves.HEAD_SCAN_FRONT} # TODO: Add look around
+LOOKAROUND_MAX = max(LOOKAROUND_TYPES.keys())

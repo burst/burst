@@ -46,6 +46,8 @@ from burst.consts import LEFT, RIGHT
 
 class BallKicker(BurstDeferred):
 
+    verbose = False
+
     def __init__(self, eventmanager, actions, target_bearing_distance=None):
         super(BallKicker, self).__init__(None)
         if target_bearing_distance is not None:
@@ -56,15 +58,7 @@ class BallKicker(BurstDeferred):
     
     def start(self):
         self.kp = None
-        self.cachedBallDist = None
-        self.cachedBallBearing = None
-        self.cachedBallElevation = None
         self.goal = None
-        self.doBallTracking = False
-        self.searchLevel = burst.actions.LOOKAROUND_QUICK
-        
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.onBallInFrame)
-        
         self._actions.initPoseAndStiffness().onDone(self.doNextAction)
         
     def onKickDone(self):
@@ -73,108 +67,107 @@ class BallKicker(BurstDeferred):
 #            self._eventmanager.unregister(event)
         self.callOnDone()
         
-    def searchBallAndGoal(self, searchLevel):
-        self.doBallTracking = False
-        # TODO: Fix YELLOW to use opponent goal
-        self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
-        self._actions.lookaround(searchLevel).onDone(self.onScanDone)
+    def searchBallAndGoal(self):
+        self._actions.tracker.stop()
+        # TODO - self._world.opponent_goal
+        self._actions.search([self._world.ball, self._world.yglp, self._world.ygrp]).onDone(self.onSearchOver)
+   
+    def onSearchOver(self):
+        # searched for ball and goal, goal is available - calculate middle point for kick point calculation.
+        results = self._actions.searcher.results
+        left_post, right_post = self._world.team.left_post, self._world.team.right_post
+        ball = self._world.ball
+        self.goal = calculate_middle((results[left_post].dist, results[left_post].bearing),
+                                      (results[right_post].dist, results[right_post].bearing))
+        # look at the ball directly
+        self._actions.changeHeadAnglesRelative(results[ball].bearing, # TODO - constants!
+                                               -results[ball].elevation*1.3, 1.0).onDone(self.calcKP)
 
-    def onBallInFrame(self):
-        #print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
-        # do ball tracking
-        if self.doBallTracking:
-            self._actions.executeTracking(self._world.ball)
+    def onLostBall(self):
+        print "WE LOST THE BALLLLLLL!!!!!!"
 
-        # Keep updating cached ball position for kicking-point
-        self.cachedBallDist = self._world.ball.distSmoothed
-        self.cachedBallBearing = self._world.ball.bearing
-        self.cachedBallElevation = self._world.ball.elevation
-        #print "Ball seen at dist/bearing/elevation: %3.3f %3.3f %3.3f" % (self.cachedBallDist, self.cachedBallBearing, self.cachedBallElevation)
-        
-    def onScanDone(self):
-        print "\nScan done!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
-        print "******************"
-        
-        self._eventmanager.unregister(EVENT_ALL_YELLOW_GOAL_SEEN)
-        
-        # if both goal and ball seen during scan
-        # TODO: NEED TO REPLACE WITH AND, changed temporarily for just going to ball
-        if self.cachedBallDist: # and self.goal
-            self._actions.changeHeadAnglesRelative(self.cachedBallBearing, -self.cachedBallElevation*1.2, 1.0).onDone(self.calcKP)
-        else:
-            # otherwise, do a more thorough scan
-            print "goal and ball NOT seen, searching again..."
-            self.searchLevel = burst.actions.LOOKAROUND_FRONT
-            self.searchBallAndGoal(self.searchLevel)
-    
     def calcKP(self):
-        self.doBallTracking = True
-        
-        if self.goal and self.cachedBallDist:
-            print "goal and ball seen, moving head in ball direction"
-            # compute kicking-point
-            #goal = self.calculate_middle(self._team.left_post, self._team.right_post)
-            ball = (self.cachedBallDist * cos(self.cachedBallBearing), self.cachedBallDist * sin(self.cachedBallBearing))
-            self.kp = calculate_relative_pos(ball, self.goal, KICK_OFFSET_FROM_BALL)
-            print "self.kp: ", self.kp
-        elif self.cachedBallDist:
-            ################## TODO: remove following, temporary for testing ########################################################################
-            print "ball seen, moving head in ball direction"
-            self.kp = True
+        if self._world.ball.seen:
+            self._actions.track(self._world.ball, self.onLostBall)
+            results = self._actions.searcher.results
+            ball_result = results[self._world.ball]
+            
+            dist = ball_result.distSmoothed
+            bearing = ball_result.bearing
+            
+            if self.goal and ball_result.sighted:
+                print "goal and ball seen, moving head in ball direction"
+                # compute kicking-point
+                #goal = self.calculate_middle(self._team.left_post, self._team.right_post)
+                ball_xy = (dist * cos(bearing), dist * sin(bearing))
+                self.kp = calculate_relative_pos(ball_xy, self.goal, KICK_OFFSET_FROM_BALL)
+                print "self.kp: ", self.kp
+            elif ball_result.sighted:
+                ################## TODO: remove following, temporary for testing ########################################################################
+                print "ball seen, moving head in ball direction"
+                self.kp = True
         
         self.doNextAction()
-    
-    def onGoalSeen(self):
-        if self.goal is None:
-            self.goal = calculate_middle((self._world.team.left_post.dist, self._world.team.left_post.bearing),
-                                          (self._world.team.right_post.dist, self._world.team.right_post.bearing))
-            print self.goal
 
     def doNextAction(self):
-        print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
-        print "------------------"
+        if self.verbose:
+            print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+            print "------------------"
 
         # if kicking-point is not known, search for it
         if self.kp is None:
             print "kicking-point unknown, searching for ball & opponent goal"
             # do a quick search for kicking point
-            self.searchLevel = burst.actions.LOOKAROUND_QUICK
-            self.searchBallAndGoal(self.searchLevel)
+            self.searchBallAndGoal()
             return
 
-        if not self._world.ball.seen:
-            print "BALL NOT SEEN!"
+#        angles = []
+#        old_change_angles_relative = self._actions.changeHeadAnglesRelative
+#        def myChangeHeadAnglesRelative(*args, **kw):
+#            angles.append(args)
+#            #import pdb; pdb.set_trace()
+#            print "="*10, angles
+#            old_change_angles_relative(*args, **kw)
+#        
+#        self._actions.changeHeadAnglesRelative = myChangeHeadAnglesRelative
 
-        # ball is visible, let's approach it
+        #if not self._world.ball.seen:
+        #    print "BALL NOT SEEN!"
 
         # for now, just directly approach ball and kick it wherever
         ballBearing = self._world.ball.bearing
         ballDist = self._world.ball.distSmoothed
         
         (ball_x, ball_y) = polar2cart(ballDist, ballBearing)
-        print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
+        if self.verbose:
+            print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
         
         # determine kicking leg
         side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
-        if (side == LEFT): print "LEFT"
-        else: print "RIGHT"
+        if self.verbose:
+            if (side == LEFT): print "LEFT"
+            else: print "RIGHT"
 
         #(target_x, target_y) = (ball_x - (KICK_X_MIN[side] + KICK_X_MAX[side])/2, ball_y + (KICK_Y_MIN[side] + KICK_Y_MAX[side])/2)
         (target_x, target_y) = (ball_x - KICK_X_OPT[side], ball_y - KICK_Y_OPT[side])
-        print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
+        if self.verbose:
+            print "target_x: %3.3fcm   target_y: %3.3fcm" % (target_x, target_y)
 
         (target_dist, target_bearing) = cart2polar(target_x, target_y)
-        print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
+        if self.verbose:
+            print "target_dist: %3.3fcm   target_bearing: %3.3f" % (target_dist, target_bearing)
         
         # ball location, as defined at behavior params (front, side, etc...)
         ball_location = self.calcBallArea(ball_x, ball_y, side)
         
         DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE', 'BALL_DIAGONAL')
-        print "AREA: %s" % DEBUG_AREA[ball_location]
+        if self.verbose:
+            print "AREA: %s" % DEBUG_AREA[ball_location]
         
         
         # REMOVE!!!!!!!!!!!!!!!!!!! used just for debugging different KICK_ parameters per robot
-        print "KICK_X_MIN: %3.3f" % KICK_X_MIN[0]
+        if self.verbose:
+            print "KICK_X_MIN: %3.3f" % KICK_X_MIN[0]
         
         
         # Ball inside kicking area, kick it
@@ -183,7 +176,8 @@ class BallKicker(BurstDeferred):
             self.doKick(side)
             
             # TODO: TEMP!!! REMOVE!!!
-            #self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+#            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+            return
         else:
             print "advancing!"
 #            if ball_location == BALL_FRONT:
@@ -208,7 +202,7 @@ class BallKicker(BurstDeferred):
 ######### TODO: TEMP!!! REMOVE!!!
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
 
-            
+
 #        elif ball_location == BALL_BETWEEN_LEGS:
 #            print "Bearing almost OK, Distance small -> advancing straight (with side-stepping)"
 #            self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4, 0).onDone(self.doNextAction)
