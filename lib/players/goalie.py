@@ -29,9 +29,9 @@ class goalie(Player):
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.whitchBehavior)
+        self._actions.executeMove(moves.SIT_POS).onDone(self.whichBehavior)
         
-    def whitchBehavior (self):
+    def whichBehavior (self):
         if self.isPenalty:
             self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
             self.isTrackingBall = True

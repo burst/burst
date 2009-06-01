@@ -29,9 +29,9 @@ class goalie(Player):
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.whitchBehavior)
+        self._actions.executeMove(moves.SIT_POS).onDone(self.whichBehavior)
         
-    def whitchBehavior (self):
+    def whichBehavior (self):
         if self.isPenalty:
             self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
             self.isTrackingBall = True
@@ -54,7 +54,7 @@ class goalie(Player):
             self._actions.say("leap right")
         else:
             self._actions.say("leap Left")
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.whitchBehavior)
+        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.whichBehavior)
             
 
     def leap(self):

@@ -59,7 +59,15 @@ class BallKicker(BurstDeferred):
     def start(self):
         self.kp = None
         self.goal = None
-        self._actions.initPoseAndStiffness().onDone(self.doNextAction)
+        #self._actions.initPoseAndStiffness().onDone(self.doNextAction)
+        
+        # TODO: TEMP WORKAROUND FOR PENALTY KICKER!!!
+        self._actions.initPoseAndStiffness().onDone(self.tempTest)
+        
+        
+    def tempTest(self):
+        self._actions.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM)
+        self.doNextAction()
         
     def onKickDone(self):
 #        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
@@ -115,12 +123,12 @@ class BallKicker(BurstDeferred):
             print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
             print "------------------"
 
-        # if kicking-point is not known, search for it
-        if self.kp is None:
-            print "kicking-point unknown, searching for ball & opponent goal"
-            # do a quick search for kicking point
-            self.searchBallAndGoal()
-            return
+#        # if kicking-point is not known, search for it
+#        if self.kp is None:
+#            print "kicking-point unknown, searching for ball & opponent goal"
+#            # do a quick search for kicking point
+#            self.searchBallAndGoal()
+#            return
 
 #        angles = []
 #        old_change_angles_relative = self._actions.changeHeadAnglesRelative
@@ -171,6 +179,11 @@ class BallKicker(BurstDeferred):
             print "KICK_X_MIN: %3.3f" % KICK_X_MIN[0]
         
         
+        # TODO TEMP!!!!! REMOVE!!!!!!!!!!!!!
+#        ball_location = BALL_BETWEEN_LEGS
+#        target_y = 0.0
+#        target_x = 45.0
+        
         # Ball inside kicking area, kick it
         if ball_location == BALL_IN_KICKING_AREA:
             print "Kicking!"
@@ -198,7 +211,8 @@ class BallKicker(BurstDeferred):
 #                #self._actions.changeLocationRelative(target_x*3/4, 0.0, 0.0).onDone(self.doNextAction) # removed target_x/2 for now
 #                return
                             
-            #self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
+#            self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
+#            return
 
 ######### TODO: TEMP!!! REMOVE!!!
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
