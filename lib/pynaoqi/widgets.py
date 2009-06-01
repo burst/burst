@@ -2,6 +2,7 @@ from __future__ import with_statement
 
 import time
 import glob
+import os
 
 import gtk, goocanvas
 
@@ -403,6 +404,20 @@ class VideoWindow(TaskBaseWindow):
     def nbfrm_prev(self):
         self._index = (self._index - 1) % len(self._files)
         self._read_cur_nbfrm()
+
+    def init_capture(self, location=None):
+        if location:
+            self._frames_location = location
+        self._frame_count = 0
+
+
+    def capture(self):
+        if not hasattr(self, '_frames_location'):
+            self.init_capture('/tmp')
+        burst_util.write_nbfrm(os.path.join(self._frames_location, 'capture_%02d.NBFRM' % self._frame_count),
+            yuv = self._yuv, version=0, joints = [0.0]*26, sensors = [0.0]*22)
+        self._frame_count += 1
+        
 
     # Initialization
 

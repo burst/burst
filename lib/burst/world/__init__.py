@@ -64,6 +64,12 @@ def gethostname():
     return hostname
 
 class World(object):
+    """
+    Main access to any information about the world around the robot,
+    including other robots. Generally access is done through attributes
+    that are themselves objects, such as ball, yglp, (TODO: opponent_goal,
+    our_goal, teammate1, teammate2, opponent{1,2,3})
+    """
 
     # Some variable we are sure to export if Man module (man) is
     # actually running on the robot / webots.
@@ -229,6 +235,8 @@ class World(object):
         return (com + dcm + jsense + actsense + inert + force +
                 poschains + transform + various)
 
+    # Accessors
+
     def getMemoryProxy(self):
         return self._memory
 
@@ -238,6 +246,37 @@ class World(object):
     def getSpeechProxy(self):
         return self._speech
     
+    def getDefaultVars(self):
+        """ return list of variables we want anyway, regardless of what
+        the objects we use want. This currently includes:
+         Device/SubDeviceList/<jointname>/Position/Sensor/Value
+          - for getAngle
+        """
+        return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
+            for joint in self.jointnames]
+
+    def getEventsAndDeferreds(self):
+        events, deferreds = self._events, self._deferreds
+        self._events = set()
+        self._deferreds = []
+        return events, deferreds
+
+    # accessors that wrap the ALMemory - you can also
+    # use world.vars
+    def getAngle(self, jointname):
+        """ almost the same as ALMotion.getAngle as the help tells it -
+        returns the sensed angle, which we take to be the sensor position,
+        not the actuated position
+        """
+        return self.vars[self._getAnglesMap[jointname]]
+
+    # accessors that wrap ALMotion
+    # TODO - cache these
+    def getRemainingFootstepCount(self):
+        return self._motion.getRemainingFootStepCount()
+
+    # Utility
+
     def checkManModule(self):
         """ report to user if the Man module isn't loaded. Since recently Man stopped being
         logged as a module, we look for some of the variables we export.
@@ -257,14 +296,7 @@ class World(object):
         else:
             print "Man is there, vision should be good. Famous last words."
 
-    def getDefaultVars(self):
-        """ return list of variables we want anyway, regardless of what
-        the objects we use want. This currently includes:
-         Device/SubDeviceList/<jointname>/Position/Sensor/Value
-          - for getAngle
-        """
-        return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
-            for joint in self.jointnames]
+    # ALMemory and Shared memory functions
 
     def updateMmapVariablesFile(self):
         """
@@ -342,6 +374,8 @@ class World(object):
 
     _updateMemoryVariables = _updateMemoryVariablesFromALMemory
 
+    # Callbacks
+
     def collectNewUpdates(self, cur_time):
         self.time = cur_time
         self._updateMemoryVariables() # must be first in update
@@ -352,6 +386,10 @@ class World(object):
                 obj.calc_events(self._events, self._deferreds)
         if self._do_log_positions:
             self._logPositions()
+
+    def cleanup(self):
+        if self._do_log_positions:
+            self._closePositionLogs()
 
     # Logging Functions
 
@@ -375,14 +413,6 @@ class World(object):
     def _closePositionLogs(self):
         for obj, (fd, writer) in self._logged_objects:
             fd.close()
-
-    # Accessors
-
-    def getEventsAndDeferreds(self):
-        events, deferreds = self._events, self._deferreds
-        self._events = set()
-        self._deferreds = []
-        return events, deferreds
 
     # record robot state 
     def startRecordAll(self, filename):
@@ -414,22 +444,4 @@ class World(object):
         self._record_file = None
         self._record_csv = None
         self.removeMemoryVars(self._recorded_vars)
-
-    # accessors that wrap the ALMemory - you can also
-    # use world.vars
-    def getAngle(self, jointname):
-        """ almost the same as ALMotion.getAngle as the help tells it -
-        returns the sensed angle, which we take to be the sensor position,
-        not the actuated position
-        """
-        return self.vars[self._getAnglesMap[jointname]]
-
-    # accessors that wrap ALMotion
-    # TODO - cache these
-    def getRemainingFootstepCount(self):
-        return self._motion.getRemainingFootStepCount()
-
-    def cleanup(self):
-        if self._do_log_positions:
-            self._closePositionLogs()
 

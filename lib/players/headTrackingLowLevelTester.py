@@ -1,11 +1,6 @@
 #!/usr/bin/python
-import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
+
+import player_init
 
 from burst.player import Player
 from burst.events import EVENT_BALL_IN_FRAME
@@ -15,9 +10,9 @@ from burst_util import polar2cart
 class headTrackingTester(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness()
-        self._actions.executeSyncHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM)
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        self._actions.initPoseAndStiffness().onDone(
+            lambda: self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM)).onDone(
+            lambda: self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall))
         self._last_ball_loc = (0.0, 0.0)
     
     def trackBall(self):

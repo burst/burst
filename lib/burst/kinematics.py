@@ -420,6 +420,7 @@ class NaoPose(object):
             x, y, theta = self.xyt_from_two_dist_one_angle(
                 r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
             self._location = (x, y, theta)
+            self._location_origin = (r1, r2, a1, d, p0, p1)
             return x, y, theta
         return None
 
@@ -549,6 +550,9 @@ class NaoPose(object):
         Then we calculate horizon and camera height which is necessary for the
         calculation of pix estimates.
         """
+
+        self._bodyAngles = bodyAngles
+        self._inclination = inclinationAngles
 
         if debug:
             import pdb; pdb.set_trace()
