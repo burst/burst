@@ -8,6 +8,23 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-install: Makefile.local
+.PHONY: burstmem recordermodule clean
+
+clean:
+	rm -R src/burstmem/crossbuild
+	rm -R src/recordermodule/crossbuild
+
+burstmem:
+	cd src/burstmem; ./makelocal
+
+recordermodule:
+	cd src/recordermodule; ./makelocal
+
+install: Makefile.local burstmem recordermodule
 	rsync -avr lib root@$(ROBOT):/home/root/burst/
+
+installall: install
+	# TODO - each copyto is an ssh initiation, many secundas.
+	cd src/burstmem; ./copyto
+	cd src/recordermodule; ./copyto
 

@@ -39,6 +39,12 @@ class burstmem:public
     void        startMemoryMap();
     void        stopMemoryMap();
     bool        isMemoryMapRunning();
+
+    void        clearMappedVariables();
+    void        addMappedVariable(int index, std::string var);
+
+    // TODO - get the fucking std::vector<std::string> wrapping to work
+    //void        setMappedVariables(const std::vector<std::string>);
     int         getNumberOfVariables();
     std::string getVarNameByIndex(int i);
     

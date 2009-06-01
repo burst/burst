@@ -79,7 +79,6 @@ PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
 # Shared memory constants
 
-MMAP_VARIABLES_FILENAME = "/home/root/burst/lib/etc/mmap_variables.txt"
 MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
 MMAP_LENGTH      = 4096
 

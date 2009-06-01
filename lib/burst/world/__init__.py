@@ -21,8 +21,6 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
 from ..sensing import FalldownDetector
 from burst_util import running_average, LogCalls
 
-from ..consts import MMAP_VARIABLES_FILENAME
-
 from sharedmemory import *
 from objects import Ball, GoalPost
 from robot import Robot
@@ -181,7 +179,7 @@ class World(object):
 
         # Try using shared memory to access variables
         if World.running_on_nao:
-            self.updateMmapVariablesFile()
+            #self.updateMmapVariablesFile() # // TODO -remove the file! it is EVIL
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
@@ -297,27 +295,6 @@ class World(object):
             print "Man is there, vision should be good. Famous last words."
 
     # ALMemory and Shared memory functions
-
-    def updateMmapVariablesFile(self):
-        """
-        create/update the MMAP_VARIABLES_FILENAME - must have
-        self._vars_to_get_list ready, so call this after __init__ is done or
-        at its end.
-        """
-        recreate = False
-        if os.path.exists(MMAP_VARIABLES_FILENAME):
-            existing_vars = [x.strip() for x in linecache.updatecache(MMAP_VARIABLES_FILENAME)]
-            if existing_vars != self._vars_to_get_list:
-                print "updating %s" % MMAP_VARIABLES_FILENAME
-                recreate = True
-        else:
-            print (("I see %s is missing. creating it for you." +
-                "it has %s variables") % (MMAP_VARIABLES_FILENAME, len(self._vars_to_get_list)))
-            recreate = True
-        if recreate:
-            fd = open(MMAP_VARIABLES_FILENAME, 'w+')
-            fd.write('\n'.join(self._vars_to_get_list))
-            fd.close()
 
     def calc_events(self, events, deferreds):
         """ World treats itself as a regular object by having an update function,
