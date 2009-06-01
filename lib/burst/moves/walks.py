@@ -38,8 +38,6 @@ class Walk(object):
 
 
 # WALKS
-STABLE_PAIR = (STABLE_WALK,moves.STABLE_WALK_INITIAL_POSE)
-
 
 STABLE_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
@@ -97,6 +95,11 @@ SIDESTEP_WALK = Walk(WalkParameters([
            0.02]),                  # ZmpOffsetY
            25                   # 20ms count per step
     )
+
+# The Pairs are the initial pose and the walk, to be used by
+# Actions.changeLocationRelative etc.
+
+STABLE_PAIR = (STABLE_WALK, moves.STABLE_WALK_INITIAL_POSE)
 
 
 '''
