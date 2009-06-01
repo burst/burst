@@ -11,7 +11,6 @@ INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 DEFAULT_STEPS_FOR_TURN = 150
 DEFAULT_STEPS_FOR_WALK = 150 # used only in real-world
-DEFAULT_STEPS_FOR_SIDEWAYS = 60
 
 MINIMAL_CHANGELOCATION_TURN = 0.15
 MINIMAL_CHANGELOCATION_SIDEWAYS = 0.005
