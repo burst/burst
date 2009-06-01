@@ -46,7 +46,7 @@ from burst.consts import LEFT, RIGHT
 
 class BallKicker(BurstDeferred):
 
-    verbose = False
+    verbose = True
 
     def __init__(self, eventmanager, actions, target_bearing_distance=None):
         super(BallKicker, self).__init__(None)
@@ -84,7 +84,8 @@ class BallKicker(BurstDeferred):
                                                -results[ball].elevation*1.3, 1.0).onDone(self.calcKP)
 
     def onLostBall(self):
-        print "WE LOST THE BALLLLLLL!!!!!!"
+        # TODO: add ball lost handling
+        print "BALL LOST"
 
     def calcKP(self):
         if self._world.ball.seen:

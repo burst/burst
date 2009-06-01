@@ -33,15 +33,12 @@ class Tracker(object):
         self.trackingStep()
     
     def onLost(self):
-        print "*"*10 + 'TRACKER LOST TARGET ' + '*'*10
-        import pdb; pdb.set_trace()
         self._eventmanager.unregister(self._lost_event)
         self.stop()
         if self._on_lost:
             self._on_lost.callOnDone()
     
     def stop(self):
-        print "*"*10+ ' TRACKING STOP ' + '*'*10
         self._stop = True
         if self._in_frame_event:
             self._eventmanager.unregister(self._in_frame_event)
@@ -123,15 +120,10 @@ class Searcher(object):
 
     def onScanDone(self):
         if self._stop: return
-        print "\nScan done!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
-        print "******************"
         
         # see which targets have been sighted
         if all([result.sighted for result in self.results.values()]):
             # best case - we are done
-            print "*"*80
-            print "SEARCH FOUND ALL TARGETS"
-            print "*"*80
             self.stop()
             self._bd.callOnDone()
         else:
