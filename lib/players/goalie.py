@@ -29,7 +29,11 @@ class goalie(Player):
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.whichBehavior)
+        self._actions.executeMove(moves.SIT_POS).onDone(self.goalieInitPos2)
+        
+    # TODO: TEMP!!! combine with goalieInitPos
+    def goalieInitPos2(self):
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.whichBehavior)
         
     def whichBehavior (self):
         if self.isPenalty:
