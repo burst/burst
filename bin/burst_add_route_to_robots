@@ -1,2 +1,5 @@
 #!/bin/bash
+# the old network - maverick
 sudo ip route add 192.168.7.0/24 via 132.70.7.78
+# the new network - robocup
+sudo ip route add 192.168.5.0/24 via 132.70.7.100
