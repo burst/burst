@@ -34,7 +34,6 @@ class ChestButton(object):
 
     def calc_events(self, events, deferreds):
         newVal, = self._world.getVars(self._vars)
-#        print newVal, self.oldVal
         if newVal > 0.5 and self.oldVal < 0.5:
             events.add(events_module.EVENT_CHEST_BUTTON_PRESSED)
         if newVal < 0.5 and self.oldVal > 0.5:
