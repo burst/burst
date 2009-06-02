@@ -35,54 +35,40 @@ class Localize(Player):
         #    self._world._shm.verbose = True
         self._pose = kinematics.pose
         self._actions.search([self._world.yglp, self._world.ygrp]).onDone(
-            self.onAvailableInformationForLocationCalculation)
-
-        #for f in [self.onYellowBottomPosChange, self.onYellowTopPosChange]:
-        #    self._eventmanager.register(f.event, f)
-
-        self.registerDecoratedEventHandlers()
+            self.onSearchResults)
         
-    @eventhandler(EVENT_YGRP_POSITION_CHANGED)
-    def onYellowTopPosChange(self):
-        obj = self._world.ygrp # Yellow Right is Top - since it's goalie looks towards minus x
-        if obj.x == 0.0: return
-        dx = abs(obj.x - IMAGE_CENTER_X)
-        print "yellow top    - dx = %5s, x = %5s" % (dx, obj.x)
-        if dx < MAX_PIXELS_FROM_CENTER_FOR_DISTANCE_ESTIMATE:
-            print "yellow TOP DONE"
-            self.yellow_top_dist = self._pose.pixHeightToDistance(obj.height, GOAL_POST_CM_HEIGHT)
-            self.yellow_top_bearing = obj.bearing
-            self._yellowtop.callback(None)
-            self._eventmanager.unregister(self.onYellowTopPosChange.event)
+    def calcPostHeights(self, post):
+        print "please add the pix dist"
+        import pdb; pdb.set_trace()
+        return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
 
-    @eventhandler(EVENT_YGLP_POSITION_CHANGED)
-    def onYellowBottomPosChange(self):
-        obj = self._world.yglp # Yellow Left is Bottom - since it's goalie looks towards minus x
-        if obj.x == 0.0: return
-        dx = abs(obj.x - IMAGE_CENTER_X)
-        print "yellow bottom - dx = %5s, x = %5s" % (dx, obj.x)
-        if abs(obj.x - IMAGE_CENTER_X) < MAX_PIXELS_FROM_CENTER_FOR_DISTANCE_ESTIMATE:
-            print "yellow BOTTOM DONE"
-            self.yellow_bottom_dist = self._pose.pixHeightToDistance(obj.height, GOAL_POST_CM_HEIGHT)
-            self._yellowbottom.callback(None)
-            self._eventmanager.unregister(self.onYellowBottomPosChange.event)
+    def onSearchResults(self):
+        world = self._world
+        results = self._actions.searcher.results
+        yglp, ygrp = results[world.yglp], results[world.ygrp]
+        self.yellow_top_dist = self.calcPostHeights(ygrp)
+        self.yellow_top_bearing = ygrp.bearing
 
-    def onAvailableInformationForLocationCalculation(self, result):
+        self.yellow_bottom_dist = self.calcPostHeights(yglp)
+
         print "calculating position"
         d = CROSSBAR_CM_WIDTH / 2.0
         p0 = yellow_goal.top_post.xy
         p1 = yellow_goal.bottom_post.xy
         r1, r2, a1 = (self.yellow_top_dist, self.yellow_bottom_dist,
             self.yellow_top_bearing)
+        # compute distance using r_avg and angle - note that it is not correct
         if abs(r1 - r2) > 2*d:
             print "inputs are bad, need to recalculate"
-            # This is fun: which value do I throw away? I could start collecting a bunch first,
-            # and only if it is well localized (looks like a nice normal distribution) I use
-            # it..
-            self.
-        x, y, theta = self._pose.xyt_from_two_dist_one_angle(
-            r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
-        print "GOT %3.3f %3.3f heading %3.3f deg" % (x, y, theta*RAD_TO_DEG)
+            # This is fun: which value do I throw away? I could start
+            # collecting a bunch first, and only if it is well localized (looks
+            # like a nice normal distribution) I use it..
+            print "inconsistent distances from goal posts - no result"
+        else:
+            x, y, theta = xyt_from_two_dist_one_angle(
+                    r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
+            print "GOT %3.3f %3.3f heading %3.3f deg" % (x, y, theta*RAD_TO_DEG)
+        self._eventmanager.quit()
 
 if __name__ == '__main__':
     import burst

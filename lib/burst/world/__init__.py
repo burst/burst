@@ -27,6 +27,7 @@ from robot import Robot
 from team import Team
 from computed import Computed
 from objects import Locatable
+from localization import Localization
 
 sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController
@@ -142,6 +143,7 @@ class World(object):
         # reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
+        self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.robotSettings = robot_settings
@@ -167,7 +169,7 @@ class World(object):
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
-            [self.computed],
+            [self.computed, self.localization],
         ]
 
         # logging variables

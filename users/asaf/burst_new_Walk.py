@@ -92,15 +92,24 @@ motionProxy.setWalkArmsEnable(True)
 #motionProxy.setWalkExtraConfig( 4.5, -2.5, 0.19, 5.0 )
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 2.0 )
 # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+
+# Cech
 #motionProxy.setWalkConfig( 0.02, 0.015, 0.04, 0.3, 0.015, 0.02 )
 #motionProxy.addWalkStraight( 0.02*2, 23)
-motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.02 )
-#motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
+# Speed = 20
+#motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.025)
+#motionProxy.addWalkStraight( 0.5, 20)
+# Speed = 21 step = 0.2
+motionProxy.setWalkConfig( 0.025, 0.015, 0.04, 0.3, 0.015, 0.02) #WORKS!
+motionProxy.addWalkStraight( 0.4, 21) #WORKS!
+# Speed = 21 step = 0.15
+#motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.02) #WORKS!
+#motionProxy.addWalkStraight( 0.4, 21) #WORKS!
+# Speed = 25 
+#motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.02 ) #WORKS!
+#motionProxy.addWalkStraight( 0.4, 25) #WORKS!
 motionProxy.gotoBodyAnglesWithSpeed(readyStand,20,1)
 time.sleep(3)
-#Cech 
-#motionProxy.addWalkStraight( 0.015*2, 25)
-motionProxy.addWalkStraight( 0.015*20, 25)
 
 
 #motionProxy.addWalkStraight( 0.02*16, 20)

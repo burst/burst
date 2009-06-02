@@ -25,6 +25,7 @@ from burst.consts import HEAD_PITCH_JOINT_INDEX
 from burst import options, field
 from burst.consts import *
 import burst
+from burst.position import xyt_from_two_dist_one_angle
 
 # TODO - pynaoqi'sm, should be factored out to some
 # joint object that both burst and pynaoqi will use,
@@ -417,82 +418,12 @@ class NaoPose(object):
                 a1 = ygrp.bearingdeg * pi / 180.0
             else:
                 a1 = e_right.bearing
-            x, y, theta = self.xyt_from_two_dist_one_angle(
+            x, y, theta = xyt_from_two_dist_one_angle(
                 r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
             self._location = (x, y, theta)
             self._location_origin = (r1, r2, a1, d, p0, p1)
             return x, y, theta
         return None
-
-    # New Code! High level computations - compute world location (x,y,theta)
-    # from visual landmarks
-    def xyt_from_two_dist_one_angle(self, r1, r2, a1, d, p0, p1, debug=False):
-        """ Compute the location given two distances to known landmarks and
-        one angle to one of them. To be used with two posts, but would work
-        equally for any two things.  The computation is done in the Objects
-        Frame (OF), but returned in the World Frame (WF) in which p0 = (x0,
-        y0) and p1 = (x1, y1) are defined.
-
-        The OF is defined as follows: origin lies in the midsection of the
-        line connecting p0 and p1, d is half the distance to the first. Y is
-        the axis connecting p1 to p0, X is to the right.
-
-               (x0,y0) 0    -d- H   O     -d-     1 (x1,y1)
-                      /      ,-'           ,-----'
-                     /  a1,-'       ,-----'
-                    /  ,-'  ,------'
-                   /,------'
-                  X (x,y)
-
-        H is the intersection of the heading and the p0-p1 line.
-
-        a1 must be positive clockwise, zero if in the middle of the frame
-        (i.e. at the same direction as the bearing)
-
-        Also, |r1 - r2| <= 2*d must hold.. if it doesn't, caller
-        needs to rethink it's inputs.
-
-        RETURN VALUE: (None, None, None) on error, (x,y,theta) otherwise
-        """
-        if abs(r1 - r2) > 2 * d:
-            return (None, None, None)
-        x0, y0 = p0;        x1, y1 = p1
-        O = ((x0 + x1) / 2, (y0 + y1)/2) # position of the origin in WF
-        #assert(almost_equal(4*d**2, (x1 - x0)**2 + (y1 - y0)**2))
-
-        # Compute in OF
-
-        if debug:
-            import pdb; pdb.set_trace()
-
-        # first x,y
-        r1_2 = r1**2
-        r2_2 = r2**2
-        y = ( r2_2 - r1_2 ) / 4 / d
-        x = - ( r1_2 - (y - d)**2 )**0.5
-        # then theta (heading)
-        gamma = atan2(y - d, -x)
-        theta = gamma + a1
-
-        # Transform back into WF
-
-        # Optimize for no rotation case
-        if x0 != x1:
-            two_d = 2 * d
-            delta_x, delta_y = x1 - x0, y1 - y0
-            y_unit_x, y_unit_y = delta_x / two_d, delta_y / two_d
-            x_unit_x, x_unit_y = -y_unit_y, y_unit_x
-            # Rotate
-            _x = ( x_unit_x ) * x + ( y_unit_x ) * y
-            _y = ( x_unit_y ) * x + ( y_unit_y ) * y
-            x, y = _x, _y
-            # rotate the heading - TODO: be nice to not need a tan^-1 here.
-            # TODO - not accurate for delta_x << 1 
-            obj_theta = atan2(x_unit_y, x_unit_x)
-            theta += obj_theta
-        # Translate
-        x, y = O[0] + x, O[1] + y
-        return x, y, -theta
 
     def pixHeightToDistancePlus(self, pixHeight, pix_x, cmHeight,
             debug=False, verbose=False):

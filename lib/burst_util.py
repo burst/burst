@@ -282,6 +282,9 @@ def cached(filename):
 
 # Some Math
 
+def close_to_zero(v, amount=1e-10):
+    return abs(v) < amount
+
 def clip(minim, maxim, val):
     return min(maxim, max(minim, val))
 
