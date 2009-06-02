@@ -81,11 +81,15 @@ class goalie(Player):
         self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
 
     def getUpBelly(self):
-        self._actions.executeGettingUpBelly().onDone(self.watchIncomingBall)
+        self._actions.executeGettingUpBelly().onDone(self.onLeapComplete)
         
     def trackBall(self):
         if self.isTrackingBall:
             self._actions.executeTracking(self._world.ball)
+            
+    def onLeapComplete(self):
+        print "Leap complete"
+        self._eventmanager.quit()
 
 if __name__ == '__main__':
     import burst
