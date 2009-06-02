@@ -31,8 +31,9 @@ from localization import Localization
 
 sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController
-sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
-import robot_settings
+#sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc')) # TODO: Remove?
+from ..player_settings import PlayerSettings
+from gamestatus import GameStatus
 
 def timeit(tmpl):
     def wrapper(f):
@@ -146,9 +147,8 @@ class World(object):
         self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        self.robotSettings = robot_settings
-        import gamestatus
-        self.gameStatus = gamestatus.GameStatus(self.robotSettings)
+        self.playerSettings = PlayerSettings()
+        self.gameStatus = GameStatus(self.playerSettings)
         self._gameController = GameController(self.gameStatus)
 
         # All objects that we delegate the event computation and naoqi
