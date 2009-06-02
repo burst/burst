@@ -84,6 +84,8 @@ except ImportError, e:
     print "\nERROR: Personalization missing: %s" % e
     raise SystemExit
 except Exception, e:
+    # TODO - this swallowes the actual error - the traceback is useless, at
+    # least for syntax errors.
     print "\nERROR: Exception while importing %s: %s" % (personal_filename, e)
     import traceback
     import sys

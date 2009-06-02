@@ -134,10 +134,10 @@ class World(object):
         # Stuff that we prefer the users use directly doesn't get a leading
         # underscore
         self.ball = Ball(self)
-        self.bglp = GoalPost(self, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost(self, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost(self, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
+        self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED)
+        self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED)
+        self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED)
+        self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED)
         self.robot = Robot(self)
         self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a

@@ -8,7 +8,19 @@ from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
 from burst_util import running_median, RingBuffer
 
-class Locatable(object):
+class Namable(object):
+    def __init__(self, name='unnamed'):
+        self._name = name
+
+    def _setName(self, name):
+        self._name = name
+
+    def __str__(self):
+        return self._name
+
+    __repr__ = __str__
+
+class Locatable(Namable):
     """ stupid name. It is short for "something that can be seen, holds a position,
     has a limited velocity which can be estimated, and is also interesting to the
     soccer game"
@@ -17,16 +29,15 @@ class Locatable(object):
     in polar coordinates - bearing in radians, distance in centimeters.
     """
     
-    _name = "Locatable" # override to get nicer %s / %r
-
     REPORT_JUMP_ERRORS = False
     HISTORY_SIZE = 10
 
-    def __init__(self, world, real_length):
+    def __init__(self, name, world, real_length):
         """
         real_length - [cm] real world largest diameter of object.
         memory, motion - proxies to ALMemory and ALMotion respectively.
         """
+        super(Locatable, self).__init__(name)
         self._world = world
         # cached proxies
         self._memory = world._memory
@@ -122,19 +133,18 @@ class Locatable(object):
         return "<%s at %s>" % (self._name, id(self))
 
 class Movable(Locatable):
-    def __init__(self, world, real_length):
-        super(Movable, self).__init__(world, real_length)
+    def __init__(self, name, world, real_length):
+        super(Movable, self).__init__(name, world, real_length)
 
 class Ball(Movable):
 
-    _name = 'Ball'
     in_frame_event = EVENT_BALL_IN_FRAME
     lost_event = EVENT_BALL_LOST
 
     DEBUG_INTERSECTION = False
 
     def __init__(self, world):
-        super(Ball, self).__init__(world,
+        super(Ball, self).__init__('Ball', world,
             real_length=BALL_REAL_DIAMETER)
         self._ball_vars = ['/BURST/Vision/Ball/%s' % s for s in "BearingDeg CenterX CenterY Confidence Distance ElevationDeg FocDist Height Width".split()]
         self._world.addMemoryVars(self._ball_vars)
@@ -297,10 +307,9 @@ class Ball(Movable):
 
 class GoalPost(Locatable):
 
-    def __init__(self, world, name, position_changed_event):
-        super(GoalPost, self).__init__(world,
+    def __init__(self, name, world, position_changed_event):
+        super(GoalPost, self).__init__(name, world,
             real_length=GOAL_POST_DIAMETER)
-        self._name = name
         self._position_changed_event = position_changed_event
         template = '/BURST/Vision/%s/%%s' % name
         self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',

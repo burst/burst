@@ -130,10 +130,9 @@ class SerialPostQueue(object):
             self._start_time = self._world.time
 
 class Robot(Movable):
-    _name = 'Robot'
 
     def __init__(self, world):
-        super(Robot, self).__init__(world=world,
+        super(Robot, self).__init__(name='Robot', world=world,
             real_length=ROBOT_DIAMETER)
         self._motion_posts = {}
         self._head_posts   = SerialPostQueue('head', world)
