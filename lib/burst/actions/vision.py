@@ -110,7 +110,7 @@ class Tracker(object):
         else:
             print "CenteringStep: callLater"
             # wait a little, try again
-            self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
+            self._eventmanager.callLater(consts.EVENT_MANAGER_DT, self._centeringStep)
 
     ############################################################################
 
@@ -266,7 +266,11 @@ class Searcher(object):
 
     def onSeen(self, target):
         if self._stop: return
+        if not target.seen:
+            print "SEARCHER: onSeen but target not seen?"
+            return
         if target not in self._seen_set:
+            print "SEARCHER: First Sighting: %s" % target._name
             self._seen_order.append(target)
             self._seen_set.add(target)
         # TODO OPTIMIZATION - when last target is seen, cut the search

@@ -107,13 +107,15 @@ class Actions(object):
             xNormalized = normalize2(target.centerX, IMAGE_HALF_WIDTH)
             # Normalize ball Y between 1 (top) to -1 (bottom)
             yNormalized = normalize2(target.centerY, IMAGE_HALF_HEIGHT)
+            print "location_error: center %3.1f, %3.1f, error %1.2f, %1.2f" % (target.centerX,
+                target.centerY, xNormalized, yNormalized)
             return (abs(xNormalized) <= normalized_error_x and
                     abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
 
         bd = None
         centered, xNormalized, yNormalized = location_error(target,
             normalized_error_x, normalized_error_y)
-        if not centered and not self._world.robot.isHeadMotionInProgress():
+        if target.seen and not centered and not self._world.robot.isHeadMotionInProgress():
             CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
             CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
             deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR

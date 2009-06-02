@@ -34,7 +34,7 @@ class Localize(Player):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
         self._pose = kinematics.pose
-        self._actions.search([self._world.yglp, self._world.ygrp]).onDone(
+        self._actions.search([self._world.yglp, self._world.ygrp, self._world.ball]).onDone(
             self.onSearchResults)
         
     def calcPostHeights(self, post):

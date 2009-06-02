@@ -72,6 +72,7 @@ class Locatable(Namable):
         self.upper_v_limit = 400.0
         
         self.seen = False
+        self.recently_seen = False          # Was the object seen within MISSING_FRAMES_MINIMUM
         self.missingFramesCounter = 0
         
         # smoothed variables
@@ -79,19 +80,26 @@ class Locatable(Namable):
         self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
         self.distRunningMedian.next()
 
+    def calc_recently_seen(self, new_seen):
+        """ sometimes we don't want to know if the object is visible this frame,
+        it is enough if it is visible for the last few frames
+        """
+        new_recently_seen = new_seen
+        if new_seen: # otherwise new_elevation is 'None'
+            self.missingFramesCounter = 0
+        else:
+            # only update new_seen with a False value when some minimal "missing" frame counter is reach
+            self.missingFramesCounter += 1
+            if self.missingFramesCounter < MISSING_FRAMES_MINIMUM:
+                new_recently_seen = True
+        return new_recently_seen
+
     HISTORY_LABELS = ['time', 'distance', 'bearing']
     def _record_current_state(self):
         """ pushes new values into the history buffer. called from
         update_location_body_coordinates
         """
         self.history.ring_append([self.newness, self.dist, self.bearing])
-
-    def compute_location_from_vision(self, vision_x, vision_y, width, height):
-        mat = self._motion.getForwardTransform('Head', 0) # TODO - can compute this here too. we already get the joints data. also, is there a way to join a number of soap requests together? (reduce latency for debugging)
-        radius = max(width, height)
-        radius / self._real_length
-        # TODO - NOT FINISHED
-        #import pdb; pdb.set_trace()
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
@@ -258,14 +266,12 @@ class Ball(Movable):
         # calculate events.
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
-            self.missingFramesCounter = 0
             # convert degrees to radians
             new_bearing *= DEG_TO_RAD
             new_elevation *= DEG_TO_RAD
             # add event
             events.add(EVENT_BALL_IN_FRAME)
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
-            self.compute_location_from_vision(new_centerX, new_centerY, new_width, new_height)
             if self.compute_intersection_with_body():
                 events.add(EVENT_BALL_BODY_INTERSECT_UPDATE)
             if self.movingBallPenalty():
@@ -275,11 +281,6 @@ class Ball(Movable):
                 events.add(BALL_MOVING_PENALTY)
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
-        else:
-            # only update new_seen with a False value when some minimal "missing" frame counter is reach
-            self.missingFramesCounter += 1
-            if self.missingFramesCounter < MISSING_FRAMES_MINIMUM:
-                new_seen = True
             
         if self.seen and not new_seen:
             events.add(EVENT_BALL_LOST)
@@ -297,6 +298,7 @@ class Ball(Movable):
                     self.width) = (new_centerX, new_centerY, new_confidence, 
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
+        self.recently_seen = self.calc_recently_seen(new_seen)
         
 # TODO - CrossBar
 # extra vars compared to GoalPost:
@@ -338,21 +340,12 @@ class GoalPost(Locatable):
                 ) = new_state = self._world.getVars(self._vars)
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
-        if new_seen: # otherwise new_elevation is 'None'
-            self.missingFramesCounter = 0
+        if new_seen:
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
                 new_elevation *= DEG_TO_RAD
-            else:
-                #print "%s - new_elevation == %r" % (self.__class__.__name__, new_elevation)
-                pass
-        else:
-            # only update new_seen with a False value when some minimal "missing" frame counter is reach
-            self.missingFramesCounter += 1
-            if self.missingFramesCounter < MISSING_FRAMES_MINIMUM:
-                new_seen = True
-            
+ 
         # TODO: we should only look at the localization supplied ball position,
         # and not the position in frame (image coordinates) or the relative position,
         # which may change while the ball is static.
@@ -368,4 +361,5 @@ class GoalPost(Locatable):
                   new_centerY, new_focDist, new_height, new_width,
                   new_x, new_y)
         self.seen = new_seen
-        
+        self.recently_seen = self.calc_recently_seen(new_seen)
+
