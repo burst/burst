@@ -2,9 +2,6 @@
 
 
 from events import *
-from debug_flags import player_py_debug as debug
-for i in xrange(3):
-    print debug
 
 class Player(object):
 
