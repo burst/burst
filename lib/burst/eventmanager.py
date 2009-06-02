@@ -14,6 +14,60 @@ from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
 
 from .consts import EVENT_MANAGER_DT
 
+################################################################################
+
+# Event handling utilities and decorators
+
+def singletime(event):
+    """ Decorator that is meant to be used on a generator. The generator
+    starts, inits and yields. The event is then registered.
+    The event fires, the generator is called, returns. Then we
+    unregister it.
+
+    Note: specifically meant for methods of Player - we use self as
+    first argument, and specifically use self._eventmanager.register
+    and self._eventmanager.unregister methods.
+    """
+    def wrap(f):
+        def wrapper(self, *args, **kw):
+            gen = f(self, *args, **kw)
+            gen.next() # let it init itself
+            def onEvent():
+                try:
+                    gen.next()
+                except StopIteration:
+                    pass
+                except Exception, e:
+                    print "CAUGHT EXCEPTION: %s" % e
+                self._eventmanager.unregister(event)
+                print "singletime: unregistering from %s" % event
+            print "singletime: registering to %s" % event
+            self._eventmanager.register(event, onEvent)
+        return wrapper
+    return wrap
+
+# And now for something simpler - just store the event at a handy place
+# inside the method that will be using it.
+#
+# I tried adding register and unregister methods, but for now I'm stumped
+# by the fact that this wrapper is called during class construction, and
+# so is handed functions and not methods, and so when I call register
+# I give the function and not the wrapper method, so when it is finally
+# called it complains that it thought it needs to give 0 arguments but
+# the callee wants 1 (the self).
+def eventhandler(event):
+    """ Decorator that just ties in the event into the method it wraps, for
+    usage see for example player.Player.registerDecoratedEventHandlers
+    """
+    def wrap(f):
+        f.event = event
+        return f
+    return wrap
+
+
+
+################################################################################
+
 class SuperEvent(object):
     
     def __init__(self, eventmanager, events):
@@ -36,6 +90,8 @@ class AndEvent(SuperEvent):
                 self._eventmanager.unregister(event)
             self._cb()
 
+################################################################################
+
 class SerialEvent(SuperEvent):
     
     def __init__(self, eventmanager, events, callbacks):
@@ -51,6 +107,8 @@ class SerialEvent(SuperEvent):
         if len(self._events) == self._i:
             return
         self._eventmanager.register(self._events[self._i], self.onEvent)
+
+################################################################################
 
 class EventManager(object):
     """ Class to handle all event routing. Mainly we have:
@@ -131,6 +189,8 @@ class EventManager(object):
         for deferred in deferreds:
             deferred.callOnDone()
 
+################################################################################
+
 class BasicMainLoop(object):
     
     __running_instance = None
@@ -188,11 +248,10 @@ class BasicMainLoop(object):
             try:
                 ctrl_c_pressed, normal_quit = self._run_exception_wrap()
             except Exception, e:
-                print "caught player exception:"
-                if hasattr(sys, 'last_traceback'):
-                    traceback.print_tb(sys.last_traceback)
-                else:
-                    print "no traceback, bare exception:", e
+                print "caught player exception: %s" % e
+                import traceback
+                import sys
+                traceback.print_tb(sys.exc_info()[2])
         else:
             ctrl_c_pressed, normal_quit = self._run_exception_wrap()
         if ctrl_c_pressed:
@@ -206,7 +265,7 @@ class BasicMainLoop(object):
                 print "exiting"
             else:
                 print "sitting, removing stiffness and quitting."
-                self._sit_deferred = self._actions.sitPoseAndRelax()
+                self._sit_deferred = self._actions.sitPoseAndRelax_returnDeferred()
             self._world._gameController.shutdown()
             return True
         print "quitting before starting are we?"
@@ -270,6 +329,8 @@ class BasicMainLoop(object):
         else:
             return self.next_loop - self.cur_time
 
+################################################################################
+
 class SimpleMainLoop(BasicMainLoop):
 
     """ Until twisted is installed on the robot this is the default event loop.
@@ -300,6 +361,8 @@ class SimpleMainLoop(BasicMainLoop):
             if sleep_time:
                 sleep(sleep_time)
         self.cleanup()
+
+################################################################################
 
 class TwistedMainLoop(BasicMainLoop):
 
@@ -367,7 +430,8 @@ class TwistedMainLoop(BasicMainLoop):
                 ctrl_c_deferred = self.onCtrlCPressed()
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
-            self._main_task.stop()
+            if self._main_task.running: # TODO - should I be worries if this is false?
+                self._main_task.stop()
         if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
@@ -382,6 +446,7 @@ class TwistedMainLoop(BasicMainLoop):
             DeferredList(pending).addCallback(self._completeShutdown)
 
     def _completeShutdown(self, result=None):
+        print "CompleteShutdown called:"
         if not self._control_reactor: return
         from twisted.internet import reactor
         reactor.stop()
@@ -392,6 +457,8 @@ class TwistedMainLoop(BasicMainLoop):
         if self._eventmanager._should_quit:
             print "TwistedMainLoop: event manager initiated quit"
             self._startShutdown(normal_quit=True, ctrl_c_pressed=False)
+
+################################################################################
 
 from burst_util import is64
 if is64() or burst.options.use_pynaoqi:

@@ -9,6 +9,6 @@ if [ ! -e $MODULE ]; then
 	echo you need to build the local version first
 	exit -1
 fi
-echo copying to $ROBOT
-scp $MODULE root@$ROBOT:/opt/naoqi/modules/lib
+echo rsyncing to $ROBOT
+rsync -v $MODULE root@$ROBOT:/opt/naoqi/modules/lib
 

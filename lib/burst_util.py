@@ -183,7 +183,7 @@ class BurstDeferred(object):
         if cb is None:
             raise Exception("onDone called with cb == None")
         chain_deferred = BurstDeferred(data = None, parent=self)
-        self._ondone = (cb, chain_deferred)
+        self._ondone = (cb, chain_deferred)     # No chained callbacks like Deferred
         if self._completed:
             chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
             self.callOnDone()
@@ -202,7 +202,19 @@ class BurstDeferred(object):
             if isinstance(ret, BurstDeferred):
                 ret.onDone(chain_deferred.callOnDone)
 
+    def onDoneCallDeferred(self, d):
+        """ Helper for t.i.d.Deferred mingling - will call this deferred when
+        we are done """
+        self.onDone(lambda: d.callback(None))
 
+    def getDeferred(self):
+        """ Helper for chaining usine DeferredList of chainDeferreds, to avoid
+        writing another BurstDeferred version. Returns a Deferred that is called
+        when callOnDone is called.
+        """
+        self._d = Deferred()
+        self.onDone(lambda: self._d.callback(None))
+        return self._d
 
 # D* - Cacheing
 
@@ -269,6 +281,9 @@ def cached(filename):
     return wrap
 
 # Some Math
+
+def close_to_zero(v, amount=1e-10):
+    return abs(v) < amount
 
 def clip(minim, maxim, val):
     return min(maxim, max(minim, val))
@@ -367,14 +382,22 @@ def calculate_relative_pos((waypoint_x, waypoint_y), (target_x, target_y), offse
     #    waypoint_x, waypoint_y, target_x, target_y, normal_x, normal_y, result_x, result_y, result_bearing)
     return result_x, result_y, result_bearing
 
-''' Transform our value into the range of -1..1 '''
 def normalize2(value, range):
-    return (range - value) / range
+    """ Transform our value into the range of -1..1
+    value is assumed within [0,2*range]
+    """
+    return (value - range) / range
 
 # Text/String/Printing utils
 
+def nicefloat(x):
+    try:
+        return '%3.3f' % x
+    except:
+        return str(x)
+
 def nicefloats(l):
-    return (' '.join(['%3.3f']*len(l))) % tuple(l)
+    return (' '.join(map(nicefloat, l)))
 
 def trim(s, l):
     """ trims at 3 bytes larger then the supplied value,
@@ -474,6 +497,9 @@ class LogCalls(object):
 
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
+        # TODO: use callbacks for motion (isRunning) 
+        if k in ('getListData', 'isRunning'):
+            return f
         if callable(f):
             return CallLogger('%s.%s' % (self._name, k), f)
         else:
@@ -539,4 +565,10 @@ def read_nbfrm(filename, width=320, height=240):
         variables = map(float, variables[1:])
         joints, sensors = variables[:-sensor_num], variables[-sensor_num:]
     return yuv, version, joints, sensors
+
+def write_nbfrm(filename, yuv, version, joints, sensors):
+    with open(filename, 'w+') as fd:
+        fd.write(yuv)
+        fd.write(str(version) + ' ')
+        fd.write(' '.join('%f' % f for f in list(joints) + list(sensors)))
 

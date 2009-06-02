@@ -549,7 +549,7 @@ class ALMotionExtended(NaoQiModule):
         """ Work like northern bites code using ALMotion.doMove
         """
         # minimal check just for allowed moves, not checking it is a list non zero length etc.
-        if len(moves[0]) == 5 and len(moves[0][0]) == 4:
+        if (len(moves[0]) == 5 or len(moves[0]) == 6):# len(moves[0]) == 5 and len(moves[0][0]) == 4:
             return self.executeMove20(moves, interp_type, return_instead=return_instead)
         elif len(moves[0]) == 2 and len(moves[0][0]) == 2:
             return self.executeMoveHead(moves, interp_type, return_instead=return_instead)
@@ -557,14 +557,21 @@ class ALMotionExtended(NaoQiModule):
             print "ERROR: ALMotionExtend.executeMove: unrecognized move"
 
     def executeMove20(self, moves, interp_type, return_instead=False):
-        """ for 20 joint moves (4 + 6 + 6 + 4)
+        """ for 20 joint moves (4 + 6 + 6 + 4) or 22 joints (2 + 4 + 6 + 6 + 4)
         """
-        joints = self._joint_names[2:]
+        
+        if len(moves[0]) == 6:
+            def getangles((head, larm, lleg, rleg, rarm, interp_time)):
+                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names
+        else:
+            def getangles((larm, lleg, rleg, rarm, interp_time)):
+                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names[2:]
+
         n_joints = len(joints)
-        angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
-                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
-                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
-        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
+        durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         if return_instead:

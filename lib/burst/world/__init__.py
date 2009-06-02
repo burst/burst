@@ -21,14 +21,13 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
 from ..sensing import FalldownDetector
 from burst_util import running_average, LogCalls
 
-from ..consts import MMAP_VARIABLES_FILENAME
-
 from sharedmemory import *
 from objects import Ball, GoalPost
 from robot import Robot
 from team import Team
 from computed import Computed
 from objects import Locatable
+from localization import Localization
 
 sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController
@@ -64,6 +63,12 @@ def gethostname():
     return hostname
 
 class World(object):
+    """
+    Main access to any information about the world around the robot,
+    including other robots. Generally access is done through attributes
+    that are themselves objects, such as ball, yglp, (TODO: opponent_goal,
+    our_goal, teammate1, teammate2, opponent{1,2,3})
+    """
 
     # Some variable we are sure to export if Man module (man) is
     # actually running on the robot / webots.
@@ -138,6 +143,7 @@ class World(object):
         # reference to them.
         self.team = Team(self)
         self.computed = Computed(self)
+        self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.robotSettings = robot_settings
@@ -163,7 +169,7 @@ class World(object):
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
-            [self.computed],
+            [self.computed, self.localization],
         ]
 
         # logging variables
@@ -175,7 +181,7 @@ class World(object):
 
         # Try using shared memory to access variables
         if World.running_on_nao:
-            self.updateMmapVariablesFile()
+            #self.updateMmapVariablesFile() # // TODO -remove the file! it is EVIL
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
@@ -229,6 +235,8 @@ class World(object):
         return (com + dcm + jsense + actsense + inert + force +
                 poschains + transform + various)
 
+    # Accessors
+
     def getMemoryProxy(self):
         return self._memory
 
@@ -238,6 +246,37 @@ class World(object):
     def getSpeechProxy(self):
         return self._speech
     
+    def getDefaultVars(self):
+        """ return list of variables we want anyway, regardless of what
+        the objects we use want. This currently includes:
+         Device/SubDeviceList/<jointname>/Position/Sensor/Value
+          - for getAngle
+        """
+        return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
+            for joint in self.jointnames]
+
+    def getEventsAndDeferreds(self):
+        events, deferreds = self._events, self._deferreds
+        self._events = set()
+        self._deferreds = []
+        return events, deferreds
+
+    # accessors that wrap the ALMemory - you can also
+    # use world.vars
+    def getAngle(self, jointname):
+        """ almost the same as ALMotion.getAngle as the help tells it -
+        returns the sensed angle, which we take to be the sensor position,
+        not the actuated position
+        """
+        return self.vars[self._getAnglesMap[jointname]]
+
+    # accessors that wrap ALMotion
+    # TODO - cache these
+    def getRemainingFootstepCount(self):
+        return self._motion.getRemainingFootStepCount()
+
+    # Utility
+
     def checkManModule(self):
         """ report to user if the Man module isn't loaded. Since recently Man stopped being
         logged as a module, we look for some of the variables we export.
@@ -257,35 +296,7 @@ class World(object):
         else:
             print "Man is there, vision should be good. Famous last words."
 
-    def getDefaultVars(self):
-        """ return list of variables we want anyway, regardless of what
-        the objects we use want. This currently includes:
-         Device/SubDeviceList/<jointname>/Position/Sensor/Value
-          - for getAngle
-        """
-        return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
-            for joint in self.jointnames]
-
-    def updateMmapVariablesFile(self):
-        """
-        create/update the MMAP_VARIABLES_FILENAME - must have
-        self._vars_to_get_list ready, so call this after __init__ is done or
-        at its end.
-        """
-        recreate = False
-        if os.path.exists(MMAP_VARIABLES_FILENAME):
-            existing_vars = [x.strip() for x in linecache.updatecache(MMAP_VARIABLES_FILENAME)]
-            if existing_vars != self._vars_to_get_list:
-                print "updating %s" % MMAP_VARIABLES_FILENAME
-                recreate = True
-        else:
-            print (("I see %s is missing. creating it for you." +
-                "it has %s variables") % (MMAP_VARIABLES_FILENAME, len(self._vars_to_get_list)))
-            recreate = True
-        if recreate:
-            fd = open(MMAP_VARIABLES_FILENAME, 'w+')
-            fd.write('\n'.join(self._vars_to_get_list))
-            fd.close()
+    # ALMemory and Shared memory functions
 
     def calc_events(self, events, deferreds):
         """ World treats itself as a regular object by having an update function,
@@ -342,6 +353,8 @@ class World(object):
 
     _updateMemoryVariables = _updateMemoryVariablesFromALMemory
 
+    # Callbacks
+
     def collectNewUpdates(self, cur_time):
         self.time = cur_time
         self._updateMemoryVariables() # must be first in update
@@ -352,6 +365,10 @@ class World(object):
                 obj.calc_events(self._events, self._deferreds)
         if self._do_log_positions:
             self._logPositions()
+
+    def cleanup(self):
+        if self._do_log_positions:
+            self._closePositionLogs()
 
     # Logging Functions
 
@@ -375,14 +392,6 @@ class World(object):
     def _closePositionLogs(self):
         for obj, (fd, writer) in self._logged_objects:
             fd.close()
-
-    # Accessors
-
-    def getEventsAndDeferreds(self):
-        events, deferreds = self._events, self._deferreds
-        self._events = set()
-        self._deferreds = []
-        return events, deferreds
 
     # record robot state 
     def startRecordAll(self, filename):
@@ -414,22 +423,4 @@ class World(object):
         self._record_file = None
         self._record_csv = None
         self.removeMemoryVars(self._recorded_vars)
-
-    # accessors that wrap the ALMemory - you can also
-    # use world.vars
-    def getAngle(self, jointname):
-        """ almost the same as ALMotion.getAngle as the help tells it -
-        returns the sensed angle, which we take to be the sensor position,
-        not the actuated position
-        """
-        return self.vars[self._getAnglesMap[jointname]]
-
-    # accessors that wrap ALMotion
-    # TODO - cache these
-    def getRemainingFootstepCount(self):
-        return self._motion.getRemainingFootStepCount()
-
-    def cleanup(self):
-        if self._do_log_positions:
-            self._closePositionLogs()
 

@@ -34,8 +34,7 @@ params.KICK_Y_MAX[:] = [12.5,-12.5] #[7.5,-7.5]
 
 import burst.actions.actionconsts as actionconsts
 actionconsts.DEFAULT_STEPS_FOR_TURN = 60
-actionconsts.DEFAULT_STEPS_FOR_WALK = 60
-actionconsts.DEFAULT_STEPS_FOR_SIDEWAYS = 60
+actionconsts.DEFAULT_SLOW_WALK_STEPS = 60
 
 from burst.consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters

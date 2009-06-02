@@ -8,7 +8,6 @@ import twisted.internet.reactor as reactor
 import twisted.internet.error
 
 LOG_HEADERS = False
-DEBUG = False
 
 class SoapConnectionManager(object):
 
@@ -16,6 +15,7 @@ class SoapConnectionManager(object):
         self._protocols = []
         self._errors_connecting = 0
         self.con = con
+        self.verbose = con.options.verbose_twisted
         if LOG_HEADERS:
             self.con.log = open('headers.txt', 'a+')
 
@@ -27,7 +27,7 @@ class SoapConnectionManager(object):
 
     def _newProtocolConnected(self, protocol):
         self._protocols.append(protocol)
-        if DEBUG:
+        if self.verbose:
             print "DEBUG: SoapConnectionManager: protocols: %s" % len(self._protocols)
 
     def _onConnectionError(self, error):
@@ -47,8 +47,10 @@ class SoapConnectionManager(object):
                 # should probably start using errbacks, perfect for this.
             elif prot.ready and not returned:
                 returned = prot.sendPacket(tosend, deferred)
+        now = time()
         for i in reversed(to_delete):
-            print "deleting protocol %s, tosend = %s" % (i, self._protocols[i].tosend)
+            if self.verbose:
+                print "deleting protocol %s after %s seconds" % (i, now - self._protocols[i]._time_last_send)
             del self._protocols[i]
         if returned:
             return returned
@@ -74,6 +76,7 @@ class SoapProtocol(Protocol):
         self.con = con
         self.options = con.options
         self.ready = True
+        self.verbose = con.options.verbose_twisted
         self._makeReadyForNextPacket()
         if tosend:
             self.sendPacket(tosend, deferred)
@@ -81,8 +84,9 @@ class SoapProtocol(Protocol):
     def sendPacket(self, tosend, deferred):
         if not self.ready:
             raise Exception("SoapProtocol.sendPacket called while sending/receiving previous packet")
+        self._time_last_send = time()
         self._packets += 1
-        if DEBUG:
+        if self.verbose:
             print "DEBUG: SoapProtocol %s: packets = %s" % (id(self), self._packets)
         self.tosend = tosend
         self.deferred = deferred

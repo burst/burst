@@ -37,7 +37,8 @@ params.KICK_Y_MAX[:] = [6.0,-4.5]
 def raulSetBodyStiffness(realproxy, orig_setbodystiffness, num):
     # set everything except the faulty arm
     d = orig_setbodystiffness(num)
-    realproxy.setJointStiffness('LShoulderRoll', 0.0)
+    if num > 0.0:
+        realproxy.setJointStiffness('LShoulderRoll', 0.0)
     return d
 
 orig_getMotionProxy = burst.getMotionProxy

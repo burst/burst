@@ -21,7 +21,7 @@ burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.arg
 sys.path.append(burst_lib)
 
 import pynaoqi
-from pynaoqi.widgets import Localization, Inertial
+from pynaoqi.widgets import Localization, Inertial, BaseWindow
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
 from burst_util import (cached, cached_deferred, Deferred, clip,
     DeferredList)
@@ -265,9 +265,10 @@ def create_button_strip(data):
 ################################################################################
 #### Main Class
 ################################################################################
-class Joints(object):
+class Joints(BaseWindow):
 
     def __init__(self):
+        super(Joints, self).__init__()
         global start_time
         global con
         start_time = time()
@@ -322,7 +323,7 @@ class Joints(object):
         # initiate battery task when pynaoqi finishes loading
         self.con.modulesDeferred.addCallback(lambda _: self.battery_level_task.start(
             DT_CHECK_BATTERY_LEVEL))
-        w = gtk.Window()
+        w = self._w
         w.set_title('naojoints - %s' % self.con.host)
         self.c = c = gtk.VBox()
         self._joints_container = gtk.VBox() # top - buttons, bottom - joints sliders table
@@ -446,7 +447,6 @@ class Joints(object):
 
         w.resize(700, 400)
         w.show_all()
-        w.connect("destroy", self.onDestroy)
     
     def showAllJoints(self):
         for pane in self._joint_panes:
@@ -458,6 +458,8 @@ class Joints(object):
         for pane in self._joint_panes:
             if show_pane is not pane:
                 pane.hide()
+        # resize to minimize width
+        self._w.resize(200, self._w.get_size()[1])
 
     def _toggleAllButtonsExceptBattery(self, widget, event, state=[True]):
         op = {True: lambda w: w.hide_all(),
@@ -484,10 +486,11 @@ class Joints(object):
     def setWalkConfig(self, arg):
         self._walkconfig = arg
 
-    def onDestroy(self, *args):
+    def _onDestroy(self, *args):
         if self.updater.running:
             print "stopping joints task"
             self.updater.stop()
+        super(Joints, self)._onDestroy(*args)
 
     def toggleit(self, what, attrname):
         if getattr(self, attrname):

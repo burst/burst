@@ -1,5 +1,6 @@
 from burst.consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
+import general_moves as moves
 
 class Walk(object):
 
@@ -37,6 +38,28 @@ class Walk(object):
 
 
 # WALKS
+
+STABLE_WALK = Walk(WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
+           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           20.0 * DEG_TO_RAD,  # ElbowMedian 
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           4.5,                   # LHipRoll(degrees) 
+           -4.5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           2.0,                   # TorsoYOrientation(degrees)
+           0.015,                  # StepLength
+           0.015,                  # StepHeight
+           0.04,                  # StepSide
+           0.3,                   # MaxTurn
+           0.015,                  # ZmpOffsetX
+           0.02]),                  # ZmpOffsetY
+           25          # 20ms count per step
+    )
+
+
+
+
 STRAIGHT_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -72,6 +95,11 @@ SIDESTEP_WALK = Walk(WalkParameters([
            0.02]),                  # ZmpOffsetY
            25                   # 20ms count per step
     )
+
+# The Pairs are the initial pose and the walk, to be used by
+# Actions.changeLocationRelative etc.
+
+STABLE_PAIR = (STABLE_WALK, moves.STABLE_WALK_INITIAL_POSE)
 
 
 '''

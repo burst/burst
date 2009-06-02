@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <algorithm>
+
 
 #include <cstdio>
 
@@ -23,7 +25,6 @@ using namespace AL;
 
 // TODO - read these from config.h which somehow gets created through python
 // during startup using the values in lib/burst/consts.py
-const char* MMAP_VARIABLES_FILENAME = "/home/root/burst/lib/etc/mmap_variables.txt";
 const char* CHARGER_CONFIG_FILENAME = "/home/root/burst/lib/etc/charger_warning.txt";
 const char* MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap";
 const unsigned int MMAP_LENGTH      = 4096;
@@ -56,11 +57,20 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     functionName ("isMemoryMapRunning", "burstmem", "return true if almemory is memory-mapped");
     BIND_METHOD (burstmem::isMemoryMapRunning);
 
-    functionName ("getNumberOfVariables", "burstmem", "return number of read variables (for debugging");
+    functionName ("getNumberOfVariables", "burstmem", "return number of read variables (for debugging)");
     BIND_METHOD (burstmem::getNumberOfVariables);
 
-    functionName ("getVarNameByIndex", "burstmem", "return read variable name (for debugging");
+    functionName ("getVarNameByIndex", "burstmem", "return read variable name (for debugging)");
     BIND_METHOD (burstmem::getVarNameByIndex);
+
+    // TODO - setMappedVariables
+    functionName ("clearMappedVariables", "burstmem", "clear list of mapped variables");
+    BIND_METHOD (burstmem::clearMappedVariables);
+
+    functionName ("addMappedVariable", "burstmem", "add a single variable to mapped vars, we give the index to protect against changes in order (for any reason)");
+    addParam("index", "index in shared memory");
+    addParam("var", "name of variable exported by ALMemory");
+    BIND_METHOD (burstmem::addMappedVariable);
 
     //Create a proxy on logger module
     try {
@@ -129,6 +139,35 @@ void burstmem::subscribeToDataChange()
 }
 
 //______________________________________________
+// clearMappedVariables
+//______________________________________________
+void burstmem::clearMappedVariables()
+{
+    m_varnames.clear();
+}
+
+//______________________________________________
+// addMappedVariable
+//______________________________________________
+void burstmem::addMappedVariable(int index, std::string var)
+{
+    m_varnames.resize(index+1);
+    m_varnames[index] = var;
+}
+
+//______________________________________________
+// setMappedVariables - TODO
+//______________________________________________
+#if 0
+void burstmem::setMappedVariables (const std::vector<std::string> varnames)
+{
+    m_varnames.clear();
+    //std::copy(varnames.begin(), varnames.end(), m_varnames.begin());
+    std::cout << "burstmem: will record " << m_varnames.size() << " variables" << std::endl;
+}
+#endif
+
+//______________________________________________
 // version
 //______________________________________________
 std::string burstmem::version ()
@@ -184,7 +223,7 @@ void burstmem::startMemoryMap ()
 {
     if (this->m_copying) return;
 
-    readVariablesFile(MMAP_VARIABLES_FILENAME, m_varnames);
+    // Now we get the variables explicitly by setMappedVariables
 
     if (this->m_varnames.size() == 0) {
         std::cout << "burstmem: not starting, number of values to record is zero"
@@ -283,7 +322,7 @@ burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
 void
 burstmem::updateMemoryMappedVariables()
 {
-    if (!m_copying || !m_memory_mapped) return;
+    if (!m_copying || !m_memory_mapped || m_varnames.size() == 0) return;
 
     try {
         m_values = m_memory->getListData(m_varnames);
@@ -298,6 +337,9 @@ burstmem::updateMemoryMappedVariables()
             endl;
     }
 }
+
+//--------------------------------------------------------------------------------
+// Battery Checking functions
 
 void
 burstmem::checkBatteryStatus ()
@@ -324,9 +366,10 @@ burstmem::checkBatteryStatus ()
 void
 burstmem::announceChargerChange( int status )
 {
-    if ( status == CHARGER_CONNECTED && ANNOUNCE_CONNECTED )
+    if ( status == CHARGER_CONNECTED && ANNOUNCE_CONNECTED ) {
         textToSpeechProxy->pCall("say", std::string("Connected"));
-    else if ( status == CHARGER_DISCONNECTED )
+    } else if ( status == CHARGER_DISCONNECTED ) {
         textToSpeechProxy->pCall("say", std::string("Disconnected"));
+    }
 }
 
