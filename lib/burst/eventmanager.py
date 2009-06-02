@@ -5,6 +5,7 @@
 import traceback
 import sys
 from time import time
+from heapq import heappush, heappop
 
 import burst
 from burst_util import BurstDeferred, DeferredList
@@ -127,23 +128,20 @@ class EventManager(object):
                 xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
         self._world = world
         self._should_quit = False
+        self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
         self.unregister_all()
-        self.setTimeoutEventParams(0.0)
 
-    def setTimeoutEventParams(self, dt, oneshot=False, cb=None):
-        """ Set Timeout Parameters.
-        dt is in seconds. if oneshot is true the registration
-        will be deleted after a single callback.
+    def resetCallLaters(self):
+        del self._call_later[:]
 
-        When this is set the next timeout is scheduled to current time
-        taken from world plus dt (i.e. self._world.time + dt)
+    def callLater(self, dt, callback, *args, **kw):
+        """ Will call given callback after an approximation of dt milliseconds,
+        specifically:
+        REAL_DT = int(dt/EVENT_MANAGER_DT) (int == largest integer that is smaller then)
         """
-        self._timeout_dt = dt
-        self._timeout_oneshot = oneshot
-        self._timeout_last = self._world.time
-        print "setting timeout event, start time =", self._timeout_last
-        if cb: # shortcut
-            self._events[EVENT_TIME_EVENT] = cb
+        # TODO - cancel option? if required then the way is a real Event class
+        abstime = self._world.time + max(EVENT_MANAGER_DT, dt)
+        heappush(self._call_later, (abstime, callback, args, kw))
 
     def register(self, event, callback):
         """ set a callback on an event.
@@ -173,19 +171,24 @@ class EventManager(object):
     def handlePendingEventsAndDeferreds(self):
         """ Call all callbacks registered based on the new events
         stored in self._world
+
+        Also handles callLaters
         """
+        # TODO - rename deferreds to burstdeferreds
         events, deferreds = self._world.getEventsAndDeferreds()
+        # Handle regular events
         for event in events:
             if self._events[event] != None:
                 self._events[event]()
         if self._events[EVENT_STEP]:
             self._events[EVENT_STEP]()
-        if self._events[EVENT_TIME_EVENT]:
-            if self._timeout_last + self._timeout_dt <= self._world.time:
-                self._events[EVENT_TIME_EVENT]()
-                self._timeout_last = self._world.time
-                if self._timeout_oneshot:
-                    self._events[EVENT_TIME_EVENT] = None
+        # Handle call later's
+        while len(self._call_later) > 0:
+            next_time = self._call_later[0][0]
+            if next_time <= self._world.time:
+                next_time, cb, args, kw = heappop(self._call_later)
+                cb(*args, **kw)
+        # Handle deferreds
         for deferred in deferreds:
             deferred.callOnDone()
 

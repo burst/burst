@@ -86,13 +86,21 @@ class Actions(object):
             raise Exception("Can't start searching while tracking")
         return self.searcher.search(targets)
 
-    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05):
-        """ Do a single tracking step, aiming to center on the given target.
+    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
+            return_exact_error=False):
+        """ This is a controller. Does a single tracking step,
+            aiming to center on the given target.
+
         Return value:
          centerd, maybe_bd
          centered - True if centered, False otherwise
          maybe_bd - a BurstDeferred if head movement initiated, else None
         """
+        # Need to handle possible out of bounds - if we are requested to
+        # go to an elevation that is too high, or to a bearing that is too far
+        # left, we need to return success but flag the error for higher up.
+        # TODO - handle the out of bounds. Current solution: let higher up
+        # handle it. (using same tactic, or check for "noop" for too long)
         def location_error(target, x_error, y_error):
             # TODO - using target.centerX and target.centerY without looking at newness is broken.
             # Normalize ball X between 1 (left) to -1 (right)
@@ -120,6 +128,8 @@ class Actions(object):
             #       deltaHeadYaw, deltaHeadPitch)
             #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
+        if return_exact_error:
+            return centered, bd, (xNormalized, yNormalized)
         return centered, bd
 
     #===============================================================================
@@ -375,8 +385,11 @@ class Actions(object):
     def clearFootsteps(self):
         return self._motion.clearFootsteps()
 
-    def moveHead(self, x, y):
-        self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
+    def moveHead(self, x, y, interp_time=1.0):
+        """ move from current yaw pitch to new values within
+        interp_time time (up to limit of actuators) """
+        print "MOVE HEAD to %s, %s" % (x, y)
+        return self.executeHeadMove([((float(x), float(y)), interp_time)])
 
     def blockingStraightWalk(self, distance):
         if self._world.robot.isMotionInProgress():

@@ -54,7 +54,7 @@ class goalie(Player):
             self._actions.say("leap right")
         else:
             self._actions.say("leap Left")
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.whichBehavior)
+        self._eventmanager.callLater(TIME_WAITING, self.whichBehavior)
             
 
     def leap(self):
@@ -70,10 +70,10 @@ class goalie(Player):
             self.watchIncomingBall()
 
     def waitingOnRight(self):
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpRight)
+        self._eventmanager.callLater(TIME_WAITING, self.gettingUpRight)
 
     def watingOnLeft(self):
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpLeft)
+        self._eventmanager.callLater(TIME_WAITING, self.gettingUpLeft)
 
 
     def gettingUpRight(self):

@@ -283,10 +283,17 @@ imshow(a)
 """
 
 STRANGE_ONES="""
-loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
 
-# Not strange, just ugly.
+# Localization debugging, a bunch of variables. Not strange, just ugly.
 loop(lambda: kin.pose.update(con).addCallback(lambda _: nicefloats([kin.pose._estimates['YGLP'][0][0], kin.pose._estimates['YGRP'][0][0]] + kin.pose.cameraToWorldFrame[0].tolist() + kin.pose._bodyAngles[:2] + [kin.pose._v.YGRP.height+kin.pose._v.YGRP.y, kin.pose._v.YGRP.x, kin.pose._v.YGLP.height+kin.pose._v.YGLP.y, kin.pose._v.YGLP.x+kin.pose._v.YGLP.width])))
+
+# Network status
+
+# Show number of connections and number of packets over time
+loop(lambda: succeed((len(con.connection_manager._protocols), sum(p._packets for p in con.connection_manager._protocols))))
+
+# Show number of packets per connection
+loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
 """
 
 def examples():
@@ -294,7 +301,7 @@ def examples():
 
 def strange_ones():
     """ Slightly weirder examples """
-    return STRANGE_ONES
+    print STRANGE_ONES
 
 def f():
     return 42

@@ -23,7 +23,8 @@ class Donothing(Player):
 
     def startWaiting(self):
         print "doNothing: Starting to wait"
-        self._eventmanager.setTimeoutEventParams(2.0, oneshot=True, cb=self.onTimeout)
+        #self._eventmanager.callLater(2.0, self.onTimeout)
+        import pdb; pdb.set_trace()
 
     def onStep(self):
         self._count += 1
