@@ -1,6 +1,6 @@
 from burst_util import BurstDeferred, chainDeferreds
 from burst.walkparameters import WalkParameters
-from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_STEPS_FOR_WALK)
+from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
 from burst.eventmanager import EVENT_MANAGER_DT
 from burst.events import EVENT_CHANGE_LOCATION_DONE
 from burst.consts import SUPPORT_MODE_DOUBLE_LEFT
@@ -142,7 +142,7 @@ class Journey(object):
         if World.connected_to_nao:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
             normal_walk_distance = leg_distance - slow_walk_distance
-            self._addWalkStraight( "slow walk: %f", slow_walk_distance, DEFAULT_STEPS_FOR_WALK )
+            self._addWalkStraight( "slow walk: %f", slow_walk_distance, DEFAULT_SLOW_WALK_STEPS )
             self._addWalkStraight( "normal walk: %f", normal_walk_distance, self._time_per_steps)
         else:
             self._addWalkStraight( "same speed: %f", leg_distance, self._time_per_steps )

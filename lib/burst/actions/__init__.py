@@ -196,7 +196,7 @@ class Actions(object):
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, stepLength*2)
             if World.connected_to_nao:
-                dgens.append(lambda _: self._motion.addWalkStraight( slow_walk_distance, DEFAULT_STEPS_FOR_WALK ))
+                dgens.append(lambda _: self._motion.addWalkStraight( slow_walk_distance, DEFAULT_SLOW_WALK_STEPS ))
                 dgens.append(lambda _: self._motion.addWalkStraight( distance - slow_walk_distance, defaultSpeed ))
             else:
                 print "ADD WALK STRAIGHT: %f, %f" % (distance, defaultSpeed)
@@ -225,7 +225,7 @@ class Actions(object):
         bd = BurstDeferred(None)
         def doMove(_):
             DeferredList([
-                self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
+                #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
                 self.executeMove(moves.INITIAL_POS).getDeferred()
             ]).addCallback(lambda _: bd.callOnDone())
         self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
@@ -243,7 +243,7 @@ class Actions(object):
             self._removeStiffnessDeferred = d   # XXX DEBUG Helper
             return d
         dgens.append(lambda _: self.clearFootsteps())
-        dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
+        #dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
         dgens.append(lambda _: self.executeMove(moves.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
         self._sitpose_deferred = chainDeferreds(dgens) # XXX DEBUG Helper
@@ -292,11 +292,11 @@ class Actions(object):
         d = self._motion.post.doMove(jointCodes, angles, times, 1)
         return self.bdFromPostIdDeferred(d, kind='motion',
             event=EVENT_BODY_MOVE_DONE, duration=duration)
-                
+
     def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
-         larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time, interp_type
+        head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
 
         interp_type - 1 for SMOOTH, 0 for Linear
         interp_time - time in seconds for interpolation
@@ -304,21 +304,29 @@ class Actions(object):
         NOTE: currently this is SYNCHRONOUS - it takes at least
         sum(interp_time) to execute.
         """
-        joints = self._joint_names[2:]
+        if len(moves[0]) == 6:
+            def getangles((head, larm, lleg, rleg, rarm, interp_time)):
+                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names
+        else:
+            def getangles((larm, lleg, rleg, rarm, interp_time)):
+                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names[2:]
+        
         n_joints = len(joints)
-        angles_matrix = transpose([[x for x in list(larm)
-                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
-                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
-        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
+        durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
+    # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
+    # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
-         larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time, interp_type
+        head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
 
         interp_type - 1 for SMOOTH, 0 for Linear
         interp_time - time in seconds for interpolation
@@ -326,12 +334,19 @@ class Actions(object):
         NOTE: currently this is SYNCHRONOUS - it takes at least
         sum(interp_time) to execute.
         """
-        joints = self._joint_names[2:]
+        
+        if len(moves[0]) == 6:
+            def getangles((head, larm, lleg, rleg, rarm, interp_time)):
+                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names
+        else:
+            def getangles((larm, lleg, rleg, rarm, interp_time)):
+                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+            joints = self._joint_names[2:]
+
         n_joints = len(joints)
-        angles_matrix = transpose([[x*DEG_TO_RAD for x in list(larm)
-                    + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
-                    + [0.0, 0.0]] for larm, lleg, rleg, rarm, interp_time in moves])
-        durations_matrix = [list(cumsum(interp_time for larm, lleg, rleg, rarm, interp_time in moves))] * n_joints
+        angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
+        durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
