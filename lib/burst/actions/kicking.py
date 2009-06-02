@@ -62,7 +62,7 @@ class BallKicker(BurstDeferred):
         self._actions.initPoseAndStiffness().onDone(self.initKickerPosition)
         
     def initKickerPosition(self):
-        self._actions.executeMoveRadians(moves.STABLE_WALK_INITIAL_POSE).onDone(self.doNextAction)
+        self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(self.doNextAction)
         
     def onKickDone(self):
 #        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
@@ -184,22 +184,30 @@ class BallKicker(BurstDeferred):
         # Ball inside kicking area, kick it
         if ball_location == BALL_IN_KICKING_AREA:
             print "Kicking!"
-            #self.doKick(side)
+            self.doKick(side)
             
             # TODO: TEMP!!! REMOVE!!!
-            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
-            return
+            #self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+            #return
         else:
-            print "advancing!"
-#            if ball_location == BALL_FRONT:
-#                self._actions.changeLocationRelativeSideways(target_x*3/4).onDone(self.doNextAction)
+            
+            if ball_location == BALL_FRONT:
+                print "Advancing straight!"
+                self._actions.changeLocationRelative(target_x).onDone(self.doNextAction)
 #            elif ball_location in (BALL_SIDE, BALL_DIAGONAL):
 #                self._actions.turn(target_bearing*2/3).onDone(self.doNextAction)
-#            elif ball_location == BALL_BETWEEN_LEGS:
-#                self._actions.changeLocationRelativeSideways(0.0, target_y*3/4, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
-
+            elif ball_location == BALL_BETWEEN_LEGS:
+                print "Advancing sideways!"
+                self._actions.changeLocationRelativeSideways(0.0, target_y, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
+            else:
+######### TODO: TEMP!!! REMOVE!!!
+                print "Not moving for now (ball diagonal or at side)!"
+                self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
             
 ################################### TESTING WALKS:
+#            if ball_location == BALL_FRONT:
+#                self._actions.changeLocationRelativeSideways(target_x*3/4, 0.0, walk=moves.STRAIGHT_WALK).onDone(self.doNextAction)
+#                return
 #            if ball_location == BALL_BETWEEN_LEGS:
 #                self._actions.changeLocationRelativeSideways(0.0, target_y*3/4, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
 #                return
@@ -211,8 +219,6 @@ class BallKicker(BurstDeferred):
 #            self._actions.changeLocationRelativeSideways(target_x*3/4, target_y*3/4).onDone(self.doNextAction)
 #            return
 
-######### TODO: TEMP!!! REMOVE!!!
-            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
 
 
 #        elif ball_location == BALL_BETWEEN_LEGS:

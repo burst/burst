@@ -4,7 +4,6 @@
 import player_init
 
 from burst.player import Player
-from burst.events import *
 from burst.consts import *
 import burst.moves as moves
 from math import cos, sin
@@ -17,23 +16,23 @@ class walkTester(Player):
 
     def onStart(self):
         self.kp = None
+        self._actions.initPoseAndStiffness().onDone(self.initKickerPosition)
+        
+    def initKickerPosition(self):
+        self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(self.testWalk)
 
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
-        self._actions.initPoseAndStiffness()
+    def testWalk(self):
         self.walkStartTime = time.time()
-        self.test()
-
-    def test(self):
-        self._actions.changeLocationRelative(100.0)
+        self._actions.changeLocationRelative(30.0, 0.0, 0.0).onDone(self.onWalkDone)
 #        self._actions.executeMove(moves.GREAT_KICK_RIGHT).onDone(
 #           lambda: self._actions.executeMove(moves.GREAT_KICK_LEFT)).onDone(
 #           lambda: self._actions.sitPoseAndRelax())
 #        self._eventmanager.quit()
     
-    def onChangeLocationDone(self):
+    def onWalkDone(self):
         self.walkEndTime = time.time()
         print "Walk Done! - tool approximately %f" % (self.walkEndTime - self.walkStartTime)
-        #self._eventmanager.quit()
+        self._eventmanager.quit()
 
 if __name__ == '__main__':
     import burst

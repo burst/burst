@@ -139,6 +139,9 @@ class Journey(object):
         for real robot do a slow walk for SLOW_START_STEPS and then a normal walk
         """
         leg_distance = min(self._leg_distance, self._distance_left)
+        
+        # TODO: TEMP!!!
+        #self._addWalkStraight( "same speed: %f", leg_distance, DEFAULT_SLOW_WALK_STEPS)
         if World.connected_to_nao:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
             normal_walk_distance = leg_distance - slow_walk_distance

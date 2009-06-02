@@ -189,9 +189,9 @@ class Actions(object):
         distance, distanceSideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
         did_sideways = None
 
-        dgens = [] # deferred generators. This is the DESIGN PATTERN to collect a bunch of
-                   # stuff that would have been synchronous and turn it asynchronous
-                   # All lambda's should have one parameter, the result of the last deferred.
+        dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
+                    # stuff that would have been synchronous and turn it asynchronous
+                    # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
@@ -203,8 +203,9 @@ class Actions(object):
         stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
-            print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f)" % (stepLength, distance)
+            print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
             
+            #dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, stepLength*2)
             if World.connected_to_nao:
