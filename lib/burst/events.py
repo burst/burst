@@ -1,4 +1,8 @@
 
+# TODO: We'd might like to have the events fired in some predetermined order.
+# TODO: We'd might like to have the events fired in some predetermined order.
+# TODO: We'd might like to have the events fired in some predetermined order.
+
 ################################################################################
 FIRST_EVENT_NUM = counter = 1
 ################################################################################
@@ -19,6 +23,12 @@ EVENT_BODY_MOVE_DONE = counter; counter+=1
 EVENT_FALLEN_DOWN = counter; counter+=1
 EVENT_ON_BELLY = counter; counter+=1
 EVENT_ON_BACK = counter; counter+=1
+
+# Physical Events
+EVENT_CHEST_BUTTON_PRESSED = counter; counter += 1
+EVENT_CHEST_BUTTON_RELEASED = counter; counter += 1 # TODO: Remove?
+EVENT_LEFT_BUMPER_PRESSED = counter; counter += 1
+EVENT_RIGHT_BUMPER_PRESSED = counter; counter += 1
 
 ##### Vision events
 EVENT_BALL_POSITION_CHANGED = counter; counter+=1
