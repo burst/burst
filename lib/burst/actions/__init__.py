@@ -34,6 +34,8 @@ class Actions(object):
      * it is complex, runs for a long time.. (not very well understood)
     """
 
+    self.verbose = False
+
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
@@ -352,7 +354,8 @@ class Actions(object):
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within
         interp_time time (up to limit of actuators) """
-        print "MOVE HEAD to %s, %s" % (x, y)
+        if self.verbose:
+            print "MOVE HEAD to %s, %s" % (x, y)
         return self.executeHeadMove([((float(x), float(y)), interp_time)])
 
     def blockingStraightWalk(self, distance):

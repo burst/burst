@@ -25,6 +25,7 @@ from pynaoqi.widgets import Localization, Inertial, BaseWindow
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
 from burst_util import (cached, cached_deferred, Deferred, clip,
     DeferredList)
+from burst.walkparameters import WalkParameters
 
 ################################################################################
 
@@ -386,7 +387,7 @@ class Joints(BaseWindow):
 
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
-            distance_per_step = self._walkconfig[0]
+            distance_per_step = self._walkconfig[WalkParameters.StepLength]
             return setWalkConfig(self.con, self._walkconfig).addCallback(
                 lambda result: self.con.ALMotion.addWalkStraight(
                     steps * distance_per_step, 60).addCallback(startWalkTest)

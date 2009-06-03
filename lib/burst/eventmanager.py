@@ -5,7 +5,7 @@
 import traceback
 import sys
 from time import time
-from heapq import heappush, heappop
+from heapq import heappush, heappop, heapify
 
 from twisted.python import log
 
@@ -42,7 +42,7 @@ def singletime(event):
                     pass
                 except Exception, e:
                     print "CAUGHT EXCEPTION: %s" % e
-                self._eventmanager.unregister(event)
+                self._eventmanager.unregister(event, onEvent)
                 print "singletime: unregistering from %s" % event
             print "singletime: registering to %s" % event
             self._eventmanager.register(event, onEvent)
@@ -122,17 +122,30 @@ class EventManager(object):
     you lazy bum)
     """
 
+    verbose = burst.options.verbose_eventmanager
+
     def __init__(self, world):
         """ In charge of computing when certain events happen, keeping track
         of callbacks, and calling them.
         """
-        self._events = dict([(event, None) for event in
+        # The _events maps from an event enum to a set of callbacks (so order
+        # of callback is undefined)
+        self._events = dict([(event, set()) for event in
                 xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
+        self._callbacks = {} # dictionary from callback to events set it is registered to
         self._world = world
         self._should_quit = False
         self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
-        self.verbose = burst.options.verbose_eventmanager
         self.unregister_all()
+
+    def get_num_registered(self):
+        return sum(len(v) for k, v in self._callbacks.items())
+
+    def get_num_registered_events(self):
+        return sum(1 for k, v in self._events.items() if len(v) > 0)
+
+    def get_num_registered_callbacks(self):
+        return len(self._callbacks)
 
     def resetCallLaters(self):
         del self._call_later[:]
@@ -146,26 +159,37 @@ class EventManager(object):
         abstime = self._world.time + max(EVENT_MANAGER_DT, dt)
         heappush(self._call_later, (abstime, callback, args, kw))
 
-    def register(self, event, callback):
+    def register(self, callback, event):
         """ set a callback on an event.
         """
-        if not self._events[event]:
-            self._num_registered += 1
-        else:
-            if self._events[event] is callback:
-                print "WARNING: harmless register overwrite of event %s" % event
-            else:
-                print "WARNING: overwriting register for event %s with %s (old was %s)" % (event, callback, self._events[event])
-        self._events[event] = callback
+        # add to _callbacks
+        if callback not in self._callbacks:
+            self._callbacks[callback] = set()
+        if event in self._callbacks[callback]:
+            print "WARNING: harmless register overwrite of %s to %s" % (callback, event)
+        self._callbacks[callback].add(event)
+        # add to _events
+        self._events[event].add(callback)
+        if self.verbose:
+            print "EventManager: #_events[%d] = %s" % (event, len(self._events[event]))
 
-    def unregister(self, event):
-        if self._events[event]:
-            self._num_registered -= 1
-            self._events[event] = None
+    def unregister(self, callback, event=None):
+        """Unregister the callback function callback, if event is given then from that
+        event only, otherwise from all events it is registered for. If it isn't registered
+        to anything then nothing will happen.
+        """
+        if self.verbose:
+            print "EventManager: unregister %s" % callback
+        if callback in self._callbacks:
+            # remove from _events
+            for event in self._callbacks[callback]:
+                self._events[event].remove(callback)
+            # remove from _callbacks
+            del self._callbacks[callback]
 
     def unregister_all(self):
         for k in self._events.keys():
-            self._events[k] = None
+            self._events[k] = set()
         self._num_registered = 0
 
     def quit(self):
@@ -188,12 +212,15 @@ class EventManager(object):
         events, deferreds = self._world.getEventsAndDeferreds()
         deferreds = list(deferreds) # make copy, avoid endless loop
 
-        # Handle regular events
-        for event in events:
-            if self._events[event] != None:
-                self._events[event]()
-        if self._events[EVENT_STEP]:
-            self._events[EVENT_STEP]()
+        # Handle regular events - we keep a copy of the current
+        # cb's for all events to make sure there is no loop.
+        loop_event_cb = [list(self._events[event]) for event in events]
+        for cbs in loop_event_cb:
+            for cb in cbs:
+                cb()
+        # EVENT_STEP registrators are always called (again, list used to create a temp copy)
+        for cb in list(self._events[EVENT_STEP]):
+            cb()
 
         # Handle call later's
         cur_call_later = self._call_later

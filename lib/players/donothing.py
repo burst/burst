@@ -14,7 +14,7 @@ def pr(s):
 class Donothing(Player):
     
     def onStart(self):
-        self._eventmanager.register(EVENT_STEP, self.onStep)
+        self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
         self._actions.initPoseAndStiffness().onDone(self.startWaiting)
@@ -35,7 +35,7 @@ class Donothing(Player):
 
     def onTimeout(self):
         print "timed out at t = %s" % self._world.time
-        self._eventmanager.unregister(EVENT_STEP)
+        self._eventmanager.unregister(self.onStep)
         self._actions.sitPoseAndRelax().onDone(self.onQuit)
 
     def onQuit(self):
