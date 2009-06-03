@@ -34,7 +34,7 @@ class Actions(object):
      * it is complex, runs for a long time.. (not very well understood)
     """
 
-    self.verbose = False
+    verbose = False
 
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
