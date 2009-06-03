@@ -106,11 +106,11 @@ elif port == 9560:
 else:
     robotname = {
         '192.168.5.126'	: 'messi',
-        '192.168.7.107'	: 'gerrard',
+        '192.168.5.170'	: 'gerrard',
         '192.168.5.226'	: 'cech',
-        '192.168.7.177'	: 'hagi',
+        '192.168.5.168'	: 'hagi',
         '192.168.5.224'	: 'raul',
-        '192.168.7.110'	: 'maldini',
+        '192.168.5.228'	: 'maldini',
     }.get(ip, ip)
 
 burst_target.robotname = robotname

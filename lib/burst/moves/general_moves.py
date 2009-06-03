@@ -5,7 +5,7 @@ from ..world import World
 
 # array with names of attributes of this module that can be run with executeMove
 # in the naojoints utility (burst/bin/naojoints.py)
-NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND".split()
+NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND STAND_UP_FRONT STAND_UP_BACK".split()
 
 '''
     Angles:
@@ -432,10 +432,10 @@ STAND_UP_FRONT = ( ((90,50,0,0),
                     (0,0,-60,120,-60,0),
                     (93,-10,90,80),1.0),
 
-                   ( INITIAL_POS[0][0],
-                     INITIAL_POS[0][1],
+                   ( INITIAL_POS[0][1], # start from [1] to skip head
                      INITIAL_POS[0][2],
-                     INITIAL_POS[0][3],0.5))
+                     INITIAL_POS[0][3],
+                     INITIAL_POS[0][4],0.5))
 
 STAND_UP_BACK = ( ((0,90,0,0),
                    (0,0,0,0,0,0),
@@ -488,10 +488,10 @@ STAND_UP_BACK = ( ((0,90,0,0),
                    (0,0,-50,120,-70,0),
                    (98,-2,72,65), 1.1),
 
-                  ( INITIAL_POS[0][0],
-                    INITIAL_POS[0][1],
+                  ( INITIAL_POS[0][1], # Start from [1] to skip head
                     INITIAL_POS[0][2],
-                    INITIAL_POS[0][3],0.5))
+                    INITIAL_POS[0][3],
+                    INITIAL_POS[0][4],0.5))
 
 STABLE_WALK_INITIAL_POSE = [
                 (HEAD_POS_FRONT_BOTTOM, #(0.065920039999999999,-0.65199196000000004),
