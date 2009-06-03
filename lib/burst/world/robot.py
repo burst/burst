@@ -1,5 +1,5 @@
 from .objects import Movable
-from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
+from burst_consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
 from burst_util import BurstDeferred, DeferredList, succeed
 from burst import events as events_module
 

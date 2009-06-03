@@ -15,7 +15,7 @@ from burst_util import BurstDeferred, DeferredList
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
 
-from .consts import EVENT_MANAGER_DT
+from burst_consts import EVENT_MANAGER_DT
 
 ################################################################################
 

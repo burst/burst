@@ -1,6 +1,6 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
-from ..consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
+from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
 from ..events import (EVENT_BALL_IN_FRAME,
