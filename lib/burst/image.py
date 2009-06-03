@@ -17,7 +17,7 @@ else:
 TABLE = os.path.join(base, 'modules/etc/table.mtb')
 WHICH = os.path.join(base, 'modules/etc/whichtable.txt')
 which = 'undefined'
-if not os.path.exists(WHICH):
+if os.path.exists(WHICH):
     with open(WHICH) as fd:
         which=fd.read().strip()
 
