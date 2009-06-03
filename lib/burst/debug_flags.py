@@ -7,3 +7,6 @@ This module should hold all debug flags, so that we can conveniently choose whic
 # Per file debug flags:
 player_py_debug = True # This debugging message is in charge of all debug messages inside player.py.
 gamestatus_py_debug = True # This debugging message is in charge of all debug messages inside gamestatus.py.
+
+game_controller_fires_no_events = False
+game_status_fires_no_events = False

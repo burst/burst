@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-__all__ = ['GameStatus']
+__all__ = ['GameStatus', 'EmptyGameStatus']
 
 
 import burst
@@ -8,12 +8,14 @@ from burst import events as events
 import gamecontroller
 from gamecontroller import constants as constants
 from gamecontroller.constants import *
-
 from burst.debug_flags import gamestatus_py_debug as debug
 
-# A helper class for storing the status of the different players on the field.
-class PlayerStatus(object):
 
+
+class PlayerStatus(object):
+    '''
+    Keeps track of the status of a single player.
+    '''
     def __init__(self, teamColor, playerNumber):
         self.config(teamColor, playerNumber)
         self.playerStatus = UNKNOWN_PLAYER_STATUS
@@ -32,10 +34,10 @@ class PlayerStatus(object):
 
 
 class GameStatus(object):
-    """
+    '''
     Each robot will host one instance of this class. It will be in charge of tracking the state of the game - who is penalized, what state
     the game is in (ready/set/play...), what the score is, etc. It will fire the appropriate events.
-    """
+    '''
 
     def __init__(self, playerSettings):
         self.mySettings = playerSettings
@@ -165,6 +167,19 @@ class GameStatus(object):
                 if self._isMe(teamColor, robotNumber):
                     return self.players[teamColor][playerNumber].status
         raise Exception("getMyPlayerStatus() - can't find myself among the players.")
+
+
+
+class EmptyGameStatus(object):
+    '''
+    An empty GameStatus object.
+    '''
+    def __init__(*args, **kw): pass
+    def reset(*args, **kw): pass
+    def readMessage(*args, **kw): pass
+    def calc_events(*args, **kw): pass
+    def getScore(*args, **kw): return 0
+    def getMyPlayerStatus(*args, **kw): return Standard 
 
 
 

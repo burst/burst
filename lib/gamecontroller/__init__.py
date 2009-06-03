@@ -7,7 +7,7 @@ import constants
 from message import GameControllerMessage
 
 
-__all__ = ['GameControllerMessage', 'constants', 'GameController']
+__all__ = ['GameControllerMessage', 'constants', 'GameController', 'EmptyGameController']
 
 
 
@@ -37,6 +37,16 @@ class GameController(object):
         message = self._receive()
         if not message is None:
             self.gameStatus.readMessage(GameControllerMessage(message))
+
+
+
+class EmptyGameController(object):
+    '''
+    An empty implementation of GameController, for those who want to run their programs without the game controller.
+    '''
+    def __init__(*args, **kw): pass
+    def shutdown(*args, **kw): pass
+    def calc_events(*args, **kw): pass
 
 
 
