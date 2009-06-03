@@ -39,7 +39,7 @@ class Localize(Player):
         
     def calcPostHeights(self, post):
         print "please add the pix dist"
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
 
     def onSearchResults(self):

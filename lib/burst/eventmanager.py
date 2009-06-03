@@ -5,7 +5,9 @@
 import traceback
 import sys
 from time import time
-from heapq import heappush, heappop
+from heapq import heappush, heappop, merge
+
+from twisted.python import log
 
 import burst
 from burst_util import BurstDeferred, DeferredList
@@ -129,6 +131,7 @@ class EventManager(object):
         self._world = world
         self._should_quit = False
         self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
+        self.verbose = burst.options.verbose_eventmanager
         self.unregister_all()
 
     def resetCallLaters(self):
@@ -174,20 +177,47 @@ class EventManager(object):
 
         Also handles callLaters
         """
+        # Implementation note: we need to avoid endless loops in here.
+        # this can happen if, for instance, one of the callLater callbacks
+        # creates another callLater during the callLater loop.
+        # So to avoid stuff like that with the deferreds too (events are
+        # too simple for this to happen) we create a copy of the lists
+        # and loop on them.
+
         # TODO - rename deferreds to burstdeferreds
         events, deferreds = self._world.getEventsAndDeferreds()
+        deferreds = list(deferreds) # make copy, avoid endless loop
+
         # Handle regular events
         for event in events:
             if self._events[event] != None:
                 self._events[event]()
         if self._events[EVENT_STEP]:
             self._events[EVENT_STEP]()
+
         # Handle call later's
-        while len(self._call_later) > 0:
-            next_time = self._call_later[0][0]
+        cur_call_later = self._call_later
+        self._call_later = [] # new heap for anything created by the callbacks themselves,
+                              # avoid endless loops.
+        while len(cur_call_later) > 0:
+            next_time = cur_call_later[0][0]
+            if self.verbose:
+                print "EventManager: we have some callLaters"
             if next_time <= self._world.time:
-                next_time, cb, args, kw = heappop(self._call_later)
+                next_time, cb, args, kw = heappop(cur_call_later)
+                if self.verbose:
+                    print "EventManager: calling callLater callback"
                 cb(*args, **kw)
+            else:
+                break # VERY IMPORTANT..
+        # now merge the new with the old
+        if len(self._call_later) > 0:
+            if self.verbose:
+                print "EventManager: callLater-cbs added callLaters! merging"
+            self._call_later = list(merge(cur_call_later + self._call_later))
+        else:
+            self._call_later = cur_call_later
+
         # Handle deferreds
         for deferred in deferreds:
             deferred.callOnDone()
@@ -317,8 +347,13 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         if burst.options.trace_proxies:
-            # the strange number 66 is to line up with the LogCalls object.
-            print "%3.3f  %s" % (self.cur_time - self.main_start_time, "-"*66)
+            ball = self._world.ball.seen and 'B' or ' '
+            yglp = self._world.yglp.seen and 'L' or ' '
+            ygrp = self._world.ygrp.seen and 'R' or ' '
+            # LINE_UP is to line up with the LogCalls object.
+            LINE_UP = 62
+            print "%3.2f  %s%s%s%02d%s" % (self.cur_time - self.main_start_time, ball, yglp, ygrp,
+                len(self._eventmanager._call_later), "-"*LINE_UP)
         self._eventmanager.handlePendingEventsAndDeferreds()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
@@ -396,12 +431,13 @@ class TwistedMainLoop(BasicMainLoop):
             self.start()
 
     def start(self):
-        self.con.modulesDeferred.addCallback(self._twistedStart)
+        self.con.modulesDeferred.addCallback(self._twistedStart).addErrback(log.err)
         self.started = True
 
     def _twistedStart(self, _):
         print "TwistedMainLoop: _twistedStart"
         self.initMainObjectsAndPlayer()
+        print "TwistedMainLoop: created main objects"
         from twisted.internet import reactor, task
         self.preMainLoopInit()
         self._main_task = task.LoopingCall(self.onTimeStep)

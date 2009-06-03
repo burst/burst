@@ -1,7 +1,7 @@
 from math import atan2
 import burst
 from burst.consts import *
-from burst_util import (transpose, cumsum, normalize2, succeed,
+from burst_util import (transpose, cumsum, succeed,
     BurstDeferred, Deferred, DeferredList, chainDeferreds,
     wrapDeferredWithBurstDeferred)
 from burst.events import *
@@ -9,6 +9,7 @@ from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
 from burst.world import World
 from burst.walkparameters import WalkParameters
+from burst.image import normalized2_image_width, normalized2_image_height
 
 # Local modules
 from actionconsts import *
@@ -46,6 +47,8 @@ class Actions(object):
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
+    # These functions are generally a facade for internal objects, currently:
+    # kicking.Kicker, vision.Searcher, vision.Tracker
 
     def kickBall(self, target_world_frame=None, target_bearing_distance=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
@@ -88,51 +91,9 @@ class Actions(object):
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
-        """ This is a controller. Does a single tracking step,
-            aiming to center on the given target.
-
-        Return value:
-         centerd, maybe_bd
-         centered - True if centered, False otherwise
-         maybe_bd - a BurstDeferred if head movement initiated, else None
-        """
-        # Need to handle possible out of bounds - if we are requested to
-        # go to an elevation that is too high, or to a bearing that is too far
-        # left, we need to return success but flag the error for higher up.
-        # TODO - handle the out of bounds. Current solution: let higher up
-        # handle it. (using same tactic, or check for "noop" for too long)
-        def location_error(target, x_error, y_error):
-            # TODO - using target.centerX and target.centerY without looking at newness is broken.
-            # Normalize ball X between 1 (left) to -1 (right)
-            xNormalized = normalize2(target.centerX, IMAGE_HALF_WIDTH)
-            # Normalize ball Y between 1 (top) to -1 (bottom)
-            yNormalized = normalize2(target.centerY, IMAGE_HALF_HEIGHT)
-            print "location_error: center %3.1f, %3.1f, error %1.2f, %1.2f" % (target.centerX,
-                target.centerY, xNormalized, yNormalized)
-            return (abs(xNormalized) <= normalized_error_x and
-                    abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
-
-        bd = None
-        centered, xNormalized, yNormalized = location_error(target,
-            normalized_error_x, normalized_error_y)
-        if target.seen and not centered and not self._world.robot.isHeadMotionInProgress():
-            CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
-            CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
-            deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR
-            deltaHeadPitch =  yNormalized * CAM_Y_TO_RAD_FACTOR
-            #self._actions.changeHeadAnglesRelative(
-            # deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"),
-            # deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")
-            # ) # yaw (left-right) / pitch (up-down)
-            bd = self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
-                        # yaw (left-right) / pitch (up-down)
-            #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (
-            #       deltaHeadYaw, deltaHeadPitch)
-            #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
-            #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
-        if return_exact_error:
-            return centered, bd, (xNormalized, yNormalized)
-        return centered, bd
+        return self.tracker.executeTracking(target,
+            normalized_error_x=normalized_error_x,
+            normalized_error_y=normalized_error_y)
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
