@@ -5,7 +5,7 @@ import player_init
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 
 def pr(s):
@@ -23,8 +23,7 @@ class Donothing(Player):
 
     def startWaiting(self):
         print "doNothing: Starting to wait"
-        #self._eventmanager.callLater(2.0, self.onTimeout)
-        import pdb; pdb.set_trace()
+        self._eventmanager.callLater(2.0, self.onTimeout)
 
     def onStep(self):
         self._count += 1

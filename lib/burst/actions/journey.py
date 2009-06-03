@@ -3,7 +3,7 @@ from burst.walkparameters import WalkParameters
 from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
 from burst.eventmanager import EVENT_MANAGER_DT
 from burst.events import EVENT_CHANGE_LOCATION_DONE
-from burst.consts import SUPPORT_MODE_DOUBLE_LEFT
+from burst_consts import SUPPORT_MODE_DOUBLE_LEFT
 from burst.world import World
 
 class Journey(object):

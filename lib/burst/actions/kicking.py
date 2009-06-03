@@ -9,7 +9,7 @@ import burst.moves as moves
 from burst.behavior_params import (KICK_OFFSET_FROM_BALL, KICK_X_OPT, KICK_Y_OPT, 
                                    KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, BALL_SIDE, BALL_DIAGONAL)
-from burst.consts import LEFT, RIGHT
+from burst_consts import LEFT, RIGHT
 
 #===============================================================================
 #    Logic for Kicking behavior:

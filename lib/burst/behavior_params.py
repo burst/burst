@@ -1,4 +1,4 @@
-from burst.consts import LEFT, RIGHT, DEG_TO_RAD
+from burst_consts import LEFT, RIGHT, DEG_TO_RAD
 from burst.world import World
 
 #===============================================================================

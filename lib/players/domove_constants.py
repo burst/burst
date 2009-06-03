@@ -1,5 +1,5 @@
 # constants file to store doMove sequences
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from numpy import array
 # List and order of the devices
 #HeadYaw HeadPitch	LShoulderPitch	LShoulderRoll LElbowYaw	LElbowRoll	LWristYaw	LHand	LHipYawPitch	LHipRoll	LHipPitch	LKneePitch	LAnklePitch	LAnkleRoll	RHipRoll	RHipPitch	RKneePitch	RAnklePitch	RAnkleRoll	RShoulderPitch	RShoulderRoll	RElbowYaw	RElbowRoll	RWristYaw	RHand	

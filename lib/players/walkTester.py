@@ -4,7 +4,7 @@
 import player_init
 
 from burst.player import Player
-from burst.consts import *
+from burst_consts import *
 import burst.moves as moves
 from math import cos, sin
 import time

@@ -3,6 +3,7 @@ Command line and default config file for BURST robocup platform.
 """
 
 import os
+from burst_consts import ROBOT_IP_TO_NAME
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
     'options', 'ip', 'port']
@@ -104,14 +105,7 @@ if (ip == 'localhost' or ip == LOCALHOST_IP) and port == 9559:
 elif port == 9560:
     robotname = 'webots'
 else:
-    robotname = {
-        '192.168.5.126'	: 'messi',
-        '192.168.5.170'	: 'gerrard',
-        '192.168.5.226'	: 'cech',
-        '192.168.5.168'	: 'hagi',
-        '192.168.5.224'	: 'raul',
-        '192.168.5.228'	: 'maldini',
-    }.get(ip, ip)
+    robotname = ROBOT_IP_TO_NAME.get(ip, ip)
 
 burst_target.robotname = robotname
 

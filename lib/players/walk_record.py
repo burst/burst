@@ -11,7 +11,7 @@ import player_init
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 import burst.moves as moves
 

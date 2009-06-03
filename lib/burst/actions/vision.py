@@ -1,35 +1,20 @@
 import sys
 import linecache
+from textwrap import wrap
 
-from burst_util import (
+from burst_util import (traceme, nicefloat,
     BurstDeferred, Deferred, chainDeferreds)
 from burst.events import *
 import burst
-import burst.consts as consts
-from burst.consts import FOV_X, FOV_Y, EVENT_MANAGER_DT
+import burst_consts as consts
+from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
+    CONSOLE_LINE_LENGTH)
 from burst.image import normalized2_image_width, normalized2_image_height
 
 # This is used for stuff like Localization, where there is an error
 # that is reduced by having a smaller error - otoh tracker will take longer
 # (possibly)
 TRACKER_DONE_MAX_PIXELS_FROM_CENTER = 5 # TODO - calibrate? there is an optimal number.
-
-def traceme(f):
-    def tracer(frame, event, arg):
-        if event in ('line', 'call'):
-            print "%s: %s: %s" % (f.func_name, event, linecache.getline(
-                frame.f_code.co_filename, frame.f_lineno).strip())
-        else:
-            print "%s: %s %s" % (f.func_name, event, arg)
-        #if event is 'call':
-        return tracer
-    def wrapper(*args, **kw):
-        old_trace = sys.gettrace()
-        sys.settrace(tracer)
-        ret = f(*args, **kw)
-        sys.settrace(old_trace)
-        return ret
-    return wrapper
 
 class Tracker(object):
     
@@ -98,7 +83,7 @@ class Tracker(object):
         if not target.recently_seen: # sanity check (also makes sure we get the
                             # lost event when it happens
             print "ERROR: center called when target not recently in sight"
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             return
         self._start(target, self._centeringOnLost)
         self._centering_done = BurstDeferred(None)
@@ -109,7 +94,8 @@ class Tracker(object):
 
     def _centeringOnLost(self):
         if not self._target.recently_seen:
-            print "Centering: %s recently seen, continue waiting" % (self._target._name)
+            if self.verbose:
+                print "Centering: %s not recently seen, continue waiting" % (self._target._name)
         # We can lose the target for a few frames, we can't assume vision is
         # perfect. In this case just wait for next frame.
         # TODO - call callback on too many lost frames. (lost ball, etc - higher up,
@@ -252,13 +238,16 @@ class SearchResults(object):
         # 
         self.sighted = False
 
+    def __str__(self):
+        return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
+
 ############################################################################
 
 class Searcher(object):
     
     """ search for a bunch of targets by moving the head (conflicts with Tracker) """
     
-    verbose = True
+    verbose = burst.options.verbose_tracker
 
     def __init__(self, actions):
         self._actions = actions
@@ -296,10 +285,10 @@ class Searcher(object):
         for target in targets:
             self.results[target] = SearchResults()
         
+        # register to in frame event for each target object
         self._events = []
         for obj in targets:
             event = obj.in_frame_event 
-            """ go to work """
             self._eventmanager.register(event, lambda obj=obj: self.onSeen(obj))
             self._events.append(event)
             
@@ -347,7 +336,8 @@ class Searcher(object):
                 self._onFinishedScanning()
         else:
             # TODO - middleground
-            print "targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
+            if self.verbose:
+                print "targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
             self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
             self._actions.lookaround(self._searchlevel).onDone(self.onScanDone)
 
@@ -360,12 +350,14 @@ class Searcher(object):
     def onSeen(self, target):
         if self._stop: return
         if not target.seen:
-            print "SEARCHER: onSeen but target not seen?"
+            if self.verbose:
+                print "SEARCHER: onSeen but target not seen?"
             return
         # TODO OPTIMIZATION - when last target is seen, cut the search
         self._updateResults(target) # These are not the centered results.
         if target not in self._seen_set:
-            print "SEARCHER: First Sighting: %s, %s" % (target._name, self.results[target].__dict__)
+            if self.verbose:
+                print "SEARCHER: First Sighting: %s, %s" % (target._name, self.results[target])
             self._seen_order.append(target)
             self._seen_set.add(target)
 
@@ -403,7 +395,9 @@ class Searcher(object):
                 ):
                 return # no update
 
-        print "Searcher: updating result, %1.2f, %1.2f" % (new_n2_centerX, new_n2_centerY)
+        if self.verbose:
+            print "Searcher: updating %s, %1.2f, %1.2f" % (target._name,
+                new_n2_centerX, new_n2_centerY)
 
         if hasattr(target, 'distSmoothed'):
             result.distSmoothed = self._world.ball.distSmoothed

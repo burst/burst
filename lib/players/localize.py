@@ -7,7 +7,7 @@ from burst_util import Deferred, DeferredList
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 
 import burst.kinematics as kinematics
@@ -34,7 +34,7 @@ class Localize(Player):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
         self._pose = kinematics.pose
-        self._actions.search([self._world.yglp, self._world.ygrp, self._world.ball]).onDone(
+        self._actions.search([self._world.yglp, self._world.ygrp]).onDone(
             self.onSearchResults)
         
     def calcPostHeights(self, post):

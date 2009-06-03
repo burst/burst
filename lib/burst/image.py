@@ -7,7 +7,7 @@ from __future__ import with_statement
 import os
 
 import burst
-from burst.consts import IMAGE_HALF_WIDTH, IMAGE_HALF_HEIGHT
+from burst_consts import IMAGE_HALF_WIDTH, IMAGE_HALF_HEIGHT
 from burst_util import normalize2
 
 if burst.running_on_nao():

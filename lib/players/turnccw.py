@@ -4,10 +4,10 @@
 import player_init
 
 from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.actions as actions
 import burst.moves as moves
 from burst.world import World

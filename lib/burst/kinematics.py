@@ -20,10 +20,10 @@ from scipy.linalg import lu, lu_factor
 import twisted.python.log as log
 
 from burst_util import nicefloats, DeferredList, grid_points
-from burst.consts import HEAD_PITCH_JOINT_INDEX
+from burst_consts import HEAD_PITCH_JOINT_INDEX
 
 from burst import options, field
-from burst.consts import *
+from burst_consts import *
 import burst
 from burst.position import xyt_from_two_dist_one_angle
 

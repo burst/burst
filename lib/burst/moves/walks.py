@@ -1,4 +1,4 @@
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import general_moves as moves
 
