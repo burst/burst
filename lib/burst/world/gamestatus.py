@@ -72,7 +72,6 @@ class GameStatus(object):
         self.kickOffTeam = message.getKickOffTeamNumber()
         self.myTeamScore = message.getTeamScore(self.mySettings.teamColor)
         self.opposingTeamScore = message.getTeamScore(1 - self.mySettings.teamColor)
-        print self.myTeamScore, self.opposingTeamScore
         for team in xrange(2):
             for player in xrange(11):
                 self.players[team][player].setStatus(message.getPenaltyStatus(team, player), message.getPenaltyTimeRemaining(team, player))
