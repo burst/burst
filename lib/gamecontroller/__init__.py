@@ -15,7 +15,6 @@ class GameController(object):
 
     def __init__(self, gameStatus, host="0.0.0.0", port=3839, bufsize=1024):
         self.gameStatus = gameStatus
-        if gameStatus == None: return # When running a robot without an actual game controller.
         self.bufsize = bufsize
         try:
             self.dataGramSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
@@ -35,11 +34,9 @@ class GameController(object):
             return None
 
     def calc_events(self, events, deferreds):
-        if self.gameStatus == None: return # When running a robot without an actual game controller.
         message = self._receive()
         if not message is None:
             self.gameStatus.readMessage(GameControllerMessage(message))
-            self.gameStatus.calc_events(events, deferreds)
 
 
 

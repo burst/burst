@@ -61,13 +61,13 @@ class GameControllerMessage(object):
     def getPenaltyStatus(self, team, player):
         GameControllerMessage._validateTeam(team)
         GameControllerMessage._validatePlayer(player)
-        start = 24 + team*(4+11*4) + 4*(player-1)
+        start = 24 + team*(4+11*4) + 4*player
         return struct.unpack("h", self.string[start:start+2])[0]
 
     def getPenaltyTimeRemaining(self, team, player): # TODO: Change this to status
         GameControllerMessage._validateTeam(team)
         GameControllerMessage._validatePlayer(player)
-        start = 26 + team*(4+11*4) + 4*(player-1)
+        start = 26 + team*(4+11*4) + 4*player
         return struct.unpack("h", self.string[start:start+2])[0]
 
     @staticmethod
@@ -77,9 +77,9 @@ class GameControllerMessage(object):
 
     @staticmethod
     def _validatePlayer(player):
-        if not 1 <= player <= 11:
+        if not 0 <= player < 11:
             import pdb; pdb.set_trace()
-            raise Exception("Legal players: 1-11. Got: " + str(player))
+            raise Exception("Legal players: 0-10. Got: " + str(player))
 
 if __name__ == '__main__':
     welcome = 'Testing the GameControllerMessage module.'

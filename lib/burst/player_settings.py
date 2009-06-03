@@ -1,3 +1,4 @@
+import consts
 
 
 class PlayerSettings(object):
@@ -5,7 +6,7 @@ class PlayerSettings(object):
     numOfTeamMembers = 3
     numOfTeams = 2
 
-    def __init__(self, playerNumber=0, teamColor=0, teamNumber=666): # TODO: Set this to the actual team number we get during the competition.
+    def __init__(self, playerNumber=0, teamColor=0, teamNumber=31): # TODO: Set this to the actual team number we get during the competition.
         self.playerNumber = playerNumber
         self.teamColor = teamColor
         self.teamNumber = teamNumber

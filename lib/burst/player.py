@@ -2,6 +2,8 @@
 
 
 from events import *
+from burst.debug_flags import player_py_debug as debug
+
 
 class Player(object):
 
@@ -32,7 +34,8 @@ class Player(object):
         self._actions.clearFootsteps()
 
     def onInitial(self):
-        self._actions.say("ENTERING INITIAL")
+        if debug:
+            self._actions.say("ENTERING INITIAL")
         def onLeftBumperPressed(self=self):
             self._world.playerSettings.toggleteamColor();
             if debug:
@@ -42,8 +45,9 @@ class Player(object):
             if debug:
                 print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
         def onChestButtonPressed(self=self):
+            self._world.gameStatus.reset()
             if debug:
-                print "Leaving initial."
+                self._actions.say("LEAVING INITIAL")
                 print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
             for event in [EVENT_LEFT_BUMPER_PRESSED, EVENT_RIGHT_BUMPER_PRESSED, EVENT_CHEST_BUTTON_PRESSED]:
                 self._eventmanager.unregister(event)
@@ -52,10 +56,22 @@ class Player(object):
         self._eventmanager.register(EVENT_RIGHT_BUMPER_PRESSED, onRightBumperPressed)
         self._eventmanager.register(EVENT_CHEST_BUTTON_PRESSED, onChestButtonPressed)
 
+    def onLeavingInitial(self):
+        pass
+
     def onConfigured(self):
         pass # TODO: Go to the state that's associated with the current GameState.
 
     def onPlay(self):
+        pass
+
+    def onReady(self):
+        pass
+
+    def onSet(self):
+        pass
+
+    def onPenalized(self):
         pass
 
     def onFallenDown(self):

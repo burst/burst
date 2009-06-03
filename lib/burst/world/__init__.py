@@ -147,7 +147,7 @@ class World(object):
         self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        self.playerSettings = PlayerSettings()
+        self.playerSettings = PlayerSettings() # Start with the default settings. You will be configured later to the right ones by the referees.
         self.gameStatus = GameStatus(self.playerSettings)
         self._gameController = GameController(self.gameStatus)
 
@@ -166,6 +166,7 @@ class World(object):
             # first list
             [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
              self.robot, self.falldetector, self._gameController],
+            [self.gameStatus],
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last

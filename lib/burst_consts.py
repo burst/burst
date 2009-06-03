@@ -291,6 +291,11 @@ WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
                 'src/nao-man/tables/maverick/default.mtb')
 
+<<<<<<< HEAD:lib/burst_consts.py
 # Debugging constants
 CONSOLE_LINE_LENGTH = 73
 
+=======
+# General unknown:
+UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+>>>>>>> 751489bf1753dfeb4cd5c30bb5187a94303ce283:lib/burst/consts.py
