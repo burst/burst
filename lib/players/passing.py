@@ -4,10 +4,10 @@
 import player_init
 
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.actions as actions
 import burst.moves as moves
 from burst.world import World

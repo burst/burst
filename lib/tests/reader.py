@@ -17,9 +17,9 @@ import time
 import sys
 sys.path.append('..')
 import burst
-from burst.consts import MMAP_LENGTH as totalsize
-from burst.consts import MMAP_FILENAME as filename
-from burst.consts import BURST_SHARED_MEMORY_PROXY_NAME
+from burst_consts import MMAP_LENGTH as totalsize
+from burst_consts import MMAP_FILENAME as filename
+from burst_consts import BURST_SHARED_MEMORY_PROXY_NAME
 
 if not os.path.exists(filename):
     print "run feeder first to create %s" % filename

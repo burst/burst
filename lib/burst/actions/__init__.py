@@ -1,6 +1,6 @@
 from math import atan2
 import burst
-from burst.consts import *
+from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
     BurstDeferred, Deferred, DeferredList, chainDeferreds,
     wrapDeferredWithBurstDeferred)

@@ -216,6 +216,33 @@ class BurstDeferred(object):
         self.onDone(lambda: self._d.callback(None))
         return self._d
 
+# Various Decorators
+
+# Debugging
+
+def traceme(f):
+    """ Will print to stdout trace of all functions called within this function
+    call - note that there is no handling of recursion in wrapped function, so
+    this should _not_ be called on recursive functions.
+    """
+    def tracer(frame, event, arg):
+        if event in ('line', 'call'):
+            print "%s: %s: %4d %s" % (f.func_name, event, frame.f_lineno, linecache.getline(
+                frame.f_code.co_filename, frame.f_lineno).strip())
+        else:
+            print "%s: %s %s" % (f.func_name, event, arg)
+        #if event is 'call':
+        return tracer
+    def wrapper(*args, **kw):
+        old_trace = sys.gettrace()
+        sys.settrace(tracer)
+        ret = f(*args, **kw)
+        sys.settrace(old_trace)
+        return ret
+    return wrapper
+
+
+
 # D* - Cacheing
 
 def cached_deferred(filename):
@@ -391,9 +418,9 @@ def normalize2(value, range):
 # Text/String/Printing utils
 
 def nicefloat(x):
-    try:
+    if isinstance(x, float):
         return '%3.3f' % x
-    except:
+    else:
         return str(x)
 
 def nicefloats(l):

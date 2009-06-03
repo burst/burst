@@ -137,7 +137,7 @@ class Data(object):
     def __repr__(self):
         return repr(self._d)
 
-from burst.consts import vision_vars
+from burst_consts import vision_vars
 #vision = refilter('^/.*[cC]enter', names)
 vision_vars_parts = [x.split('/')[3:] for x in vision_vars]
 
@@ -323,7 +323,7 @@ def make_shell_namespace(use_pylab):
 
     import burst
     import burst_util
-    import burst.consts as consts
+    import burst_consts as consts
     import burst.image as image
     import vision_definitions
     from twisted.internet import task

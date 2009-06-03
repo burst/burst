@@ -34,7 +34,7 @@ class Player(object):
         self._actions.clearFootsteps()
 
     def onInitial(self):
-        if debug:        
+        if debug:
             self._actions.say("ENTERING INITIAL")
         def onLeftBumperPressed(self=self):
             self._world.playerSettings.toggleteamColor();

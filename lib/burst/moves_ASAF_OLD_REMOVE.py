@@ -1,7 +1,7 @@
 
 #constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 
 def getMoveTime(move):
     totalTime = 0.0

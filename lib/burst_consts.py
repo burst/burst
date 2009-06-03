@@ -10,6 +10,16 @@ import os # for HOME
 import math
 from math import tan
 
+# Operating Environment constants
+ROBOT_IP_TO_NAME = {
+    '192.168.5.126'	: 'messi',
+    '192.168.5.170'	: 'gerrard',
+    '192.168.5.226'	: 'cech',
+    '192.168.5.168'	: 'hagi',
+    '192.168.5.224'	: 'raul',
+    '192.168.5.228'	: 'maldini',
+}
+
 # Proxy names
 BURST_SHARED_MEMORY_PROXY_NAME = "burstmem"
 BURST_RECORDER_PROXY_NAME = "recorder"
@@ -281,5 +291,9 @@ WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
                 'src/nao-man/tables/maverick/default.mtb')
 
+# Debugging constants
+CONSOLE_LINE_LENGTH = 73
+
 # General unknown:
 UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+

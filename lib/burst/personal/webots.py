@@ -36,7 +36,7 @@ import burst.actions.actionconsts as actionconsts
 actionconsts.DEFAULT_STEPS_FOR_TURN = 60
 actionconsts.DEFAULT_SLOW_WALK_STEPS = 60
 
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
 walks.STRAIGHT_WALK[:] = walks.Walk(WalkParameters([

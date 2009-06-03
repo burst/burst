@@ -10,7 +10,7 @@ if os.getcwd() == in_tree_dir:
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 
 def pr(s):

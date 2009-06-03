@@ -5,7 +5,7 @@ import player_init
 from burst_util import DeferredList
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.moves as moves
 from math import cos, sin
 import time
@@ -20,7 +20,7 @@ class GameControllerTester(Player):
     def onStart(self):
         super(GameControllerTester, self).onStart()
         for attribute in dir(events):
-            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME', 
+            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME',
                 'EVENT_BALL_BODY_INTERSECT_UPDATE', 'EVENT_LEFT_BUMPER_PRESSED', 'EVENT_RIGHT_BUMPER_PRESSED', 'EVENT_CHEST_BUTTON_PRESSED']:
                 self._eventmanager.register(getattr(events, attribute[:]),
                     lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"))

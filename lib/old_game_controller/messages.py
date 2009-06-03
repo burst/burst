@@ -1,5 +1,5 @@
 #import burst
-#from burst.consts import *
+#from burst_consts import *
 #from events import *
 
 

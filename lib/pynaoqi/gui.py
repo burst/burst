@@ -26,9 +26,13 @@ from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
 from burst_util import (cached, cached_deferred, Deferred, clip,
     DeferredList)
 
+################################################################################
+
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
 DT_CHECK_BATTERY_LEVEL    = 10.0
+
+################################################################################
 
 def toggle(initial=False):
     """ make a function into a toggle - this lets that function access a variable
@@ -263,7 +267,7 @@ def create_button_strip(data):
     return button_box, buttons
 
 ################################################################################
-#### Main Class
+#### Main Class (also usable from pynaoqi shell as naojoints)
 ################################################################################
 class Joints(BaseWindow):
 
