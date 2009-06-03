@@ -5,7 +5,7 @@
 import traceback
 import sys
 from time import time
-from heapq import heappush, heappop, merge
+from heapq import heappush, heappop
 
 from twisted.python import log
 
@@ -214,7 +214,8 @@ class EventManager(object):
         if len(self._call_later) > 0:
             if self.verbose:
                 print "EventManager: callLater-cbs added callLaters! merging"
-            self._call_later = list(merge(cur_call_later + self._call_later))
+            self._call_later = cur_call_later + self._call_later
+            heapify(self._call_later) # TODO - implement merge, this is faster.
         else:
             self._call_later = cur_call_later
 
