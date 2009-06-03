@@ -9,6 +9,8 @@ import gamecontroller
 from gamecontroller import constants as constants
 from gamecontroller.constants import *
 
+from burst.debug_flags import gamestatus_py_debug as debug
+
 # A helper class for storing the status of the different players on the field.
 class PlayerStatus(object):
 
@@ -37,11 +39,18 @@ class GameStatus(object):
 
     def __init__(self, playerSettings):
         self.mySettings = playerSettings
-        self.opposingTeamColor = 1 - self.mySettings.teamColor
-        self.firstMessageReceived = False
         self.players = [[PlayerStatus(teamColor, playerNumber) for playerNumber in xrange(11)] for teamColor in xrange(2)] # TODO: Start at 0 or 1?
         self.newEvents = set()
         self.gameState = UNKNOWN_GAME_STATE # TODO
+        self.reset()
+
+    def reset(self):
+        if debug:
+            print "reseting"
+        self.firstMessageReceived = False
+        self.myTeamScore = -1 # Signal that it is unknown, as long as no message has been received from the game controller.
+        self.opposingTeamScore = -1 # Signal that it is unknown, as long as no message has been received from the game controller.
+        self.kickOffTeam = 1 - self.mySettings.teamColor # TODO: Not set through the legs?
 
     def _isMe(self, player):
         return player.teamColor == self.mySettings.teamColor and player.playerNumber == self.mySettings.playerNumber
@@ -59,11 +68,11 @@ class GameStatus(object):
         Commit the message to memory. Make sure you calculate the events first, since this, of course, overrides your previous memories,
         and prevents you from calculating events based on the difference between the new message and those aforementioned previous memories.
         '''
-        self.myTeamColor = self.mySettings.teamColor
         self.gameState = message.getGameState()
         self.kickOffTeam = message.getKickOffTeamNumber()
-        self.myTeamScore = message.getTeamScore(self.myTeamColor)
-        self.opposingTeamScore = message.getTeamScore(self.opposingTeamColor)
+        self.myTeamScore = message.getTeamScore(self.mySettings.teamColor)
+        self.opposingTeamScore = message.getTeamScore(1 - self.mySettings.teamColor)
+        print self.myTeamScore, self.opposingTeamScore
         for team in xrange(2):
             for player in xrange(11):
                 self.players[team][player].setStatus(message.getPenaltyStatus(team, player), message.getPenaltyTimeRemaining(team, player))
@@ -85,10 +94,10 @@ class GameStatus(object):
         '''
         Calculates events that are related to goals: either team having perhaps scored a goal.
         '''
-        if self.myTeamScore < message.getTeamScore(self.myTeamColor):
+        if self.myTeamScore < message.getTeamScore(self.mySettings.teamColor):
             self.newEvents.add(events.EVENT_GOAL_SCORED_BY_MY_TEAM)
             self.newEvents.add(events.EVENT_GOAL_SCORED)
-        if self.opposingTeamScore < message.getTeamScore(self.opposingTeamColor):
+        if self.opposingTeamScore < message.getTeamScore(1 - self.mySettings.teamColor):
             self.newEvents.add(events.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM)
             self.newEvents.add(events.EVENT_GOAL_SCORED)
 
@@ -138,11 +147,25 @@ class GameStatus(object):
             self.newEvents.add(events.EVENT_I_GOT_PENALIZED)
 
     def calc_events(self, events, deferreds):
+#        print self.mySettings.playerNumber
         # Add any event you have inferred from the last message you got from the game controller.
         for event in self.newEvents:
             events.add(event)
         # Don't refire these events unless they recur.
         self.newEvents.clear()
+
+    def getScore(self, teamColor):
+        if teamColor == self.mySettings.teamColor:
+            return self.myTeamScore
+        else:
+            return self.opposingTeamScore
+
+    def getMyPlayerStatus(self):
+        for teamColor in xrange(2):
+            for playerNumber in xrange(11):
+                if self._isMe(teamColor, robotNumber):
+                    return self.players[teamColor][playerNumber].status
+        raise Exception("getMyPlayerStatus() - can't find myself among the players.")
 
 
 

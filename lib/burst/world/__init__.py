@@ -147,8 +147,8 @@ class World(object):
         self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        self.mySettings = PlayerSettings() # Start with the default settings. You will be configured later to the right ones by the referees.
-        self.gameStatus = GameStatus(self.mySettings)
+        self.playerSettings = PlayerSettings() # Start with the default settings. You will be configured later to the right ones by the referees.
+        self.gameStatus = GameStatus(self.playerSettings)
         self._gameController = GameController(self.gameStatus)
 
         # All objects that we delegate the event computation and naoqi

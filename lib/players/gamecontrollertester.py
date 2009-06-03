@@ -18,9 +18,10 @@ import sys
 class GameControllerTester(Player):
     
     def onStart(self):
+        super(GameControllerTester, self).onStart()
         for attribute in dir(events):
-            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME', 'EVENT_BALL_BODY_INTERSECT_UPDATE']:
-#                print "Registering event", attribute
+            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME', 
+                'EVENT_BALL_BODY_INTERSECT_UPDATE', 'EVENT_LEFT_BUMPER_PRESSED', 'EVENT_RIGHT_BUMPER_PRESSED', 'EVENT_CHEST_BUTTON_PRESSED']:
                 self._eventmanager.register(getattr(events, attribute[:]),
                     lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"))
 
