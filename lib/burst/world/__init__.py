@@ -30,10 +30,15 @@ from objects import Locatable
 from localization import Localization
 
 sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
-from gamecontroller import GameControllerMessage, GameController
+from gamecontroller import GameControllerMessage, GameController, EmptyGameController
 #sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc')) # TODO: Remove?
 from ..player_settings import PlayerSettings
-from gamestatus import GameStatus
+from gamestatus import GameStatus, EmptyGameStatus
+
+
+no_game_controller = False
+no_game_status = False
+
 
 def timeit(tmpl):
     def wrapper(f):
@@ -148,8 +153,14 @@ class World(object):
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.playerSettings = PlayerSettings() # Start with the default settings. You will be configured later to the right ones by the referees.
-        self.gameStatus = GameStatus(self.playerSettings)
-        self._gameController = GameController(self.gameStatus)
+        if no_game_status:
+            self.gameStatus = EmptyGameStatus()
+        else:
+            self.gameStatus = GameStatus(self.playerSettings)
+        if no_game_controller:
+            self._gameController = EmptyGameController()
+        else:
+            self._gameController = GameController(self.gameStatus)
 
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
