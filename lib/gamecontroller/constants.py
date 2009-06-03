@@ -30,3 +30,6 @@ Damage = 9; # TODO: I'm not taking this into account at the moment.
 Manual = 10 # TODO: Is this correct?
 
 Penalties = [BallHoldingPenalty, GoaliePushingPenalty, PlayerPushingPenalty, IllegalDefenderPenalty, IllegalDefensePenalty, ObstructionPenalty]
+
+UNKNOWN_GAME_STATE = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+UNKNOWN_PLAYER_STATUS = object() # Ensures uniqueness, and won't test as equal to anything other than itself.

@@ -281,3 +281,5 @@ WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
                 'src/nao-man/tables/maverick/default.mtb')
 
+# General unknown:
+UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.

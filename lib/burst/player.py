@@ -58,6 +58,15 @@ class Player(object):
     def onPlay(self):
         pass
 
+    def onReady(self):
+        pass
+
+    def onSet(self):
+        pass
+
+    def onPenalized(self):
+        pass
+
     def onFallenDown(self):
         print "I'm down!"
         self._eventmanager.unregister(EVENT_FALLEN_DOWN)
