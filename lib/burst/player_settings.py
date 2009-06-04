@@ -1,4 +1,4 @@
-import consts
+import burst_consts as consts
 
 
 class PlayerSettings(object):

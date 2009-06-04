@@ -22,8 +22,7 @@ class turnccw(Player):
 
     def onStart(self):
         self.counter = 0
-        self._eventmanager.unregister_all()
-        #self._eventanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+        #self._eventanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
         self._actions.initPoseAndStiffness()
         self._actions.executeCircleStraferInitPose().onDone(self.doNextAction)
 

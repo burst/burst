@@ -32,7 +32,6 @@ class Tracker(object):
         self._stop = True
         self._on_lost = None
         self._lost_event = None
-        self._in_frame_event = None
         # if _centering_done != None then on centering it is called and tracking
         # is stopped
         self._centering_done = None
@@ -53,11 +52,11 @@ class Tracker(object):
             if on_lost_callback:
                 self._on_lost = BurstDeferred(self)
                 self._on_lost.onDone(on_lost_callback)
-            self._eventmanager.register(self._lost_event, self.onLost)
+            self._eventmanager.register(self.onLost, self._lost_event)
 
     def onLost(self):
         if self._lost_event: # can be None
-            self._eventmanager.unregister(self._lost_event)
+            self._eventmanager.unregister(self.onLost, self._lost_event)
         self.stop()
         if self._on_lost:
             self._on_lost.callOnDone()
@@ -67,8 +66,6 @@ class Tracker(object):
         # before issuing the callbacks, allowing deferred's callee to
         # correctly check that tracker is not operating.
         self._stop = True
-        if self._in_frame_event:
-            self._eventmanager.unregister(self._in_frame_event)
 
     ############################################################################
 
@@ -141,7 +138,6 @@ class Tracker(object):
             return
         self._start(target, on_lost_callback)
         self._centering_done = None
-        self._in_frame_event = target.in_frame_event
         self._trackingStep()
     
     def _trackingStep(self):
@@ -259,6 +255,7 @@ class Searcher(object):
         self._seen_set = set()
         self._center_on_targets = True
         self._stop = True
+        self._events = []
         self.results = {}
     
     def stopped(self):
@@ -266,8 +263,8 @@ class Searcher(object):
     
     def _unregisterEvents(self):
         # should be idempotent
-        for event in self._events:
-            self._eventmanager.unregister(event)
+        for event, callback in self._events:
+            self._eventmanager.unregister(callback, event)
 
     def stop(self):
         self._unregisterEvents()
@@ -286,11 +283,12 @@ class Searcher(object):
             self.results[target] = SearchResults()
         
         # register to in frame event for each target object
-        self._events = []
+        del self._events[:]
         for obj in targets:
             event = obj.in_frame_event 
-            self._eventmanager.register(event, lambda obj=obj: self.onSeen(obj))
-            self._events.append(event)
+            callback = lambda obj=obj: self.onSeen(obj)
+            self._eventmanager.register(callback, event)
+            self._events.append((event, callback))
             
         # TODO: Fix YELLOW to use opponent goal
         self._searchlevel = burst.actions.LOOKAROUND_QUICK

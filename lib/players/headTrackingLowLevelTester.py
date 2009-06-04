@@ -12,7 +12,7 @@ class headTrackingTester(Player):
     def onStart(self):
         self._actions.initPoseAndStiffness().onDone(
             lambda: self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM)).onDone(
-            lambda: self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall))
+            lambda: self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME))
         self._last_ball_loc = (0.0, 0.0)
     
     def trackBall(self):

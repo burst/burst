@@ -65,9 +65,6 @@ class BallKicker(BurstDeferred):
         self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(self.doNextAction)
         
     def onKickDone(self):
-#        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
-#                        EVENT_CHANGE_LOCATION_DONE]:
-#            self._eventmanager.unregister(event)
         self.callOnDone()
         
     def searchBallAndGoal(self):
@@ -290,8 +287,6 @@ class BallKicker(BurstDeferred):
                 return BALL_DIAGONAL
             
     def doKick(self, side):
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-        
         self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.onKickDone)
 
 #        if self._world.ball.bearing > 0.0:

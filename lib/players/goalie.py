@@ -37,32 +37,31 @@ class goalie(Player):
         
     def whichBehavior (self):
         if self.isPenalty:
-            self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
+            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
             self.isTrackingBall = True
-            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+            self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         else:
             self.watchIncomingBall()
 
     def watchIncomingBall(self):            
-        self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
+        self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.isTrackingBall = True
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         
     def leapPenalty(self):
-        self._eventmanager.unregister(BALL_MOVING_PENALTY)
+        self._eventmanager.unregister(self.leapPenalty)
         self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        self._eventmanager.unregister(self.trackBall)
         print self._world.ball.dy
         if self._world.ball.dy < 0:
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
         else:
             self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft) 
             
-
     def leap(self):
-        self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
+        self._eventmanager.unregister(self.leap)
         self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        self._eventmanager.unregister(self.trackBall)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
