@@ -53,13 +53,29 @@ SUPPORT_MODE_LEFT, SUPPORT_MODE_DOUBLE_LEFT, SUPPORT_MODE_RIGHT, SUPPORT_MODE_DO
 
 INTERPOLATION_LINEAR, INTERPOLATION_SMOOTH = 0, 1
 
+# Unit constants
+M_TO_CM  = 100.0
+CM_TO_M  = 0.01
+CM_TO_MM = 10.0
+MM_TO_CM = 0.1
+
 # Math constants
+INFTY = 1E+37
 
 DEG_TO_RAD = math.pi / 180.0
 RAD_TO_DEG = 180.0 / math.pi
 CM_TO_METER = 100. # yeah, seems stupid, but probably better than using 100 throughout the code...
 
+# Coordinate system
+
+X_AXIS, Y_AXIS, Z_AXIS, W_AXIS = 0, 1, 2, 3
+X, Y, Z = 0, 1, 2
+
 # Camera / Vision constants
+
+# Acceptable Centering error - normalized values (in [-1, 1])
+DEFAULT_CENTERING_X_ERROR = 0.05
+DEFAULT_CENTERING_Y_ERROR = 0.05
 
 # Image Parameters
 FOV_X = 46.4 * DEG_TO_RAD

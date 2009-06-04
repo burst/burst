@@ -2,11 +2,13 @@ from math import cos, sin, sqrt, pi, fabs, atan, atan2
 
 from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
-    MIN_DIST_CHANGE, GOAL_POST_DIAMETER)
+    MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
+    DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
 from burst_util import running_median, RingBuffer
+from burst.image import normalized2_image_width, normalized2_image_height
 
 class Namable(object):
     def __init__(self, name='unnamed'):
@@ -32,10 +34,14 @@ class Locatable(Namable):
     REPORT_JUMP_ERRORS = False
     HISTORY_SIZE = 10
 
-    def __init__(self, name, world, real_length):
+    def __init__(self, name, world, real_length, world_x=None, world_y=None):
         """
         real_length - [cm] real world largest diameter of object.
         memory, motion - proxies to ALMemory and ALMotion respectively.
+        world_x, world_y - [cm] locations in world coordinate frame. World
+        coordinate frame (reminder) origin is in our team goal center, x
+        axis is towards opposite goal, y axis is to the left (complete a right
+        handed coordinate system).
         """
         super(Locatable, self).__init__(name)
         self._world = world
@@ -44,6 +50,12 @@ class Locatable(Namable):
         self._motion = world._motion
         # longest arc across the object, i.e. a diagonal.
         self._real_length = real_length
+
+        # This is the world x coordinate. Our x axis is to the right of our goal
+        # center, and our y is towards the enemy gate^H^H^Hoal. The enemy goal is up.
+        # (screw Ender)
+        self.world_x = world_x
+        self.world_y = world_y
 
         self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last 
 
@@ -62,23 +74,42 @@ class Locatable(Namable):
         # the forward walk direction is along the y axis).
         self.body_x = 0.0
         self.body_y = 0.0
-        # This is the world x coordinate. Our x axis is to the right of our goal
-        # center, and our y is towards the enemy gate^H^H^Hoal. The enemy goal is up.
-        # (screw Ender)
-        self.x = 0.0
-        self.y = 0.0
 
         # upper barrier on speed, used to remove outliers. cm/sec
         self.upper_v_limit = 400.0
         
         self.seen = False
         self.recently_seen = False          # Was the object seen within MISSING_FRAMES_MINIMUM
+        self.centered = False               # whether the distance from the center is smaller then XXX
         self.missingFramesCounter = 0
         
         # smoothed variables
         self.distSmoothed = 0.0
         self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
         self.distRunningMedian.next()
+
+        # Vision variables defaults
+        self.centerX = None
+        self.centerY = None
+        self.x = None
+        self.y = None
+
+    def centering_error(self, normalized_error_x=DEFAULT_CENTERING_X_ERROR,
+            normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
+        """ calculate normalized error from image center for object, using
+        centerX and centerY from vision, using given defaults for what "centered"
+        means (i.e. what the margins are).
+
+        Return: centered, x_normalized_error, y_normalized_error
+         errors are in [-1, 1]
+        """
+        # TODO - using target.centerX and target.centerY without looking at newness is broken.
+        # Normalize ball X between 1 (left) to -1 (right)
+        xNormalized = normalized2_image_width(self.centerX)
+        # Normalize ball Y between 1 (top) to -1 (bottom)
+        yNormalized = normalized2_image_height(self.centerY)
+        return (abs(xNormalized) <= normalized_error_x and
+                abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
 
     def calc_recently_seen(self, new_seen):
         """ sometimes we don't want to know if the object is visible this frame,
@@ -136,6 +167,10 @@ class Locatable(Namable):
         self.newness = newness
         self.body_x, self.body_y = body_x, body_y
         self.vx, self.vy = dx/dt, dy/dt
+        (self.centered,
+         self.normalized2_centerX,
+         self.normalized2_centerY,
+            ) = self.centering_error()
     
     def __str__(self):
         return "<%s at %s>" % (self._name, id(self))
@@ -309,9 +344,9 @@ class Ball(Movable):
 
 class GoalPost(Locatable):
 
-    def __init__(self, name, world, position_changed_event):
+    def __init__(self, name, world, position_changed_event, world_x, world_y):
         super(GoalPost, self).__init__(name, world,
-            real_length=GOAL_POST_DIAMETER)
+            real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
         self._position_changed_event = position_changed_event
         template = '/BURST/Vision/%s/%%s' % name
         self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',

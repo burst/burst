@@ -28,12 +28,17 @@ from team import Team
 from computed import Computed
 from objects import Locatable
 from localization import Localization
+from movecoordinator import MoveCoordinator
+from kinematics import Pose
+from odometry import Odometry
+import burst.field as field
 
-sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
+# TODO: Shouldn't require adding something to the path at any point
+# after player_init
+#sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController, EmptyGameController
 from ..player_settings import PlayerSettings
 from gamestatus import GameStatus, EmptyGameStatus
-from movecoordinator import MoveCoordinator
 
 no_game_controller = False
 no_game_status = False
@@ -138,18 +143,34 @@ class World(object):
 
         # Stuff that we prefer the users use directly doesn't get a leading
         # underscore
+        #  * Vision recognized objects
         self.ball = Ball(self)
-        self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED)
+        # ULTRA MAJOR TODO: coordinate consistency. The BLUE goal is not always our
+        # goal. Actually, it is so only half the time. Our system says that OUR
+        # goal is at 0.0, so we should look at TEAM, see who we are, and only
+        # then UPDATE THE GOALS COORDINATES.
+        bglp_x, bglp_y = field.blue_goal.top_post.xy
+        bgrp_x, bgrp_y = field.blue_goal.bottom_post.xy
+        yglp_x, yglp_y = field.yellow_goal.top_post.xy
+        ygrp_x, ygrp_y = field.yellow_goal.bottom_post.xy
+        self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED, bglp_x, bglp_y)
+        self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED, bgrp_x, bgrp_y)
+        self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED, yglp_x, yglp_y)
+        self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED, ygrp_x, ygrp_y)
+        # TODO - other robots
+        # Buttons, Leds (TODO: ultrasound, 
         self.robot = Robot(self)
         self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a
         # reference to them.
         self.team = Team(self)
+        # TODO - is computed used? should be renamed for legibility
         self.computed = Computed(self)
+        # Self orientation and Location of self and other objects in field.
+        # (passes some stuff into other objects)
+        self.pose = Pose(self)
         self.localization = Localization(self)
+        self.odometry = Odometry(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.playerSettings = PlayerSettings(self) # Start with the default settings. You will be configured later to the right ones by the referees.
