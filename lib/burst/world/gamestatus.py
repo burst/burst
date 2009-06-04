@@ -9,7 +9,8 @@ import gamecontroller
 from gamecontroller import constants as constants
 from gamecontroller.constants import *
 from burst.debug_flags import gamestatus_py_debug as debug
-
+from burst.world.robot import LEDs
+import burst_consts as consts
 
 
 class PlayerStatus(object):
@@ -39,12 +40,14 @@ class GameStatus(object):
     the game is in (ready/set/play...), what the score is, etc. It will fire the appropriate events.
     '''
 
-    def __init__(self, playerSettings):
+    def __init__(self, world, playerSettings):
+        self.world = world # TODO: Right now, I only need this for the LEDs. Pass them instead?
         self.mySettings = playerSettings
         self.players = [[PlayerStatus(teamColor, playerNumber) for playerNumber in xrange(11)] for teamColor in xrange(2)] # TODO: Start at 0 or 1?
         self.newEvents = set()
         self.gameState = UNKNOWN_GAME_STATE # TODO
         self.reset()
+        self.setColors()
 
     def reset(self):
         if debug:
@@ -64,6 +67,7 @@ class GameStatus(object):
             self._fireInitialEvents()
         else:
             self._readNewMessage(message)
+        self.setColors()
 
     def _recordMessage(self, message):
         '''
@@ -167,6 +171,17 @@ class GameStatus(object):
                 if self._isMe(teamColor, robotNumber):
                     return self.players[teamColor][playerNumber].status
         raise Exception("getMyPlayerStatus() - can't find myself among the players.")
+
+    def changeKickOffTeam(kickOffTeam): # TODO: Untested.
+        # TODO: I've been led to believe Python has properties/attributes/whatever, like C#. I probably just want to use that instead for the 
+        # kickOffTeam variable, so that setColors() is called whenever it's changed.
+        raise Exception("This feature has not yet been tested. It should work, but do test it before removing this line.")
+        self.kickOffTeam = kickOffTeam
+        self.setColors()
+
+    def setColors(self):
+        ''' Update the LEDs according to the information you carry. '''
+        self.world.robot.leds.rightFootLED.turnOn(consts.TeamColors[self.kickOffTeam])
 
 
 

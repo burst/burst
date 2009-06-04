@@ -1,14 +1,12 @@
 import burst
 from .objects import Movable
-from burst_consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
+from burst_consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER, RED, GREEN, BLUE, OFF
 from burst_util import BurstDeferred, DeferredList, succeed
 from burst import events as events_module
 
 
 
 class LEDs(object):
-
-    RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00 # Colors for the LEDs.
 
     class BaseLED(object):
         def __init__(self, world, side=None):
@@ -36,7 +34,7 @@ class LEDs(object):
     class FootLED(BaseLED):
         ''' An abstract class that controls an foot's LEDs. The inheriting classes determine which foot. '''
         def turnOff(self):
-            self.world._leds.fadeRGB("%sFootLeds"%self.side, LEDs.OFF, 0.0)
+            self.world._leds.fadeRGB("%sFootLeds"%self.side, OFF, 0.0)
         def turnOn(self, color):
             self.world._leds.fadeRGB("%sFootLeds"%self.side, color, 0.0)
 
@@ -50,7 +48,7 @@ class LEDs(object):
 
     class ChestButtonLED(BaseLED):
         def turnOff(self):
-            self.world._leds.fadeRGB("ChestLeds", LEDs.OFF, 0.0)
+            self.world._leds.fadeRGB("ChestLeds", OFF, 0.0)
         def turnOn(self, color):
             self.world._leds.fadeRGB("ChestLeds", color, 0.0)
 
@@ -69,7 +67,7 @@ class LEDs(object):
         for obj in [self.rightEarLED, self.leftEarLED]:
             obj.turnOn()
         for obj in [self.rightFootLED, self.leftFootLED, self.chestButtonLED]:
-            obj.turnOn(LEDs.RED)
+            obj.turnOn(RED)
 
 
 
