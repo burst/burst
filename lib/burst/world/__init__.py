@@ -152,7 +152,7 @@ class World(object):
         self.localization = Localization(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        self.playerSettings = PlayerSettings() # Start with the default settings. You will be configured later to the right ones by the referees.
+        self.playerSettings = PlayerSettings(self) # Start with the default settings. You will be configured later to the right ones by the referees.
         if no_game_status:
             self.gameStatus = EmptyGameStatus()
         else:
