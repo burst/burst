@@ -127,7 +127,7 @@ class World(object):
         self._shm = None
 
         self.time = time()
-        self.const_time = self.time     # construction time
+        self.start_time = self.time     # construction time
 
         # Variables for body joint angles from dcm
         self._getAnglesMap = dict([(joint,
@@ -447,7 +447,7 @@ class World(object):
         self._record_csv.writerow(self.getVars(self._recorded_vars))
         self._record_line_num += 1
         if self._record_line_num % 10 == 0:
-            print "(%3.3f) written csv line %s" % (self.time - self.const_time, self._record_line_num)
+            print "(%3.3f) written csv line %s" % (self.time - self.start_time, self._record_line_num)
 
     def stopRecord(self):
         if self._record_file:

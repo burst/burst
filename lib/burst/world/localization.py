@@ -48,12 +48,14 @@ class Localization(object):
                 # say "centered"
                 break
         if not new_dist: return
-        moved = self._world.odometry.movedBetweenTimes(other_obj.newness,
-            obj.newness)
+        world = self._world
+        moved = world.odometry.movedBetweenTimes(other_obj.update_time,
+            obj.update_time)
         if self.verbose:
             print "Localization: %s in %d+[0,%3.3f] for %s..>%s" % (
                 moved and 'moved' or 'stationary',
-                other_obj.newness, obj.newness, other_obj._name, obj._name)
+                other_obj.update_time - world.start_time, obj.update_time - other_obj.update_time,
+                other_obj._name, obj._name)
         if not moved:
             if self.verbose:
                 print "Localization: UPDATE SELF POSITION"

@@ -56,7 +56,7 @@ class WalkRecorder(Player):
     def _stopRecordWithRecorder(self):
         self.recorder.stopRecording()
         rows = self.recorder.getRowNumber()
-        print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.const_time))
+        print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.start_time))
 
     startRecord = _recordWithRecorder
     stopRecord_helper = _stopRecordWithRecorder

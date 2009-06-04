@@ -15,7 +15,7 @@ from burst.image import normalized2_image_width, normalized2_image_height
 from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
-from vision import Tracker, Searcher
+from headtracker import Tracker, Searcher
 
 #######
 
@@ -51,7 +51,7 @@ class Actions(object):
     #    High Level - anything that uses vision
     #===============================================================================
     # These functions are generally a facade for internal objects, currently:
-    # kicking.Kicker, vision.Searcher, vision.Tracker
+    # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
     def kickBall(self, target_world_frame=None, target_bearing_distance=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which

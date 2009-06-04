@@ -6,6 +6,7 @@ MAJOR TODO: Testing. This is pure math code, it should
 be tested, and also carefully checked for input conditions
 """
 
+from math import atan2, asin, sin, cos
 from burst_util import close_to_zero
 
 def xyt_from_two_dist_one_angle(r1, r2, a1, d, p0, p1, debug=False):

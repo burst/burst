@@ -64,12 +64,12 @@ class Locatable(Namable):
         self.elevation = 0.0
         # This is the player body frame relative distance. centimeters.
         self.dist = 0.0
-        self.newness = 0.0 # time of current update
+        self.update_time = 0.0 # time of current update
         # previous non zero values
         self.last_bearing = 0.0
         self.last_dist = 0.0
         self.last_elevation = 0.0
-        self.last_newness = 0.0 # time of previous update
+        self.last_update_time = 0.0 # time of previous update
         # Body coordinate system: x is to the right (body is the torso, and generally
         # the forward walk direction is along the y axis).
         self.body_x = 0.0
@@ -103,7 +103,7 @@ class Locatable(Namable):
         Return: centered, x_normalized_error, y_normalized_error
          errors are in [-1, 1]
         """
-        # TODO - using target.centerX and target.centerY without looking at newness is broken.
+        # TODO - using target.centerX and target.centerY without looking at update_time is broken.
         # Normalize ball X between 1 (left) to -1 (right)
         assert(normalized_error_x > 0 and normalized_error_y > 0)
         xNormalized = normalized2_image_width(self.centerX)
@@ -131,7 +131,7 @@ class Locatable(Namable):
         """ pushes new values into the history buffer. called from
         update_location_body_coordinates
         """
-        self.history.ring_append([self.newness, self.dist, self.bearing])
+        self.history.ring_append([self.update_time, self.dist, self.bearing])
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
@@ -140,8 +140,8 @@ class Locatable(Namable):
         removing outright outliers only. To be upgraded to a real localization
         system (i.e. reuse northern's code as a module, export variables).
         """
-        newness = self._world.time
-        dt = newness - self.newness
+        update_time = self._world.time
+        dt = update_time - self.update_time
         if dt < 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
             raise SystemExit
@@ -154,8 +154,8 @@ class Locatable(Namable):
                     self.__class__.__name__, self._name, self.body_x, self.body_y, body_x, body_y)
             return
             
-        self.last_newness, self.last_dist, self.last_elevation, self.last_bearing = (
-            self.newness, self.dist, self.elevation, self.bearing)
+        self.last_update_time, self.last_dist, self.last_elevation, self.last_bearing = (
+            self.update_time, self.dist, self.elevation, self.bearing)
 
         self.bearing = new_bearing
         self.dist = new_dist
@@ -165,7 +165,7 @@ class Locatable(Namable):
         #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
         
         self.elevation = new_elevation
-        self.newness = newness
+        self.update_time = update_time
         self.body_x, self.body_y = body_x, body_y
         self.vx, self.vy = dx/dt, dy/dt
         (self.centered,

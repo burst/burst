@@ -337,7 +337,7 @@ class Searcher(object):
         try:
             self._center_target = target = self._center_targets.next()
         except:
-            import pdb; pdb.set_trace()
+            #import pdb; pdb.set_trace()
             self._onFinishedScanning()
             return
 
