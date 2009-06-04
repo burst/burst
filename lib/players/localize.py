@@ -14,6 +14,7 @@ import burst.kinematics as kinematics
 from burst.kinematics import IMAGE_CENTER_X
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH, yellow_goal,
     CROSSBAR_CM_WIDTH)
+from burst.position import xyt_from_two_dist_one_angle
 
 class Localize(Player):
     
@@ -45,6 +46,7 @@ class Localize(Player):
     def onSearchResults(self):
         world = self._world
         results = self._actions.searcher.results
+        import pdb; pdb.set_trace()
         yglp, ygrp = results[world.yglp], results[world.ygrp]
         self.yellow_top_dist = self.calcPostHeights(ygrp)
         self.yellow_top_bearing = ygrp.bearing

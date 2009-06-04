@@ -82,8 +82,12 @@ class BallKicker(BurstDeferred):
 #        self.goal = calculate_middle((results[left_post].dist, results[left_post].bearing),
 #                                      (results[right_post].dist, results[right_post].bearing))
         # look at the ball directly
-        self._actions.changeHeadAnglesRelative(results[ball].bearing, # TODO - constants!
-                                               -results[ball].elevation*1.3, 1.0).onDone(self.calcKP)
+        self.calcKP()
+        # TODO: Eran, what did you mean to happen here? head moved a little up? or down (negative
+        # sign on elevation? you probably need to diff the current angles from the results
+        # if you want to do that.
+        #self._actions.moveHead(results[ball].bearing, # TODO - constants!
+        #                       -results[ball].elevation*1.3, 1.0).onDone(self.calcKP)
 
     def onLostBall(self):
         # TODO: add ball lost handling
@@ -114,7 +118,8 @@ class BallKicker(BurstDeferred):
 
     def doNextAction(self):
         if self.verbose:
-            print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+            print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
+                self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
             print "------------------"
 
         # if kicking-point is not known, search for it

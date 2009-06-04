@@ -33,7 +33,7 @@ sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController, EmptyGameController
 from ..player_settings import PlayerSettings
 from gamestatus import GameStatus, EmptyGameStatus
-
+from movecoordinator import MoveCoordinator
 
 no_game_controller = False
 no_game_status = False
@@ -162,6 +162,8 @@ class World(object):
         else:
             self._gameController = GameController(self.gameStatus)
 
+        self._movecoordinator = MoveCoordinator(self)
+
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
         # could use exactly their solution, and hence this todo. We have
@@ -175,7 +177,8 @@ class World(object):
         self._objects = [
             # All basic objects that rely on just naoproxies should be in the
             # first list
-            [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
+            [self._movecoordinator,
+             self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
              self.robot, self.falldetector, self._gameController],
             [self.gameStatus],
             # anything that relies on basics but nothing else should go next
@@ -298,7 +301,7 @@ class World(object):
         self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults)
 
     def onCheckManModuleResults(self, result):
-        print "onCheckManModuleResults: %r" % (result,)
+        #print "onCheckManModuleResults: %r" % (result,)
         if result[0] == 'None':
             print "WARNING " + "*"*60
             print "WARNING"
@@ -306,7 +309,7 @@ class World(object):
             print "WARNING"
             print "WARNING " + "*"*60
         else:
-            print "Man is there, vision should be good. Famous last words."
+            print "Man found"
 
     # ALMemory and Shared memory functions
 

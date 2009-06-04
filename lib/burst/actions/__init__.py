@@ -43,6 +43,7 @@ class Actions(object):
         self._speech = world.getSpeechProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
+        self._movecoordinator = self._world._movecoordinator
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
 
@@ -134,7 +135,9 @@ class Actions(object):
         
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=('turn', deltaTheta, walk),
+            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.STRAIGHT_WALK):
         """
@@ -191,7 +194,9 @@ class Actions(object):
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=('sideway', delta_x, delta_y, walk),
+            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def initPoseAndStiffness(self):
         """ Sets stiffness, then sets initial position for body and head.
@@ -261,15 +266,17 @@ class Actions(object):
     # Kick strength - strength of the kick (between 0..1)
     def kick(self, kick_type, kick_leg, kick_strength=1):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
-        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)])
+        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
+            description=('kick', kick_type, kick_leg, kick_strength))
     
-    def executeMoveChoreograph(self, (jointCodes, angles, times)):
+    def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         duration = max(col[-1] for col in times)
         d = self._motion.post.doMove(jointCodes, angles, times, 1)
-        return self.bdFromPostIdDeferred(d, kind='motion',
-            event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description=('choreograph', whatmove),
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
-    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
+            description=('moveradians',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
@@ -295,11 +302,12 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description = description,
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
@@ -326,9 +334,10 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description=description,
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
-    def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
         moves is a list, each item contains:
         head (tuple of 2), interp_time
@@ -346,7 +355,9 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         #print "executeHeadMove: duration = %s" % duration
-        return self.bdFromPostIdDeferred(d, kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=description,
+            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
     def clearFootsteps(self):
         return self._motion.clearFootsteps()
@@ -356,7 +367,8 @@ class Actions(object):
         interp_time time (up to limit of actuators) """
         if self.verbose:
             print "MOVE HEAD to %s, %s" % (x, y)
-        return self.executeHeadMove([((float(x), float(y)), interp_time)])
+        return self.executeHeadMove([((float(x), float(y)), interp_time)],
+            description=('movehead', x, y))
 
     def blockingStraightWalk(self, distance):
         if self._world.robot.isMotionInProgress():
@@ -367,7 +379,7 @@ class Actions(object):
 
         walk = moves.STRAIGHT_WALK
 
-        self.setWalkConfig(walk.walkParameters)
+        self.setWalkConfig(walk.walkParameters).add
         self._motion.addWalkStraight( float(distance), 100 )
 
         postid = self._motion.post.walk()
@@ -389,58 +401,43 @@ class Actions(object):
     # TODO? - generate these from moves.choreograph
 
     def executeGettingUpBelly(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BELLY)
+        return self.executeMoveChoreograph(moves.GET_UP_BELLY, "get up belly")
 
     def executeGettingUpBack(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BACK)
+        return self.executeMoveChoreograph(moves.GET_UP_BACK, "get up back")
 
     def executeLeapLeft(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT, "goalie leap left")
     
     def executeLeapLeftSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE, "goalie leap left safe")
 
     def executeLeapRight(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT, "goalie leap right")
     
     def executeLeapRightSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
 
     def executeCircleStrafer(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER, "circle strafer")
 
     def executeCircleStraferInitPose(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE) 
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 
 
     def executeTurnCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CW) 
+        return self.executeMoveChoreograph(moves.TURN_CW, "turn cw") 
 
     def executeTurnCCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CCW)
+        return self.executeMoveChoreograph(moves.TURN_CCW, "turn ccw")
     
     def executeToBellyFromLeapRight(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT)
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT, "to belly from leap right")
 
     def executeToBellyFromLeapLeft(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT)
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT, "to belly from leap left")
 
     #================================================================================
     # Utilities 
     #================================================================================
 
-    def bdFromPostIdDeferred(self, d, kind, event, duration):
-        """ return a BurstDeferred from a Deferred on an operation that
-        results in a Post ID (any movement in ALMotion)
-        """
-        post_handler = {'motion': self._world.robot.add_expected_motion_post,
-            'head':self._world.robot.add_expected_head_post,
-            'walk':self._world.robot.add_expected_walk_post}[kind]
-        bd = BurstDeferred(None)
-        def onPostId(postid):
-            if not isinstance(postid, int):
-                print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
-                print "ERROR:  Did you forget to enable ALMotion perhaps?"
-                raise SystemExit
-            post_handler(postid, event, duration).onDone(bd.callOnDone)
-        d.addCallback(onPostId)
-        return bd        
+

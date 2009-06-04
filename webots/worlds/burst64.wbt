@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation -0.000553995 0.705985 0.708226 3.14068
-  position -0.0277512 5.42641 0.174764
+  orientation 0.575299 0.586188 0.570451 4.20873
+  position -0.196963 5.03466 0.104208
 }
 Background {
   skyColor [
@@ -245,7 +245,7 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation -1.32302 0.0428038 0
+  translation -0.448432 0.0428038 -0.213337
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -286,4 +286,5 @@ Supervisor {
       name "emitter"
     }
   ]
+  #controller "nao_burst_supervisor"
 }

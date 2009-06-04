@@ -4,6 +4,7 @@ Command line and default config file for BURST robocup platform.
 
 import os
 from burst_consts import ROBOT_IP_TO_NAME
+import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
     'options', 'ip', 'port']
@@ -49,6 +50,8 @@ def parse_command_line_arguments():
     parser.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')
     parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
+    parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
+    parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)
@@ -57,6 +60,8 @@ def parse_command_line_arguments():
     globals()['ip'] = ip
     globals()['port'] = port
     globals()['options'] = opts
+    # UGLY
+    burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
 
 LOCALHOST_IP = '127.0.0.1'
 

@@ -8,6 +8,8 @@ from math import cos, sin, sqrt, atan2
 import linecache
 import glob
 
+import burst_consts
+
 # Data Structures
 
 class RingBuffer(list):
@@ -513,7 +515,8 @@ class CallLogger(object):
         start = time()
         ret = self._f(*args, **kw)
         end = time()
-        print "%s,%3d ms,(%s)" % (self._name, (end - start) * 1000, trim(str(args) + str(kw), 40))
+        print "%s,%3d ms,(%s)" % (self._name, (end - start) * 1000, trim(str(args) + str(kw),
+            burst_consts.CONSOLE_LINE_LENGTH - 33))
         return ret
 
 class LogCalls(object):

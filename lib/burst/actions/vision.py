@@ -101,27 +101,31 @@ class Tracker(object):
 
     def _centeringStep(self):
         if self._stop: return
-        if not self._target.seen: # TODO - manually looking for lost event. should be event based, no?
+        if not self._target.recently_seen: # TODO - manually looking for lost event. should be event based, no?
             self.onLost()
-        centered, maybe_bd, error = self.executeTracking(self._target,
+        if hasattr(self, '_call_me_later'):
+            del self._call_me_later
+            print "CenteringStep: called later"
+        centered, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
-            normalized_error_y=self._centering_normalized_y_error,
-            return_exact_error=True)
+            normalized_error_y=self._centering_normalized_y_error)
         elevation_on_edge = self._world.getAngle('HeadPitch') > consts.joint_limits['HeadPitch'][0]*0.99
         if self.verbose:
-            print "CenteringStep: centered = %s, maybe_bd %s, e_on_edge = %s" % (centered,
-                not maybe_bd and 'is None' or 'is a deferred', elevation_on_edge)
+            print "CenteringStep: centered = %s, delta_angles %s, e_on_edge = %s" % (centered,
+                delta_angles or 'is None', elevation_on_edge)
         if centered or (abs(error[0]) < self._centering_normalized_x_error
             and elevation_on_edge):
             if self.verbose:
                 print "CenteringStep: DONE"
             self.stop()
             self._centering_done.callOnDone()
-        elif maybe_bd:
-            maybe_bd.onDone(self._centeringStep)
+        elif delta_angles:
+            # Out path 1: wait for change angles relative to complete
+            self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
         else:
             print "CenteringStep: callLater"
-            # wait a little, try again
+            # Out path 2: wait a little, try again
+            self._call_me_later = 1
             self._eventmanager.callLater(consts.EVENT_MANAGER_DT, self._centeringStep)
 
     ############################################################################
@@ -170,16 +174,17 @@ class Tracker(object):
             self._eventmanager.callLater(EVENT_MANAGER_DT, self._trackingStep)
 
     ### Work horse for actually turning head towards target
-    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
-            return_exact_error=False):
+    def calculateTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05):
         """ This is a controller. Does a single tracking step,
             aiming to center on the given target.
 
         Return value:
-         centerd, maybe_bd
+         centerd, maybe_bd, exact_error
          centered - True if centered, False otherwise
          maybe_bd - a BurstDeferred if head movement initiated, else None
+         exact_error - the error value (x, y)
         """
+
         # Need to handle possible out of bounds - if we are requested to
         # go to an elevation that is too high, or to a bearing that is too far
         # left, we need to return success but flag the error for higher up.
@@ -197,7 +202,7 @@ class Tracker(object):
             return (abs(xNormalized) <= normalized_error_x and
                     abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
 
-        bd = None
+        delta_angles = None
         centered, xNormalized, yNormalized = location_error(target,
             normalized_error_x, normalized_error_y)
         if target.seen and not centered and not self._world.robot.isHeadMotionInProgress():
@@ -209,17 +214,25 @@ class Tracker(object):
             # deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"),
             # deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")
             # ) # yaw (left-right) / pitch (up-down)
-            bd = self._actions.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
+            delta_angles = (deltaHeadYaw, deltaHeadPitch)
                         # yaw (left-right) / pitch (up-down)
             #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (
             #       deltaHeadYaw, deltaHeadPitch)
             #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
+        return centered, delta_angles, (xNormalized, yNormalized)
+
+    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
+            return_exact_error=False):
+        """ Calculate Tracking correction and execute it in a single step. """
+        centered, delta_angles, error = self.calculateTracking(target,
+            normalized_error_x, normalized_error_y)
+        bd = None
+        if head_angles:
+            bd = self._actions.changeHeadAnglesRelative(*delta_angles)
         if return_exact_error:
-            return centered, bd, (xNormalized, yNormalized)
+            return centered, bd, error
         return centered, bd
-
-
 
 ############################################################################
 
@@ -298,6 +311,32 @@ class Searcher(object):
         self._bd = BurstDeferred(self)
         return self._bd
 
+    def onOneCentered(self):
+        target = self._center_target
+        if self.verbose:
+            print "Searcher: Center: %s results updated" % target._name
+        last_time = self.results[target].sighted_time
+        self._updateResults(target, force=True)
+        self.centerOnNext()
+
+    def centerOnNext(self):
+        # need to first go to a close place, use angles last seen
+        # TODO - use median of last seen angles, would be much closer
+        # to reality
+        try:
+            self._center_target = target = self._center_targets.next()
+        except:
+            self._onFinishedScanning()
+            return
+
+        if self.verbose:
+            print "Searcher: moving towards and centering on %s" % target._name
+        results = self.results[target]
+        bd = self._actions.moveHead(results.head_yaw, results.head_pitch)
+        # we update the stored results after the centering is done
+        return bd.onDone(lambda: self._actions.tracker.center(target)).onDone(
+            self.onOneCentered)
+
     def onScanDone(self):
         if self._stop: return
         
@@ -310,38 +349,20 @@ class Searcher(object):
                 # TODO - chainDeferred would have been nicer (a list
                 # instead of a 'lisp list' to represent the future)
                 # but there is a bug with my getDeferred in context of chainDeferreds
-                movehead = self._actions.moveHead
-                center = self._actions.tracker.center
-                def centerOnOne(target):
-                    # need to first go to a close place, use angles last seen
-                    # TODO - use median of last seen angles, would be much closer
-                    # to reality
-                    if self.verbose:
-                        print "SEARCHER: moving towards and centering on %s" % target._name
-                    results = self.results[target]
-                    bd = movehead(results.head_yaw, results.head_pitch)
-                    return bd.onDone(lambda: center(target))
-                first_target = self._seen_order[-1]
-                first_results = self.results[first_target]
-                if self.verbose:
-                    print "SEARCHER: moving towards and centering on %s" % first_target._name
-                bd = movehead(first_results.head_yaw, first_results.head_pitch).onDone(
-                        lambda: center(first_target))
-                for target in reversed(self._seen_order[:-1]):
-                    bd = bd.onDone(lambda _, target=target: centerOnOne(target))
-                bd.onDone(self._onFinishedScanning)
+                self._center_targets = reversed(self._seen_order)
+                self.centerOnNext()
             else:
                 self._onFinishedScanning()
         else:
             # TODO - middleground
             if self.verbose:
-                print "targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
+                print "Searcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
             self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
             self._actions.lookaround(self._searchlevel).onDone(self.onScanDone)
 
     def _onFinishedScanning(self):
         if self.verbose:
-            print "SEARCHER: DONE"
+            print "Searcher: DONE"
         self.stop()
         self._bd.callOnDone()
 
@@ -349,17 +370,17 @@ class Searcher(object):
         if self._stop: return
         if not target.seen:
             if self.verbose:
-                print "SEARCHER: onSeen but target not seen?"
+                print "Searcher: onSeen but target not seen?"
             return
         # TODO OPTIMIZATION - when last target is seen, cut the search
         self._updateResults(target) # These are not the centered results.
         if target not in self._seen_set:
             if self.verbose:
-                print "SEARCHER: First Sighting: %s, %s" % (target._name, self.results[target])
+                print "Searcher: First Sighting: %s, %s" % (target._name, self.results[target])
             self._seen_order.append(target)
             self._seen_set.add(target)
 
-    def _updateResults(self, target):
+    def _updateResults(self, target, force=False):
         """ Update results for a single target. Only stores the
         results for the most centered sighting - this includes
         everything, vision (centerX/centerY), joint angles (headYaw, headPitch),
@@ -383,7 +404,7 @@ class Searcher(object):
             # 0.5. Otherwise use lexicographic order, y first, x second.
             abs_cur_x, abs_cur_y = abs(result.normalized2_centerX), abs(result.normalized2_centerY)
             abs_new_x, abs_new_y = abs(new_n2_centerX), abs(new_n2_centerY)
-            if not (
+            if not force and not (
                 # 0.5 clause
                 ((abs_cur_x > 0.5 or abs_cur_y > 0.5) and
                 (abs_new_x <= 0.5 and abs_new_y <= 0.5))
@@ -393,8 +414,10 @@ class Searcher(object):
                 ):
                 return # no update
 
-        if self.verbose:
-            print "Searcher: updating %s, %1.2f, %1.2f" % (target._name,
+        if self.verbose or force:
+            print "Searcher: updating %s, (%1.2f, %1.2f) -> (%1.2f, %1.2f)" % (
+                target._name,
+                result.normalized2_centerX or -100.0, result.normalized2_centerY or -100.0,
                 new_n2_centerX, new_n2_centerY)
 
         if hasattr(target, 'distSmoothed'):

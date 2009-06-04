@@ -16,6 +16,7 @@ from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
 
 from burst_consts import EVENT_MANAGER_DT
+import burst_consts
 
 ################################################################################
 
@@ -267,6 +268,12 @@ class BasicMainLoop(object):
         # flags for external use
         self.finished = False       # True when quit has been called
 
+    def _getNumberOutgoingMessages(self):
+        return 0 # implemented just in twisted for now
+
+    def _getNumberIncomingMessages(self):
+        return 0
+
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
         created at will.
@@ -364,6 +371,10 @@ class BasicMainLoop(object):
         self.main_start_time = time()
         self.cur_time = self.main_start_time
         self.next_loop = self.cur_time
+        if burst.options.trace_proxies:
+            print "="*burst_consts.CONSOLE_LINE_LENGTH
+            print "Time Objs-CL|IN|PO|YRt        |YLt        |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+            print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def doSingleStep(self):
         """ call once for every loop iteration
@@ -378,10 +389,26 @@ class BasicMainLoop(object):
             ball = self._world.ball.seen and 'B' or ' '
             yglp = self._world.yglp.seen and 'L' or ' '
             ygrp = self._world.ygrp.seen and 'R' or ' '
+            s_r = self._actions.searcher.results
+            def getjoints(obj):
+                if obj not in s_r: return '-----------'
+                r = s_r[obj]
+                if not r.sighted: return '           '
+                return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
+            yglp_joints = getjoints(self._world.yglp)
+            ygrp_joints = getjoints(self._world.ygrp)
+            num_out = self._getNumberOutgoingMessages()
+            num_in = self._getNumberIncomingMessages()
             # LINE_UP is to line up with the LogCalls object.
             LINE_UP = 62
-            print "%3.2f  %s%s%s%02d%s" % (self.cur_time - self.main_start_time, ball, yglp, ygrp,
-                len(self._eventmanager._call_later), "-"*LINE_UP)
+            print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
+                ball, yglp, ygrp,
+                len(self._eventmanager._call_later),
+                len(self._world._movecoordinator._initiated),
+                len(self._world._movecoordinator._posted),
+                ygrp_joints, yglp_joints,
+                num_out, num_out - num_in,
+                )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
         self._eventmanager.handlePendingEventsAndDeferreds()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
@@ -461,6 +488,12 @@ class TwistedMainLoop(BasicMainLoop):
     def start(self):
         self.con.modulesDeferred.addCallback(self._twistedStart).addErrback(log.err)
         self.started = True
+
+    def _getNumberOutgoingMessages(self):
+        return self.con.connection_manager._sent
+
+    def _getNumberIncomingMessages(self):
+        return self.con.connection_manager._returned
 
     def _twistedStart(self, _):
         print "TwistedMainLoop: _twistedStart"
