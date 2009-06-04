@@ -12,7 +12,8 @@ except:
 from options import host_to_ip, LOCALHOST_IP
 import burst
 
-__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown']
+__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
+    ,'getLedsProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -21,6 +22,7 @@ speechProxy = None
 memoryProxy = None
 visionProxy = None
 dcmProxy = None
+ledsProxy = None
 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
@@ -102,13 +104,27 @@ def getSpeechProxy(deferred = False):
         try:
             speechProxy = ALProxy("ALTextToSpeech")
         except Exception,e :
-            motionProxy = MissingProxy('ALTextToSpeech')
+            speechProxy = MissingProxy('ALTextToSpeech')
             print "WARNING: Speech module not available (Exception: %s)" % e
         if deferred:
             speechProxy = WrapWithDeferreds(speechProxy)
         proxies.append(speechProxy)
     return speechProxy
 
+def getLedsProxy(deferred = False):
+    global ledsProxy, proxies, _broker
+    if _broker is None:
+        raise InitException, "Must initialize the module first."
+    if ledsProxy is None:
+        try:
+            ledsProxy = ALProxy("ALLeds")
+        except Exception,e :
+            ledsProxy = MissingProxy('ALTextToSpeech')
+            print "WARNING: Speech module not available (Exception: %s)" % e
+        if deferred:
+            ledsProxy = WrapWithDeferreds(ledsProxy)
+        proxies.append(ledsProxy)
+    return ledsProxy
 
 def getMemoryProxy(deferred = False):
     global memoryProxy, proxies, _broker

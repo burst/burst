@@ -1,7 +1,47 @@
+import burst
 from .objects import Movable
 from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
 from burst_util import BurstDeferred, DeferredList, succeed
 from burst import events as events_module
+
+
+
+class LEDs(object):
+
+    class EarLED(object):
+        '''
+        An abstract class that controls an ear's LEDs. The inheriting classes determine which ear.
+        '''
+        def __init__(self, side, world):
+            self.side = side
+            self.world = world
+        def turnOn(self, degreeSet=xrange(0, 360, 36)):
+            for degree in degreeSet:
+                self.world._leds.on('Ears/Led/%s/%dDeg/Actuator/Value' % (self.side, degree))
+        def turnOff(self, degreeSet=xrange(0, 360, 36)):
+            for degree in degreeSet:
+                self.world._leds.off('Ears/Led/%s/%dDeg/Actuator/Value' % (self.side, degree))
+
+    class LeftEarLED(EarLED):
+        def __init__(self, world):
+            super(LEDs.LeftEarLED, self).__init__('Left', world)
+
+    class RightEarLED(EarLED):
+        def __init__(self, world):
+            super(LEDs.RightEarLED, self).__init__('Right', world)
+
+    def __init__(self, world):
+        self.rightEarLED = LEDs.RightEarLED(world)
+        self.leftEarLED = LEDs.LeftEarLED(world)
+
+    def turnEverythingOff(self):
+        for obj in [self.rightEarLED, self.leftEarLED]:
+            obj.turnOff()
+
+    def turnEverythingOn(self):
+        for obj in [self.rightEarLED, self.leftEarLED]:
+            obj.turnOn()
+
 
 
 class Bumpers(object):
@@ -139,6 +179,8 @@ class Robot(Movable):
         self._walk_posts   = SerialPostQueue('walk', world)
         self.bumpers = Bumpers(self._world)
         self.chestButton = ChestButton(self._world)
+        self.leds = LEDs(world)
+        self.leds.turnEverythingOff()
     
     def add_expected_motion_post(self, postid, event, duration):
         deferred = BurstDeferred(data=postid)

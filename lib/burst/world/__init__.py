@@ -31,7 +31,6 @@ from localization import Localization
 
 sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
 from gamecontroller import GameControllerMessage, GameController, EmptyGameController
-#sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc')) # TODO: Remove?
 from ..player_settings import PlayerSettings
 from gamestatus import GameStatus, EmptyGameStatus
 
@@ -105,6 +104,7 @@ class World(object):
         self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
+        self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
         self._events = set()
         self._deferreds = []
         
