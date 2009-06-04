@@ -8,7 +8,8 @@ from burst.events import *
 import burst
 import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
-    CONSOLE_LINE_LENGTH)
+    CONSOLE_LINE_LENGTH, DEFAULT_CENTERING_X_ERROR,
+    DEFAULT_CENTERING_Y_ERROR)
 from burst.image import normalized2_image_width, normalized2_image_height
 
 # This is used for stuff like Localization, where there is an error
@@ -174,7 +175,9 @@ class Tracker(object):
             self._eventmanager.callLater(EVENT_MANAGER_DT, self._trackingStep)
 
     ### Work horse for actually turning head towards target
-    def calculateTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05):
+    def calculateTracking(self, target,
+            normalized_error_x=DEFAULT_CENTERING_X_ERROR,
+            normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
         """ This is a controller. Does a single tracking step,
             aiming to center on the given target.
 
@@ -190,21 +193,13 @@ class Tracker(object):
         # left, we need to return success but flag the error for higher up.
         # TODO - handle the out of bounds. Current solution: let higher up
         # handle it. (using same tactic, or check for "noop" for too long)
-        def location_error(target, x_error, y_error):
-            # TODO - using target.centerX and target.centerY without looking at newness is broken.
-            # Normalize ball X between 1 (left) to -1 (right)
-            xNormalized = normalized2_image_width(target.centerX)
-            # Normalize ball Y between 1 (top) to -1 (bottom)
-            yNormalized = normalized2_image_height(target.centerY)
-            if self.verbose:
-                print "location_error: center %3.1f, %3.1f, error %1.2f, %1.2f" % (target.centerX,
-                    target.centerY, xNormalized, yNormalized)
-            return (abs(xNormalized) <= normalized_error_x and
-                    abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
 
         delta_angles = None
-        centered, xNormalized, yNormalized = location_error(target,
+        centered, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
+        if self.verbose:
+            print "location_error: center %3.1f, %3.1f, error %1.2f, %1.2f" % (target.centerX,
+                target.centerY, xNormalized, yNormalized)
         if target.seen and not centered and not self._world.robot.isHeadMotionInProgress():
             CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
             CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
@@ -228,7 +223,7 @@ class Tracker(object):
         centered, delta_angles, error = self.calculateTracking(target,
             normalized_error_x, normalized_error_y)
         bd = None
-        if head_angles:
+        if delta_angles:
             bd = self._actions.changeHeadAnglesRelative(*delta_angles)
         if return_exact_error:
             return centered, bd, error
@@ -435,7 +430,7 @@ class Searcher(object):
         result.centerY = target.centerY
         result.normalized2_centerX = new_n2_centerX
         result.normalized2_centerY = new_n2_centerY
-        result.x = target.x # upper left corner
+        result.x = target.x # upper left corner - not valid for Ball
         result.y = target.y #
         # flag the sighted flag
         result.sighted = True
