@@ -156,7 +156,7 @@ class World(object):
         if no_game_status:
             self.gameStatus = EmptyGameStatus()
         else:
-            self.gameStatus = GameStatus(self.playerSettings)
+            self.gameStatus = GameStatus(self, self.playerSettings)
         if no_game_controller:
             self._gameController = EmptyGameController()
         else:
