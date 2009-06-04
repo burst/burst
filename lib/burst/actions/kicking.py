@@ -90,7 +90,7 @@ class BallKicker(BurstDeferred):
         print "BALL LOST"
 
     def calcKP(self):
-        if self._world.ball.seen:
+        if self._world.ball.recently_seen:
             self._actions.track(self._world.ball, self.onLostBall)
             results = self._actions.searcher.results
             ball_result = results[self._world.ball]
