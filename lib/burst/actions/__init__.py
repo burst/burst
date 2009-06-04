@@ -386,8 +386,9 @@ class Actions(object):
         self._motion.wait(postid, 0)
         return True
 
-    def say(self, message):
-        print "saying: %s" % message
+    def say(self, message, shouldPrint=True):
+        if shouldPrint:
+            print "saying: %s" % message
         if not self._speech is None:
             self._speech.post.say(message)
 
