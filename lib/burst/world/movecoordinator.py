@@ -2,6 +2,8 @@ import burst
 from burst_util import (BurstDeferred, DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
 
+################################################################################
+
 class Motion(object):
     
     def __init__(self, event, deferred, start_time, duration):
@@ -203,6 +205,23 @@ class MoveCoordinator(object):
         print "DEBUG: adding walk %s, duration %s" % (postid, duration)
         return self._walk_posts.add(postid, event, duration)
 
+    def add_expected_walk_post(self, description, postid, event, duration):
+        """ HACK for Journey - Journey currently does the deferreds itself,
+        not using the BurstDeferred wrappers we provide, so to still log
+        anything it does we provide the old interface, with added description.
+        We use the initiate time as now (so it is actually the postid time,
+        almost the same)
+        """
+        initiated = self._add_initiated(time=self._world.time, kind='walk',
+            description=description, event=event, duration=duration)
+        self._add_posted(postid, initiated)
+        self._add_expected_walk_post(postid=postid, event=event, duration=duration)
+
+    def _add_initiated(self, time, kind, description, event, duration):
+        initiated = len(self._initiated)
+        self._initiated.append((self._world.time, kind, description, event, duration))
+        return initiated
+
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
     
@@ -220,19 +239,21 @@ class MoveCoordinator(object):
         duration - expected duration of action
         """
         #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
-        initiated = len(self._initiated)
-        self._initiated.append((kind, description, event, duration))
+        initiated = self._add_initiated.(self._world.time, kind, description, event, duration)
         bd = BurstDeferred(None)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
             self._onPostId(postid, initiated, bd))
         return bd
+
+    def _add_posted(self, postid, initiated):
+        self._posted.append((postid, self._initiated[initiated]))
 
     def _onPostId(self, postid, initiated, bd):
         if not isinstance(postid, int):
             print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
             print "ERROR:  Did you forget to enable ALMotion perhaps?"
             raise SystemExit
-        kind, description, event, duration = self._initiated[initiated]
-        self._posted.append((postid, self._initiated[initiated]))
+        initiate_time, kind, description, event, duration = self._initiated[initiated]
+        self._add_posted(postid, initiated)
         self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)
 
