@@ -389,7 +389,7 @@ class Actions(object):
     def say(self, message):
         print "saying: %s" % message
         if not self._speech is None:
-            self._speech.say(message)
+            self._speech.post.say(message)
 
     def lookaround(self, lookaround_type):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
