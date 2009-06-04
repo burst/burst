@@ -56,17 +56,24 @@ class Tracker(object):
             self._eventmanager.register(self.onLost, self._lost_event)
 
     def onLost(self):
-        if self._lost_event: # can be None
-            self._eventmanager.unregister(self.onLost, self._lost_event)
         self.stop()
         if self._on_lost:
             self._on_lost.callOnDone()
     
     def stop(self):
+        """ stop tracker and centerred. unregister any events, after
+        this call be ready for a new track or center action.
+        """
         # don't erase any deferreds here! stop is called
         # before issuing the callbacks, allowing deferred's callee to
         # correctly check that tracker is not operating.
+        if self.verbose:
+            print "Tracker: Stopping current action - %s" % (
+                self._centering_done and 'centering' or 'tracking')
         self._stop = True
+        self._centering_done = None
+        if self._lost_event: # can be None
+            self._eventmanager.unregister(self.onLost, self._lost_event)
 
     ############################################################################
 
@@ -83,6 +90,8 @@ class Tracker(object):
             print "ERROR: center called when target not recently in sight"
             #import pdb; pdb.set_trace()
             return
+        if self.verbose:
+            print "Tracker: Start Centering on %s" % target._name
         self._start(target, self._centeringOnLost)
         self._centering_done = BurstDeferred(None)
         self._centeringStep()
@@ -110,16 +119,18 @@ class Tracker(object):
         centered, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
             normalized_error_y=self._centering_normalized_y_error)
-        elevation_on_edge = self._world.getAngle('HeadPitch') > consts.joint_limits['HeadPitch'][0]*0.99
+        elevation_on_upper_edge = (self._world.getAngle('HeadPitch') < consts.joint_limits['HeadPitch'][0]*0.99)
+        center_too_high = elevation_on_upper_edge and error[1] < 0
         if self.verbose:
-            print "CenteringStep: centered = %s, delta_angles %s, e_on_edge = %s" % (centered,
-                delta_angles or 'is None', elevation_on_edge)
-        if centered or (abs(error[0]) < self._centering_normalized_x_error
-            and elevation_on_edge):
+            print "CenteringStep: centered = %s, delta_angles %s, center_too_high = %s" % (centered,
+                delta_angles or 'is None', center_too_high)
+        if centered or (
+            abs(error[0]) < self._centering_normalized_x_error and center_too_high):
             if self.verbose:
                 print "CenteringStep: DONE"
-            self.stop()
-            self._centering_done.callOnDone()
+            bd = self._centering_done
+            self.stop() # this sets self.centering_done=None
+            bd.callOnDone()
         elif delta_angles:
             # Out path 1: wait for change angles relative to complete
             self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
@@ -141,6 +152,9 @@ class Tracker(object):
             if on_lost_callback:
                 on_lost_callback()
             return
+        if self._centering_done is not None:
+            print "ERROR - can't start tracking while centering"
+            import pdb; pdb.set_trace()
         self._start(target, on_lost_callback)
         self._centering_done = None
         self._trackingStep()
@@ -197,10 +211,12 @@ class Tracker(object):
         delta_angles = None
         centered, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
+        head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
         if self.verbose:
-            print "location_error: center %3.1f, %3.1f, error %1.2f, %1.2f" % (target.centerX,
-                target.centerY, xNormalized, yNormalized)
-        if target.seen and not centered and not self._world.robot.isHeadMotionInProgress():
+            print "Tracker calculation: %s, center %3.1f, %3.1f, error %1.2f, %1.2f" % (
+                head_motion_in_progress and 'head moving' or 'head ready',
+                target.centerX, target.centerY, xNormalized, yNormalized)
+        if target.seen and not centered and not head_motion_in_progress:
             CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
             CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
             deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR
@@ -311,7 +327,7 @@ class Searcher(object):
         if self.verbose:
             print "Searcher: Center: %s results updated" % target._name
         last_time = self.results[target].sighted_time
-        self._updateResults(target, force=True)
+        self._updateResults(target)
         self.centerOnNext()
 
     def centerOnNext(self):
@@ -321,12 +337,14 @@ class Searcher(object):
         try:
             self._center_target = target = self._center_targets.next()
         except:
+            import pdb; pdb.set_trace()
             self._onFinishedScanning()
             return
 
-        if self.verbose:
-            print "Searcher: moving towards and centering on %s" % target._name
         results = self.results[target]
+        if self.verbose:
+            print "Searcher: moving towards and centering on %s - (%1.2f, %1.2f)" % (
+                target._name, results.head_yaw, results.head_pitch)
         bd = self._actions.moveHead(results.head_yaw, results.head_pitch)
         # we update the stored results after the centering is done
         return bd.onDone(lambda: self._actions.tracker.center(target)).onDone(
@@ -375,7 +393,7 @@ class Searcher(object):
             self._seen_order.append(target)
             self._seen_set.add(target)
 
-    def _updateResults(self, target, force=False):
+    def _updateResults(self, target):
         """ Update results for a single target. Only stores the
         results for the most centered sighting - this includes
         everything, vision (centerX/centerY), joint angles (headYaw, headPitch),
@@ -385,35 +403,20 @@ class Searcher(object):
         # TODO - if we saw something then track it, only then continue scan
         result = self.results[target]
 
-        new_n2_centerX = normalized2_image_width(target.centerX)
-        new_n2_centerY = normalized2_image_height(target.centerY)
         if result.sighted: # always do first update
-            # We keep the most centered head_yaw and head_pitch
-            # TODO:
-            # We need an ordering on "rectangles" or pairs.
-            # x1<x2, y1<y2 -> (x1,y1) < (x2,y2)  obvious
-            # x1<x2, y1>y2 -> ?
-            # x1>x2, y1<y2 -> ?
-            # I currently use the following:
-            # if any one is larger then 0.5, then it is worse then any that has both smaller then.
-            # 0.5. Otherwise use lexicographic order, y first, x second.
+            # We keep the most centered head_yaw and head_pitch using smallest norm2.
             abs_cur_x, abs_cur_y = abs(result.normalized2_centerX), abs(result.normalized2_centerY)
-            abs_new_x, abs_new_y = abs(new_n2_centerX), abs(new_n2_centerY)
-            if not force and not (
-                # 0.5 clause
-                ((abs_cur_x > 0.5 or abs_cur_y > 0.5) and
-                (abs_new_x <= 0.5 and abs_new_y <= 0.5))
-                or
-                # lexicographic clause
-                (abs_new_y <= abs_cur_y and abs_new_x <= abs_cur_x)
-                ):
+            abs_new_x, abs_new_y = abs(target.normalized2_centerX), abs(target.normalized2_centerY)
+            new_dist = abs_new_x**2 + abs_new_y**2
+            old_dist = abs_cur_x**2 + abs_cur_y**2
+            if new_dist >= old_dist:
                 return # no update
 
-        if self.verbose or force:
+        if self.verbose:
             print "Searcher: updating %s, (%1.2f, %1.2f) -> (%1.2f, %1.2f)" % (
                 target._name,
                 result.normalized2_centerX or -100.0, result.normalized2_centerY or -100.0,
-                new_n2_centerX, new_n2_centerY)
+                target.normalized2_centerX, target.normalized2_centerY)
 
         if hasattr(target, 'distSmoothed'):
             result.distSmoothed = self._world.ball.distSmoothed
@@ -428,8 +431,8 @@ class Searcher(object):
         result.width = target.width
         result.centerX = target.centerX
         result.centerY = target.centerY
-        result.normalized2_centerX = new_n2_centerX
-        result.normalized2_centerY = new_n2_centerY
+        result.normalized2_centerX = target.normalized2_centerX
+        result.normalized2_centerY = target.normalized2_centerY
         result.x = target.x # upper left corner - not valid for Ball
         result.y = target.y #
         # flag the sighted flag

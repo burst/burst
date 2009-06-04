@@ -373,7 +373,7 @@ class BasicMainLoop(object):
         self.next_loop = self.cur_time
         if burst.options.trace_proxies:
             print "="*burst_consts.CONSOLE_LINE_LENGTH
-            print "Time Objs-CL|IN|PO|YRt        |YLt        |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+            print "Time Objs-CL|IN|PO|YRt        |YLt        |Ball       |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
             print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def doSingleStep(self):
@@ -397,16 +397,17 @@ class BasicMainLoop(object):
                 return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
             yglp_joints = getjoints(self._world.yglp)
             ygrp_joints = getjoints(self._world.ygrp)
+            ball_joints = getjoints(self._world.ball)
             num_out = self._getNumberOutgoingMessages()
             num_in = self._getNumberIncomingMessages()
             # LINE_UP is to line up with the LogCalls object.
             LINE_UP = 62
-            print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
+            print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
                 ball, yglp, ygrp,
                 len(self._eventmanager._call_later),
                 len(self._world._movecoordinator._initiated),
                 len(self._world._movecoordinator._posted),
-                ygrp_joints, yglp_joints,
+                ygrp_joints, yglp_joints, ball_joints,
                 num_out, num_out - num_in,
                 )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
         self._eventmanager.handlePendingEventsAndDeferreds()

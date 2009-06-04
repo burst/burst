@@ -105,6 +105,7 @@ class Locatable(Namable):
         """
         # TODO - using target.centerX and target.centerY without looking at newness is broken.
         # Normalize ball X between 1 (left) to -1 (right)
+        assert(normalized_error_x > 0 and normalized_error_y > 0)
         xNormalized = normalized2_image_width(self.centerX)
         # Normalize ball Y between 1 (top) to -1 (bottom)
         yNormalized = normalized2_image_height(self.centerY)
