@@ -313,5 +313,6 @@ CONSOLE_LINE_LENGTH = 73
 # General unknown:
 UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
 
-RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00 # Colors for the LEDs.
+# Colors for the LEDs
+RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00
 TeamColors = {0: BLUE, 1: RED}

@@ -35,7 +35,8 @@ class Player(object):
 
     def onInitial(self):
         if debug:
-            self._actions.say("ENTERING INITIAL")
+#            self._actions.say("ENTERING INITIAL")
+            print "Entering Initial"
         def onLeftBumperPressed(self=self):
             self._world.playerSettings.toggleteamColor()
             if debug:

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+
 __all__ = ['GameStatus', 'EmptyGameStatus']
 
 
@@ -10,8 +11,7 @@ from gamecontroller import constants as constants
 from gamecontroller.constants import *
 from burst.debug_flags import gamestatus_py_debug as debug
 from burst.world.robot import LEDs
-import burst_consts as consts
-
+import burst_consts
 
 class PlayerStatus(object):
     '''
@@ -19,7 +19,7 @@ class PlayerStatus(object):
     '''
     def __init__(self, teamColor, playerNumber):
         self.config(teamColor, playerNumber)
-        self.playerStatus = UNKNOWN_PLAYER_STATUS
+        self.status = UNKNOWN_PLAYER_STATUS
 
     def config(self, teamColor, playerNumber):
         self.teamColor = teamColor
@@ -45,7 +45,7 @@ class GameStatus(object):
         self.mySettings = playerSettings
         self.players = [[PlayerStatus(teamColor, playerNumber) for playerNumber in xrange(11)] for teamColor in xrange(2)] # TODO: Start at 0 or 1?
         self.newEvents = set()
-        self.gameState = UNKNOWN_GAME_STATE # TODO
+        self.gameState = InitialGameState
         self.reset()
         self.setColors()
 
@@ -168,8 +168,8 @@ class GameStatus(object):
     def getMyPlayerStatus(self):
         for teamColor in xrange(2):
             for playerNumber in xrange(11):
-                if self._isMe(teamColor, robotNumber):
-                    return self.players[teamColor][playerNumber].status
+                if self._isMe(self.players[teamColor][playerNumber]):
+                    return self.players[teamColor][playerNumber]
         raise Exception("getMyPlayerStatus() - can't find myself among the players.")
 
     def changeKickOffTeam(kickOffTeam): # TODO: Untested.
@@ -179,9 +179,16 @@ class GameStatus(object):
         self.kickOffTeam = kickOffTeam
         self.setColors()
 
+    def myRobotState(self): # TODO: ConfigurationRobotState?
+        if self.getMyPlayerStatus().isPenalized():
+            return PenalizedRobotState
+        else:
+            return GameStateToRobotStateMap[self.gameState]
+
     def setColors(self):
         ''' Update the LEDs according to the information you carry. '''
-        self.world.robot.leds.rightFootLED.turnOn(consts.TeamColors[self.kickOffTeam])
+        self.world.robot.leds.rightFootLED.turnOn(burst_consts.TeamColors[self.kickOffTeam]) # TODO: constants/burst_constants
+        self.world.robot.leds.chestButtonLED.turnOn(constants.robotStateToChestButtonColor[self.myRobotState()])
 
 
 
