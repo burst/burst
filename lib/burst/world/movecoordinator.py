@@ -215,7 +215,7 @@ class MoveCoordinator(object):
         initiated = self._add_initiated(time=self._world.time, kind='walk',
             description=description, event=event, duration=duration)
         self._add_posted(postid, initiated)
-        self._add_expected_walk_post(postid=postid, event=event, duration=duration)
+        return self._add_expected_walk_post(postid=postid, event=event, duration=duration)
 
     def _add_initiated(self, time, kind, description, event, duration):
         initiated = len(self._initiated)
@@ -239,7 +239,7 @@ class MoveCoordinator(object):
         duration - expected duration of action
         """
         #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
-        initiated = self._add_initiated.(self._world.time, kind, description, event, duration)
+        initiated = self._add_initiated(self._world.time, kind, description, event, duration)
         bd = BurstDeferred(None)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
             self._onPostId(postid, initiated, bd))
