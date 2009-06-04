@@ -110,8 +110,9 @@ class Journey(object):
     def onLastLegPosted(self, postid):
         # final leg will call the user's callbacks
         last_leg_duration = 1.0 # TODO - duration calculation for real
-        self._world.robot.add_expected_walk_post(postid,
-            EVENT_CHANGE_LOCATION_DONE, last_leg_duration
+        self._world.movecoordinator.add_expected_walk_post(
+            ('journey last leg', self._distance, self._bearing, self._delta_theta),
+            postid, EVENT_CHANGE_LOCATION_DONE, last_leg_duration
                 ).onDone(self.callbackAndReset)
     
     def callbackAndReset(self):
@@ -154,3 +155,4 @@ class Journey(object):
             print "ERROR: Journey distance left calculation incorrect"
             import pdb; pdb.set_trace()
             self._distance_left = 0.0
+
