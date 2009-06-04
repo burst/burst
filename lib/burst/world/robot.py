@@ -8,6 +8,8 @@ from burst import events as events_module
 
 class LEDs(object):
 
+    RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF # Colors for the LEDs.
+
     class EarLED(object):
         '''
         An abstract class that controls an ear's LEDs. The inheriting classes determine which ear.
@@ -30,17 +32,39 @@ class LEDs(object):
         def __init__(self, world):
             super(LEDs.RightEarLED, self).__init__('Right', world)
 
+    class FootLED(object):
+        ''' An abstract class that controls an foot's LEDs. The inheriting classes determine which foot. '''
+        def __init__(self, side, world):
+            self.side = side
+            self.world = world
+        def turnOff(self):
+            self.world._leds.fadeRGB("%sFootLeds"%self.side, 0x000000, 0.0)
+        def turnOn(self, color):
+            self.world._leds.fadeRGB("%sFootLeds"%self.side, color, 0.0)
+
+    class RightFootLED(FootLED):
+        def __init__(self, world):
+            super(LEDs.RightFootLED, self).__init__('Right', world)
+
+    class LeftFootLED(FootLED):
+        def __init__(self, world):
+            super(LEDs.LeftFootLED, self).__init__('Left', world)
+
     def __init__(self, world):
         self.rightEarLED = LEDs.RightEarLED(world)
         self.leftEarLED = LEDs.LeftEarLED(world)
+        self.rightFootLED = LEDs.RightFootLED(world)
+        self.leftFootLED = LEDs.LeftFootLED(world)
 
     def turnEverythingOff(self):
-        for obj in [self.rightEarLED, self.leftEarLED]:
+        for obj in [self.rightEarLED, self.leftEarLED, self.rightFootLED, self.leftFootLED]:
             obj.turnOff()
 
     def turnEverythingOn(self):
         for obj in [self.rightEarLED, self.leftEarLED]:
             obj.turnOn()
+        for obj in [self.rightFootLED, self.leftFootLED]:
+            obj.turnOn(LEDs.RED)
 
 
 
