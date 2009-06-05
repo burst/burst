@@ -160,6 +160,10 @@ class EventManager(object):
         abstime = self._world.time + max(EVENT_MANAGER_DT, dt)
         heappush(self._call_later, (abstime, callback, args, kw))
 
+    def cancelCallLater(self, callback):
+        if callback in self._call_later:
+            self._call_later.remove(callback)
+
     def register(self, callback, event):
         """ set a callback on an event.
         """
