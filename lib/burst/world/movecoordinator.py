@@ -221,7 +221,7 @@ class MoveCoordinator(object):
         motion = (self._world.time, kind, description, event, duration)
         self._initiated.append(motion)
         if kind is 'walk':
-            self._world.odometry.onWalkInitiated(*motion)
+            self._world.odometry.onWalkInitiated(self._world.time, description, duration)
         return initiated
 
     def isMotionInProgress(self):

@@ -3,6 +3,7 @@
 
 from events import *
 from burst.debug_flags import player_py_debug as debug
+import burst_consts
 
 
 class Player(object):
@@ -14,6 +15,8 @@ class Player(object):
         self._eventmanager.register(self.onFallenDown, EVENT_FALLEN_DOWN)
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
         self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
+        self._eventmanager.register(self._announceSeeingBall, EVENT_BALL_SEEN)
+        self._eventmanager.register(self._announceNotSeeingBall, EVENT_BALL_LOST)
     
     def onGCPlaying(self):
         """ only state player needs to deal with, the rest are done
@@ -21,6 +24,8 @@ class Player(object):
         self.onStart()
 
     def onStart(self):
+        self._announceNotSeeingBall()
+        self._announceSeeingNoGoal()
         self.onInitial()
 
     def onStop(self):
@@ -45,6 +50,7 @@ class Player(object):
             self._world.playerSettings.togglePlayerNumber()
             if debug:
                 print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
+            print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
         def onChestButtonPressed(self=self):
             self._world.gameStatus.reset()
             if debug:
@@ -118,6 +124,20 @@ class Player(object):
             f = getattr(self, fname)
             self._eventmanager.register(f, f.event)
 
+    def _announceSeeingBall(self):
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.RED)
+
+    def _announceNotSeeingBall(self):
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.BLUE)
+
+    def _announceSeeingBlueGoal(self):
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.LIGHT_BLUE)
+
+    def _announceSeeingYellowGoal(self):
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.YELLOW)
+
+    def _announceSeeingNoGoal(self):
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.OFF)
 
 if __name__ == '__main__':
     print "Welcome to the player module's testing procedure. Have fun."

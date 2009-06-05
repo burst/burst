@@ -30,7 +30,7 @@ class Sonars(object):
             super(Sonars.RightSonar, self).__init__('Right', world, 1)
 
     def __init__(self, world):
-        world._ultrasound.subscribe('', [500]) # TODO: See if we can lower this without any adverse effects.
+        world._ultrasound.post.subscribe('', [500]) # TODO: See if we can lower this without any adverse effects.
         world.addMemoryVars([Sonars._var])
         self.leftSonar = Sonars.LeftSonar(world)
         self.rightSonar = Sonars.RightSonar(world)
