@@ -1,6 +1,5 @@
 import sys
 import linecache
-from textwrap import wrap
 
 from burst_util import (traceme, nicefloat,
     BurstDeferred, Deferred, chainDeferreds)
@@ -8,8 +7,9 @@ from burst.events import *
 import burst
 import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
-    CONSOLE_LINE_LENGTH, DEFAULT_CENTERING_X_ERROR,
-    DEFAULT_CENTERING_Y_ERROR)
+    DEFAULT_CENTERING_X_ERROR,
+    DEFAULT_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
+    IMAGE_CENTER_X, IMAGE_CENTER_Y)
 from burst.image import normalized2_image_width, normalized2_image_height
 
 # This is used for stuff like Localization, where there is an error
@@ -33,9 +33,9 @@ class Tracker(object):
         self._stop = True
         self._on_lost = None
         self._lost_event = None
-        # if _centering_done != None then on centering it is called and tracking
+        # if _on_centered_bd != None then on centering it is called and tracking
         # is stopped
-        self._centering_done = None
+        self._on_centered_bd = None
 
         # DEBUG
         #self._trackingStep = traceme(self._trackingStep)
@@ -56,6 +56,8 @@ class Tracker(object):
             self._eventmanager.register(self.onLost, self._lost_event)
 
     def onLost(self):
+        if self.verbose:
+            print "Tracker: stopping onLost"
         self.stop()
         if self._on_lost:
             self._on_lost.callOnDone()
@@ -69,9 +71,9 @@ class Tracker(object):
         # correctly check that tracker is not operating.
         if self.verbose:
             print "Tracker: Stopping current action - %s" % (
-                self._centering_done and 'centering' or 'tracking')
+                self._on_centered_bd and 'centering' or 'tracking')
         self._stop = True
-        self._centering_done = None
+        self._on_centered_bd = None
         if self._lost_event: # can be None
             self._eventmanager.unregister(self.onLost, self._lost_event)
 
@@ -93,11 +95,12 @@ class Tracker(object):
         if self.verbose:
             print "Tracker: Start Centering on %s" % target._name
         self._start(target, self._centeringOnLost)
-        self._centering_done = BurstDeferred(None)
-        self._centeringStep()
-        # TODO: check that this works correctly if on the first
+        self._on_centered_bd = BurstDeferred(None)
+        # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
+        self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
+        #self._centeringStep()
         # centering step we are already centered (by calling center twice!)
-        return self._centering_done
+        return self._on_centered_bd
 
     def _centeringOnLost(self):
         if not self._target.recently_seen:
@@ -128,8 +131,12 @@ class Tracker(object):
             abs(error[0]) < self._centering_normalized_x_error and center_too_high):
             if self.verbose:
                 print "CenteringStep: DONE"
-            bd = self._centering_done
-            self.stop() # this sets self.centering_done=None
+            bd = self._on_centered_bd
+            self.stop() # this sets self.on_centered_bd=None
+            if not bd._ondone or not bd._ondone[0]:
+                import pdb; pdb.set_trace()
+            if self.verbose and bd._ondone and bd._ondone[0]:
+                print "CenteringStep: %s" % bd._ondone[0].im_self.__dict__
             bd.callOnDone()
         elif delta_angles:
             # Out path 1: wait for change angles relative to complete
@@ -152,11 +159,11 @@ class Tracker(object):
             if on_lost_callback:
                 on_lost_callback()
             return
-        if self._centering_done is not None:
+        if self._on_centered_bd is not None:
             print "ERROR - can't start tracking while centering"
             import pdb; pdb.set_trace()
         self._start(target, on_lost_callback)
-        self._centering_done = None
+        self._on_centered_bd = None
         self._trackingStep()
     
     def _trackingStep(self):
@@ -217,8 +224,8 @@ class Tracker(object):
                 head_motion_in_progress and 'head moving' or 'head ready',
                 target.centerX, target.centerY, xNormalized, yNormalized)
         if target.seen and not centered and not head_motion_in_progress:
-            CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
-            CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
+            CAM_X_TO_RAD_FACTOR = FOV_X / 4 # do half the error in a single step.
+            CAM_Y_TO_RAD_FACTOR = FOV_Y / 4 # TODO - do more then half, or at least set the speed.
             deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR
             deltaHeadPitch =  yNormalized * CAM_Y_TO_RAD_FACTOR
             #self._actions.changeHeadAnglesRelative(
@@ -247,25 +254,13 @@ class Tracker(object):
 
 ############################################################################
 
-class SearchResults(object):
-    
-    def __init__(self):
-        # 3d based estimates
-        self.elevation, self.dist, self.bearing = None, None, None
-        # image based
-        self.centerX, self.centerY = None, None
-        self.normalized2_centerX, self.normalized2_centerY = None, None
-        # 
-        self.sighted = False
-
-    def __str__(self):
-        return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
-
-############################################################################
-
 class Searcher(object):
     
-    """ search for a bunch of targets by moving the head (conflicts with Tracker) """
+    """ Search for a bunch of targets by moving the head (conflicts with Tracker).
+    optionally center on each object as a kludge to fix localization right now.
+
+    The results are stored in the target.center of each target.
+    """
     
     verbose = burst.options.verbose_tracker
 
@@ -280,7 +275,6 @@ class Searcher(object):
         self._center_on_targets = True
         self._stop = True
         self._events = []
-        self.results = {}
     
     def stopped(self):
         return self._stop
@@ -295,6 +289,8 @@ class Searcher(object):
         self._stop = True
     
     def search(self, targets, center_on_targets = True):
+        if self.verbose:
+            print "Searcher: Started search for %s" % (', '.join(t._name for t in targets))
         self._targets = targets
         self._center_on_targets = center_on_targets
         del self._seen_order[:]
@@ -302,9 +298,8 @@ class Searcher(object):
         self._stop = False
         # TODO - complete this mapping, add opponent goal, my goal
         
-        self.results.clear()
         for target in targets:
-            self.results[target] = SearchResults()
+            target.centered_self.clear()
         
         # register to in frame event for each target object
         del self._events[:]
@@ -325,9 +320,7 @@ class Searcher(object):
     def onOneCentered(self):
         target = self._center_target
         if self.verbose:
-            print "Searcher: Center: %s results updated" % target._name
-        last_time = self.results[target].sighted_time
-        self._updateResults(target)
+            print "Searcher: Center: %s centering done (updated by standard calc_events)" % target._name
         self.centerOnNext()
 
     def centerOnNext(self):
@@ -336,25 +329,35 @@ class Searcher(object):
         # to reality
         try:
             self._center_target = target = self._center_targets.next()
-        except:
+        except StopIteration:
             #import pdb; pdb.set_trace()
+            if self.verbose:
+                print "CenterOnNext: DONE"
             self._onFinishedScanning()
             return
 
-        results = self.results[target]
+        c_target = target.centered_self
         if self.verbose:
             print "Searcher: moving towards and centering on %s - (%1.2f, %1.2f)" % (
-                target._name, results.head_yaw, results.head_pitch)
-        bd = self._actions.moveHead(results.head_yaw, results.head_pitch)
-        # we update the stored results after the centering is done
-        return bd.onDone(lambda: self._actions.tracker.center(target)).onDone(
-            self.onOneCentered)
+                target._name, c_target.head_yaw, c_target.head_pitch)
+        # Actually that head_yaw / head_pitch is suboptimal. We have also centerX and
+        # centerY, it is trivial to add them to get a better estimate for the center,
+        # still calling center afterwards.
+        a1 = c_target.head_yaw, c_target.head_pitch
+        a2 = (a1[0] - PIX_TO_RAD_X * (c_target.centerX - IMAGE_CENTER_X),
+              a1[1] + PIX_TO_RAD_Y * (c_target.centerY - IMAGE_CENTER_Y))
+        #nodding = a1, a2, a1, a2
+        #bd = self._actions.chainHeads(nodding)
+        bd = self._actions.moveHead(*a2)
+        # target.centered_self is updated every step, we just need to do the centering head move.
+        return bd.onDone(lambda _, target=target: self._actions.tracker.center(target)
+                ).onDone(self.onOneCentered)
 
     def onScanDone(self):
         if self._stop: return
         
         # see which targets have been sighted
-        if all([result.sighted for result in self.results.values()]):
+        if all([target.centered_self.sighted for target in self._targets]):
             # best case - all done
             self._unregisterEvents()
             if self._center_on_targets:
@@ -386,56 +389,12 @@ class Searcher(object):
                 print "Searcher: onSeen but target not seen?"
             return
         # TODO OPTIMIZATION - when last target is seen, cut the search
-        self._updateResults(target) # These are not the centered results.
+        #  - stop current move
+        #  - call onScanDone to start centering.
         if target not in self._seen_set:
             if self.verbose:
-                print "Searcher: First Sighting: %s, %s" % (target._name, self.results[target])
+                print "Searcher: First Sighting: %s, %s" % (target._name, target.centered_self)
             self._seen_order.append(target)
             self._seen_set.add(target)
 
-    def _updateResults(self, target):
-        """ Update results for a single target. Only stores the
-        results for the most centered sighting - this includes
-        everything, vision (centerX/centerY), joint angles (headYaw, headPitch),
-        and the world location estimates (distance, bearing, elevation)
-        """
-        # TODO - if we saw everything then stop scan
-        # TODO - if we saw something then track it, only then continue scan
-        result = self.results[target]
-
-        if result.sighted: # always do first update
-            # We keep the most centered head_yaw and head_pitch using smallest norm2.
-            abs_cur_x, abs_cur_y = abs(result.normalized2_centerX), abs(result.normalized2_centerY)
-            abs_new_x, abs_new_y = abs(target.normalized2_centerX), abs(target.normalized2_centerY)
-            new_dist = abs_new_x**2 + abs_new_y**2
-            old_dist = abs_cur_x**2 + abs_cur_y**2
-            if new_dist >= old_dist:
-                return # no update
-
-        if self.verbose:
-            print "Searcher: updating %s, (%1.2f, %1.2f) -> (%1.2f, %1.2f)" % (
-                target._name,
-                result.normalized2_centerX or -100.0, result.normalized2_centerY or -100.0,
-                target.normalized2_centerX, target.normalized2_centerY)
-
-        if hasattr(target, 'distSmoothed'):
-            result.distSmoothed = self._world.ball.distSmoothed
-        # relative location from naoman
-        result.dist = target.dist # TODO - dist->distance
-        result.bearing = target.bearing
-        result.elevation = target.elevation
-        result.head_yaw = self._world.getAngle('HeadYaw')
-        result.head_pitch = self._world.getAngle('HeadPitch')
-        # vision vars from naoman
-        result.height = target.height
-        result.width = target.width
-        result.centerX = target.centerX
-        result.centerY = target.centerY
-        result.normalized2_centerX = target.normalized2_centerX
-        result.normalized2_centerY = target.normalized2_centerY
-        result.x = target.x # upper left corner - not valid for Ball
-        result.y = target.y #
-        # flag the sighted flag
-        result.sighted = True
-        result.sighted_time = self._world.time
-        
+       

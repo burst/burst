@@ -123,7 +123,6 @@ class MoveCoordinator(object):
         self._motion_posts = {}
         self._head_posts   = SerialPostQueue('head', self._world)
         self._walk_posts   = SerialPostQueue('walk', self._world)
-        # history
         self._initiated = []
         self._posted = []
         # helpers
@@ -219,7 +218,10 @@ class MoveCoordinator(object):
 
     def _add_initiated(self, time, kind, description, event, duration):
         initiated = len(self._initiated)
-        self._initiated.append((self._world.time, kind, description, event, duration))
+        motion = (self._world.time, kind, description, event, duration)
+        self._initiated.append(motion)
+        if kind is 'walk':
+            self._world.odometry.onWalkInitiated(*motion)
         return initiated
 
     def isMotionInProgress(self):

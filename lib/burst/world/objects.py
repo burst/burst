@@ -1,14 +1,18 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
+from textwrap import wrap
 
+from burst_util import nicefloat
 from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
-    DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR)
+    DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR,
+    CONSOLE_LINE_LENGTH)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
 from burst_util import running_median, RingBuffer
 from burst.image import normalized2_image_width, normalized2_image_height
+import burst
 
 class Namable(object):
     def __init__(self, name='unnamed'):
@@ -22,6 +26,78 @@ class Namable(object):
 
     __repr__ = __str__
 
+class CenteredLocatable(object):
+    """ store data for a Locatable for a current search.
+    Stored inside the Locatable itself for usage by Localization.
+    Updated by Searcher using Tracker (in actions.headtracker).
+    """
+    
+    def __init__(self, target):
+        """ target - Locatable to keep track of.
+        """
+        self._target = target
+        self._world = target._world
+        self.clear()
+
+    def clear(self):
+        # 3d based estimates
+        self.elevation, self.dist, self.bearing = None, None, None
+        # image based
+        self.centerX, self.centerY = None, None
+        self.normalized2_centerX, self.normalized2_centerY = None, None
+        # 
+        self.sighted = False
+
+    def __str__(self):
+        return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
+
+    def _update(self):
+        """ Update for self._target. Only stores the
+        results for the most centered sighting - this includes
+        everything, vision (centerX/centerY), joint angles (headYaw, headPitch),
+        and the world location estimates (distance, bearing, elevation)
+        """
+        # TODO - if we saw everything then stop scan
+        # TODO - if we saw something then track it, only then continue scan
+        target = self._target
+        if not target.seen: return
+
+        if self.sighted: # always do first update
+            # We keep the most centered head_yaw and head_pitch using smallest norm2.
+            abs_cur_x, abs_cur_y = abs(self.normalized2_centerX), abs(self.normalized2_centerY)
+            abs_new_x, abs_new_y = abs(target.normalized2_centerX), abs(target.normalized2_centerY)
+            new_dist = abs_new_x**2 + abs_new_y**2
+            old_dist = abs_cur_x**2 + abs_cur_y**2
+            if new_dist >= old_dist:
+                return # no update
+
+        if burst.options.verbose_localization:
+            print "Locatable (Searcher): updating %s, (%1.2f, %1.2f) -> (%1.2f, %1.2f)" % (
+                target._name,
+                self.normalized2_centerX or -100.0, self.normalized2_centerY or -100.0,
+                target.normalized2_centerX, target.normalized2_centerY)
+
+        if hasattr(target, 'distSmoothed'):
+            self.distSmoothed = target.distSmoothed
+        # relative location from naoman
+        self.dist = target.dist # TODO - dist->distance
+        self.bearing = target.bearing
+        self.elevation = target.elevation
+        self.head_yaw = self._world.getAngle('HeadYaw')
+        self.head_pitch = self._world.getAngle('HeadPitch')
+        # vision vars from naoman
+        self.height = target.height
+        self.width = target.width
+        self.centerX = target.centerX
+        self.centerY = target.centerY
+        self.normalized2_centerX = target.normalized2_centerX
+        self.normalized2_centerY = target.normalized2_centerY
+        self.x = target.x # upper left corner - not valid for Ball
+        self.y = target.y #
+        # flag the sighted flag
+        self.sighted = True
+        self.sighted_time = self._world.time
+ 
 class Locatable(Namable):
     """ stupid name. It is short for "something that can be seen, holds a position,
     has a limited velocity which can be estimated, and is also interesting to the
@@ -93,6 +169,10 @@ class Locatable(Namable):
         self.centerY = None
         self.x = None
         self.y = None
+
+        # centered - a copy of some of the values that keeps
+        # the current searcher values for this target.
+        self.centered_self = CenteredLocatable(self)
 
     def centering_error(self, normalized_error_x=DEFAULT_CENTERING_X_ERROR,
             normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
@@ -172,6 +252,8 @@ class Locatable(Namable):
          self.normalized2_centerX,
          self.normalized2_centerY,
             ) = self.centering_error()
+
+        self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
     
     def __str__(self):
         return "<%s at %s>" % (self._name, id(self))

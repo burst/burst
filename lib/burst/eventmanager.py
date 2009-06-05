@@ -191,7 +191,6 @@ class EventManager(object):
     def unregister_all(self):
         for k in self._events.keys():
             self._events[k] = set()
-        self._num_registered = 0
 
     def quit(self):
         self._should_quit = True
@@ -389,10 +388,10 @@ class BasicMainLoop(object):
             ball = self._world.ball.seen and 'B' or ' '
             yglp = self._world.yglp.seen and 'L' or ' '
             ygrp = self._world.ygrp.seen and 'R' or ' '
-            s_r = self._actions.searcher.results
+            targets = self._actions.searcher._targets
             def getjoints(obj):
-                if obj not in s_r: return '-----------'
-                r = s_r[obj]
+                if obj not in targets: return '-----------'
+                r = obj.centered_self
                 if not r.sighted: return '           '
                 return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
             yglp_joints = getjoints(self._world.yglp)
@@ -531,8 +530,6 @@ class TwistedMainLoop(BasicMainLoop):
                 ctrl_c_deferred = self.onCtrlCPressed()
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
-            if self._main_task.running: # TODO - should I be worries if this is false?
-                self._main_task.stop()
         if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
@@ -548,6 +545,10 @@ class TwistedMainLoop(BasicMainLoop):
 
     def _completeShutdown(self, result=None):
         print "CompleteShutdown called:"
+        # stop the update task here
+        if self._main_task.running: # TODO - should I be worries if this is false?
+            self._main_task.stop()
+        # only if we are in charge of the reactor stop that too
         if not self._control_reactor: return
         from twisted.internet import reactor
         reactor.stop()

@@ -220,6 +220,8 @@ class Actions(object):
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
         def removeStiffness(_):
+            if burst.options.debug:
+                print "sitPoseAndRelax: removing body stiffness"
             d = self._motion.setBodyStiffness(0)
             self._removeStiffnessDeferred = d   # XXX DEBUG Helper
             return d
@@ -236,6 +238,8 @@ class Actions(object):
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
+        # XXX we assume the order of these configs doesn't matter, hence the
+        # DeferredList - does it?
         ds = []
         ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude ))
@@ -248,6 +252,15 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY ))
 
         return DeferredList(ds)
+
+    def chainHeads(self, moves):
+        """ chain a number of headMoves, return a burstdeferred on the last
+        move. Useful for debugging, or just for sign language. see nodtester.py """
+        assert(len(moves) > 0)
+        bd = self.moveHead(*moves[0])
+        for move in moves[1:]:
+            bd = bd.onDone(lambda _, move=move: self.moveHead(*move))
+        return bd
 
     #===============================================================================
     #    Low Level
