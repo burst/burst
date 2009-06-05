@@ -17,14 +17,14 @@ class Odometry(object):
         # duration is just an estimate, don't count on it (just print it maybe)
         self._walks_initiated.append((time, description, duration))
 
-    def movedBetweenTimes(self, t1, t2):
-        """ Return True if a movement occured between t1 and t2 (and t2>=t1)
-        Uses self._world.movecoordinator which contains some queues and stuff
+    def movedBetweenTimes(self, time_start, time_end):
+        """ Return True if a movement occured between time_start and time_end,
+        and time_start <= time_end.
         """
         # TODO - NOT O(N) PLEASE (using caching maybe)
-        if t1 > t2: return False
+        if time_start > time_end: return False
         for x in self._walks_initiated:
             t = x[0]
-            if t2 >= t >= t1: return True
+            if time_end >= t >= time_start: return True
         return False
 

@@ -314,6 +314,9 @@ def cached(filename):
 def close_to_zero(v, amount=1e-10):
     return abs(v) < amount
 
+def same(v1, v2, amount=1e-10):
+    return all(close_to_zero(x-y) for x, y in zip(v1, v2))
+
 def clip(minim, maxim, val):
     return min(maxim, max(minim, val))
 

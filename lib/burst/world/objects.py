@@ -47,6 +47,8 @@ class CenteredLocatable(object):
         self.normalized2_centerX, self.normalized2_centerY = None, None
         # 
         self.sighted = False
+        self.sighted_centered = False # is True if last sighting was centered
+        self.update_time = 0.0
 
     def __str__(self):
         return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
@@ -96,7 +98,8 @@ class CenteredLocatable(object):
         self.y = target.y #
         # flag the sighted flag
         self.sighted = True
-        self.sighted_time = self._world.time
+        self.sighted_centered = target.centered
+        self.update_time = self._world.time
  
 class Locatable(Namable):
     """ stupid name. It is short for "something that can be seen, holds a position,
@@ -132,6 +135,7 @@ class Locatable(Namable):
         # (screw Ender)
         self.world_x = world_x
         self.world_y = world_y
+        self.world_heading = 0.0 # default to pointing towards target goal
 
         self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last 
 
@@ -167,12 +171,19 @@ class Locatable(Namable):
         # Vision variables defaults
         self.centerX = None
         self.centerY = None
+        self.normalized2_centerX = None
+        self.normalized2_centerY = None
         self.x = None
         self.y = None
 
         # centered - a copy of some of the values that keeps
         # the current searcher values for this target.
         self.centered_self = CenteredLocatable(self)
+
+    def get_xy(self):
+        return self.world_x, self.world_y
+
+    xy = property(get_xy)
 
     def centering_error(self, normalized_error_x=DEFAULT_CENTERING_X_ERROR,
             normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
@@ -248,10 +259,20 @@ class Locatable(Namable):
         self.update_time = update_time
         self.body_x, self.body_y = body_x, body_y
         self.vx, self.vy = dx/dt, dy/dt
+
+    def update_centered(self):
+        """ call this after all vision variables have been updated. It computes
+        the centering error (distance from center along both axis normalized to
+        [-1, 1]) and stores in self.centered_self the most centered sighting with
+        all parameters including body angles. """
         (self.centered,
          self.normalized2_centerX,
          self.normalized2_centerY,
             ) = self.centering_error()
+
+        if burst.options.debug:
+            print "%s: update_centered: %s %1.2f %1.2f" % (self._name,
+                self.centered, self.normalized2_centerX, self.normalized2_centerY)
 
         self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
     
@@ -417,6 +438,8 @@ class Ball(Movable):
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
         self.recently_seen = self.calc_recently_seen(new_seen)
+        if self.seen:
+            self.update_centered()
         
 # TODO - CrossBar
 # extra vars compared to GoalPost:
@@ -480,4 +503,6 @@ class GoalPost(Locatable):
                   new_x, new_y)
         self.seen = new_seen
         self.recently_seen = self.calc_recently_seen(new_seen)
+        if self.seen:
+            self.update_centered()
 

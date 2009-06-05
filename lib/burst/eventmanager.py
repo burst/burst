@@ -160,6 +160,10 @@ class EventManager(object):
         abstime = self._world.time + max(EVENT_MANAGER_DT, dt)
         heappush(self._call_later, (abstime, callback, args, kw))
 
+    def cancelCallLater(self, callback):
+        if callback in self._call_later:
+            self._call_later.remove(callback)
+
     def register(self, callback, event):
         """ set a callback on an event.
         """
@@ -364,16 +368,48 @@ class BasicMainLoop(object):
             normal_quit = False
         return ctrl_c_pressed, normal_quit
 
+    def _printTraceTickerHeader(self):
+        print "="*burst_consts.CONSOLE_LINE_LENGTH
+        print "Time Objs-CL|IN|PO|YRt        |YLt        |Ball       |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+        print "="*burst_consts.CONSOLE_LINE_LENGTH
+
+    def _printTraceTicker(self):
+        ball = self._world.ball.seen and 'B' or ' '
+        yglp = self._world.yglp.seen and 'L' or ' '
+        ygrp = self._world.ygrp.seen and 'R' or ' '
+        targets = self._actions.searcher._targets
+        def getjoints(obj):
+            if obj not in targets: return '-----------'
+            r = obj.centered_self
+            if not r.sighted: return '           '
+            return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
+        yglp_joints = getjoints(self._world.yglp)
+        ygrp_joints = getjoints(self._world.ygrp)
+        ball_joints = getjoints(self._world.ball)
+        num_out = self._getNumberOutgoingMessages()
+        num_in = self._getNumberIncomingMessages()
+        # LINE_UP is to line up with the LogCalls object.
+        LINE_UP = 62
+        print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
+            ball, yglp, ygrp,
+            len(self._eventmanager._call_later),
+            len(self._world._movecoordinator._initiated),
+            len(self._world._movecoordinator._posted),
+            ygrp_joints, yglp_joints, ball_joints,
+            num_out, num_out - num_in,
+            )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+
     def preMainLoopInit(self):
         """ call once before the main loop """
-        self._player.onStart()
         self.main_start_time = time()
         self.cur_time = self.main_start_time
         self.next_loop = self.cur_time
         if burst.options.trace_proxies:
-            print "="*burst_consts.CONSOLE_LINE_LENGTH
-            print "Time Objs-CL|IN|PO|YRt        |YLt        |Ball       |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
-            print "="*burst_consts.CONSOLE_LINE_LENGTH
+            self._printTraceTickerHeader()
+        # First do a single world update - get values for all variables, etc.
+        self.doSingleStep()
+        # Second, queue player.
+        self._player.onStart()
 
     def doSingleStep(self):
         """ call once for every loop iteration
@@ -385,30 +421,8 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         if burst.options.trace_proxies:
-            ball = self._world.ball.seen and 'B' or ' '
-            yglp = self._world.yglp.seen and 'L' or ' '
-            ygrp = self._world.ygrp.seen and 'R' or ' '
-            targets = self._actions.searcher._targets
-            def getjoints(obj):
-                if obj not in targets: return '-----------'
-                r = obj.centered_self
-                if not r.sighted: return '           '
-                return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
-            yglp_joints = getjoints(self._world.yglp)
-            ygrp_joints = getjoints(self._world.ygrp)
-            ball_joints = getjoints(self._world.ball)
-            num_out = self._getNumberOutgoingMessages()
-            num_in = self._getNumberIncomingMessages()
-            # LINE_UP is to line up with the LogCalls object.
-            LINE_UP = 62
-            print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
-                ball, yglp, ygrp,
-                len(self._eventmanager._call_later),
-                len(self._world._movecoordinator._initiated),
-                len(self._world._movecoordinator._posted),
-                ygrp_joints, yglp_joints, ball_joints,
-                num_out, num_out - num_in,
-                )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+            self._printTraceTicker()
+
         self._eventmanager.handlePendingEventsAndDeferreds()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT

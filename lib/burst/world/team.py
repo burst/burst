@@ -14,6 +14,7 @@ class Posts(object):
         else:
             self.top, self.bottom = self.right, self.left
         self.left_right = (self.left, self.right)
+        self.bottom_top = self.bottom, self.top
 
 class Team(object):
     def __init__(self, world):
