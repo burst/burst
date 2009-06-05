@@ -6,6 +6,34 @@ from burst import events as events_module
 
 
 
+class Sonars(object):
+
+    _var = "extractors/alultrasound/distances"
+
+    class Sonar(object):
+        def __init__(self, side, world, index):
+            self.side = side
+            self.world = world
+            self.index = index
+        def readDistance(self):
+            return self.world.vars[Sonars._var][self.index]
+
+    class LeftSonar(Sonar):
+        def __init__(self, world):
+            super(Sonars.LeftSonar, self).__init__('Left', world, 0)
+
+    class RightSonar(Sonar):
+        def __init__(self, world):
+            super(Sonars.RightSonar, self).__init__('Right', world, 1)
+
+    def __init__(self, world):
+        world._ultrasound.subscribe('', [500]) # TODO: See if we can lower this without any adverse effects.
+        world.addMemoryVars([Sonars._var])
+        self.leftSonar = Sonars.LeftSonar(world)
+        self.rightSonar = Sonars.RightSonar(world)
+
+
+
 class LEDs(object):
 
     class BaseLED(object):
@@ -120,6 +148,7 @@ class Robot(Movable):
         self.chestButton = ChestButton(self._world)
         self.leds = LEDs(world)
         self.leds.turnEverythingOff()
+        self.sonars = Sonars(world)
     
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)
