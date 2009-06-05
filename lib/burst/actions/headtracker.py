@@ -49,19 +49,7 @@ class Tracker(object):
     def _start(self, target, on_lost_callback):
         self._target = target
         self._stop = False
-        if hasattr(target, 'lost_event'):
-            self._lost_event = target.lost_event
-            if on_lost_callback:
-                self._on_lost = BurstDeferred(self)
-                self._on_lost.onDone(on_lost_callback)
-            self._eventmanager.register(self.onLost, self._lost_event)
-
-    def onLost(self):
-        if self.verbose:
-            print "Tracker: stopping onLost"
-        self.stop()
-        if self._on_lost:
-            self._on_lost.callOnDone()
+        self._on_lost_callback = on_lost_callback
     
     def stop(self):
         """ stop tracker and centerred. unregister any events, after
@@ -75,8 +63,6 @@ class Tracker(object):
                 self._on_centered_bd and 'centering' or 'tracking')
         self._stop = True
         self._on_centered_bd = None
-        if self._lost_event: # can be None
-            self._eventmanager.unregister(self.onLost, self._lost_event)
 
     ############################################################################
 
@@ -116,7 +102,10 @@ class Tracker(object):
     def _centeringStep(self):
         if self._stop: return
         if not self._target.recently_seen: # TODO - manually looking for lost event. should be event based, no?
-            self.onLost()
+            if self.verbose:
+                print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+            self._onLost()
+            return
         if hasattr(self, '_call_me_later'):
             del self._call_me_later
             print "CenteringStep: called later"
@@ -134,7 +123,7 @@ class Tracker(object):
                 print "CenteringStep: DONE"
             bd = self._on_centered_bd
             self.stop() # this sets self.on_centered_bd=None
-            if not bd._ondone or not bd._ondone[0]:
+            if bd == None or not bd._ondone or not bd._ondone[0]:
                 import pdb; pdb.set_trace()
             if self.debug and bd._ondone and bd._ondone[0]:
                 print "CenteringStep: %s" % bd._ondone[0].im_self.__dict__
@@ -154,7 +143,7 @@ class Tracker(object):
         """ Continuous tracking: keep the target in sight.
         """
         # don't track objects that are not seen
-        if not target.seen:
+        if not target.recently_seen:
             # TODO we immediately call the on_lost_callback - might
             # not be wise - could lead to loops
             if on_lost_callback:
@@ -167,14 +156,25 @@ class Tracker(object):
         self._on_centered_bd = None
         self._trackingStep()
     
+    def _onLost(self):
+        self.stop()
+        if self._on_lost_callback:
+            self._on_lost_callback()
+    
     def _trackingStep(self):
         # TODO - we check self._target.seen explicitly, not relying on the
         # self.stop() call in self.onLost (tied to the event_lost), because
         # this avoids the case where this callback is called before the event
         # lost one - how to solve this in a nicer manner?
-        if self._stop: return
+        if self._stop: return # Stopped
         if self.verbose:
             print "TrackingStep:",
+        # check if target is lost, call callback
+        if not self._target.recently_seen:
+            if self.verbose:
+                print "TrackingStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+            self._onLost()
+            return # Lost target
         centered, maybe_bd = self.executeTracking(self._target)
         if self.verbose:
             print "centered = %s, maybe_bd %s" % (centered,
@@ -186,7 +186,7 @@ class Tracker(object):
         else:
             if not centered:
                 # target isn't visible (can be anything - most likely vision has missed it,
-                # but could also be ocluded, or just moved away quickly, i.e. ball kicked or
+                # but could also be occluded, or just moved away quickly, i.e. ball kicked or
                 # was in motion to begin with).
                 # we don't stop when target is lost - just callLater.
                 # TODO - if lost for more then MARGIN tell user?
