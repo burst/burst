@@ -1,12 +1,10 @@
 #!/usr/bin/python
 
-
 import player_init
 from burst.player import Player
 import burst.events as events
 
-
-class Kicker(Player):
+class SearchTimeoutTester(Player):
     
     def onStart(self):
         print "Hey!"
@@ -22,6 +20,6 @@ class Kicker(Player):
         self._eventmanager.callLater(20, self._eventmanager.quit)
 
 if __name__ == '__main__':
-    import burst
     from burst.eventmanager import MainLoop
-    MainLoop(Kicker).run()
+    MainLoop(SearchTimeoutTester).run()
+
