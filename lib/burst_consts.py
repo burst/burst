@@ -314,7 +314,7 @@ CONSOLE_LINE_LENGTH = 73
 UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
 
 # Colors for the LEDs
-RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00
+RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
 TeamColors = {0: BLUE, 1: RED}
 
 SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
