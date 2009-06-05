@@ -162,7 +162,7 @@ class BurstDeferred(object):
         A Deferred is a promise to call you when some operation is complete.
     It is also concatenatable. What that means for implementation, is that
     when the operation is done we need to call a deferred we stored and gave
-    the user when he gave us a callback. That deferred 
+    the user when he gave us a callback. That deferred #TODO: Finish that sentence, Alon.
 
     Twisted users:
 
