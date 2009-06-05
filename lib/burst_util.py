@@ -7,6 +7,7 @@ from time import time
 from math import cos, sin, sqrt, atan2
 import linecache
 import glob
+import socket
 
 import burst_consts
 
@@ -309,22 +310,18 @@ def cached(filename):
         return wrapper
     return wrap
 
-class Once(object):
+class once(object):
+
+    """ cache once into memory """
+
     def __init__(self, f):
         self._f = f
         self._cached = None
+
     def __call__(self, *args, **kw):
         if not self._cached:
             self._cached = self._f(*args, **kw)
         return self._cached
-
-def once(f):
-    cached = None
-    def wrap(*args, **kw):
-        if not cached:
-            cached = f(*args, **kw)
-        return cached
-    return wrap
 
 # Some Math
 

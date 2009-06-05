@@ -38,13 +38,13 @@ class Localization(object):
         # First, check for each of the goal posts, if it is visibile dead center, then
         # update it's location.
         # Second, if an update occured, and the other post is also updated without any
-        # movement in between, we update our location.
-        # this, coupled with the localizer which initiates a search for both posts,
+        # movement in between, update our location.
+        # This, coupled with the localizer which initiates a search for both posts,
         # will ensure an update of the location.
         # Additionally, oppurtunistic updates will be possible (though not expected
         # until we add more landmarks like intersections etc.)
         # On the gripping hand, this is the perfect place to do Particle Filter / Kalman
-        # Filter updates from landmakrs, once such code exists.
+        # Filter updates from landmarks, once such code exists.
         
         # We defer updating pose until we actually need it.
         new_dist = False
@@ -84,14 +84,12 @@ class Localization(object):
             self.updateRobotPosition()
         
         #seeing blue goal - yellow is unseen
-        if self._world.bglp.seen and self.bgrp.seen:
+        if self._world.bglp.seen and self._world.bgrp.seen:
             self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
         
         #seeing yellow goal - blue is unseen
-        if self._world.yglp.seen and self.ygrp.seen:
+        if self._world.yglp.seen and self._world.ygrp.seen:
             self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
-
-    
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()
@@ -120,15 +118,7 @@ class Localization(object):
         if abs(r1 - r2) > 2*d:
             if self.verbose:
                 print "Localization: Warning: inputs are bad, need to recalculate"
-                 #seeing blue goal - yellow is unseen
-        if self._world.bglp.seen and self.bgrp.seen:
-            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
-        
-        #seeing yellow goal - blue is unseen
-        if self._world.yglp.seen and self.ygrp.seen:
-            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
-
-       # This is fun: which value do I throw away? I could start
+            # This is fun: which value do I throw away? I could start
             # collecting a bunch first, and only if it is well localized (looks
             # like a nice normal distribution) I use it..
         else:
@@ -139,24 +129,20 @@ class Localization(object):
             r = self._world.robot
             r.world_x, r.world_y, r.world_heading = x, y, theta
 
-
     def calc_goal_coord(self, sglp, sgrp, uglp, ugrp):
         """
         Update position of unseen goal.
-        """        
+        """
         if HALF_GOAL_SIZE>=sglp.dist or HALF_GOAL_SIZE>=sgrp.dist:
             return
 
-
         #debug 
         #(x1,y1, theta1) = xyt_from_two_dist_one_angle(200, 250, 0,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
-        
+
         (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,d , (0, d) ,(0, -d) )       
 
         uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
         ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5
         uglp.bearing = asin(abs(-HALF_GOAL_SIZE + y1) / uglp.dist)
         ugrp.bearing = asin(abs(HALF_GOAL_SIZE + y1) / ugrp.dist)
-        
 
-        

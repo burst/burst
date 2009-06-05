@@ -378,7 +378,9 @@ class Searcher(object):
         if self._stop: return
         
         # see which targets have been sighted
-        if all([target.centered_self.sighted for target in self._targets]):
+        seen = set(target for target in self._targets if target.centered_self.sighted)
+        unseen = set(target for target in self._targets if not target.centered_self.sighted)
+        if len(seen) == len(self._targets):
             # best case - all done
             self._unregisterEvents()
             if self._center_on_targets:
@@ -391,11 +393,34 @@ class Searcher(object):
             else:
                 self._onFinishedScanning()
         else:
-            # TODO - middleground
-            if self.verbose:
-                print "Searcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
-            self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
-            self._actions.lookaround(self._searchlevel).onDone(self._onScanDone)
+            bd = self._runSpecializedStrategy(seen, unseen)
+            if bd:
+                if self.verbose:
+                    print "Searcher: using specialized strategy for (seen %r, unseen %r)" % (
+                        [t._name for t in seen], [t._name for t in unseen])
+            else:
+                if self.verbose:
+                    print "Searcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
+                self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
+                bd = self._actions.lookaround(self._searchlevel)
+            bd.onDone(self._onScanDone)
+
+    def _runSpecializedStrategy(self, seen, unseen):
+        """ place to register any interesting strategy concerning the
+        matrix of 2^{#targets} x 2^{#targets}. Used right now for
+        any case where we missed one post but saw it's twin
+
+        return None if we don't have a special strategy.
+        """
+        world = self._world
+        (tgt_bot, tgt_top), (our_bot, our_top) = world.team.target_posts.bottom_top, world.team.our_posts.bottom_top
+        R, L = consts.joint_limits['HeadYaw'][:2]
+        pitch = self._world.getAngle('HeadPitch')
+        for yaw, s, u in [( R, tgt_bot, tgt_top), ( L, tgt_top, tgt_bot),
+                          ( L, our_bot, our_top), ( R, our_top, our_bot)]:
+            if s in seen and u in unseen:
+                return self._actions.moveHead(yaw, pitch)
+        return None
 
     def _onFinishedScanning(self):
         if self.verbose:

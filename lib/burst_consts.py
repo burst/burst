@@ -234,6 +234,8 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
+ULTRASOUND_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+
 # Joint data
 joint_names, joint_limits = (['HeadYaw',
   'HeadPitch',

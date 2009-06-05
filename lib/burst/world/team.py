@@ -35,6 +35,8 @@ class Team(object):
         self.target_goal = YELLOW_GOAL
 
         self.our_goal = self.info[self.target_goal]['other_goal']
+        # TODO - target_posts->target_goal, have a Goal object, use Posts to start from.
+        self.our_posts = Posts(*self.info[self.our_goal]['posts'])
         self.target_posts = Posts(*self.info[self.target_goal]['posts'])
         # this is the event we check in order to calculate stuff
         self.target_goal_seen_event = EVENT_ALL_YELLOW_GOAL_SEEN

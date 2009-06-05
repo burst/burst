@@ -156,10 +156,10 @@ class World(object):
         # goal. Actually, it is so only half the time. Our system says that OUR
         # goal is at 0.0, so we should look at TEAM, see who we are, and only
         # then UPDATE THE GOALS COORDINATES.
-        bglp_x, bglp_y = field.blue_goal.top_post.xy
+        bglp_x, bglp_y = field.blue_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
         bgrp_x, bgrp_y = field.blue_goal.bottom_post.xy
-        yglp_x, yglp_y = field.yellow_goal.top_post.xy
-        ygrp_x, ygrp_y = field.yellow_goal.bottom_post.xy
+        yglp_x, yglp_y = field.yellow_goal.bottom_post.xy
+        ygrp_x, ygrp_y = field.yellow_goal.top_post.xy
         self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED, bglp_x, bglp_y)
         self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED, bgrp_x, bgrp_y)
         self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED, yglp_x, yglp_y)
@@ -228,6 +228,8 @@ class World(object):
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
+                if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
+                    self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
                 self._shm = SharedMemoryReader(self._vars_to_get_list)
                 self._shm.open()
                 self.vars = self._shm.vars

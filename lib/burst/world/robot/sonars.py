@@ -3,7 +3,9 @@
 
 from burst_consts import SONAR_OBSTACLE_THRESHOLD, SONAR_OBSTACLE_HYSTERESIS
 from burst import events as events_module
+import burst
 
+FAR_FAR_AWAY = 1000.0
 
 # TODO: When several robots are next to each other, do their sonars collide?
 class Sonars(object):
@@ -17,8 +19,15 @@ class Sonars(object):
             self.index = index
         def readDistance(self):
             data = self.world.vars[Sonars._var]
-            if len(data) == 0: # The sonar takes a while to warm up.
-                return 1000.0 # This is a safe value that should cause no trouble to anyone.
+            try:
+                l = len(data)
+            except:
+                # the data arrived bad.
+                if burst.options.debug:
+                    print "WARNING: Sonar Variables are not being read correctly - got %r" % (data,)
+                return FAR_FAR_AWAY
+            if l <= self.index: # The sonar takes a while to warm up.
+                return FAR_FAR_AWAY # This is a safe value that should cause no trouble to anyone.
             return data[self.index]
 
     class LeftSonar(Sonar):
