@@ -7,11 +7,8 @@ from burst.player import Player
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
-from math import cos, sin
-import time
 from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
-import os
 from burst import events
 import sys
 
