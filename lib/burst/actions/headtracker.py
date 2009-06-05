@@ -268,13 +268,19 @@ class Searcher(object):
         self._actions = actions
         self._world = actions._world
         self._eventmanager = actions._eventmanager
-        self._searchlevel = None
+        self._center_on_targets = True # TODO: How does one center on more than one target? Why is this in the ctor, anyhow?
+        self._stop = True # Here to prevent confusion with reset - you should only stop through stop(), since it also does unregistration.
+        self.reset()
+
+    def reset(self):
+        # TODO: Alon, I get that these aren't at all necessary, but I think this is neater. Don't feel bad about reseting these changes. Carefully.
+        # I mean, when one debugs, he can see that these are empty, and immediately understand that no bug could come from here.
         self._targets = []
         self._seen_order = [] # Keeps the actual order targets were seen.
         self._seen_set = set()
-        self._center_on_targets = True
-        self._stop = True
         self._events = []
+        self._searchlevel = None
+        self.timeoutCallback = None
     
     def stopped(self):
         return self._stop
@@ -283,12 +289,34 @@ class Searcher(object):
         # should be idempotent
         for event, callback in self._events:
             self._eventmanager.unregister(callback, event)
+        if not self.timeoutCallback is None:
+            self._eventmanager.unregister(self.timeoutCallback)
 
     def stop(self):
         self._unregisterEvents()
         self._stop = True
-    
-    def search(self, targets, center_on_targets = True):
+        self.timeoutCallback = None
+
+    def timeout(self):
+        if not self.stopped():
+            if not self.timeoutCallback is None:
+                self.timeoutCallback()
+            self.stop()
+            self.reset()
+
+    def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+        '''
+        Search fo the objects in /targets/.
+        If /center_on_targets/ is True, center on those objects.
+        If a /timeout/ is provided, quit the search after that many milliseconds.
+        If a /timeoutCallback/ is provided, call that when and if a timeout occurs.
+        '''
+        # TODO: Doesn't appear to really be in milliseconds.
+
+        if not timeout is None:
+            self._eventmanager.callLater(timeout, self.timeout)
+            self.timeoutCallback = timeoutCallback
+
         if self.verbose:
             print "Searcher: Started search for %s" % (', '.join(t._name for t in targets))
         self._targets = targets
@@ -300,7 +328,7 @@ class Searcher(object):
         
         for target in targets:
             target.centered_self.clear()
-        
+
         # register to in frame event for each target object
         del self._events[:]
         for obj in targets:
