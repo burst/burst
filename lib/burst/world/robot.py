@@ -1,11 +1,11 @@
 import burst
 from .objects import Movable
-from burst_consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER, RED, GREEN, BLUE, OFF
+from burst_consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER, RED, GREEN, BLUE, OFF, SONAR_OBSTACLE_THRESHOLD, SONAR_OBSTACLE_HYSTERESIS
 from burst_util import BurstDeferred, DeferredList, succeed
 from burst import events as events_module
 
 
-
+# TODO: When several robots are next to each other, do their sonars collide?
 class Sonars(object):
 
     _var = "extractors/alultrasound/distances"
@@ -16,7 +16,10 @@ class Sonars(object):
             self.world = world
             self.index = index
         def readDistance(self):
-            return self.world.vars[Sonars._var][self.index]
+            data = self.world.vars[Sonars._var]
+            if len(data) == 0: # The sonar takes a while to warm up.
+                return 1000.0 # This is a safe value that should cause no trouble to anyone.
+            return data[self.index]
 
     class LeftSonar(Sonar):
         def __init__(self, world):
@@ -31,6 +34,34 @@ class Sonars(object):
         world.addMemoryVars([Sonars._var])
         self.leftSonar = Sonars.LeftSonar(world)
         self.rightSonar = Sonars.RightSonar(world)
+        self.wasLastReadingBelowThreshold = False
+
+    def setThreshold(self, threshold):
+        SONAR_OBSTACLE_THRESHOLD = threshold
+
+    def getThreshold(self):
+        return SONAR_OBSTACLE_THRESHOLD
+
+    def setHysteresis(self, hysteresis):
+        SONAR_OBSTACLE_HYSTERESIS = hysteresis
+
+    def getHysteresis(self):
+        return SONAR_OBSTACLE_HYSTERESIS
+
+    def readDistance(self):
+        return min(self.rightSonar.readDistance(), self.leftSonar.readDistance())
+
+    def calc_events(self, events, deferreds):
+        distance = self.readDistance()
+        if distance < SONAR_OBSTACLE_THRESHOLD:
+            events.add(events_module.EVENT_SONAR_OBSTACLE_IN_FRAME)
+            if not self.wasLastReadingBelowThreshold:
+                events.add(events_module.EVENT_SONAR_OBSTACLE_SEEN)
+                self.wasLastReadingBelowThreshold = True
+        elif distance > SONAR_OBSTACLE_THRESHOLD + SONAR_OBSTACLE_HYSTERESIS:
+            if self.wasLastReadingBelowThreshold:
+                events.add(events_module.EVENT_SONAR_OBSTACLE_LOST)
+                self.wasLastReadingBelowThreshold = False
 
 
 
@@ -153,6 +184,7 @@ class Robot(Movable):
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)
         self.chestButton.calc_events(events, deferreds)
+        self.sonars.calc_events(events, deferreds)
         
     def isHeadMotionInProgress(self):
         return self._world._movecoordinator.isHeadMotionInProgress()

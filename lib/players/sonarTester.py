@@ -3,29 +3,22 @@
 
 import player_init
 from burst.player import Player
-from burst.events import *
+import burst.events as events
+import sys
 
 
 class SonarTester(Player):
-
-    def __init__(self, *args, **kw):
-        super(SonarTester, self).__init__(*args, **kw)
-
-    def printtt(self, x):
-        print x
-
+    
     def onStart(self):
-        self._eventmanager.register(self.getSonars, EVENT_STEP)
+        super(SonarTester, self).onStart()
+        for attribute in dir(events):
+            if attribute[:5] == "EVENT" and attribute in ['EVENT_SONAR_OBSTACLE_IN_FRAME', 'EVENT_SONAR_OBSTACLE_SEEN', 'EVENT_SONAR_OBSTACLE_LOST']:
+                self._eventmanager.register(lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"), getattr(events, attribute[:]))
 
-    def getSonars(self):
-        a = self._world.robot.sonars.leftSonar.readDistance()
-        b = self._world.robot.sonars.rightSonar.readDistance()
-        print "%3.3f %3.3f" % (a,b)
 
-    def onStop(self):
-        self._eventmanager.quit()
 
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    MainLoop(SonarTester).run()
+    mainloop = MainLoop(SonarTester)
+    mainloop.run()
