@@ -133,7 +133,13 @@ class World(object):
         self._getAnglesMap = dict([(joint,
             'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
             for joint in self.jointnames])
-        self.addMemoryVars(self._getAnglesMap.values())
+        self._body_angles_vars = self._getAnglesMap.values()
+        self.addMemoryVars(self._body_angles_vars)
+
+        # Variables for Inclination angles
+        self._inclination_vars = ['Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
+            'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
+        self.addMemoryVars(self._inclination_vars)
 
         self._recorded_vars = self.getRecorderVariableNames()
 
@@ -305,6 +311,14 @@ class World(object):
         not the actuated position
         """
         return self.vars[self._getAnglesMap[jointname]]
+
+    def getBodyAngles(self):
+        # TODO - OPTIMIZE? 
+        return self.getVars(self._body_angles_vars)
+
+    def getInclinationAngles(self):
+        # TODO - OPTIMIZE? 
+        return self.getVars(self._inclination_vars)
 
     # accessors that wrap ALMotion
     # TODO - cache these

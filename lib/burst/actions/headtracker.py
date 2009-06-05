@@ -22,6 +22,7 @@ class Tracker(object):
     """ track objects by moving the head """
     
     verbose = burst.options.verbose_tracker # turn on for debugging
+    debug = verbose and burst.options.debug
     _centering_normalized_x_error = 0.1 # TODO - this should depend on distance?
     _centering_normalized_y_error = 0.1
 
@@ -135,7 +136,7 @@ class Tracker(object):
             self.stop() # this sets self.on_centered_bd=None
             if not bd._ondone or not bd._ondone[0]:
                 import pdb; pdb.set_trace()
-            if self.verbose and bd._ondone and bd._ondone[0]:
+            if self.debug and bd._ondone and bd._ondone[0]:
                 print "CenteringStep: %s" % bd._ondone[0].im_self.__dict__
             bd.callOnDone()
         elif delta_angles:
@@ -384,16 +385,16 @@ class Searcher(object):
 
     def onSeen(self, target):
         if self._stop: return
-        if not target.seen:
+        if not target.seen or not target.dist:
             if self.verbose:
-                print "Searcher: onSeen but target not seen?"
+                print "Searcher: onSeen but target seen=%r and dist=%r" % (target.seen, target.dist)
             return
         # TODO OPTIMIZATION - when last target is seen, cut the search
         #  - stop current move
         #  - call onScanDone to start centering.
         if target not in self._seen_set:
             if self.verbose:
-                print "Searcher: First Sighting: %s, %s" % (target._name, target.centered_self)
+                print "Searcher: First Sighting: %s, dist = %s, centered: %s" % (target._name, target.dist, target.centered_self)
             self._seen_order.append(target)
             self._seen_set.add(target)
 

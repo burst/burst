@@ -229,7 +229,7 @@ class Pose(object):
             'Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
             'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
         self._inclination = [0.0, 0.0]
-        self.transform([0.0]*26, [0.0,0.0]) # init stuff
+        self.updateTransforms([0.0]*26, [0.0,0.0]) # init stuff
         self._connecting_to_webots = burst.connecting_to_webots()
 
     def pixHeightToDistancePlus(self, pixHeight, pix_x, cmHeight,
@@ -277,7 +277,7 @@ class Pose(object):
 
     # NaoPose.cpp 
 
-    def transform(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
+    def updateTransforms(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
         """
         TOOD: get supportFoot from ALMotion (if it is our own walk engine should
         be easier)

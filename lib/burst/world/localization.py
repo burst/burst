@@ -4,7 +4,12 @@ per step. In charge of updating various positions, world coordinates
 and otherwise.
 """
 
+from burst_util import nicefloat
+
 import burst
+from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
+    CROSSBAR_CM_WIDTH)
+from burst.position import xyt_from_two_dist_one_angle
 
 class Localization(object):
     
@@ -12,13 +17,13 @@ class Localization(object):
 
     def __init__(self, world):
         self._world = world
+        self._pose = world.pose
         # Location of robot (ourselves)
         self._location = None
         # Location of ball
         self._ball_location = None
-        self._inclination_vars = ['Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
-            'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
-        self._world.addMemoryVars(self._inclination_vars)
+        # store bottom and top posts
+        self._bottom, self._top = self._world.team.target_posts.bottom_top
 
     def calc_events(self, events, deferreds):
         """
@@ -37,26 +42,76 @@ class Localization(object):
         
         # We defer updating pose until we actually need it.
         new_dist = False
-        left, right = self._world.team.target_posts.left_right
-        for obj, other_obj in ((left, right), (right, left)):
+        bottom, top = self._bottom, self._top
+        for obj, other_obj in ((bottom, top), (top, bottom)):
             if obj.seen and obj.centered:
                 if self.verbose:
-                    print "Localization: UPDATE DIST"
+                    o_centered = other_obj.centered_self
+                    other = (o_centered.sighted_centered and
+                            ('was seen centered %3.2f seconds ago' % (self._world.time -
+                                o_centered.update_time)) or 'has not been centered')
+                    print "Localization: UPDATE DIST %s (%s %s)" % (
+                                obj._name, other_obj._name, other)
+                    print "            : %s is (%s, %s)" % (other_obj._name,
+                                nicefloat(other_obj.normalized2_centerX),
+                                nicefloat(other_obj.normalized2_centerY))
+                # update pose
+                self.updatePoseAndCalcDistance(obj)
                 new_dist = True
                 # OK - It isn't possible to have both centered at once. I'm
                 # "enforcing it" - TODO - actually check and error if they both
                 # say "centered"
                 break
-        if not new_dist: return
+        if not new_dist or not other_obj.centered_self.sighted_centered: return
         world = self._world
-        moved = world.odometry.movedBetweenTimes(other_obj.update_time,
-            obj.update_time)
+        t_end = obj.update_time # since it has just been centered, this is correct
+        t_start = other_obj.centered_self.update_time
+        moved = world.odometry.movedBetweenTimes(t_start, t_end)
         if self.verbose:
             print "Localization: %s in %d+[0,%3.3f] for %s..>%s" % (
                 moved and 'moved' or 'stationary',
-                other_obj.update_time - world.start_time, obj.update_time - other_obj.update_time,
+                t_start - world.start_time, t_end - t_start,
                 other_obj._name, obj._name)
         if not moved:
             if self.verbose:
                 print "Localization: UPDATE SELF POSITION"
+            self.updateRobotPosition()
+
+    def updatePoseAndCalcDistance(self, obj):
+        body_angles = self._world.getBodyAngles()
+        inclination_angles = self._world.getInclinationAngles()
+        # TODO - pass support leg (common usage is probably during stand,
+        # so this won't be a problem - still..)
+        self._pose.updateTransforms(body_angles, inclination_angles)
+        obj.my_dist = self.calcPostDist(obj)
+        if self.verbose:
+            print "Localization: %s new height = %3.1f, vision heights %3.1f, %3.1f" % (
+                obj._name, obj.my_dist, obj.dist, obj.focDist)
+
+    def calcPostDist(self, post):
+        print "please add the pix dist"
+        #import pdb; pdb.set_trace()
+        return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
+
+    def updateRobotPosition(self):
+        d = CROSSBAR_CM_WIDTH / 2.0
+        bottom, top = self._bottom, self._top
+        p0 = top.xy
+        p1 = bottom.xy
+        # TODO - use all dists, compare
+        r1, r2, a1 = (top.my_dist, bottom.my_dist, top.bearing)
+        # compute distance using r_avg and angle - note that it is not correct
+        if abs(r1 - r2) > 2*d:
+            if self.verbose:
+                print "Localization: Warning: inputs are bad, need to recalculate"
+            # This is fun: which value do I throw away? I could start
+            # collecting a bunch first, and only if it is well localized (looks
+            # like a nice normal distribution) I use it..
+        else:
+            x, y, theta = xyt_from_two_dist_one_angle(
+                    r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
+            if self.verbose:
+                print "Localization: GOT %3.2f %3.2f heading %3.2f deg" % (x, y, theta*RAD_TO_DEG)
+            r = self._world.robot
+            r.world_x, r.world_y, r.world_heading = x, y, theta
 
