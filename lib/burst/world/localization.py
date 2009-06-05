@@ -11,6 +11,12 @@ from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
     CROSSBAR_CM_WIDTH)
 from burst.position import xyt_from_two_dist_one_angle
 
+# TODO - utilize constants from central location in place of those
+GOAL_SIZE = 150 #sizeof goal (cm)
+FIELD_SIZE = 605 #sizeof field (cm)
+HALF_GOAL_SIZE = (GOAL_SIZE/2)
+
+
 class Localization(object):
     
     verbose = burst.options.verbose_localization
@@ -76,6 +82,16 @@ class Localization(object):
             if self.verbose:
                 print "Localization: UPDATE SELF POSITION"
             self.updateRobotPosition()
+        
+        #seeing blue goal - yellow is unseen
+        if self._world.bglp.seen and self.bgrp.seen:
+            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+        
+        #seeing yellow goal - blue is unseen
+        if self._world.yglp.seen and self.ygrp.seen:
+            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+
+    
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()
@@ -104,7 +120,15 @@ class Localization(object):
         if abs(r1 - r2) > 2*d:
             if self.verbose:
                 print "Localization: Warning: inputs are bad, need to recalculate"
-            # This is fun: which value do I throw away? I could start
+                 #seeing blue goal - yellow is unseen
+        if self._world.bglp.seen and self.bgrp.seen:
+            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+        
+        #seeing yellow goal - blue is unseen
+        if self._world.yglp.seen and self.ygrp.seen:
+            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+
+       # This is fun: which value do I throw away? I could start
             # collecting a bunch first, and only if it is well localized (looks
             # like a nice normal distribution) I use it..
         else:
@@ -115,3 +139,24 @@ class Localization(object):
             r = self._world.robot
             r.world_x, r.world_y, r.world_heading = x, y, theta
 
+
+    def calc_goal_coord(self, sglp, sgrp, uglp, ugrp):
+        """
+        Update position of unseen goal.
+        """        
+        if HALF_GOAL_SIZE>=sglp.dist or HALF_GOAL_SIZE>=sgrp.dist:
+            return
+
+
+        #debug 
+        #(x1,y1, theta1) = xyt_from_two_dist_one_angle(200, 250, 0,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
+        
+        (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,d , (0, d) ,(0, -d) )       
+
+        uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
+        ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5
+        uglp.bearing = asin(abs(-HALF_GOAL_SIZE + y1) / uglp.dist)
+        ugrp.bearing = asin(abs(HALF_GOAL_SIZE + y1) / ugrp.dist)
+        
+
+        
