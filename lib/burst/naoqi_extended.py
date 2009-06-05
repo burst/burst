@@ -13,7 +13,7 @@ from options import host_to_ip, LOCALHOST_IP
 import burst
 
 __all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
-    ,'getLedsProxy']
+    ,'getLedsProxy', 'getUltraSoundProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -23,6 +23,7 @@ memoryProxy = None
 visionProxy = None
 dcmProxy = None
 ledsProxy = None
+ultrasoundProxy = None
 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
@@ -159,6 +160,17 @@ def getDCMProxy(deferred = False):
     if deferred:
         dcmProxy = WrapWithDeferreds(dcmProxy)
     return dcmProxy
+
+def getUltraSoundProxy(deferred = False):
+    global ultrasoundProxy, proxies, _broker
+    if _broker is None:
+        raise InitException, "Must initialize the module first."
+    if ultrasoundProxy is None:
+        ultrasoundProxy = ALProxy("ALUltraSound")
+        proxies.append(ultrasoundProxy)
+    if deferred:
+        ultrasoundProxy = WrapWithDeferreds(ultrasoundProxy)
+    return ultrasoundProxy
 
 def shutdown():
     pass

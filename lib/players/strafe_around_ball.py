@@ -32,7 +32,7 @@ class Kicker(Player):
         if self.obj.bearing < -THRESHOLD:
             self._actions.executeTurnCW().onDone(self.strafe)
         elif self.obj.bearing > THRESHOLD:
-            self._actions.executeTurnCW().onDone(self.strafe)
+            self._actions.executeTurnCCW().onDone(self.strafe)
         else:
             self.onArrivedAtPosition()
         

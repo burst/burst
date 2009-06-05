@@ -316,3 +316,6 @@ UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything oth
 # Colors for the LEDs
 RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00
 TeamColors = {0: BLUE, 1: RED}
+
+SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
+SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.
