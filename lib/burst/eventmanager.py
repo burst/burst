@@ -148,7 +148,7 @@ class EventManager(object):
     def get_num_registered_callbacks(self):
         return len(self._callbacks)
 
-    def resetCallLaters(self):
+    def resetCallLaters(self): # TODO: This should probably be removed. Considered harmful.
         del self._call_later[:]
 
     def callLater(self, dt, callback, *args, **kw):
