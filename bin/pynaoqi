@@ -5,8 +5,13 @@ import sys, os
 burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '../lib'))
 sys.path.append(burst_lib)
 
-import pynaoqi.shell as shell
+from burst_util import set_robot_ip_from_argv
+
+def main():
+    import pynaoqi.shell as shell
+    shell.main()
 
 if __name__ == '__main__':
-    shell.main()
+    set_robot_ip_from_argv()
+    main()
 

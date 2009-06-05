@@ -309,6 +309,23 @@ def cached(filename):
         return wrapper
     return wrap
 
+class Once(object):
+    def __init__(self, f):
+        self._f = f
+        self._cached = None
+    def __call__(self, *args, **kw):
+        if not self._cached:
+            self._cached = self._f(*args, **kw)
+        return self._cached
+
+def once(f):
+    cached = None
+    def wrap(*args, **kw):
+        if not cached:
+            cached = f(*args, **kw)
+        return cached
+    return wrap
+
 # Some Math
 
 def close_to_zero(v, amount=1e-10):
@@ -475,6 +492,18 @@ def compresstoprint(s, first, last):
 
 # Operating System utilities
 
+def get_first_available_tcp_port(start_number, host='127.0.0.1'):
+    number = start_number
+    s = socket.socket()
+    while number < 65535:
+        try:
+            s.bind((host, number))
+            s.close()
+            break
+        except:
+            number += 1
+    return number
+
 def get_hostname():
     return os.popen('hostname').read().strip()
 
@@ -497,6 +526,19 @@ def is_64bit_elf(filename):
 
 def is64():
     return sys.maxint != 2**31-1 # actually it's "not is32()" but it is the same
+
+# Shell Utils
+
+def set_robot_ip_from_argv():
+    # check the actual name of the executable - use it as "--ip bla" if it
+    # exists in burst_consts.ROBOT_IP_TO_NAME.values()
+    exec_name = os.path.split(sys.argv[0])[-1]
+    print "CALLED WITH exec_name = %s" % exec_name
+    if not '--ip' in sys.argv:
+        for robot_name in burst_consts.ROBOT_IP_TO_NAME.values():
+            if exec_name.startswith(robot_name):
+                sys.argv.extend(['--ip', robot_name])
+                return
 
 # Python language util
 
