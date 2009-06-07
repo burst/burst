@@ -5,6 +5,9 @@
 import traceback
 import sys
 from time import time
+from heapq import heappush, heappop, heapify
+
+from twisted.python import log
 
 import burst
 from burst_util import BurstDeferred, DeferredList
@@ -12,7 +15,8 @@ from burst_util import BurstDeferred, DeferredList
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
 
-from .consts import EVENT_MANAGER_DT
+from burst_consts import EVENT_MANAGER_DT
+import burst_consts
 
 ################################################################################
 
@@ -39,7 +43,7 @@ def singletime(event):
                     pass
                 except Exception, e:
                     print "CAUGHT EXCEPTION: %s" % e
-                self._eventmanager.unregister(event)
+                self._eventmanager.unregister(event, onEvent)
                 print "singletime: unregistering from %s" % event
             print "singletime: registering to %s" % event
             self._eventmanager.register(event, onEvent)
@@ -119,53 +123,78 @@ class EventManager(object):
     you lazy bum)
     """
 
+    verbose = burst.options.verbose_eventmanager
+
     def __init__(self, world):
         """ In charge of computing when certain events happen, keeping track
         of callbacks, and calling them.
         """
-        self._events = dict([(event, None) for event in
+        # The _events maps from an event enum to a set of callbacks (so order
+        # of callback is undefined)
+        self._events = dict([(event, set()) for event in
                 xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
+        self._callbacks = {} # dictionary from callback to events set it is registered to
         self._world = world
         self._should_quit = False
+        self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
         self.unregister_all()
-        self.setTimeoutEventParams(0.0)
 
-    def setTimeoutEventParams(self, dt, oneshot=False, cb=None):
-        """ Set Timeout Parameters.
-        dt is in seconds. if oneshot is true the registration
-        will be deleted after a single callback.
+    def get_num_registered(self):
+        return sum(len(v) for k, v in self._callbacks.items())
 
-        When this is set the next timeout is scheduled to current time
-        taken from world plus dt (i.e. self._world.time + dt)
+    def get_num_registered_events(self):
+        return sum(1 for k, v in self._events.items() if len(v) > 0)
+
+    def get_num_registered_callbacks(self):
+        return len(self._callbacks)
+
+    def resetCallLaters(self): # TODO: This should probably be removed. Considered harmful.
+        del self._call_later[:]
+
+    def callLater(self, dt, callback, *args, **kw):
+        """ Will call given callback after an approximation of dt milliseconds,
+        specifically:
+        REAL_DT = int(dt/EVENT_MANAGER_DT) (int == largest integer that is smaller then)
         """
-        self._timeout_dt = dt
-        self._timeout_oneshot = oneshot
-        self._timeout_last = self._world.time
-        print "setting timeout event, start time =", self._timeout_last
-        if cb: # shortcut
-            self._events[EVENT_TIME_EVENT] = cb
+        # TODO - cancel option? if required then the way is a real Event class
+        abstime = self._world.time + max(EVENT_MANAGER_DT, dt)
+        heappush(self._call_later, (abstime, callback, args, kw))
 
-    def register(self, event, callback):
+    def cancelCallLater(self, callback):
+        if callback in self._call_later:
+            self._call_later.remove(callback)
+
+    def register(self, callback, event):
         """ set a callback on an event.
         """
-        if not self._events[event]:
-            self._num_registered += 1
-        else:
-            if self._events[event] is callback:
-                print "WARNING: harmless register overwrite of event %s" % event
-            else:
-                print "WARNING: overwriting register for event %s with %s (old was %s)" % (event, callback, self._events[event])
-        self._events[event] = callback
+        # add to _callbacks
+        if callback not in self._callbacks:
+            self._callbacks[callback] = set()
+        if event in self._callbacks[callback]:
+            print "WARNING: harmless register overwrite of %s to %s" % (callback, event)
+        self._callbacks[callback].add(event)
+        # add to _events
+        self._events[event].add(callback)
+        if self.verbose:
+            print "EventManager: #_events[%d] = %s" % (event, len(self._events[event]))
 
-    def unregister(self, event):
-        if self._events[event]:
-            self._num_registered -= 1
-            self._events[event] = None
+    def unregister(self, callback, event=None):
+        """Unregister the callback function callback, if event is given then from that
+        event only, otherwise from all events it is registered for. If it isn't registered
+        to anything then nothing will happen.
+        """
+        if self.verbose:
+            print "EventManager: unregister %s" % callback
+        if callback in self._callbacks:
+            # remove from _events
+            for event in self._callbacks[callback]:
+                self._events[event].remove(callback)
+            # remove from _callbacks
+            del self._callbacks[callback]
 
     def unregister_all(self):
         for k in self._events.keys():
-            self._events[k] = None
-        self._num_registered = 0
+            self._events[k] = set()
 
     def quit(self):
         self._should_quit = True
@@ -173,19 +202,55 @@ class EventManager(object):
     def handlePendingEventsAndDeferreds(self):
         """ Call all callbacks registered based on the new events
         stored in self._world
+
+        Also handles callLaters
         """
+        # Implementation note: we need to avoid endless loops in here.
+        # this can happen if, for instance, one of the callLater callbacks
+        # creates another callLater during the callLater loop.
+        # So to avoid stuff like that with the deferreds too (events are
+        # too simple for this to happen) we create a copy of the lists
+        # and loop on them.
+
+        # TODO - rename deferreds to burstdeferreds
         events, deferreds = self._world.getEventsAndDeferreds()
-        for event in events:
-            if self._events[event] != None:
-                self._events[event]()
-        if self._events[EVENT_STEP]:
-            self._events[EVENT_STEP]()
-        if self._events[EVENT_TIME_EVENT]:
-            if self._timeout_last + self._timeout_dt <= self._world.time:
-                self._events[EVENT_TIME_EVENT]()
-                self._timeout_last = self._world.time
-                if self._timeout_oneshot:
-                    self._events[EVENT_TIME_EVENT] = None
+        deferreds = list(deferreds) # make copy, avoid endless loop
+
+        # Handle regular events - we keep a copy of the current
+        # cb's for all events to make sure there is no loop.
+        loop_event_cb = [list(self._events[event]) for event in events]
+        for cbs in loop_event_cb:
+            for cb in cbs:
+                cb()
+        # EVENT_STEP registrators are always called (again, list used to create a temp copy)
+        for cb in list(self._events[EVENT_STEP]):
+            cb()
+
+        # Handle call later's
+        cur_call_later = self._call_later
+        self._call_later = [] # new heap for anything created by the callbacks themselves,
+                              # avoid endless loops.
+        while len(cur_call_later) > 0:
+            next_time = cur_call_later[0][0]
+            if self.verbose:
+                print "EventManager: we have some callLaters"
+            if next_time <= self._world.time:
+                next_time, cb, args, kw = heappop(cur_call_later)
+                if self.verbose:
+                    print "EventManager: calling callLater callback"
+                cb(*args, **kw)
+            else:
+                break # VERY IMPORTANT..
+        # now merge the new with the old
+        if len(self._call_later) > 0:
+            if self.verbose:
+                print "EventManager: callLater-cbs added callLaters! merging"
+            self._call_later = cur_call_later + self._call_later
+            heapify(self._call_later) # TODO - implement merge, this is faster.
+        else:
+            self._call_later = cur_call_later
+
+        # Handle deferreds
         for deferred in deferreds:
             deferred.callOnDone()
 
@@ -205,6 +270,12 @@ class BasicMainLoop(object):
 
         # flags for external use
         self.finished = False       # True when quit has been called
+
+    def _getNumberOutgoingMessages(self):
+        return 0 # implemented just in twisted for now
+
+    def _getNumberIncomingMessages(self):
+        return 0
 
     def initMainObjectsAndPlayer(self):
         """ Must be called after burst.init() - so that any proxies can be
@@ -297,12 +368,48 @@ class BasicMainLoop(object):
             normal_quit = False
         return ctrl_c_pressed, normal_quit
 
+    def _printTraceTickerHeader(self):
+        print "="*burst_consts.CONSOLE_LINE_LENGTH
+        print "Time Objs-CL|IN|PO|YRt        |YLt        |Ball       |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+        print "="*burst_consts.CONSOLE_LINE_LENGTH
+
+    def _printTraceTicker(self):
+        ball = self._world.ball.seen and 'B' or ' '
+        yglp = self._world.yglp.seen and 'L' or ' '
+        ygrp = self._world.ygrp.seen and 'R' or ' '
+        targets = self._actions.searcher._targets
+        def getjoints(obj):
+            if obj not in targets: return '-----------'
+            r = obj.centered_self
+            if not r.sighted: return '           '
+            return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
+        yglp_joints = getjoints(self._world.yglp)
+        ygrp_joints = getjoints(self._world.ygrp)
+        ball_joints = getjoints(self._world.ball)
+        num_out = self._getNumberOutgoingMessages()
+        num_in = self._getNumberIncomingMessages()
+        # LINE_UP is to line up with the LogCalls object.
+        LINE_UP = 62
+        print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
+            ball, yglp, ygrp,
+            len(self._eventmanager._call_later),
+            len(self._world._movecoordinator._initiated),
+            len(self._world._movecoordinator._posted),
+            ygrp_joints, yglp_joints, ball_joints,
+            num_out, num_out - num_in,
+            )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+
     def preMainLoopInit(self):
         """ call once before the main loop """
-        self._player.onStart()
         self.main_start_time = time()
         self.cur_time = self.main_start_time
         self.next_loop = self.cur_time
+        if burst.options.trace_proxies:
+            self._printTraceTickerHeader()
+        # First do a single world update - get values for all variables, etc.
+        self.doSingleStep()
+        # Second, queue player.
+        self._player.onStart()
 
     def doSingleStep(self):
         """ call once for every loop iteration
@@ -314,8 +421,8 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         if burst.options.trace_proxies:
-            # the strange number 66 is to line up with the LogCalls object.
-            print "%3.3f  %s" % (self.cur_time - self.main_start_time, "-"*66)
+            self._printTraceTicker()
+
         self._eventmanager.handlePendingEventsAndDeferreds()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
@@ -393,12 +500,19 @@ class TwistedMainLoop(BasicMainLoop):
             self.start()
 
     def start(self):
-        self.con.modulesDeferred.addCallback(self._twistedStart)
+        self.con.modulesDeferred.addCallback(self._twistedStart).addErrback(log.err)
         self.started = True
+
+    def _getNumberOutgoingMessages(self):
+        return self.con.connection_manager._sent
+
+    def _getNumberIncomingMessages(self):
+        return self.con.connection_manager._returned
 
     def _twistedStart(self, _):
         print "TwistedMainLoop: _twistedStart"
         self.initMainObjectsAndPlayer()
+        print "TwistedMainLoop: created main objects"
         from twisted.internet import reactor, task
         self.preMainLoopInit()
         self._main_task = task.LoopingCall(self.onTimeStep)
@@ -430,8 +544,6 @@ class TwistedMainLoop(BasicMainLoop):
                 ctrl_c_deferred = self.onCtrlCPressed()
             if normal_quit:
                 do_cleanup = self.onNormalQuit()
-            if self._main_task.running: # TODO - should I be worries if this is false?
-                self._main_task.stop()
         if do_cleanup:
             # only reason not to is if we didn't complete initialization to begin with
             self.cleanup()
@@ -447,6 +559,10 @@ class TwistedMainLoop(BasicMainLoop):
 
     def _completeShutdown(self, result=None):
         print "CompleteShutdown called:"
+        # stop the update task here
+        if self._main_task.running: # TODO - should I be worries if this is false?
+            self._main_task.stop()
+        # only if we are in charge of the reactor stop that too
         if not self._control_reactor: return
         from twisted.internet import reactor
         reactor.stop()

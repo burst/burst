@@ -18,7 +18,7 @@ if os.getcwd() == in_tree_dir:
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.moves as moves
 from math import cos, sin
 """
@@ -54,14 +54,14 @@ class KickerOLD(Player):
 #        if self.kp is None:
 #            
 #        else:
-#            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+#            self._eventmanager.register(self.doBallTracking, EVENT_BALL_IN_FRAME)
 #            self.gotoLocation(self.kp)
         
-        #self._eventmanager.register(EVENT_BALL_SEEN, self.onBallSeen)
-        #self._eventmanager.register(EVENT_ALL_YELLOW_GOAL_SEEN, self.onGoalSeen)
+        #self._eventmanager.register(self.onBallSeen, EVENT_BALL_SEEN)
+        #self._eventmanager.register(self.onGoalSeen, EVENT_ALL_YELLOW_GOAL_SEEN)
         
         #import pdb; pdb.set_trace()
-        #self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        #self._eventmanager.register(self.doBallTracking, EVENT_BALL_IN_FRAME)
         #self._actions.changeHeadAnglesRelative(0.1, 0.3) # yaw (left-right) / pitch (up-down)
         #self.doBallTracking()
 
@@ -71,8 +71,8 @@ class KickerOLD(Player):
         # if ball isn't visible, search for it
         if self._world.ball.dist <= 0:
             print "ball isn't visible, searching for it"
-            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-            self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+            self._eventmanager.unregister(self.doBallTracking)
+            self._eventmanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
             self._actions.scanFront().onDone(self.onScanFrontDone)
             return
         
@@ -89,11 +89,11 @@ class KickerOLD(Player):
             if self._world.ball.dist > 35.0:
                 print "close to ball, but not enough, try to advance slowly"
                 close_kp = self.convertBallPosToFinalKickPoint(self._world.ball.dist, self._world.ball.bearing)
-                self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+                self._eventmanager.register(self.doBallTracking, EVENT_BALL_IN_FRAME)
                 self.gotoLocation(close_kp)
             else:
                 print "Kicking!"
-                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                self._eventmanager.unregister(self.doBallTracking)
                 
                 if self._world.ball.dist >= 32.0:
                     self.gotoLocation((35-self._world.ball.dist, 0.0, 0.0))
@@ -112,15 +112,15 @@ class KickerOLD(Player):
             else:
                 # TODO add further scanning (turn around?)
                 print "Error! Couldn't find ball!"
-                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
-                self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+                self._eventmanager.unregister(self.doBallTracking)
+                self._eventmanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
                 self._actions.scanFront().onDone(self.onScanFrontDone)
                 return
         else:
             print "kp was calculated already!"
 
         # get closer to ball
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+        self._eventmanager.register(self.doBallTracking, EVENT_BALL_IN_FRAME)
         self.gotoLocation(self.kp)
         self.kp = None
 
@@ -133,7 +133,7 @@ class KickerOLD(Player):
         # save first KP encountered
         computed = self._world.computed
         if computed.kp_valid:
-            self._eventmanager.unregister(EVENT_KP_CHANGED)
+            self._eventmanager.unregister(self.onKickingPointChanged)
             self.kp = computed.kp
             print "KP: %3.3f, %3.3f, %3.3f" % self.kp
 
@@ -157,9 +157,9 @@ class KickerOLD(Player):
         self.doNextAction()
         
         
-#        self._eventmanager.unregister(EVENT_CHANGE_LOCATION_DONE)
+#        self._eventmanager.unregister(self.onChangeLocationDone)
 #        if abs(self._world.ball.bearing) <= 0.1745 and self._world.ball.dist <= 30:
-#            self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+#            self._eventmanager.unregister(self.doBallTracking)
 #            self.doKick()
 #        else:
 #            print "we are still too far to kick the ball, advance towards ball again"
@@ -169,7 +169,7 @@ class KickerOLD(Player):
 #            else:
 #                # TODO add further scanning (turn around?)
 #                print "Error! Couldn't find ball!"
-#                self._eventmanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+#                self._eventmanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
 #                self._actions.scanFront().onDone(self.onScanFrontDone)
                 
 
@@ -193,7 +193,7 @@ class KickerOLD(Player):
         print "Going to target location: %3.3f, %3.3f, %3.3f" % target_location 
         # ball is away, first turn and then approach ball
         delta_x, delta_y, delta_bearing = target_location
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
+        self._eventmanager.register(self.onChangeLocationDone, EVENT_CHANGE_LOCATION_DONE)
         return self._actions.changeLocationRelative(delta_x, delta_y, delta_bearing,
             walk = moves.STRAIGHT_WALK)
 
@@ -211,8 +211,7 @@ class KickerOLD(Player):
 #        hence we actually look at the kp_valid parameter (otherwise
 #        we already set the kp before in pitchUpToFindGoal)
 #        """
-#        self._eventmanager.unregister_all()
-#        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.doBallTracking)
+#        self._eventmanager.register(self.doBallTracking, EVENT_BALL_IN_FRAME)
 #        computed = self._world.computed
 #        if computed.kp_valid:
 #            self.kp = computed.kp
@@ -231,7 +230,7 @@ class KickerOLD(Player):
 #        ball_frame_x = self.ball_frame_x()
 #        if (self._world.yglp.dist == 0.0 or self._world.ygrp.dist == 0.0
 #                and abs(ball_frame_x) < 0.05):
-#            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.pitchUpToFindGoal)
+#            self._eventmanager.register(self.pitchUpToFindGoal, EVENT_BALL_IN_FRAME)
 #        else:
 #            self.doBallTracking()
 ##        if self._world.robot.isMotionInProgress():
@@ -263,7 +262,7 @@ class KickerOLD(Player):
         
     def onYetToBeCalledTurnDone(self):
         print "Turn Done!"
-        self._eventmanager.unregister(EVENT_TURN_DONE)
+        self._eventmanager.unregister(self.onYetToBeCalledTurnDone)
 
         # TODO: move to consts
         BALL_APPROACH_DISTANCE = 35
@@ -278,12 +277,12 @@ class KickerOLD(Player):
             if self._world.ball.dist > BALL_FAR_AWAY_DISTANCE:
                 targetDistance -= BALL_APPROACH_DISTANCE
             
-            self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onWalkDone)
+            self._eventmanager.register(self.onWalkDone, EVENT_CHANGE_LOCATION_DONE)
             self._actions.changeLocationRelative(self._world.ball.dist - BALL_RADIUS, 0, 0) # ball radius - update and re-position
         else:
             # ball is close, align with it carefully
             if abs(self._world.ball.bearing) <= 0.1745:
-                self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+                self._eventmanager.unregister(self.doBallTracking)
                 self.doKick()
             else:
                 # TODO do something meaningful

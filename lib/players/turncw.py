@@ -3,11 +3,10 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.actions as actions
 import burst.moves as moves
 from burst.world import World
@@ -22,8 +21,7 @@ class turncw(Player):
 
     def onStart(self):
         self.counter = 0
-        self._eventmanager.unregister_all()
-        #self._eventanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
+        #self._eventanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
         self._actions.initPoseAndStiffness()
         self._actions.executeCircleStraferInitPose().onDone(self.doNextAction)
 

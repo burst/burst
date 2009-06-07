@@ -78,12 +78,16 @@ else:
 
 print "Loading Personalization for %s.." % target.robotname,
 personal_filename = 'burst.personal.%s' % target.robotname
+if options.debug_personal:
+    __import__(personal_filename) # any error will be thrown to the interpreter
 try:
     __import__(personal_filename)
 except ImportError, e:
     print "\nERROR: Personalization missing: %s" % e
     raise SystemExit
 except Exception, e:
+    # TODO - this swallowes the actual error - the traceback is useless, at
+    # least for syntax errors.
     print "\nERROR: Exception while importing %s: %s" % (personal_filename, e)
     import traceback
     import sys

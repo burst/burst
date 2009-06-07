@@ -16,20 +16,17 @@ from burst_util import polar2cart
 class visionTesting(Player):
     
     def onStart(self):
+        self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
+        self._actions.initPoseAndStiffness().onDone(self.initPos)
 
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
-        self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
-
-    def goalieInitPos(self):
+    def initPos(self):
         self._actions.executeMove(moves.SIT_POS)
+        pass
     
-    def trackBall(self):
-        self._actions.executeTracking(self._world.ball)
+    def printBall(self):
         ball_x = self._world.ball.dist * cos(self._world.ball.bearing)
         ball_y = self._world.ball.dist * sin(self._world.ball.bearing)
         print ball_x," , ", ball_y
-        
-        
         
 if __name__ == '__main__':
     import burst

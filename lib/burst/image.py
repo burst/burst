@@ -7,6 +7,9 @@ from __future__ import with_statement
 import os
 
 import burst
+from burst_consts import IMAGE_HALF_WIDTH, IMAGE_HALF_HEIGHT
+from burst_util import normalize2
+
 if burst.running_on_nao():
     base='/opt/naoqi/'
 else:
@@ -14,7 +17,7 @@ else:
 TABLE = os.path.join(base, 'modules/etc/table.mtb')
 WHICH = os.path.join(base, 'modules/etc/whichtable.txt')
 which = 'undefined'
-if not os.path.exists(WHICH):
+if os.path.exists(WHICH):
     with open(WHICH) as fd:
         which=fd.read().strip()
 
@@ -62,4 +65,13 @@ def return_index_to_rgb():
         ("MAGENTA",       (0, 0, 0)),
         ("PURPLE",        (0, 0, 0)),
     ]
+
+# Some math utils that have to do with the image,
+# for lack of a better place - maybe burst.math?
+
+def normalized2_image_width(x):
+    return normalize2(x, IMAGE_HALF_WIDTH)
+
+def normalized2_image_height(x):
+    return normalize2(x, IMAGE_HALF_HEIGHT)
 

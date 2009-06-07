@@ -2,7 +2,8 @@ import os, sys, time
 import socket
 
 
-from burst_util import WrapWithDeferreds
+from burst_util import (WrapWithDeferreds,
+    get_first_available_tcp_port, once)
 
 # wrapped to allow import from pynaoqi
 try:
@@ -12,7 +13,8 @@ except:
 from options import host_to_ip, LOCALHOST_IP
 import burst
 
-__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown']
+__all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
+    ,'getLedsProxy', 'getUltraSoundProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -21,23 +23,13 @@ speechProxy = None
 memoryProxy = None
 visionProxy = None
 dcmProxy = None
+ledsProxy = None
+ultraSoundProxy = None
 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
     pass
     
-def get_first_available_tcp_port(start_number, host='127.0.0.1'):
-    number = start_number
-    s = socket.socket()
-    while number < 65535:
-        try:
-            s.bind((host, number))
-            s.close()
-            break
-        except:
-            number += 1
-    return number
-
 def init(ip = None, port = None):
     """ You must call this first. Technically, we could init everything
     the first time it is called, but we prefer to make you call this
@@ -78,71 +70,34 @@ class MissingProxy(object):
         #print "missing %s.%s" % (self._name, k)
         return lambda *args, **kw: None
 
-def getMotionProxy(deferred = False):
-    global motionProxy, proxies, _broker
+def getProxy(proxy_name, global_name, deferred):
+    global proxies, _broker
     if _broker is None:
         raise InitException, "Must initialize the module first."
-    if motionProxy is None:
+    gs = globals()
+    if gs[global_name] is None:
         try:
-            motionProxy = ALProxy("ALMotion")
-            proxies.append(motionProxy)
+            proxy = ALProxy(proxy_name)
         except Exception, e:
-            motionProxy = MissingProxy('ALMotion')
-            print "WARNING: Motion module is not available (Exception: %s)" % e
+            proxy = MissingProxy(proxy_name)
+            print "WARNING: %s module is not available (Exception: %s)" % (proxy_name, e)
         if deferred:
-            motionProxy = WrapWithDeferreds(motionProxy)
-        proxies.append(motionProxy)
-    return motionProxy
+            proxy = WrapWithDeferreds(proxy)
+        proxies.append(proxy)
+    gs[global_name] = proxy
+    return proxy
 
-def getSpeechProxy(deferred = False):
-    global speechProxy, proxies, _broker
-    if _broker is None:
-        raise InitException, "Must initialize the module first."
-    if speechProxy is None:
-        try:
-            speechProxy = ALProxy("ALTextToSpeech")
-        except Exception,e :
-            motionProxy = MissingProxy('ALTextToSpeech')
-            print "WARNING: Speech module not available (Exception: %s)" % e
-        if deferred:
-            speechProxy = WrapWithDeferreds(speechProxy)
-        proxies.append(speechProxy)
-    return speechProxy
-
-
-def getMemoryProxy(deferred = False):
-    global memoryProxy, proxies, _broker
-    if _broker is None:
-        raise InitException, "Must initialize the module first."
-    if memoryProxy is None:
-        memoryProxy = ALProxy("ALMemory")
-        proxies.append(memoryProxy)
-    if deferred:
-        memoryProxy = WrapWithDeferreds(memoryProxy)
-    return memoryProxy
-
-
-def getVisionProxy(deferred = False):
-    global visionProxy, proxies, _broker
-    if _broker is None:
-        raise InitException, "Must initialize the module first."
-    if visionProxy is None:
-        visionProxy = ALProxy("vision")
-        proxies.append(visionProxy)
-    if deferred:
-        visionProxy = WrapWithDeferreds(visionProxy)
-    return visionProxy
-    
-def getDCMProxy(deferred = False):
-    global dcmProxy, proxies, _broker
-    if _broker is None:
-        raise InitException, "Must initialize the module first."
-    if dcmProxy is None:
-        dcmProxy = ALProxy("DCM")
-        proxies.append(dcmProxy)
-    if deferred:
-        dcmProxy = WrapWithDeferreds(dcmProxy)
-    return dcmProxy
+for getter, global_name, proxy_name in [
+    ('getMotionProxy', 'motionProxy', 'ALMotion'),
+    ('getSpeechProxy', 'speechProxy', 'ALTextToSpeech'),
+    ('getLedsProxy',   'ledsProxy',   'ALLeds'),
+    ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
+    ('getVisionProxy', 'visionProxy', 'vision'),
+    ('getDCMProxy',    'dcmProxy',    'DCM'),
+    ('getUltraSoundProxy', 'ultraSoundProxy', 'ALUltraSound')]:
+    globals()[getter] = once(
+        lambda deferred, proxy_name=proxy_name, global_name=global_name:
+            getProxy(proxy_name, global_name, deferred))
 
 def shutdown():
     pass

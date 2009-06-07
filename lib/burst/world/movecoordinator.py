@@ -1,6 +1,8 @@
-from .objects import Movable
-from ..consts import MOTION_FINISHED_MIN_DURATION, ROBOT_DIAMETER
-from burst_util import BurstDeferred, DeferredList, succeed
+import burst
+from burst_util import (BurstDeferred, DeferredList, succeed)
+from burst_consts import MOTION_FINISHED_MIN_DURATION
+
+################################################################################
 
 class Motion(object):
     
@@ -10,6 +12,8 @@ class Motion(object):
         self.has_started = False
         self.start_time = start_time
         self.duration = duration
+
+################################################################################
 
 class SerialPostQueue(object):
 
@@ -90,34 +94,45 @@ class SerialPostQueue(object):
             # after the last.
             self._start_time = self._world.time
 
-class Robot(Movable):
-    _name = 'Robot'
+################################################################################
+
+class MoveCoordinator(object):
+
+    """ All low level moves, where low level is defined by anything
+    we talk to naoqi to do, so this includes:
+    forward walk, sidestep walk, arc walk, turn
+    joint moves (doMove)
+    
+    They are recorded here, checked for completion here, and we call
+    user callbacks from here.
+
+    This replaces old code in actions.__init__ and world.robot
+     - it reuses all of the queue stuff, but it is moved from world.robot
+     here. This allows for easy debugging - I just got back this postid,
+     what action was it for? who created it?
+    """
+
+    debug = burst.options.debug
 
     def __init__(self, world):
-        super(Robot, self).__init__(world=world,
-            real_length=ROBOT_DIAMETER)
+        self._world = world
+        # HACK - Add ourselves to the list of updated objects,
+        # so calc_events is called. Basically until now all such objects
+        # were constructed in world, but world doesn't depend on actions.
+        self._motion = self._world._motion
         self._motion_posts = {}
-        self._head_posts   = SerialPostQueue('head', world)
-        self._walk_posts   = SerialPostQueue('walk', world)
-    
-    def add_expected_motion_post(self, postid, event, duration):
-        deferred = BurstDeferred(data=postid)
-        self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
-        return deferred
+        self._head_posts   = SerialPostQueue('head', self._world)
+        self._walk_posts   = SerialPostQueue('walk', self._world)
+        self._initiated = []
+        self._posted = []
+        # helpers
+        self._post_handler = {'motion': self._add_expected_motion_post,
+            'head':self._add_expected_head_post,
+            'walk':self._add_expected_walk_post}
+        # debug
+        if self.debug:
+            self._delete_times = []
 
-    def add_expected_head_post(self, postid, event, duration):
-        return self._head_posts.add(postid, event, duration)
-
-    def add_expected_walk_post(self, postid, event, duration):
-        print "DEBUG: adding walk %s, duration %s" % (postid, duration)
-        return self._walk_posts.add(postid, event, duration)
-
-    def isMotionInProgress(self):
-        return len(self._motion_posts) > 0
-    
-    def isHeadMotionInProgress(self):
-        return self._head_posts.isNotEmpty()
-        
     def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
         from self._motion_posts and self._
@@ -139,6 +154,8 @@ class Robot(Movable):
                         #print "DOUBLE YAY deleting motion postid=%s" % postid
                         if postid in dictionary:
                             del dictionary[postid]
+                            if self.debug:
+                                self._delete_times.append((self._world.time, postid))
                         else:
                             print "DEBUG ME: postid to be deleted but not in dictionary"
                             import pdb; pdb.set_trace()
@@ -174,5 +191,71 @@ class Robot(Movable):
         filter(self._motion_posts, isMotionFinished)
         self._head_posts.calc_events(events, deferreds)
         self._walk_posts.calc_events(events, deferreds)
-        
+
+    def _add_expected_motion_post(self, postid, event, duration):
+        deferred = BurstDeferred(data=postid)
+        self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
+        return deferred
+
+    def _add_expected_head_post(self, postid, event, duration):
+        return self._head_posts.add(postid, event, duration)
+
+    def _add_expected_walk_post(self, postid, event, duration):
+        print "DEBUG: adding walk %s, duration %s" % (postid, duration)
+        return self._walk_posts.add(postid, event, duration)
+
+    def add_expected_walk_post(self, description, postid, event, duration):
+        """ HACK for Journey - Journey currently does the deferreds itself,
+        not using the BurstDeferred wrappers we provide, so to still log
+        anything it does we provide the old interface, with added description.
+        We use the initiate time as now (so it is actually the postid time,
+        almost the same)
+        """
+        initiated = self._add_initiated(time=self._world.time, kind='walk',
+            description=description, event=event, duration=duration)
+        self._add_posted(postid, initiated)
+        return self._add_expected_walk_post(postid=postid, event=event, duration=duration)
+
+    def _add_initiated(self, time, kind, description, event, duration):
+        initiated = len(self._initiated)
+        motion = (self._world.time, kind, description, event, duration)
+        self._initiated.append(motion)
+        if kind is 'walk':
+            self._world.odometry.onWalkInitiated(self._world.time, description, duration)
+        return initiated
+
+    def isMotionInProgress(self):
+        return len(self._motion_posts) > 0
+    
+    def isHeadMotionInProgress(self):
+        return self._head_posts.isNotEmpty()
+  
+    def waitOnPostid(self, d, description, kind, event, duration):
+        """ Wait on a postid given a Deferred. Records
+        the description of the intiated action, and returns a BurstDeferred.
+
+        description - this is kinda a 'command' but we use it just for logging. So a little
+            redundancy in calling, instead of adding "magic" to extract it.
+        d - deferred for the post, will return a postid
+        event - event to be fired
+        duration - expected duration of action
+        """
+        #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
+        initiated = self._add_initiated(self._world.time, kind, description, event, duration)
+        bd = BurstDeferred(None)
+        d.addCallback(lambda postid, initiated=initiated, bd=bd:
+            self._onPostId(postid, initiated, bd))
+        return bd
+
+    def _add_posted(self, postid, initiated):
+        self._posted.append((postid, self._initiated[initiated]))
+
+    def _onPostId(self, postid, initiated, bd):
+        if not isinstance(postid, int):
+            print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
+            print "ERROR:  Did you forget to enable ALMotion perhaps?"
+            raise SystemExit
+        initiate_time, kind, description, event, duration = self._initiated[initiated]
+        self._add_posted(postid, initiated)
+        self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)
 

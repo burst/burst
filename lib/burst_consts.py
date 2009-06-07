@@ -10,6 +10,16 @@ import os # for HOME
 import math
 from math import tan
 
+# Operating Environment constants
+ROBOT_IP_TO_NAME = {
+    '192.168.5.126'	: 'messi',
+    '192.168.5.170'	: 'gerrard',
+    '192.168.5.226'	: 'cech',
+    '192.168.5.168'	: 'hagi',
+    '192.168.5.224'	: 'raul',
+    '192.168.5.228'	: 'maldini',
+}
+
 # Proxy names
 BURST_SHARED_MEMORY_PROXY_NAME = "burstmem"
 BURST_RECORDER_PROXY_NAME = "recorder"
@@ -43,13 +53,29 @@ SUPPORT_MODE_LEFT, SUPPORT_MODE_DOUBLE_LEFT, SUPPORT_MODE_RIGHT, SUPPORT_MODE_DO
 
 INTERPOLATION_LINEAR, INTERPOLATION_SMOOTH = 0, 1
 
+# Unit constants
+M_TO_CM  = 100.0
+CM_TO_M  = 0.01
+CM_TO_MM = 10.0
+MM_TO_CM = 0.1
+
 # Math constants
+INFTY = 1E+37
 
 DEG_TO_RAD = math.pi / 180.0
 RAD_TO_DEG = 180.0 / math.pi
 CM_TO_METER = 100. # yeah, seems stupid, but probably better than using 100 throughout the code...
 
+# Coordinate system
+
+X_AXIS, Y_AXIS, Z_AXIS, W_AXIS = 0, 1, 2, 3
+X, Y, Z = 0, 1, 2
+
 # Camera / Vision constants
+
+# Acceptable Centering error - normalized values (in [-1, 1])
+DEFAULT_CENTERING_X_ERROR = 0.05
+DEFAULT_CENTERING_Y_ERROR = 0.05
 
 # Image Parameters
 FOV_X = 46.4 * DEG_TO_RAD
@@ -208,6 +234,74 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
+ULTRASOUND_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+
+# Joint data
+joint_names, joint_limits = (['HeadYaw',
+  'HeadPitch',
+  'LShoulderPitch',
+  'LShoulderRoll',
+  'LElbowYaw',
+  'LElbowRoll',
+  'LWristYaw',
+  'LHand',
+  'LHipYawPitch',
+  'LHipRoll',
+  'LHipPitch',
+  'LKneePitch',
+  'LAnklePitch',
+  'LAnkleRoll',
+  'RHipYawPitch',
+  'RHipRoll',
+  'RHipPitch',
+  'RKneePitch',
+  'RAnklePitch',
+  'RAnkleRoll',
+  'RShoulderPitch',
+  'RShoulderRoll',
+  'RElbowYaw',
+  'RElbowRoll',
+  'RWristYaw',
+  'RHand'],
+ {'HeadPitch': [-0.78539819, 0.78539819, 0.14381513000000001],
+  'HeadYaw': [-1.5707964000000001, 1.5707964000000001, 0.16528267999999999],
+  'LAnklePitch': [-1.2217305000000001, 0.78539819, 0.12793263999999999],
+  'LAnkleRoll': [-0.78539819, 0.78539819, 0.083077677000000003],
+  'LElbowRoll': [-1.6580627999999999, 0.0, 0.14381513000000001],
+  'LElbowYaw': [-2.0943952000000001, 2.0943952000000001, 0.16528267999999999],
+  'LHand': [0.0, 1.0, 0.14381513000000001],
+  'LHipPitch': [-1.5707964000000001,
+                0.52359878999999998,
+                0.12793263999999999],
+  'LHipRoll': [-0.43633232, 0.78539819, 0.083077677000000003],
+  'LHipYawPitch': [-0.95993108000000005,
+                   0.69813168000000003,
+                   0.083077677000000003],
+  'LKneePitch': [0.0, 2.2689281000000001, 0.12793263999999999],
+  'LShoulderPitch': [-2.0943952000000001,
+                     2.0943952000000001,
+                     0.16528267999999999],
+  'LShoulderRoll': [0.0, 1.6580627999999999, 0.14381513000000001],
+  'LWristYaw': [-1.8325956999999999, 2.6179937999999998, 0.14381513000000001],
+  'RAnklePitch': [-1.2217305000000001, 0.78539819, 0.12793263999999999],
+  'RAnkleRoll': [-0.78539819, 0.78539819, 0.083077677000000003],
+  'RElbowRoll': [0.0, 1.6580627999999999, 0.14381513000000001],
+  'RElbowYaw': [-2.0943952000000001, 2.0943952000000001, 0.16528267999999999],
+  'RHand': [0.0, 1.0, 0.14381513000000001],
+  'RHipPitch': [-1.5707964000000001,
+                0.52359878999999998,
+                0.12793263999999999],
+  'RHipRoll': [-0.78539819, 0.43633232, 0.083077677000000003],
+  'RHipYawPitch': [-0.95993108000000005,
+                   0.69813168000000003,
+                   0.083077677000000003],
+  'RKneePitch': [0.0, 2.2689281000000001, 0.12793263999999999],
+  'RShoulderPitch': [-2.0943952000000001,
+                     2.0943952000000001,
+                     0.16528267999999999],
+  'RShoulderRoll': [-1.6580627999999999, 0.0, 0.14381513000000001],
+  'RWristYaw': [-1.8325956999999999, 2.6179937999999998, 0.14381513000000001]})
+
 # Color tables filenames
 WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
                 'src/nao-man/tables/maverick/webots.mtb')
@@ -215,3 +309,15 @@ WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
                 'src/nao-man/tables/maverick/default.mtb')
 
+# Debugging constants
+CONSOLE_LINE_LENGTH = 73
+
+# General unknown:
+UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+
+# Colors for the LEDs
+RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
+TeamColors = {0: BLUE, 1: RED}
+
+SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
+SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.

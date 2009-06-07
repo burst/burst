@@ -1,3 +1,5 @@
+import burst_consts
+
 ###############
 # Game States #
 ###############
@@ -11,8 +13,8 @@ FinishGameState = 4;
 #########
 # Teams #
 #########
-TeamA = 0; 
-TeamB = 1;
+TeamA = BlueTeam = 0; 
+TeamB = RedTeam = 1;
 
 #############
 # Penalties #
@@ -30,3 +32,27 @@ Damage = 9; # TODO: I'm not taking this into account at the moment.
 Manual = 10 # TODO: Is this correct?
 
 Penalties = [BallHoldingPenalty, GoaliePushingPenalty, PlayerPushingPenalty, IllegalDefenderPenalty, IllegalDefensePenalty, ObstructionPenalty]
+
+UNKNOWN_GAME_STATE = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+UNKNOWN_PLAYER_STATUS = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+
+#####################
+# Robot Game States #
+#####################
+InitialRobotState = 0;
+ReadyRobotState = 1;
+SetRobotState = 2;
+PlayRobotState = 3;
+PenalizedRobotState = 4;
+
+GameStateToRobotStateMap = {}
+for i in xrange(5): GameStateToRobotStateMap[i] = i;
+
+robotStateToChestButtonColor = {
+    InitialRobotState : burst_consts.OFF,
+    ReadyRobotState : burst_consts.BLUE,
+    SetRobotState : burst_consts.YELLOW,
+    PlayRobotState : burst_consts.GREEN,
+    PenalizedRobotState : burst_consts.RED, }
+
+

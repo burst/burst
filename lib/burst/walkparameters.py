@@ -1,7 +1,4 @@
-
-from consts import DEG_TO_RAD, RAD_TO_DEG
-
-
+from burst_consts import DEG_TO_RAD, RAD_TO_DEG
 
 class WalkParameters(list):
     ''' An encapsulation of the walk parameters. I saw a TODO in the actions 

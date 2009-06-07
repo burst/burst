@@ -25,10 +25,15 @@ from pynaoqi.widgets import Localization, Inertial, BaseWindow
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
 from burst_util import (cached, cached_deferred, Deferred, clip,
     DeferredList)
+from burst.walkparameters import WalkParameters
+
+################################################################################
 
 DT_CHECK_FOR_NEW_ANGLES   = 0.5 # seconds between socket calls
 DT_CHECK_FOR_NEW_INERTIAL = 0.5
 DT_CHECK_BATTERY_LEVEL    = 10.0
+
+################################################################################
 
 def toggle(initial=False):
     """ make a function into a toggle - this lets that function access a variable
@@ -263,7 +268,7 @@ def create_button_strip(data):
     return button_box, buttons
 
 ################################################################################
-#### Main Class
+#### Main Class (also usable from pynaoqi shell as naojoints)
 ################################################################################
 class Joints(BaseWindow):
 
@@ -382,7 +387,7 @@ class Joints(BaseWindow):
 
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
-            distance_per_step = self._walkconfig[0]
+            distance_per_step = self._walkconfig[WalkParameters.StepLength]
             return setWalkConfig(self.con, self._walkconfig).addCallback(
                 lambda result: self.con.ALMotion.addWalkStraight(
                     steps * distance_per_step, 60).addCallback(startWalkTest)

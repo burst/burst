@@ -6,7 +6,8 @@ MAJOR TODO: Testing. This is pure math code, it should
 be tested, and also carefully checked for input conditions
 """
 
-from burst_util import close_to_zero
+from math import atan2, asin, sin, cos
+from burst_util import close_to_zero, same
 
 def xyt_from_two_dist_one_angle(r1, r2, a1, d, p0, p1, debug=False):
     """ Compute the location given two distances to known landmarks and
@@ -101,3 +102,13 @@ def kick_angle_size_from_distance_and_angle_to_mid_target(r, a, l):
                                      # you must rely on r1, r2
     sin_b_2 = ( (d+e)**2 - (d-e)**2 / f ) / (4*d*e)
     return asin(sin_b_2**0.5)
+
+def test():
+    assert(
+        same(
+            position.xyt_from_two_dist_one_angle(200, 250, 0, 75, (0, 75), (0, -75))
+            ,(-200.0, 75, 0.0)))
+
+if __name__ == '__main__':
+    test()
+

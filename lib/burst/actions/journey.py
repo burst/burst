@@ -3,7 +3,7 @@ from burst.walkparameters import WalkParameters
 from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
 from burst.eventmanager import EVENT_MANAGER_DT
 from burst.events import EVENT_CHANGE_LOCATION_DONE
-from burst.consts import SUPPORT_MODE_DOUBLE_LEFT
+from burst_consts import SUPPORT_MODE_DOUBLE_LEFT
 from burst.world import World
 
 class Journey(object):
@@ -110,8 +110,9 @@ class Journey(object):
     def onLastLegPosted(self, postid):
         # final leg will call the user's callbacks
         last_leg_duration = 1.0 # TODO - duration calculation for real
-        self._world.robot.add_expected_walk_post(postid,
-            EVENT_CHANGE_LOCATION_DONE, last_leg_duration
+        self._world._movecoordinator.add_expected_walk_post(
+            ('journey last leg', self._distance, self._bearing, self._delta_theta),
+            postid, EVENT_CHANGE_LOCATION_DONE, last_leg_duration
                 ).onDone(self.callbackAndReset)
     
     def callbackAndReset(self):
@@ -139,15 +140,19 @@ class Journey(object):
         for real robot do a slow walk for SLOW_START_STEPS and then a normal walk
         """
         leg_distance = min(self._leg_distance, self._distance_left)
-        if World.connected_to_nao:
+        
+        # TODO: TEMP!!! True: 2 parts, False: 1 part
+        if World.connected_to_nao and True:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
             normal_walk_distance = leg_distance - slow_walk_distance
             self._addWalkStraight( "slow walk: %f", slow_walk_distance, DEFAULT_SLOW_WALK_STEPS )
             self._addWalkStraight( "normal walk: %f", normal_walk_distance, self._time_per_steps)
         else:
             self._addWalkStraight( "same speed: %f", leg_distance, self._time_per_steps )
+            
         self._distance_left -= leg_distance
         if self._distance_left < 0.0:
             print "ERROR: Journey distance left calculation incorrect"
             import pdb; pdb.set_trace()
             self._distance_left = 0.0
+

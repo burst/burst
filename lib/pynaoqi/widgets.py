@@ -20,8 +20,8 @@ except:
 
 import burst_util
 import burst
-from burst.consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
-import burst.consts as consts
+from burst_consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
+import burst_consts as consts
 import burst.image as image
 
 #############################################################################

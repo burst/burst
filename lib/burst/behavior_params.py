@@ -1,4 +1,4 @@
-from burst.consts import LEFT, RIGHT, DEG_TO_RAD
+from burst_consts import LEFT, RIGHT, DEG_TO_RAD
 from burst.world import World
 
 #===============================================================================
@@ -18,9 +18,10 @@ from burst.world import World
 (BALL_IN_KICKING_AREA,
  BALL_BETWEEN_LEGS,
  BALL_FRONT,
- BALL_SIDE,
+ BALL_SIDE_NEAR,
+ BALL_SIDE_FAR,
  BALL_DIAGONAL
- ) = range(5)
+ ) = range(6)
 
 ## Kicks
 # Kick consts (Measurements acquired via headTrackingTester)
@@ -36,5 +37,18 @@ KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_M
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
 
-KICK_OFFSET_FROM_BALL = 12
-
+def calcBallArea(ball_x, ball_y, side):
+    if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
+        return BALL_IN_KICKING_AREA
+    elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT] and ball_x <= KICK_X_MAX[side]:
+        return BALL_BETWEEN_LEGS
+    elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
+        return BALL_FRONT
+    else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
+        if ball_x <= KICK_X_MAX[side]:
+            if abs(ball_y) <= abs(KICK_Y_MAX[side])*3:
+                return BALL_SIDE_NEAR
+            else:
+                return BALL_SIDE_FAR
+        else: #ball_x > KICK_X_MAX[side]
+            return BALL_DIAGONAL

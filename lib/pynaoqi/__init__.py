@@ -295,6 +295,9 @@ nao_type_dict = {
     }
 
 def arrayctor(node):
+    # TODO - better fix. This happens with sonar
+    if node.firstChild.childNodes[0].attributes is None:
+        return [x.data for x in node.firstChild.childNodes]
     try:
         return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
     except:

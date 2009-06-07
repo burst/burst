@@ -1,7 +1,7 @@
 from math import atan2
 import burst
-from burst.consts import *
-from burst_util import (transpose, cumsum, normalize2, succeed,
+from burst_consts import *
+from burst_util import (transpose, cumsum, succeed,
     BurstDeferred, Deferred, DeferredList, chainDeferreds,
     wrapDeferredWithBurstDeferred)
 from burst.events import *
@@ -9,12 +9,13 @@ from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
 from burst.world import World
 from burst.walkparameters import WalkParameters
+from burst.image import normalized2_image_width, normalized2_image_height
 
 # Local modules
 from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
-from vision import Tracker, Searcher
+from headtracker import Tracker, Searcher
 
 #######
 
@@ -33,6 +34,8 @@ class Actions(object):
      * it is complex, runs for a long time.. (not very well understood)
     """
 
+    verbose = False
+
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
@@ -40,12 +43,15 @@ class Actions(object):
         self._speech = world.getSpeechProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
+        self._movecoordinator = self._world._movecoordinator
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
 
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
+    # These functions are generally a facade for internal objects, currently:
+    # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
     def kickBall(self, target_world_frame=None, target_bearing_distance=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
@@ -86,41 +92,11 @@ class Actions(object):
             raise Exception("Can't start searching while tracking")
         return self.searcher.search(targets)
 
-    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05):
-        """ Do a single tracking step, aiming to center on the given target.
-        Return value:
-         centerd, maybe_bd
-         centered - True if centered, False otherwise
-         maybe_bd - a BurstDeferred if head movement initiated, else None
-        """
-        def location_error(target, x_error, y_error):
-            # TODO - using target.centerX and target.centerY without looking at newness is broken.
-            # Normalize ball X between 1 (left) to -1 (right)
-            xNormalized = normalize2(target.centerX, IMAGE_HALF_WIDTH)
-            # Normalize ball Y between 1 (top) to -1 (bottom)
-            yNormalized = normalize2(target.centerY, IMAGE_HALF_HEIGHT)
-            return (abs(xNormalized) <= normalized_error_x and
-                    abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
-
-        bd = None
-        centered, xNormalized, yNormalized = location_error(target,
-            normalized_error_x, normalized_error_y)
-        if not centered and not self._world.robot.isHeadMotionInProgress():
-            CAM_X_TO_RAD_FACTOR = FOV_X / 4 # TODO - const that 1/4 ?
-            CAM_Y_TO_RAD_FACTOR = FOV_Y / 4
-            deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR
-            deltaHeadPitch =  yNormalized * CAM_Y_TO_RAD_FACTOR
-            #self._actions.changeHeadAnglesRelative(
-            # deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"),
-            # deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")
-            # ) # yaw (left-right) / pitch (up-down)
-            bd = self.changeHeadAnglesRelative(deltaHeadYaw, deltaHeadPitch)
-                        # yaw (left-right) / pitch (up-down)
-            #print "deltaHeadYaw, deltaHeadPitch (rad): %3.3f, %3.3f" % (
-            #       deltaHeadYaw, deltaHeadPitch)
-            #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
-            #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
-        return centered, bd
+    def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
+            return_exact_error=False):
+        return self.tracker.executeTracking(target,
+            normalized_error_x=normalized_error_x,
+            normalized_error_y=normalized_error_y)
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
@@ -159,7 +135,9 @@ class Actions(object):
         
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=('turn', deltaTheta, walk),
+            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.STRAIGHT_WALK):
         """
@@ -177,9 +155,9 @@ class Actions(object):
         distance, distanceSideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
         did_sideways = None
 
-        dgens = [] # deferred generators. This is the DESIGN PATTERN to collect a bunch of
-                   # stuff that would have been synchronous and turn it asynchronous
-                   # All lambda's should have one parameter, the result of the last deferred.
+        dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
+                    # stuff that would have been synchronous and turn it asynchronous
+                    # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
@@ -191,8 +169,9 @@ class Actions(object):
         stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
         if distance >= MINIMAL_CHANGELOCATION_X:
-            print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f)" % (stepLength, distance)
+            print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
             
+            #dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, stepLength*2)
             if World.connected_to_nao:
@@ -215,7 +194,9 @@ class Actions(object):
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self.bdFromPostIdDeferred(d, kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=('sideway', delta_x, delta_y, walk),
+            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
     def initPoseAndStiffness(self):
         """ Sets stiffness, then sets initial position for body and head.
@@ -239,6 +220,8 @@ class Actions(object):
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
         def removeStiffness(_):
+            if burst.options.debug:
+                print "sitPoseAndRelax: removing body stiffness"
             d = self._motion.setBodyStiffness(0)
             self._removeStiffnessDeferred = d   # XXX DEBUG Helper
             return d
@@ -255,6 +238,8 @@ class Actions(object):
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
+        # XXX we assume the order of these configs doesn't matter, hence the
+        # DeferredList - does it?
         ds = []
         ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude ))
@@ -267,6 +252,15 @@ class Actions(object):
                                                     ZmpOffsetX, ZmpOffsetY ))
 
         return DeferredList(ds)
+
+    def chainHeads(self, moves):
+        """ chain a number of headMoves, return a burstdeferred on the last
+        move. Useful for debugging, or just for sign language. see nodtester.py """
+        assert(len(moves) > 0)
+        bd = self.moveHead(*moves[0])
+        for move in moves[1:]:
+            bd = bd.onDone(lambda _, move=move: self.moveHead(*move))
+        return bd
 
     #===============================================================================
     #    Low Level
@@ -285,15 +279,17 @@ class Actions(object):
     # Kick strength - strength of the kick (between 0..1)
     def kick(self, kick_type, kick_leg, kick_strength=1):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
-        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)])
+        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
+            description=('kick', kick_type, kick_leg, kick_strength))
     
-    def executeMoveChoreograph(self, (jointCodes, angles, times)):
+    def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         duration = max(col[-1] for col in times)
         d = self._motion.post.doMove(jointCodes, angles, times, 1)
-        return self.bdFromPostIdDeferred(d, kind='motion',
-            event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description=('choreograph', whatmove),
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
-    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
+            description=('moveradians',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
@@ -319,11 +315,12 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description = description,
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
@@ -350,9 +347,10 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self.bdFromPostIdDeferred(d, kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d, description=description,
+            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
 
-    def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH):
+    def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
         moves is a list, each item contains:
         head (tuple of 2), interp_time
@@ -370,13 +368,20 @@ class Actions(object):
         duration = max(col[-1] for col in durations_matrix)
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         #print "executeHeadMove: duration = %s" % duration
-        return self.bdFromPostIdDeferred(d, kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
+        return self._movecoordinator.waitOnPostid(d,
+            description=description,
+            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
     def clearFootsteps(self):
         return self._motion.clearFootsteps()
 
-    def moveHead(self, x, y):
-        self._motion.gotoChainAngles('Head', [float(x), float(y)], 1, 1)
+    def moveHead(self, x, y, interp_time=1.0):
+        """ move from current yaw pitch to new values within
+        interp_time time (up to limit of actuators) """
+        if self.verbose:
+            print "MOVE HEAD to %s, %s" % (x, y)
+        return self.executeHeadMove([((float(x), float(y)), interp_time)],
+            description=('movehead', x, y))
 
     def blockingStraightWalk(self, distance):
         if self._world.robot.isMotionInProgress():
@@ -387,17 +392,18 @@ class Actions(object):
 
         walk = moves.STRAIGHT_WALK
 
-        self.setWalkConfig(walk.walkParameters)
+        self.setWalkConfig(walk.walkParameters).add
         self._motion.addWalkStraight( float(distance), 100 )
 
         postid = self._motion.post.walk()
         self._motion.wait(postid, 0)
         return True
 
-    def say(self, message):
-        print "saying: %s" % message
+    def say(self, message, shouldPrint=True):
+        if shouldPrint:
+            print "saying: %s" % message
         if not self._speech is None:
-            self._speech.say(message)
+            self._speech.post.say(message)
 
     def lookaround(self, lookaround_type):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
@@ -409,58 +415,43 @@ class Actions(object):
     # TODO? - generate these from moves.choreograph
 
     def executeGettingUpBelly(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BELLY)
+        return self.executeMoveChoreograph(moves.GET_UP_BELLY, "get up belly")
 
     def executeGettingUpBack(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BACK)
+        return self.executeMoveChoreograph(moves.GET_UP_BACK, "get up back")
 
     def executeLeapLeft(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT, "goalie leap left")
     
     def executeLeapLeftSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE, "goalie leap left safe")
 
     def executeLeapRight(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT, "goalie leap right")
     
     def executeLeapRightSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE)
+        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
 
     def executeCircleStrafer(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER)
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER, "circle strafer")
 
     def executeCircleStraferInitPose(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE) 
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 
 
     def executeTurnCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CW) 
+        return self.executeMoveChoreograph(moves.TURN_CW, "turn cw") 
 
     def executeTurnCCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CCW)
+        return self.executeMoveChoreograph(moves.TURN_CCW, "turn ccw")
     
     def executeToBellyFromLeapRight(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT)
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT, "to belly from leap right")
 
     def executeToBellyFromLeapLeft(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT)
+        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT, "to belly from leap left")
 
     #================================================================================
     # Utilities 
     #================================================================================
 
-    def bdFromPostIdDeferred(self, d, kind, event, duration):
-        """ return a BurstDeferred from a Deferred on an operation that
-        results in a Post ID (any movement in ALMotion)
-        """
-        post_handler = {'motion': self._world.robot.add_expected_motion_post,
-            'head':self._world.robot.add_expected_head_post,
-            'walk':self._world.robot.add_expected_walk_post}[kind]
-        bd = BurstDeferred(None)
-        def onPostId(postid):
-            if not isinstance(postid, int):
-                print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
-                print "ERROR:  Did you forget to enable ALMotion perhaps?"
-                raise SystemExit
-            post_handler(postid, event, duration).onDone(bd.callOnDone)
-        d.addCallback(onPostId)
-        return bd        
+

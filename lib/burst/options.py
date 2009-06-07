@@ -3,6 +3,8 @@ Command line and default config file for BURST robocup platform.
 """
 
 import os
+from burst_consts import ROBOT_IP_TO_NAME
+import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
     'options', 'ip', 'port']
@@ -45,6 +47,12 @@ def parse_command_line_arguments():
     parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
     parser.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
+    parser.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')
+    parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
+    parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
+    parser.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
+    parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
+    parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)
@@ -53,6 +61,8 @@ def parse_command_line_arguments():
     globals()['ip'] = ip
     globals()['port'] = port
     globals()['options'] = opts
+    # UGLY
+    burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
 
 LOCALHOST_IP = '127.0.0.1'
 
@@ -102,14 +112,7 @@ if (ip == 'localhost' or ip == LOCALHOST_IP) and port == 9559:
 elif port == 9560:
     robotname = 'webots'
 else:
-    robotname = {
-        '192.168.7.106'	: 'messi',
-        '192.168.7.107'	: 'gerrard',
-        '192.168.7.108'	: 'cech',
-        '192.168.7.177'	: 'hagi',
-        '192.168.7.109'	: 'raul',
-        '192.168.7.110'	: 'maldini',
-    }.get(ip, ip)
+    robotname = ROBOT_IP_TO_NAME.get(ip, ip)
 
 burst_target.robotname = robotname
 

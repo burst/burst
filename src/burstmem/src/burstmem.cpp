@@ -29,6 +29,8 @@ const char* CHARGER_CONFIG_FILENAME = "/home/root/burst/lib/etc/charger_warning.
 const char* MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap";
 const unsigned int MMAP_LENGTH      = 4096;
 
+const int SONAR_MMAP_SLOTS = 2; // left and right sonar, two floats.
+
 const int burstmem::CHARGER_UNKNOWN = 0,
     burstmem::CHARGER_CONNECTED = 1,
     burstmem::CHARGER_DISCONNECTED = 2;
@@ -231,7 +233,7 @@ void burstmem::startMemoryMap ()
         return;
     }
 
-    if (this->m_varnames.size() * sizeof(float) > MMAP_LENGTH) {
+    if ((SONAR_MMAP_SLOTS + this->m_varnames.size()) * sizeof(float) > MMAP_LENGTH) {
         std::cout << "burstmem: not starting, memory map file size is not enough,"
          "need " << this->m_varnames.size() * sizeof(float) <<", have "
          << MMAP_LENGTH << std::endl;
@@ -242,6 +244,18 @@ void burstmem::startMemoryMap ()
     std::cout << "burstmem: using " << m_values.size() << " variables" << std::endl;
 
     this->m_copying = true;
+
+    // Initialize sonar readings
+    try {
+        ALPtr<ALProxy> us = this->getParentBroker()->getProxy( "ALUltraSound" );
+        ALValue paramUS;
+        paramUS.arrayPush( 250 ); // every 250 ms
+        us->callVoid( "subscribe", getName(), paramUS );
+    } 
+    catch (AL::ALError e) {
+        std::cout << "burstmem: Failed to subscribe to ALUltraSound: " << e.toString () <<
+            std::endl;
+    }
 
     // do memory mapping
     if (!m_memory_mapped) {
@@ -293,6 +307,8 @@ void burstmem::stopMemoryMap ()
             std::endl;
     }
 
+    // TODO: unsubscribe to Sonar variables
+
     if (m_memory_mapped) {
         munmap(m_mmap, MMAP_LENGTH);
         m_memory_mapped = false;
@@ -325,10 +341,17 @@ burstmem::updateMemoryMappedVariables()
     if (!m_copying || !m_memory_mapped || m_varnames.size() == 0) return;
 
     try {
+        // special treatment to sonar vars - we get them as an array,
+        // dump the third parameter (a string), and store the two
+        // distances in floats
+        ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alultrasound/distances" ) );
+        m_mmap[0] = distanceUS[0];
+        m_mmap[1] = distanceUS[1];
+
         m_values = m_memory->getListData(m_varnames);
         // TODO: direct to the memory mapped file (or at least memcpy?)
         for (int i = 0 ; i < m_values.size(); ++i) {
-            m_mmap[i] = m_values[i];
+            m_mmap[i + SONAR_MMAP_SLOTS] = m_values[i];
             //std::cout << "value " << i << " = " << m_values[i] << std::endl;
         }
     }

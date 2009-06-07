@@ -5,7 +5,7 @@ import linecache
 import mmap
 
 import burst
-from burst.consts import (BURST_SHARED_MEMORY_PROXY_NAME,
+from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
     MMAP_FILENAME, MMAP_LENGTH)
 
 class SharedMemoryReader(object):

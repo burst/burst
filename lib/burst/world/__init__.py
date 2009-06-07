@@ -28,11 +28,21 @@ from team import Team
 from computed import Computed
 from objects import Locatable
 from localization import Localization
+from movecoordinator import MoveCoordinator
+from kinematics import Pose
+from odometry import Odometry
+import burst.field as field
 
-sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
-from gamecontroller import GameControllerMessage, GameController
-sys.path.append(os.path.join(os.path.dirname(burst.__file__), '../etc'))
-import robot_settings
+# TODO: Shouldn't require adding something to the path at any point
+# after player_init
+#sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
+from gamecontroller import GameControllerMessage, GameController, EmptyGameController
+from ..player_settings import PlayerSettings
+from gamestatus import GameStatus, EmptyGameStatus
+
+no_game_controller = False
+no_game_status = False
+
 
 def timeit(tmpl):
     def wrapper(f):
@@ -99,6 +109,8 @@ class World(object):
         self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
+        self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
+        self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
         self._events = set()
         self._deferreds = []
         
@@ -116,13 +128,19 @@ class World(object):
         self._shm = None
 
         self.time = time()
-        self.const_time = self.time     # construction time
+        self.start_time = self.time     # construction time
 
         # Variables for body joint angles from dcm
         self._getAnglesMap = dict([(joint,
             'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
             for joint in self.jointnames])
-        self.addMemoryVars(self._getAnglesMap.values())
+        self._body_angles_vars = self._getAnglesMap.values()
+        self.addMemoryVars(self._body_angles_vars)
+
+        # Variables for Inclination angles
+        self._inclination_vars = ['Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
+            'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
+        self.addMemoryVars(self._inclination_vars)
 
         self._recorded_vars = self.getRecorderVariableNames()
 
@@ -132,24 +150,47 @@ class World(object):
 
         # Stuff that we prefer the users use directly doesn't get a leading
         # underscore
+        #  * Vision recognized objects
         self.ball = Ball(self)
-        self.bglp = GoalPost(self, 'BGLP', EVENT_BGLP_POSITION_CHANGED)
-        self.bgrp = GoalPost(self, 'BGRP', EVENT_BGRP_POSITION_CHANGED)
-        self.yglp = GoalPost(self, 'YGLP', EVENT_YGLP_POSITION_CHANGED)
-        self.ygrp = GoalPost(self, 'YGRP', EVENT_YGRP_POSITION_CHANGED)
+        # ULTRA MAJOR TODO: coordinate consistency. The BLUE goal is not always our
+        # goal. Actually, it is so only half the time. Our system says that OUR
+        # goal is at 0.0, so we should look at TEAM, see who we are, and only
+        # then UPDATE THE GOALS COORDINATES.
+        bglp_x, bglp_y = field.blue_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
+        bgrp_x, bgrp_y = field.blue_goal.bottom_post.xy
+        yglp_x, yglp_y = field.yellow_goal.bottom_post.xy
+        ygrp_x, ygrp_y = field.yellow_goal.top_post.xy
+        self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED, bglp_x, bglp_y)
+        self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED, bgrp_x, bgrp_y)
+        self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED, yglp_x, yglp_y)
+        self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED, ygrp_x, ygrp_y)
+        # TODO - other robots
+        # Buttons, Leds (TODO: ultrasound, 
         self.robot = Robot(self)
         self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a
         # reference to them.
         self.team = Team(self)
+        # TODO - is computed used? should be renamed for legibility
         self.computed = Computed(self)
+        # Self orientation and Location of self and other objects in field.
+        # (passes some stuff into other objects)
+        self.pose = Pose(self)
         self.localization = Localization(self)
+        self.odometry = Odometry(self)
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
-        self.robotSettings = robot_settings
-        import gamestatus
-        self.gameStatus = gamestatus.GameStatus(self.robotSettings)
-        self._gameController = GameController(self.gameStatus)
+        self.playerSettings = PlayerSettings(self) # Start with the default settings. You will be configured later to the right ones by the referees.
+        if no_game_status:
+            self.gameStatus = EmptyGameStatus()
+        else:
+            self.gameStatus = GameStatus(self, self.playerSettings)
+        if no_game_controller:
+            self._gameController = EmptyGameController()
+        else:
+            self._gameController = GameController(self.gameStatus)
+
+        self._movecoordinator = MoveCoordinator(self)
 
         # All objects that we delegate the event computation and naoqi
         # interaction to.  TODO: we have the exact state of B-HUMAN, so we
@@ -164,8 +205,10 @@ class World(object):
         self._objects = [
             # All basic objects that rely on just naoproxies should be in the
             # first list
-            [self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
+            [self._movecoordinator,
+             self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
              self.robot, self.falldetector, self._gameController],
+            [self.gameStatus],
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
@@ -185,6 +228,8 @@ class World(object):
             SharedMemoryReader.tryToInitMMap()
             if SharedMemoryReader.isMMapAvailable():
                 print "world: using SharedMemoryReader"
+                if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
+                    self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
                 self._shm = SharedMemoryReader(self._vars_to_get_list)
                 self._shm.open()
                 self.vars = self._shm.vars
@@ -270,6 +315,14 @@ class World(object):
         """
         return self.vars[self._getAnglesMap[jointname]]
 
+    def getBodyAngles(self):
+        # TODO - OPTIMIZE? 
+        return self.getVars(self._body_angles_vars)
+
+    def getInclinationAngles(self):
+        # TODO - OPTIMIZE? 
+        return self.getVars(self._inclination_vars)
+
     # accessors that wrap ALMotion
     # TODO - cache these
     def getRemainingFootstepCount(self):
@@ -286,7 +339,7 @@ class World(object):
         self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults)
 
     def onCheckManModuleResults(self, result):
-        print "onCheckManModuleResults: %r" % (result,)
+        #print "onCheckManModuleResults: %r" % (result,)
         if result[0] == 'None':
             print "WARNING " + "*"*60
             print "WARNING"
@@ -294,7 +347,7 @@ class World(object):
             print "WARNING"
             print "WARNING " + "*"*60
         else:
-            print "Man is there, vision should be good. Famous last words."
+            print "Man found"
 
     # ALMemory and Shared memory functions
 
@@ -411,7 +464,7 @@ class World(object):
         self._record_csv.writerow(self.getVars(self._recorded_vars))
         self._record_line_num += 1
         if self._record_line_num % 10 == 0:
-            print "(%3.3f) written csv line %s" % (self.time - self.const_time, self._record_line_num)
+            print "(%3.3f) written csv line %s" % (self.time - self.start_time, self._record_line_num)
 
     def stopRecord(self):
         if self._record_file:

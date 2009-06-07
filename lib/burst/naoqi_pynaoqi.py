@@ -15,6 +15,12 @@ def getMemoryProxy(deferred = False):
 def getMotionProxy(deferred = False):
     return con.ALMotion
 
+def getLedsProxy(deferred = False):
+    return con.ALLeds
+
+def getUltraSoundProxy(deferred = False):
+    return con.ALUltraSound
+
 def getBroker():
     """ this is BROKEN """
     return con

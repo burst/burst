@@ -15,7 +15,7 @@ if os.getcwd() == in_tree_dir:
 import domove_constants
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 # TODO: Add OnDone on DCM motion sequence finished/cleared
 #from burst_util import transpose, cumsum, BurstDeferred

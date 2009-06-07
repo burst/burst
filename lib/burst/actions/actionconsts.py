@@ -1,10 +1,10 @@
 """
-Actions constants (as opposed to burst.consts)
+Actions constants (as opposed to burst_consts)
 """
 
 import burst.moves as moves
 from burst.world import World
-from burst.consts import LEFT, RIGHT, DOWN, UP
+from burst_consts import LEFT, RIGHT, DOWN, UP
 
 INITIAL_STIFFNESS  = 1.0 # TODO: Check other stiffnesses, as this might not be optimal.
 

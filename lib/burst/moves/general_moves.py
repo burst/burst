@@ -1,11 +1,11 @@
 #constants file to store all our sweet ass-moves for the Nao # Marvelous XKCD reference!
 #import MotionConstants
-from burst.consts import DEG_TO_RAD
+from burst_consts import DEG_TO_RAD
 from ..world import World
 
 # array with names of attributes of this module that can be run with executeMove
 # in the naojoints utility (burst/bin/naojoints.py)
-NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND".split()
+NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND STAND_UP_FRONT STAND_UP_BACK".split()
 
 '''
     Angles:
@@ -85,8 +85,6 @@ HEAD_SCAN_FRONT = (
     ((HEAD_YAW_RIGHT_MOST, 0), 3.0),
     ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_UP_MOST), 0.3),
     ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_UP_MOST), 4.0),
-    ((HEAD_YAW_LEFT_MOST, HEAD_PITCH_UP_MAX), 0.3),
-    ((HEAD_YAW_RIGHT_MOST, HEAD_PITCH_UP_MAX), 3.0),
     (HEAD_POS_FRONT_FAR, 0.3),
     )
 
@@ -432,10 +430,10 @@ STAND_UP_FRONT = ( ((90,50,0,0),
                     (0,0,-60,120,-60,0),
                     (93,-10,90,80),1.0),
 
-                   ( INITIAL_POS[0][0],
-                     INITIAL_POS[0][1],
+                   ( INITIAL_POS[0][1], # start from [1] to skip head
                      INITIAL_POS[0][2],
-                     INITIAL_POS[0][3],0.5))
+                     INITIAL_POS[0][3],
+                     INITIAL_POS[0][4],0.5))
 
 STAND_UP_BACK = ( ((0,90,0,0),
                    (0,0,0,0,0,0),
@@ -488,10 +486,10 @@ STAND_UP_BACK = ( ((0,90,0,0),
                    (0,0,-50,120,-70,0),
                    (98,-2,72,65), 1.1),
 
-                  ( INITIAL_POS[0][0],
-                    INITIAL_POS[0][1],
+                  ( INITIAL_POS[0][1], # Start from [1] to skip head
                     INITIAL_POS[0][2],
-                    INITIAL_POS[0][3],0.5))
+                    INITIAL_POS[0][3],
+                    INITIAL_POS[0][4],0.5))
 
 STABLE_WALK_INITIAL_POSE = [
                 (HEAD_POS_FRONT_BOTTOM, #(0.065920039999999999,-0.65199196000000004),
@@ -499,6 +497,15 @@ STABLE_WALK_INITIAL_POSE = [
                  (0.0061779618000000003,-0.0076280384999999999,-0.78536605999999998,1.5431621,-0.78238200999999996,0.016915962),
                  (0.0061779618000000003,0.072139964000000001,-0.77931397999999996,1.53711,-0.79303604000000005,-0.073590039999999995),
                  (1.734996,-0.25008397999999998,1.5646381,0.36053199000000002),
+                 1.0),
+                ]
+
+STRAIGHT_WALK_INITIAL_POSE = [
+                (HEAD_POS_FRONT_BOTTOM, #(-0.0077119618999999997, 0.029104039000000002)
+                 (1.7655921000000001, 0.27914604999999998, -1.558586, -0.50157607000000004),
+                 (0.010779962000000001, -0.047512039999999998, -0.57214003999999996, 1.0384761, -0.52160196999999997, 0.042993963000000003),
+                 (0.010779962000000001, 0.039925963000000002, -0.58449596000000004, 1.0308900000000001, -0.51845001999999996, -0.041376039000000003),
+                 (1.7380640999999999, -0.25468596999999998, 1.5615699999999999, 0.54307795000000003),
                  1.0),
                 ]
 

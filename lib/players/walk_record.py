@@ -11,7 +11,7 @@ import player_init
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 import burst.moves as moves
 
@@ -56,7 +56,7 @@ class WalkRecorder(Player):
     def _stopRecordWithRecorder(self):
         self.recorder.stopRecording()
         rows = self.recorder.getRowNumber()
-        print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.const_time))
+        print "recorded %s rows (avg %3.3f Hz)" % (rows, rows/(self._world.time - self._world.start_time))
 
     startRecord = _recordWithRecorder
     stopRecord_helper = _stopRecordWithRecorder

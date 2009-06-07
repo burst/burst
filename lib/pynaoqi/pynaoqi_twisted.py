@@ -16,6 +16,10 @@ class SoapConnectionManager(object):
         self._errors_connecting = 0
         self.con = con
         self.verbose = con.options.verbose_twisted
+        # These two numbers should be equal, difference is roughly a measure of latency / bandwidth
+        self._sent = 0
+        self._returned = 0
+        self._max_protocols = None # NOT IMPLEMENTED YET
         if LOG_HEADERS:
             self.con.log = open('headers.txt', 'a+')
 
@@ -37,9 +41,11 @@ class SoapConnectionManager(object):
     def sendPacket(self, tosend):
         """ reuse this method to also clean up closed sockets at the same time.
         note that this is not a solution to why they were closed in the first place. """
-        deferred = Deferred()
+        # TODO - rename sendPacket to sendMessage - not actually a single packet
+        deferred = Deferred().addCallback(self._logReturnMessage)
         to_delete = []
         returned = None
+        self._sent += 1
         for i, prot in enumerate(self._protocols):
             if prot.transport.disconnected:
                 to_delete.append(i)
@@ -54,9 +60,18 @@ class SoapConnectionManager(object):
             del self._protocols[i]
         if returned:
             return returned
-        # no existing protocol
-        self._makeNewProtocol(tosend=tosend, deferred=deferred)
+        # no ready protocol
+        if self._max_protocols is not None and len(self._protocols) >= self._max_protocols:
+            # queue it
+            raise NotImplemented("No Support for Max Protocols yet")
+        else:
+            # create a new connection
+            self._makeNewProtocol(tosend=tosend, deferred=deferred)
         return deferred
+
+    def _logReturnMessage(self, ret):
+        self._returned += 1
+        return ret
 
 class SoapProtocol(Protocol):
 

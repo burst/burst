@@ -9,7 +9,7 @@ if os.getcwd() == in_tree_dir:
 
 from burst.player import Player
 from burst.events import *
-from burst.consts import *
+from burst_consts import *
 import burst.moves as moves
 from math import cos, sin
 import time
@@ -33,34 +33,34 @@ class goalie(Player):
         
     def whichBehavior (self):
         if self.isPenalty:
-            self._eventmanager.register(BALL_MOVING_PENALTY, self.leapPenalty)
+            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
             self.isTrackingBall = True
-            self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+            self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         else:
             self.watchIncomingBall()
         self._actions.say("ready")
 
     def watchIncomingBall(self):            
-        self._eventmanager.register(EVENT_BALL_BODY_INTERSECT_UPDATE, self.leap)
+        self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.isTrackingBall = True
-        self._eventmanager.register(EVENT_BALL_IN_FRAME, self.trackBall)
+        self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         
     def leapPenalty(self):
-        self._eventmanager.unregister(BALL_MOVING_PENALTY)
+        self._eventmanager.unregister(self.leapPenalty)
         self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        self._eventmanager.unregister(self.trackBall)
         print self._world.ball.dy
         if self._world.ball.dy < 0:
             self._actions.say("leap right")
         else:
             self._actions.say("leap Left")
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.whichBehavior)
+        self._eventmanager.callLater(TIME_WAITING, self.whichBehavior)
             
 
     def leap(self):
-        self._eventmanager.unregister(EVENT_BALL_BODY_INTERSECT_UPDATE)
+        self._eventmanager.unregister(self.leap)
         self.isTrackingBall = False
-        self._eventmanager.unregister(EVENT_BALL_IN_FRAME)
+        self._eventmanager.unregister(self.trackBall)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
@@ -70,10 +70,10 @@ class goalie(Player):
             self.watchIncomingBall()
 
     def waitingOnRight(self):
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpRight)
+        self._eventmanager.callLater(TIME_WAITING, self.gettingUpRight)
 
     def watingOnLeft(self):
-        self._eventmanager.setTimeoutEventParams(TIME_WAITING, oneshot=True, cb=self.gettingUpLeft)
+        self._eventmanager.callLater(TIME_WAITING, self.gettingUpLeft)
 
 
     def gettingUpRight(self):

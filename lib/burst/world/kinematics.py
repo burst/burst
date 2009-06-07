@@ -9,23 +9,21 @@ localization module, at first step to check the localization of northern
 since I suspect they don't use the pitch correctly.
 """
 
-import numpy
 import math
 from math import asin, hypot, atan, pi, atan2
-from numpy import (sin, cos, zeros,
-    tan, array, dot)
-from numpy.linalg import norm
-from scipy.linalg import lu, lu_factor
 
-import twisted.python.log as log
+from burst_numpy_util import (sin, cos, zeros,
+    tan, array, dot, norm,
+    lu, lu_factor,
+    identity, translation4D, rotation4D,
+    vector4D)
 
 from burst_util import nicefloats, DeferredList, grid_points
-from burst.consts import HEAD_PITCH_JOINT_INDEX
+from burst_consts import HEAD_PITCH_JOINT_INDEX
 
 from burst import options, field
-from burst.consts import *
+from burst_consts import *
 import burst
-from burst.position import xyt_from_two_dist_one_angle
 
 # TODO - pynaoqi'sm, should be factored out to some
 # joint object that both burst and pynaoqi will use,
@@ -41,14 +39,6 @@ from burst.position import xyt_from_two_dist_one_angle
 #  dot(X,row)
 # matrix by col: same!
 #  dot(X,col)
-
-M_TO_CM  = 100.0
-CM_TO_M  = 0.01
-CM_TO_MM = 10.0
-MM_TO_CM = 0.1
-
-X_AXIS, Y_AXIS, Z_AXIS, W_AXIS = 0, 1, 2, 3
-X, Y, Z = 0, 1, 2
 
 (HEAD_CHAIN, LARM_CHAIN, LLEG_CHAIN, RLEG_CHAIN, RARM_CHAIN) = range(5)
 
@@ -113,44 +103,6 @@ class Estimate(list):
 
 NULL_ESTIMATE = Estimate()
 
-## Matrix Utilities
-
-def identity():
-    return numpy.identity(4)
-
-def translation4D(dx, dy, dz):
-    m = identity()
-    m[X_AXIS,W_AXIS] = dx
-    m[Y_AXIS,W_AXIS] = dy
-    m[Z_AXIS,W_AXIS] = dz
-    return m
-
-def vector4D(x, y, z, w=1.0):
-    return array([x, y, z, w])
-
-def rotation4D(axis, angle):
-    rot = identity()
-    sinAngle = sin(angle)
-    cosAngle = cos(angle)
-    if angle == 0.0:
-        return rot;
-    if axis == X_AXIS:
-        rot[Y_AXIS, Y_AXIS] =  cosAngle
-        rot[Y_AXIS, Z_AXIS] = -sinAngle
-        rot[Z_AXIS, Y_AXIS] =  sinAngle
-        rot[Z_AXIS, Z_AXIS] =  cosAngle
-    elif axis == Y_AXIS:
-        rot[X_AXIS, X_AXIS] =  cosAngle
-        rot[X_AXIS, Z_AXIS] =  sinAngle
-        rot[Z_AXIS, X_AXIS] = -sinAngle
-        rot[Z_AXIS, Z_AXIS] =  cosAngle
-    elif axis == Z_AXIS:
-        rot[X_AXIS, X_AXIS] =  cosAngle
-        rot[X_AXIS, Y_AXIS] = -sinAngle
-        rot[Y_AXIS, X_AXIS] =  sinAngle
-        rot[Y_AXIS, Y_AXIS] =  cosAngle
-    return rot
-
 def calculateForwardTransform(id, angles):
     """
     id - chain id
@@ -198,9 +150,9 @@ def calculateForwardTransform(id, angles):
 
 #### NaoPose
 
-class NaoPose(object):
+class Pose(object):
     """
-     NaoPose: The class that is responsible for calculating the pose of the robot
+     Pose: The class that is responsible for calculating the pose of the robot
      in order that the vision system can tell where the objects it sees are located
      with respect to the center of the body.
     
@@ -218,7 +170,7 @@ class NaoPose(object):
       * The world frame. orgin at the center of mass, alligned with the ground
       * The horizon frame. origin at the focal point, alligned with the ground
     
-     The following methods are central to the functioning of NaoPose:
+     The following methods are central to the functioning of Pose:
       * tranform()     - must be called each frame. setups transformation matrices
                          for the legs and the camera, which enables calculation of
                          body height and horizon
@@ -265,7 +217,7 @@ class NaoPose(object):
     
     """
 
-    def __init__(self):
+    def __init__(self, world):
         self.cameraToWorldFrame = identity()
         self.focalPointInWorldFrame = identity()
         self.comHeight = 0 # MM cause that's the way they do it.
@@ -277,153 +229,8 @@ class NaoPose(object):
             'Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
             'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
         self._inclination = [0.0, 0.0]
-        self.transform([0.0]*26, [0.0,0.0]) # init stuff
+        self.updateTransforms([0.0]*26, [0.0,0.0]) # init stuff
         self._connecting_to_webots = burst.connecting_to_webots()
-        self._location = None
-        self._ball_location = None
-
-    # Helper Pynaoqi functions
-
-    def updateLocations(self, con):
-        """ Call update and return pairs of coordinates for interesting points.
-        Later return objects that contain:
-         * last known location
-         * location computation trail: this is mainly debugging, but it will
-          become a powerful tool for determining how to use the location, it should
-          be a succint explanation how NaoPose computed the current location:
-           - last frame saw all yellow goal (SAYG)
-           - 10 frames ago SAYG, stood still and turned head since then
-           - -10 SAYG, 5f stood still, 5f odo said 2 steps forward.
-           - friend?
-        """
-        def returnPairs(result):
-            results = []
-            if self._location:
-                #print "x %3.3f y %3.3f theta %3.3f" % self._location
-                results.append(self._location[:2])
-            return results
-
-        return self.update(con).addCallback(returnPairs)
-
-    def update(self, con):
-        """ Development helper. Not to be confused with player usable code.
-        """
-        from pynaoqi.shell import onevision
-        d = DeferredList([
-            con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
-            con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
-            onevision().addCallback(self._storeVision),
-            ], fireOnOneErrback=True).addCallbacks(self._updateFromVisionAndAngles, log.err)
-        return d
-
-    def update_print(self, con):
-        return self.update(con).addCallback(self._printUpdatedCalculations)
-
-    def _storeInclination(self, result):
-        if not self._connecting_to_webots:
-            self._inclination = result
-
-    def _storeBodyAngles(self, result):
-        self._bodyAngles = result
-
-    def _storeVision(self, result):
-        self._v = result
-
-    def _printUpdatedCalculations(self, result):
-        print "inclination:", nicefloats(self._inclination)
-        print "joints:     ", nicefloats(self._bodyAngles)
-        print "comheight:  ", self.comHeight
-        print "focal WF:   ", self.focalPointInWorldFrame
-        print "cameraToWF:\n", (self.cameraToWorldFrame*100).astype('int')
-        print
-        v = self._v
-        for name, obj in [('YGLP', v.YGLP),
-                    ('YGRP', v.YGRP), ('Ball', v.Ball)]:
-            estimate, dist_height = self._estimates[name]
-            print "mine: pix=%3.3f, height=%3.3f, given: focDist=%3.3f, dist=%3.3f" % (
-                estimate.dist, dist_height, obj.focdist, obj.distance)
-            print "mine: bearing=%3.3f, given: bearing=%3.3f" % (
-                estimate.bearing*180.0/pi, obj.bearingdeg)
-        if self._location:
-            x, y, theta = self._location
-            theta *= 180.0/pi
-            print "Location: %3.3f %3.3f %3.3f" % (x, y, theta)
-
-    def _returnDistances(self, _):
-        """ Tester for pixHeightToDistancePlus. To run do in pynaoqi:
-        import burst.kinematics as kin
-        loop(lambda: kin.pose.update(con, kin.pose._returnDistances).addCallback(nicefloats), dt=0.5)
-        """
-        def one(obj):
-            return self.pixHeightToDistancePlus(obj.height, obj.x, field.GOAL_POST_CM_HEIGHT, debug=True)
-        return one(self._v.YGRP) + one(self._v.YGLP)
-
-    def _updateFromVisionAndAngles(self, result):
-        """ update all estimations and localization information, ultimately also the
-        any EKF/MCL code, here. Can be called iteratively for same input, should be
-        called on any new information (joints, inclinations, vision objects pixel
-        location).
-        """
-        # update the transforms
-        self.transform(self._bodyAngles, self._inclination)
-        # calculate various objects distances
-        v = self._v
-        self._estimates = estimates = {}
-        goal_post_height = field.GOAL_POST_CM_HEIGHT
-        for name, obj, objheight_cm in [
-            ('YGLP', v.YGLP, goal_post_height),
-            ('YGRP', v.YGRP, goal_post_height), ('Ball', v.Ball, 10)]:
-            if obj.distance == 0.0:
-                estimates[name] = (NULL_ESTIMATE, 0.0)
-                continue
-            if name == 'Ball':
-                x, y = obj.centerx, obj.centery # ball doesn't record the bottom x and y
-            else:
-                # obj.y is actually the top in the image, would generate a null
-                # estimate every time since the goal post is higher then the
-                # robot
-                x, y = obj.centerx, obj.y + obj.height
-            estimate = self.pixEstimate(x, y, 0.0)
-            # pixHeightToDistancePlus DOESN'T WORK - solution right now is to only use
-            # value of pixel when the object is in bearing=0
-            #dist_height = self.pixHeightToDistancePlus(obj.height, x,
-            #    objheight_cm)
-            dist_height = self.pixHeightToDistance(obj.height, objheight_cm)
-            estimates[name] = (estimate, dist_height)
-        # Try to calculate our position in WF
-        self._updateXYTheta_from_twoDistOneAngle()
-        return self
-
-    def _updateXYTheta_from_twoDistOneAngle(self,
-            top=None, bottom=None, debug=False):
-        """ Take two objects and update our self location in WF from it.
-        NOTE: the objects need to be ordered - top_y > bottom_y
-        
-        Defaults to Yellow Goal Left Post and Right Post (Top and Bottom
-        respectively)
-        """
-        if top is not None or bottom is not None:
-            raise NotIMplementedError('Not done yet')
-        yglp, ygrp = self._v.YGLP, self._v.YGRP
-        if yglp.distance != 0.0 and ygrp.distance != 0.0:
-            (e_left, r1), (e_right, r2) = (
-                self._estimates['YGLP'],
-                self._estimates['YGRP'])
-            p0 = field.yellow_goal.top_post.xy
-            p1 = field.yellow_goal.bottom_post.xy
-            d = field.CROSSBAR_CM_WIDTH / 2.0
-            # XXX: I think the YGLP is the BOTTOM, not the TOP
-            if e_right.dist == 0.0:
-                #print "using given bearing"
-                a1 = ygrp.bearingdeg * pi / 180.0
-            else:
-                a1 = e_right.bearing
-            x, y, theta = xyt_from_two_dist_one_angle(
-                r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
-            self._location = (x, y, theta)
-            self._location_origin = (r1, r2, a1, d, p0, p1)
-            return x, y, theta
-        return None
 
     def pixHeightToDistancePlus(self, pixHeight, pix_x, cmHeight,
             debug=False, verbose=False):
@@ -470,7 +277,7 @@ class NaoPose(object):
 
     # NaoPose.cpp 
 
-    def transform(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
+    def updateTransforms(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
         """
         TOOD: get supportFoot from ALMotion (if it is our own walk engine should
         be easier)
@@ -480,6 +287,11 @@ class NaoPose(object):
         calculate the transformation from the camera frame to the world frame.
         Then we calculate horizon and camera height which is necessary for the
         calculation of pix estimates.
+
+        Input:
+            bodyAngles, inclinationAngles - angles of body joints and accelerometer calculated
+                inclination.
+            supportLegChain - which leg is on the ground.
         """
 
         self._bodyAngles = bodyAngles
@@ -525,7 +337,7 @@ class NaoPose(object):
     def calcImageHorizonLine(self):
         """
          Calculates a horizon line for real image via the camera matrix which is a
-         global member of NaoPose. The line is stored as two endpoints on the left and
+         global member of Pose. The line is stored as two endpoints on the left and
          right of the screen in horizonLeft and horizonRight.
         """
         # Moving the camera frame to the center of the body lets us compare the
@@ -703,6 +515,15 @@ class NaoPose(object):
         est = self.pixEstimate(pix_x, pix_y, 0.0)
         return est, pix_x, pix_y
 
+    def getAllDistanceEstimates(self, pixelX, pixelY, pixWidth, pixHeight,
+            objectHeightAboveGround_cm, cmHeight, cmWidth):
+        return (self.pixEstimate(pixelX=pixelX, pixelY=pixelY,
+            objectHeight_cm=objectHeightAboveGround_cm),
+                self.pixHeightToDistance(pixHeight=pixHeight,
+                    cmHeight=cmHeight),
+                self.pixWidthToDistance(pixWidth=pixWidth,
+                    cmWidth=cmWidth))
+
     def pixEstimate(self, pixelX, pixelY, objectHeight_cm, debug=False):
         """
          returns an estimate to a given x,y pixel, representing an
@@ -837,7 +658,7 @@ class NaoPose(object):
         temp = objInWorldFrame[Y] / objInWorldFrame[X]
         if (temp != 0):
             # quadrants +x,+y and +x-y
-            if( xPos and (yPos or not yPos) ):
+            if xPos and (yPos or not yPos):
                 pix_est[EST_BEARING] = atan(temp)
             elif yPos: # quadrant -x+y
                 pix_est[EST_BEARING] = atan(temp) + pi
@@ -874,13 +695,10 @@ def correctDistance(uncorrectedDist):
         0.858283 * uncorrectedDist + 2.18768)
 
 
-# Numerics
-INFTY = 1E+37
-
 # Screen edge coordinates in the camera coordinate frame
-topLeft = vector4D(FOCAL_LENGTH_MM, IMAGE_WIDTH_MM/2, IMAGE_HEIGHT_MM/2)
-bottomLeft = vector4D(FOCAL_LENGTH_MM, IMAGE_WIDTH_MM/2, -IMAGE_HEIGHT_MM/2)
-topRight = vector4D(FOCAL_LENGTH_MM, -IMAGE_WIDTH_MM/2, IMAGE_HEIGHT_MM/2)
+topLeft     = vector4D(FOCAL_LENGTH_MM,  IMAGE_WIDTH_MM/2,  IMAGE_HEIGHT_MM/2)
+bottomLeft  = vector4D(FOCAL_LENGTH_MM,  IMAGE_WIDTH_MM/2, -IMAGE_HEIGHT_MM/2)
+topRight    = vector4D(FOCAL_LENGTH_MM, -IMAGE_WIDTH_MM/2,  IMAGE_HEIGHT_MM/2)
 bottomRight = vector4D(FOCAL_LENGTH_MM, -IMAGE_WIDTH_MM/2, -IMAGE_HEIGHT_MM/2)
 
 # Kinematics
@@ -1129,8 +947,154 @@ NUM_BASE_TRANSFORMS = [1,1,1,1,1]
 NUM_END_TRANSFORMS = [4,2,3,3,2]
 NUM_JOINTS_CHAIN = [2,4,6,6,4]
 
-######
+################################################################################
 
-pose = NaoPose()
+class PynaoqiPose(Pose):
+
+    # Helper Pynaoqi functions
+
+    def updateLocations(self, con):
+        """ Call update and return pairs of coordinates for interesting points.
+        Later return objects that contain:
+         * last known location
+         * location computation trail: this is mainly debugging, but it will
+          become a powerful tool for determining how to use the location, it should
+          be a succint explanation how Pose computed the current location:
+           - last frame saw all yellow goal (SAYG)
+           - 10 frames ago SAYG, stood still and turned head since then
+           - -10 SAYG, 5f stood still, 5f odo said 2 steps forward.
+           - friend?
+        """
+        def returnPairs(result):
+            results = []
+            if self._location:
+                #print "x %3.3f y %3.3f theta %3.3f" % self._location
+                results.append(self._location[:2])
+            return results
+
+        return self.update(con).addCallback(returnPairs)
+
+    def update(self, con):
+        """ Development helper. Not to be confused with player usable code.
+        """
+        from pynaoqi.shell import onevision
+        import twisted.python.log as log
+
+        d = DeferredList([
+            con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
+            con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
+            onevision().addCallback(self._storeVision),
+            ], fireOnOneErrback=True).addCallbacks(self._updateFromVisionAndAngles, log.err)
+        return d
+
+    def update_print(self, con):
+        return self.update(con).addCallback(self._printUpdatedCalculations)
+
+    def _storeInclination(self, result):
+        if not self._connecting_to_webots:
+            self._inclination = result
+
+    def _storeBodyAngles(self, result):
+        self._bodyAngles = result
+
+    def _storeVision(self, result):
+        self._v = result
+
+    def _printUpdatedCalculations(self, result):
+        print "inclination:", nicefloats(self._inclination)
+        print "joints:     ", nicefloats(self._bodyAngles)
+        print "comheight:  ", self.comHeight
+        print "focal WF:   ", self.focalPointInWorldFrame
+        print "cameraToWF:\n", (self.cameraToWorldFrame*100).astype('int')
+        print
+        v = self._v
+        for name, obj in [('YGLP', v.YGLP),
+                    ('YGRP', v.YGRP), ('Ball', v.Ball)]:
+            estimate, dist_height = self._estimates[name]
+            print "mine: pix=%3.3f, height=%3.3f, given: focDist=%3.3f, dist=%3.3f" % (
+                estimate.dist, dist_height, obj.focdist, obj.distance)
+            print "mine: bearing=%3.3f, given: bearing=%3.3f" % (
+                estimate.bearing*180.0/pi, obj.bearingdeg)
+        if self._location:
+            x, y, theta = self._location
+            theta *= 180.0/pi
+            print "Location: %3.3f %3.3f %3.3f" % (x, y, theta)
+
+    def _returnDistances(self, _):
+        """ Tester for pixHeightToDistancePlus. To run do in pynaoqi:
+        import burst.kinematics as kin
+        loop(lambda: kin.pose.update(con, kin.pose._returnDistances).addCallback(nicefloats), dt=0.5)
+        """
+        def one(obj):
+            return self.pixHeightToDistancePlus(obj.height, obj.x, field.GOAL_POST_CM_HEIGHT, debug=True)
+        return one(self._v.YGRP) + one(self._v.YGLP)
+
+    def _updateFromVisionAndAngles(self, result):
+        """ update all estimations and localization information, ultimately also the
+        any EKF/MCL code, here. Can be called iteratively for same input, should be
+        called on any new information (joints, inclinations, vision objects pixel
+        location).
+        """
+        # update the transforms
+        self.transform(self._bodyAngles, self._inclination)
+        # calculate various objects distances
+        v = self._v
+        self._estimates = estimates = {}
+        goal_post_height = field.GOAL_POST_CM_HEIGHT
+        for name, obj, objheight_cm in [
+            ('YGLP', v.YGLP, goal_post_height),
+            ('YGRP', v.YGRP, goal_post_height), ('Ball', v.Ball, 10)]:
+            if obj.distance == 0.0:
+                estimates[name] = (NULL_ESTIMATE, 0.0)
+                continue
+            if name == 'Ball':
+                x, y = obj.centerx, obj.centery # ball doesn't record the bottom x and y
+            else:
+                # obj.y is actually the top in the image, would generate a null
+                # estimate every time since the goal post is higher then the
+                # robot
+                x, y = obj.centerx, obj.y + obj.height
+            estimate = self.pixEstimate(x, y, 0.0)
+            # pixHeightToDistancePlus DOESN'T WORK - solution right now is to only use
+            # value of pixel when the object is in bearing=0
+            #dist_height = self.pixHeightToDistancePlus(obj.height, x,
+            #    objheight_cm)
+            dist_height = self.pixHeightToDistance(obj.height, objheight_cm)
+            estimates[name] = (estimate, dist_height)
+        # Try to calculate our position in WF
+        self._updateXYTheta_from_twoDistOneAngle()
+        return self
+
+    def _updateXYTheta_from_twoDistOneAngle(self,
+            top=None, bottom=None, debug=False):
+        """ Take two objects and update our self location in WF from it.
+        NOTE: the objects need to be ordered - top_y > bottom_y
+        
+        Defaults to Yellow Goal Left Post and Right Post (Top and Bottom
+        respectively)
+        """
+        from burst.position import xyt_from_two_dist_one_angle
+        if top is not None or bottom is not None:
+            raise NotIMplementedError('Not done yet')
+        yglp, ygrp = self._v.YGLP, self._v.YGRP
+        if yglp.distance != 0.0 and ygrp.distance != 0.0:
+            (e_left, r1), (e_right, r2) = (
+                self._estimates['YGLP'],
+                self._estimates['YGRP'])
+            p0 = field.yellow_goal.top_post.xy
+            p1 = field.yellow_goal.bottom_post.xy
+            d = field.CROSSBAR_CM_WIDTH / 2.0
+            # XXX: I think the YGLP is the BOTTOM, not the TOP
+            if e_right.dist == 0.0:
+                #print "using given bearing"
+                a1 = ygrp.bearingdeg * pi / 180.0
+            else:
+                a1 = e_right.bearing
+            x, y, theta = xyt_from_two_dist_one_angle(
+                r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1, debug=debug)
+            self._location = (x, y, theta)
+            self._location_origin = (r1, r2, a1, d, p0, p1)
+            return x, y, theta
+        return None
 
 

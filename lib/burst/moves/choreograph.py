@@ -412,7 +412,10 @@ def CIRCLE_STRAFER():
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
 
     jointCodes.append("RHipRoll")
-    angles.append([float(-0.00873), float(-0.21642), float(-0.21468), float(0.00000)])
+    #angles.append([float(-0.00873), float(-0.2), float(-0.13962), float(0.00000)]) # cech + maldini
+    angles.append([float(-0.00873), float(-0.19), float(-0.13962), float(0.00000)]) # gerrard 
+    #angles.append([float(-0.00873), float(-0.185), float(-0.13962), float(0.00000)]) # messi - 20
+    #angles.append([float(-0.00873), float(-0.21642), float(-0.13962), float(0.00000)]) # raul - 23
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
 
     jointCodes.append("RKneePitch")
@@ -437,14 +440,6 @@ def CIRCLE_STRAFER_INIT_POSE():
     jointCodes = list()
     angles = list()
     times = list()
-
-    jointCodes.append("HeadPitch")
-    angles.append([float(0.00000)])
-    times.append([float(0.40000)])
-
-    jointCodes.append("HeadYaw")
-    angles.append([float(0.00000)])
-    times.append([float(0.40000)])
 
     jointCodes.append("LAnklePitch")
     angles.append([float(0.00000)])
@@ -574,7 +569,7 @@ def TURN_CW():
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LShoulderPitch")
-    angles.append([float(0.87266), float(0.87266)])
+    angles.append([float(0.87266), float(1.04719)])
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LShoulderRoll")
@@ -601,8 +596,12 @@ def TURN_CW():
     angles.append([float(0.00000), float(0.00000)])
     times.append([float(0.26667), float(0.46667)])
 
+    jointCodes.append("LHand")
+    angles.append([float(-1.00000), float(-1.00000)])
+    times.append([float(0.26667), float(0.46667)])
+    
     jointCodes.append("RHand")
-    angles.append([float(0.00000), float(0.00000)])
+    angles.append([float(-1.00000), float(-1.00000)])
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("RHipPitch")
@@ -618,7 +617,7 @@ def TURN_CW():
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("RShoulderPitch")
-    angles.append([float(0.87266), float(0.87266)])
+    angles.append([float(0.87266), float(1.04719)])
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("RShoulderRoll")
