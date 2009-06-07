@@ -46,7 +46,7 @@ def calcBallArea(ball_x, ball_y, side):
         return BALL_FRONT
     else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
         if ball_x <= KICK_X_MAX[side]:
-            if abs(ball_y) <= abs(KICK_Y_MAX[side])*3:
+            if abs(ball_y) <= abs(KICK_Y_MAX[side])*10:
                 return BALL_SIDE_NEAR
             else:
                 return BALL_SIDE_FAR

@@ -110,7 +110,8 @@ class World(object):
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
         self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
-        self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
+        if burst.options.run_ultrasound:
+            self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
         self._events = set()
         self._deferreds = []
         

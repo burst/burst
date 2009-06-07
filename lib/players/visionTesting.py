@@ -16,12 +16,11 @@ from burst_util import polar2cart
 class visionTesting(Player):
     
     def onStart(self):
-        self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
         self._actions.initPoseAndStiffness().onDone(self.initPos)
 
     def initPos(self):
         self._actions.executeMove(moves.SIT_POS)
-        pass
+        self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
     
     def printBall(self):
         ball_x = self._world.ball.dist * cos(self._world.ball.bearing)
