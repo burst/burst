@@ -52,7 +52,7 @@ class Tracker(object):
         self._on_lost_callback = on_lost_callback
     
     def stop(self):
-        """ stop tracker and centerred. unregister any events, after
+        """ stop tracker and centered. unregister any events, after
         this call be ready for a new track or center action.
         """
         # don't erase any deferreds here! stop is called
@@ -70,7 +70,7 @@ class Tracker(object):
         """
         Center on target, returns a BurstDeferred.
         """
-        # TODO - what happens if the target is lost during the centerring,
+        # TODO - what happens if the target is lost during the centering,
         #  but it doesn't have an associated "lost" event? lost can
         # happen because of occlusion, and because of vision problems (which
         # can be minimized maybe).
@@ -380,6 +380,8 @@ class Searcher(object):
         # see which targets have been sighted
         seen = set(target for target in self._targets if target.centered_self.sighted)
         unseen = set(target for target in self._targets if not target.centered_self.sighted)
+        if self.verbose:
+            print "Seen = #%d, Targets = #%d" % (len(seen), len(self._targets))
         if len(seen) == len(self._targets):
             # best case - all done
             self._unregisterEvents()

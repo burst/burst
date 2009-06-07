@@ -12,6 +12,14 @@ of this competition.
 #include <stdio.h>
 #include <string.h>
 
+#include <boost/shared_ptr.hpp>
+
+#include "Common.h" // micro_time
+#include "Profiler.h"
+#include "NaoPose.h"
+#include "Vision.h"
+#include "Threshold.h" // strangely enough, this uses Vision, not the other way around.
+
 // Color Table definitions. The color table is YMAXxUMAXxVMAX, and
 // to lookup in it you take a YUV tripplet and shift them with
 // YSHIFT, USHIFT and VSHIFT respectively.
@@ -22,8 +30,10 @@ of this competition.
 #define USHIFT 1
 #define VSHIFT 1
 
+#ifndef IMAGE_HEIGHT
 #define IMAGE_HEIGHT 240
 #define IMAGE_WIDTH 320
+#endif // IMAGE_HEIGHT
 
 // Copied from northern bites Vision/VisionDef.h
 // THRESHOLD COLORS
@@ -55,6 +65,22 @@ of this competition.
 #define LIGHT_SKY_BLUE 25
 #define MAGENTA 26
 #define PURPLE 27
+
+
+// Not C++ includes after this point - will get the dreaded
+//          error: template with C linkage
+extern "C" {
+
+// some helpers for debugging mainly
+int get_width()
+{
+    return IMAGE_WIDTH;
+}
+
+int get_height()
+{
+    return IMAGE_HEIGHT;
+}
 
 // index to rgb table - for debugging, no required
 // relation to the original colors in the color table (i.e.,
@@ -166,7 +192,7 @@ void thresholded_to_rgb(unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH],
 //   planes are either 1 byte ahead or 3 bytes ahead, usually YUYV which means
 //   1 and 3 respectively. If inverted, that would be 1, 3.
 
-// thresholded - copied from Threshold.h::Threshold::thresholded with some minor changes.
+// yuv422_to_thresholded - copied from Threshold.h::Threshold::thresholded with some minor changes.
 void yuv422_to_thresholded(unsigned char bigTable[YMAX][UMAX][VMAX], unsigned char* yplane, unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH])
 {
     // My loop variables
@@ -269,4 +295,104 @@ void yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size)
         
     }
 }
+
+/*
+ C Interface (for easy python calling) to create, destroy
+ and call the Threshold interface. Later I need to actually
+ get the data out of it..
+*/
+
+static boost::shared_ptr<Profiler> g_profiler;
+static boost::shared_ptr<Sensors> g_sensors;
+static boost::shared_ptr<NaoPose> g_naopose;
+static boost::shared_ptr<Vision> g_vision;
+static Threshold* g_threshold;
+
+void init_threshold() {
+    if (!g_profiler) {
+        std::cout << "Creating Profiler\n";
+        g_profiler = boost::shared_ptr<Profiler>(new Profiler(micro_time));
+    }
+    if (!g_sensors) {
+        std::cout << "Creating Sensors\n";
+        g_sensors = boost::shared_ptr<Sensors>(new Sensors());
+    }
+    if (!g_naopose) {
+        std::cout << "Creating NaoPose\n";
+        g_naopose = boost::shared_ptr<NaoPose>(new NaoPose(g_sensors));
+    }
+    if (!g_vision) {
+        std::cout << "Creating Vision\n";
+        g_vision = boost::shared_ptr<Vision>(new Vision(g_naopose, g_profiler));
+        g_threshold = g_vision->thresh;
+    }
+    std::cout << "And Done\n";
+};
+
+// update g_threshold's table
+void update_table(unsigned char bigTable[YMAX][UMAX][VMAX])
+{
+    if (!g_threshold) init_threshold();
+    unsigned char* bigtable = (unsigned char*)(void*)(bigTable);
+    g_threshold->initTableFromBuffer(bigtable);
+}
+
+// do the object recognition thing (thresholding, runs, lines, objects).
+void on_frame(unsigned char* yplane)
+{
+    if (!g_threshold) init_threshold();
+    g_threshold->initDebugImage(); // I guess TOOL calls this?
+    g_vision->notifyImage(yplane);
+}
+
+// This is just debug code - it is basically the above broken down
+void partwise_on_frame(unsigned char* yplane)
+{
+    if (!g_threshold) init_threshold();
+    
+    // Basically we can do anything until the <<pose needed>> line
+    // before initing the pose
+    g_naopose->transform();
+
+    g_threshold->setYUV(yplane);
+    std::cout << "Running thresholdAndRuns\n";
+    g_threshold->thresholdAndRuns();
+    std::cout << "Running fieldLines->lineLoop\n";
+    g_vision->fieldLines->lineLoop();
+    // <<pose needed>>
+    std::cout << "Running objectRecognition\n";
+    g_threshold->objectRecognition();
+}
+
+// pass any sensor data from us to it
+
+
+// Usage from python using ctypes:
+// im = ctypes.CDLL('imops.so')
+// get_thresholded = im.get_thresholded
+// get_thresholded.restype = ctypes.c_void_p # yes, this is strange.
+// addr = get_thresholded()
+// thresholded_type = ctypes.c_char*320*240 # size of thresholded
+// thresholded = thresholded_type.from_address(addr)
+// # or in one breath
+// thresholded = thresholded_type.from_address(get_thresholded())
+unsigned char* get_thresholded()
+{
+    if (!g_threshold) init_threshold();
+    return (unsigned char*)(g_threshold->thresholded);
+}
+
+unsigned char* get_big_table()
+{
+    if (!g_threshold) init_threshold();
+    return (unsigned char*)(g_threshold->bigTable);
+}
+
+static unsigned char hello[20] = "123456\08910111213";
+unsigned char* get_hello()
+{
+    return hello;
+}
+
+}; // extern "C"
 

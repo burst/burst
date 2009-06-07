@@ -7,8 +7,6 @@ import burst
 
 FAR_FAR_AWAY = 1000.0
 
-SONAR_DISABLED = True
-
 # TODO: When several robots are next to each other, do their sonars collide?
 class Sonars(object):
 
@@ -20,7 +18,7 @@ class Sonars(object):
             self.world = world
             self.index = index
         def readDistance(self):
-            if SONAR_DISABLED:
+            if not burst.options.run_ultrasound:
                 return 1000.0
 
             data = self.world.vars[Sonars._var]
@@ -44,7 +42,7 @@ class Sonars(object):
             super(Sonars.RightSonar, self).__init__('Right', world, 1)
 
     def __init__(self, world):
-        if not SONAR_DISABLED:
+        if burst.options.run_ultrasound:
             world._ultrasound.post.subscribe('', [500]) # TODO: See if we can lower this without any adverse effects.
             world.addMemoryVars([Sonars._var])
             

@@ -6,7 +6,7 @@ import burst.moves as moves
 from burst.world import World
 from burst_consts import LEFT, RIGHT, DOWN, UP
 
-INITIAL_STIFFNESS  = 0.85 # TODO: Check other stiffnesses, as this might not be optimal.
+INITIAL_STIFFNESS  = 1.0 # TODO: Check other stiffnesses, as this might not be optimal.
 
 #25 - TODO - This is "the number of 20ms cycles per step". What should it be?
 DEFAULT_STEPS_FOR_TURN = 150
