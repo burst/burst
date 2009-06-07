@@ -35,7 +35,8 @@ from burst_consts import LEFT, RIGHT
 
 class BallKicker(BurstDeferred):
 
-    verbose = True
+    VERBOSE = True
+    DISABLE_MOVEMENT = False
 
     def __init__(self, eventmanager, actions, target_bearing_distance=None):
         super(BallKicker, self).__init__(None)
@@ -46,7 +47,7 @@ class BallKicker(BurstDeferred):
         self._world = eventmanager._world
 
     def debugPrint(self, message):
-        if self.verbose:
+        if self.VERBOSE:
             print message
     
     def start(self):
@@ -98,16 +99,14 @@ class BallKicker(BurstDeferred):
         
         # determine kicking leg
         side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
-        if self.verbose:
-            if (side == LEFT): self.debugPrint("Designated kick leg: Left")
-            else: self.debugPrint("Designated kick leg: Right")
+        if (side == LEFT): self.debugPrint("Designated kick leg: Left")
+        else: self.debugPrint("Designated kick leg: Right")
 
         # calculate optimal kicking point
         (kp_x, kp_y) = (ball_x - KICK_X_OPT[side], ball_y - KICK_Y_OPT[side])
         (kp_dist, kp_bearing) = cart2polar(kp_x, kp_y)
-        if self.verbose:
-            self.debugPrint("kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y))
-            self.debugPrint("kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing))
+        self.debugPrint("kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y))
+        self.debugPrint("kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing))
         
         # ball location, as defined at behavior parameters (front, side, etc...)
         ball_location = calcBallArea(ball_x, ball_y, side)
@@ -117,7 +116,8 @@ class BallKicker(BurstDeferred):
         # Ball inside kicking area, kick it
         if ball_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
-            self.doKick(side)
+            if not self.DISABLE_MOVEMENT:
+                self.doKick(side)
             
             # TODO: TEMP!!! "do nothing" move
             #self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
@@ -125,16 +125,21 @@ class BallKicker(BurstDeferred):
         else:
             if ball_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
-                self._actions.changeLocationRelative(kp_x*2/3).onDone(self.doNextAction)
+                if not self.DISABLE_MOVEMENT:
+                    self._actions.changeLocationRelative(kp_x*0.6).onDone(self.doNextAction)
             elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
-                self._actions.changeLocationRelativeSideways(0.0, kp_y, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
+                if not self.DISABLE_MOVEMENT:
+                    self._actions.changeLocationRelativeSideways(0.0, kp_y, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
             elif ball_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
-                self._actions.turn(kp_bearing*2/3).onDone(self.doNextAction)
+                if not self.DISABLE_MOVEMENT:
+                    self._actions.turn(kp_bearing*0.6).onDone(self.doNextAction)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
         
+        if self.DISABLE_MOVEMENT:
+            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
             
     def doKick(self, side):
         self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
