@@ -3,6 +3,7 @@ from __future__ import with_statement
 import time
 import glob
 import os
+import ctypes
 
 import gtk, goocanvas
 
@@ -320,6 +321,49 @@ class GtkTimeTicker(TaskBaseWindow):
     def setYLimits(self, lim_min, lim_max):
         self._axis.set_ylim(lim_min, lim_max)
 
+def wrap_ctypes_array_returner(f, size):
+    """ for some reason just saying "restype=c_void_p" doesn't
+    work, and this seems to work """
+    the_type = ctypes.c_char*size
+    f.restype = ctypes.c_void_p
+    def wrapper(*args, **kw):
+        r = f(*args, **kw)
+        return the_type.from_address(r)
+    return wrapper
+
+class ImopsHelp(object):
+
+    def __init__(self, video):
+        self._video = video
+        self._imops = video._imops
+        get_thresholded = self._imops.get_thresholded
+        self._get_thresholded = wrap_ctypes_array_returner(self._imops.get_thresholded, 320*240)
+        self._get_big_table = wrap_ctypes_array_returner(self._imops.get_big_table, 128*128*128)
+
+    def on_frame(self):
+        """Actually do object recognition - take the yuv from video and
+        pass it to the Thresholded instance"""
+        self._imops.on_frame(self._video._yuv)
+        self.get_threshold()
+
+    def get_threshold(self):
+        self._video._thresholded = self._get_thresholded()
+        self._video.showThresholded()
+
+    def get_big_table(self):
+        return self._get_big_table()
+
+    def update_table(self):
+        """copy video table to imops table (yes, there are two right now - TODO)
+        """
+        self._imops.update_table(self._video._table)
+
+    def check_table(self):
+        """ should return
+            set(['\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\n'])
+        """
+        return set(self.get_big_table())
+
 class VideoWindow(TaskBaseWindow):
 
     """ Display the RGB of the received YUV image from NaoCam module directly
@@ -333,6 +377,7 @@ class VideoWindow(TaskBaseWindow):
         if con.has_imops() is None:
             print "Video window not opened, imops isn't working, please fix"
             return
+        self._update_display = True
         self._reading_nbfrm = False
         self._threshold = False # to threshold or not to threshold
         self._con = con
@@ -351,11 +396,20 @@ class VideoWindow(TaskBaseWindow):
         c.add(self._im)
         c.pack_start(bottom, False, False, 0)
         bottom.add(self._status)
-        self._threshold_button = gtk.Button('threshold')
-        self._threshold_button.connect('clicked', self.threshold)
-        bottom.pack_start(self._threshold_button)
+        buttons = []
+        for attr, label, callback in [
+            ('_threshold_button', 'threshold', self.threshold),
+            ('_display_update_button', 'update', self.toggleDisplayUpdate)]:
+            b = gtk.Button(label)
+            b.connect('clicked', callback)
+            buttons.append(b)
+            setattr(self, attr, b)
+            bottom.pack_start(b)
         self._w.add(c)
         self._w.show_all()
+
+    def toggleDisplayUpdate(self, *args):
+        self._update_display = not self._update_display
 
     # Color table support
 
@@ -442,6 +496,9 @@ class VideoWindow(TaskBaseWindow):
             self.webots_table()
         else:
             self.default_table()
+
+        self.imops = ImopsHelp(self)
+        self.imops.update_table()
         self._startTaskFirstTime()
 
     def color(self, index, r, g, b):
@@ -498,6 +555,12 @@ class VideoWindow(TaskBaseWindow):
 
     # Getting the Image
 
+    def showThresholded(self):
+        """ lets you do an external set to _threadholded and see
+        the results, unsynchronized with the yuv getting task """
+        self.thresholded_to_rgb(self._thresholded, self._rgb)
+        self.updateDisplayedFromRgb()
+
     # this is the registered task
     def getNew(self):
         if self._reading_nbfrm: # short circuit if we aren't really listening.
@@ -509,15 +572,22 @@ class VideoWindow(TaskBaseWindow):
     def onYUV(self, (yuv, width, height)):
         """ In preperation to put this in a different thread """
         self._yuv = yuv
+        self._yuv_size = (width, height)
+        if not self._update_display:
+            return
         rgb = self._rgb
         if self._threshold:
             thresholded = self._thresholded
-            self.yuv422_to_thresholded(self._table, yuv, thresholded)
-            self.thresholded_to_rgb(thresholded, rgb)
+            #self.yuv422_to_thresholded(self._table, yuv, thresholded)
+            #self.thresholded_to_rgb(thresholded, rgb)
+            self.imops.on_frame()
         else:
             self.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
-        pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
-        self._rgb = rgb
+            self.updateDisplayedFromRgb()
+
+    def updateDisplayedFromRgb(self):
+        width, height = self._yuv_size
+        pixbuf = gtk.gdk.pixbuf_new_from_data(self._rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
         self._im.set_from_pixbuf(pixbuf)
         
     def _update(self, result):

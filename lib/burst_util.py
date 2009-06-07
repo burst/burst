@@ -18,11 +18,19 @@ class RingBuffer(list):
     if this becomes an issue)
     """
     def __init__(self, size):
+        self.size_ = size
+        self.index_ = 0
         super(RingBuffer, self).__init__([None]*size)
 
     def ring_append(self, x):
-        self.pop(0)
-        self.append(x)
+        if self.index_ <= self.size_ - 1:
+            self.pop(self.size_ - 1)
+            self.insert(self.index_ , x)
+            self.index_ += 1
+        else:
+            self.pop(0)
+            self.append(x)
+            
 
 # Twisted-like Deferred and succeed
 
