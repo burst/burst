@@ -40,6 +40,30 @@ CAMERA_WHICH_TOP_CAMERA = 0
 INTERPOLATION_LINEAR = 0
 INTERPOLATION_SMOOTH = 1
 
+################################################################################
+# Image Ops
+
+IMOPS_PYNAOQI_SO = 'imops_pynaoqi.so'
+
+def has_imops():
+    import ctypes
+    imops_fname = whichlib(IMOPS_PYNAOQI_SO)
+    HOME = os.environ['HOME']
+    src_imops = '%s/src/burst/src/imops/imops.cpp' % HOME
+    bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
+    if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
+        or bad_architecture):
+        if bad_architecture: # force make to remake the so file
+            os.system('cd %s/src/burst/src/imops; make clean' % HOME)
+        # make it (either it doesn't exist, is too old, or doesn't match the architecture)
+        os.system('cd %s/src/burst/src/imops; make imops_pynaoqi' % HOME)
+    try:
+        imops = ctypes.CDLL(IMOPS_PYNAOQI_SO)
+    except:
+        print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+        return None
+    return imops
+
 #########################################################################
 # Utilities
 
@@ -852,23 +876,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         return self._camera_name
 
     def has_imops(self):
-        import ctypes
-        imops_fname = whichlib('imops.so')
-        HOME = os.environ['HOME']
-        src_imops = '%s/src/burst/src/imops/imops.cpp' % HOME
-        bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
-        if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
-            or bad_architecture):
-            if bad_architecture: # force make to remake the so file
-                os.system('cd %s/src/burst/src/imops; make clean' % HOME)
-            # make it (either it doesn't exist, is too old, or doesn't match the architecture)
-            os.system('cd %s/src/burst/src/imops; make' % HOME)
-        try:
-            imops = ctypes.CDLL('imops.so')
-        except:
-            print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
-            return None
-        return imops
+        return has_imops()
 
     def get_imops(self):
         if hasattr(self, '_image_convertion'):
