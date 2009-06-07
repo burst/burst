@@ -74,8 +74,9 @@ X, Y, Z = 0, 1, 2
 # Camera / Vision constants
 
 # Acceptable Centering error - normalized values (in [-1, 1])
-DEFAULT_CENTERING_X_ERROR = 0.05
-DEFAULT_CENTERING_Y_ERROR = 0.05
+DEFAULT_CENTERING_X_ERROR = 0.05*3
+DEFAULT_CENTERING_Y_ERROR = 0.05*3
+CENTERING_MINIMUM_PITCH = -0.6 #-0.637
 
 # Image Parameters
 FOV_X = 46.4 * DEG_TO_RAD

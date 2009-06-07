@@ -112,11 +112,13 @@ class Tracker(object):
         centered, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
             normalized_error_y=self._centering_normalized_y_error)
-        elevation_on_upper_edge = (self._world.getAngle('HeadPitch') < consts.joint_limits['HeadPitch'][0]*0.99)
+        cur_pitch = self._world.getAngle('HeadPitch')
+        pitch_barrier = consts.CENTERING_MINIMUM_PITCH
+        elevation_on_upper_edge = cur_pitch < pitch_barrier
         center_too_high = elevation_on_upper_edge and error[1] < 0
         if self.verbose:
-            print "CenteringStep: centered = %s, delta_angles %s, center_too_high = %s" % (centered,
-                delta_angles or 'is None', center_too_high)
+            print "CenteringStep: centered = %s, delta_angles %s, center_too_high = %s (%s, %s)" % (centered,
+                delta_angles or 'is None', center_too_high, cur_pitch, pitch_barrier)
         if centered or (
             abs(error[0]) < self._centering_normalized_x_error and center_too_high):
             if self.verbose:

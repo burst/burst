@@ -56,7 +56,7 @@ def has_imops():
         if bad_architecture: # force make to remake the so file
             os.system('cd %s/src/burst/src/imops; make clean' % HOME)
         # make it (either it doesn't exist, is too old, or doesn't match the architecture)
-        os.system('cd %s/src/burst/src/imops; make imops_pynaoqi' % HOME)
+        os.system('cd %s/src/burst/src/imops; make %s' % (HOME, IMOPS_PYNAOQI_SO))
     try:
         imops = ctypes.CDLL(IMOPS_PYNAOQI_SO)
     except:
