@@ -432,8 +432,11 @@ class Actions(object):
     def executeLeapRightSafe(self):
         return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
 
-    def executeCircleStrafer(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER, "circle strafer")
+    def executeCircleStrafeClockwise(self):
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFE_CLOCKWISE, "circle strafe clockwise")
+
+    def executeCircleStrafeCounterClockwise(self):
+        return self.executeMoveChoreograph(moves.CIRCLE_STRAFE_COUNTER_CLOCKWISE, "circle strafe clockwise")
 
     def executeCircleStraferInitPose(self):
         return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 

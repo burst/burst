@@ -42,7 +42,7 @@ class circle_strafer(Player):
         print "------------------"
 
         if self.counter < 25:
-            self._actions.executeCircleStrafer().onDone(self.onTurnDone)
+            self._actions.executeCircleStrafeCounterClockwise().onDone(self.onTurnDone)
             return
 
 if __name__ == '__main__':

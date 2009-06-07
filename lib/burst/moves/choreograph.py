@@ -342,7 +342,7 @@ def GOALIE_LEAP_RIGHT():
 GOALIE_LEAP_LEFT = mirrorChoreographMove(*GOALIE_LEAP_RIGHT)
 
 @chorwrap
-def CIRCLE_STRAFER():
+def CIRCLE_STRAFE_CLOCKWISE():
     jointCodes = list()
     angles = list()
     times = list()
@@ -413,9 +413,9 @@ def CIRCLE_STRAFER():
 
     jointCodes.append("RHipRoll")
     #angles.append([float(-0.00873), float(-0.2), float(-0.13962), float(0.00000)]) # cech + maldini
-    angles.append([float(-0.00873), float(-0.19), float(-0.13962), float(0.00000)]) # gerrard 
+    #angles.append([float(-0.00873), float(-0.19), float(-0.13962), float(0.00000)]) # gerrard 
     #angles.append([float(-0.00873), float(-0.185), float(-0.13962), float(0.00000)]) # messi - 20
-    #angles.append([float(-0.00873), float(-0.21642), float(-0.13962), float(0.00000)]) # raul - 23
+    angles.append([float(-0.00873), float(-0.21642), float(-0.13962), float(0.00000)]) # raul - 23
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
 
     jointCodes.append("RKneePitch")
@@ -434,6 +434,8 @@ def CIRCLE_STRAFER():
     angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
     return jointCodes, angles, times
+
+CIRCLE_STRAFE_COUNTER_CLOCKWISE = mirrorChoreographMove(*CIRCLE_STRAFE_CLOCKWISE)
 
 @chorwrap
 def CIRCLE_STRAFER_INIT_POSE():
