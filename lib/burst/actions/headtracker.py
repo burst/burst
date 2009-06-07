@@ -380,6 +380,8 @@ class Searcher(object):
         # see which targets have been sighted
         seen = set(target for target in self._targets if target.centered_self.sighted)
         unseen = set(target for target in self._targets if not target.centered_self.sighted)
+        if self.verbose:
+            print "Seen = #%d, Targets = #%d" % (len(seen), len(self._targets))
         if len(seen) == len(self._targets):
             # best case - all done
             self._unregisterEvents()
