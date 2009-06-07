@@ -234,7 +234,7 @@ def startplayer(name, clazz=None):
 #############################################################################
 
 EXAMPLES = """# Show current identified ball location
-ball = refilter('^/.*Ball.*center', names)
+ball = refilter('^/.*Ball.*Center', names)
 con.ALMemory.getListData(ball)
 
 # Vision Location of ball over time, in text, in plot
