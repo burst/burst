@@ -62,7 +62,7 @@
 #endif
 
 // turn on/off vision processing
-#define USE_NOGGIN_ON
+#define USE_NOGGIN_OFF
 #ifdef  USE_NOGGIN_ON
 #  define USE_NOGGIN
 #else
@@ -78,7 +78,7 @@
 #endif
 
 // turn on/off motion actions
-#define USE_MOTION_ON
+#define USE_MOTION_OFF
 #ifdef  USE_MOTION_ON
 #  define USE_MOTION
 #else

@@ -4,11 +4,20 @@
 # later or as a naoqi module.
 #
 
+# Possible debug flags:
+# TODO - document function of each
 #-DBURST_DEBUG_VISION -DOFFLINE -DDEBUG_IMAGE
+
+# Burst flags:
+# BURST_DO_LOCALIZATION_IN_MODULE - not working right now (or ever?)
+
 CFLAGS_DEBUG=-DOFFLINE -DDEBUG_IMAGE
+# Flags originally found in Northern Bites.
+# all are in manconfig.h anyway (at least USE_VISION is)
+NB_FLAGS=
 AL_INC=-I$(AL_DIR)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR)/extern/c/aldebaran/alcommon/include -I$(AL_DIR)/modules/proxies
 PY_INC=-I/usr/include/python2.5
-CFLAGS=-fPIC -ggdb $(CFLAGS_DEBUG) $(PY_INC) $(AL_INC)
+CFLAGS=-fPIC -ggdb $(NB_FLAGS) $(CFLAGS_DEBUG) $(PY_INC) $(AL_INC)
 CXXFLAGS=$(CFLAGS)
 
 all: install
@@ -20,12 +29,16 @@ install: imops.so
 SRC=ConcreteCorner.cpp       ConcreteLine.cpp  Kinematics.cpp       objrec.cpp    Threshold.cpp  VisualBall.cpp      VisualDetection.cpp    VisualLine.cpp \
 ConcreteFieldObject.cpp  FieldLines.cpp    NaoPose.cpp          Profiler.cpp  Utility.cpp    VisualCorner.cpp    VisualFieldObject.cpp  VisualRobot.cpp \
 ConcreteLandmark.cpp     imops.cpp         ObjectFragments.cpp  Sensors.cpp   Vision.cpp     VisualCrossbar.cpp  VisualLandmark.cpp     Zlib.cpp \
-imopsmodule.cpp
+imopsmodule.cpp ALImageTranscriber.cpp synchro.cpp
 
 OBJ=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Threshold.o  VisualBall.o      VisualDetection.o    VisualLine.o \
 ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
 ConcreteLandmark.o     imops.o         ObjectFragments.o  Sensors.o   Vision.o     VisualCrossbar.o  VisualLandmark.o     Zlib.o\
-imopsmodule.o
+imopsmodule.o ALImageTranscriber.o synchro.o
+
+# Localization - right now done in burst code (out in python land)
+LOC_SRC=BallEKF.cpp Observation.cpp
+LOC_OBJ=BallEKF.o Observation.h
 
 .PHONY: clean
 
