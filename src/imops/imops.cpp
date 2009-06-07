@@ -324,13 +324,75 @@ void init_threshold() {
     if (!g_vision) {
         std::cout << "Creating Vision\n";
         g_vision = boost::shared_ptr<Vision>(new Vision(g_naopose, g_profiler));
+        g_threshold = g_vision->thresh;
     }
-    if (!g_threshold) {
-        std::cout << "Creating Threshold\n";
-        g_threshold = new Threshold(g_vision.get(), g_naopose);
-    }
+    std::cout << "And Done\n";
 };
 
+// update g_threshold's table
+void update_table(unsigned char bigTable[YMAX][UMAX][VMAX])
+{
+    if (!g_threshold) init_threshold();
+    unsigned char* bigtable = (unsigned char*)(void*)(bigTable);
+    g_threshold->initTableFromBuffer(bigtable);
+}
+
+// do the object recognition thing (thresholding, runs, lines, objects).
+void on_frame(unsigned char* yplane)
+{
+    if (!g_threshold) init_threshold();
+    g_threshold->initDebugImage(); // I guess TOOL calls this?
+    g_vision->notifyImage(yplane);
+}
+
+// This is just debug code - it is basically the above broken down
+void partwise_on_frame(unsigned char* yplane)
+{
+    if (!g_threshold) init_threshold();
+    
+    // Basically we can do anything until the <<pose needed>> line
+    // before initing the pose
+    g_naopose->transform();
+
+    g_threshold->setYUV(yplane);
+    std::cout << "Running thresholdAndRuns\n";
+    g_threshold->thresholdAndRuns();
+    std::cout << "Running fieldLines->lineLoop\n";
+    g_vision->fieldLines->lineLoop();
+    // <<pose needed>>
+    std::cout << "Running objectRecognition\n";
+    g_threshold->objectRecognition();
+}
+
+// pass any sensor data from us to it
+
+
+// Usage from python using ctypes:
+// im = ctypes.CDLL('imops.so')
+// get_thresholded = im.get_thresholded
+// get_thresholded.restype = ctypes.c_void_p # yes, this is strange.
+// addr = get_thresholded()
+// thresholded_type = ctypes.c_char*320*240 # size of thresholded
+// thresholded = thresholded_type.from_address(addr)
+// # or in one breath
+// thresholded = thresholded_type.from_address(get_thresholded())
+unsigned char* get_thresholded()
+{
+    if (!g_threshold) init_threshold();
+    return (unsigned char*)(g_threshold->thresholded);
+}
+
+unsigned char* get_big_table()
+{
+    if (!g_threshold) init_threshold();
+    return (unsigned char*)(g_threshold->bigTable);
+}
+
+static unsigned char hello[20] = "123456\08910111213";
+unsigned char* get_hello()
+{
+    return hello;
+}
 
 }; // extern "C"
 

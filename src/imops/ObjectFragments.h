@@ -348,7 +348,7 @@ public:
 
 #endif
 
-private:
+public:
     // class pointers
     Vision* vision;
     Threshold* thresh;

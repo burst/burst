@@ -71,7 +71,7 @@ Threshold::Threshold(Vision* vis, shared_ptr<NaoPose> posPtr)
 
     // storing locally
 #ifdef OFFLINE
-    visualHorizonDebug = false;
+    visualHorizonDebug = true;
 #endif
 
     // loads the color table on the MS into memory
@@ -250,6 +250,25 @@ void Threshold::runs() {
     float horizonSlope;
     register int address, i, j;
     unsigned char pixel, lastPixel;
+
+#if BURST_DEBUG_VISION
+    {
+        // TESTING CODE - just see that we are actually getting something..
+        int input_max_min = 0;
+        int input_min = 255;
+        int input_max = 0;
+        unsigned char pixel;
+        for(int j = IMAGE_HEIGHT-1; j >= 0; --j) {
+            for (int i = IMAGE_WIDTH-1; i >= 0; --i) {
+                pixel = thresholded[j][i];
+                input_max = input_max < pixel ? pixel : input_max;
+                input_min = input_min > pixel ? pixel : input_min;
+            }
+        }
+        input_max_min = input_max - input_min;
+        std::cout << "Threshold::runs: input set size <= " << input_max_min << std::endl;
+    }
+#endif
 
     // variable initializations
     hor = 0;
@@ -470,6 +489,18 @@ void Threshold::runs() {
         }
     }
 
+#if BURST_DEBUG_VISION
+    {
+        // Some out going debug stuff
+        std::cout << "Threshold::runs "
+            << "red " << red->biggestRun << ", " << red->numBlobs << std::endl
+            << "orange " << orange->biggestRun << ", " << orange->numBlobs << std::endl
+            << "yellow " << yellow->biggestRun << ", " << yellow->numBlobs << std::endl
+            << "blue " << blue->biggestRun << ", " << blue->numBlobs << std::endl
+            << "green " << green->biggestRun << ", " << green->numBlobs << std::endl
+            << "navyblue " << navyblue->biggestRun << ", " << navyblue->numBlobs << std::endl;
+    }
+#endif
 }
 
 

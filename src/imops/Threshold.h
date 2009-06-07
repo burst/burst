@@ -155,6 +155,10 @@ public:
     // main array
     unsigned char thresholded[IMAGE_HEIGHT][IMAGE_WIDTH];
 
+    // moved here from private
+    unsigned char bigTable[YMAX][UMAX][VMAX];
+
+
 #ifdef OFFLINE
     //write lines, points, boxes to this array to avoid changing the real image
     unsigned char debugImage[IMAGE_HEIGHT][IMAGE_WIDTH];
@@ -170,8 +174,6 @@ private:
 
     const uchar* yuv;
     const uchar* yplane, *uplane, *vplane;
-
-    unsigned char bigTable[YMAX][UMAX][VMAX];
 
     // open field variables
     int openField[IMAGE_WIDTH];
