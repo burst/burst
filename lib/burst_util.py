@@ -561,6 +561,8 @@ class CallLogger(object):
             burst_consts.CONSOLE_LINE_LENGTH - 33))
         return ret
 
+DONT_LOG_CALLS = set(('getListData', 'isRunning', 'off', 'on'))
+
 class LogCalls(object):
 
     def __init__(self, name, obj):
@@ -570,7 +572,7 @@ class LogCalls(object):
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
         # TODO: use callbacks for motion (isRunning) 
-        if k in ('getListData', 'isRunning'):
+        if k in DONT_LOG_CALLS:
             return f
         if callable(f):
             return CallLogger('%s.%s' % (self._name, k), f)
