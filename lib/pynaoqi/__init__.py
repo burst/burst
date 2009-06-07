@@ -855,7 +855,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         import ctypes
         imops_fname = whichlib('imops.so')
         HOME = os.environ['HOME']
-        src_imops = '%s/src/burst/src/imops/imops.c' % HOME
+        src_imops = '%s/src/burst/src/imops/imops.cpp' % HOME
         bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
         if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
             or bad_architecture):
