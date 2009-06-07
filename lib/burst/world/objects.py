@@ -111,7 +111,7 @@ class Locatable(Namable):
     """
     
     REPORT_JUMP_ERRORS = False
-    HISTORY_SIZE = 10
+    HISTORY_SIZE = 20
 
     def __init__(self, name, world, real_length, world_x=None, world_y=None):
         """
@@ -317,70 +317,97 @@ class Ball(Movable):
         T = 0
         DIST = 1
         BEARING = 2
-       
+        
         X = 1
         Y = 2
-       
-        ERROR_VAL_X = 3
+        
+        ERROR_VAL_X = 10
         ERROR_VAL_Y = 0
-       
+        
         #vars for least mean squares
         sumX = 0
         sumXY = 0
         sumY = 0
         sumSqrX = 0
-       
+        sumXT = 0
+        sumT = 0
+        sumSqrT = 0
+        
         if self.history[0] != None:
-            self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) , self.history[0][DIST] * sin(self.history[0][BEARING])]
-            self.base_point_index = 1
-            last_point = self.base_point
-            sumX += last_point[X]
-            sumXY += last_point[X] * last_point[Y]
-            sumY += last_point[Y]
-            sumSqrX +=  last_point[X] * last_point[X]
+            if self.base_point_index == 0:
+                self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
+                                   , self.history[0][DIST] * sin(self.history[0][BEARING])]
+                self.base_point_index = 1
+                last_point = self.base_point
+                sumX += last_point[X]
+                sumXY += last_point[X] * last_point[Y]
+                sumY += last_point[Y]
+                sumSqrX +=  last_point[X] * last_point[X]
+                sumT += 0 # T0= 0 #last_point[T]
+                sumXT += last_point[X] * last_point[T]
+                sumSqrT += last_point[T] * last_point[T]
+            else:
+                last_point = self.base_point
         else:
             return False
-       
-        n = 0
+        
+        n = 1
         for point in self.history:
             if point != None:
-                if n == 0:
+                if n == 1:
                     n += 1
                     continue #first point was calc already
                 if n <= self.base_point_index:
                     n += 1
-                    continue #skipping nonrelevant point
-                n += 1
+                    continue #skipping nonrelvant point
                 cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
                 if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
                     self.base_point = cor_point
-                    self.base_point_index = n
-                    return False
+                    if self.history[0] != None:
+                        self.base_point_index = n -1
+                    else:
+                        self.base_point_index = n
+                    return False 
                 sumX += cor_point[X]
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
                 sumSqrX +=  cor_point[X] * cor_point[X]
+                sumT += cor_point[T] - last_point[T]
+                sumXT += cor_point[X] * cor_point[T]
+                sumSqrT += cor_point[T] * cor_point[T]
+                
+                last_point = cor_point
+                n += 1
             else:
-                if n < 5: #TODO: need some kind of col' for diffrent speeds....
+                if (n-1) < 11: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
-       
-        n = n - self.base_point_index #real number of valid points
-       
-       
-        if n > 4 and fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: #TODO: need some kind of col' for diffrent speeds....
-            #Least mean squares:
-            self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-           
-            #print "ball intersection with body: " , self.body_isect
+        
+        n = (n-1) - self.base_point_index #real number of valid points
+        
+        
+        if (n-1) > 9:#TODO: need some kind of col' for diffrent speeds....
+            #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
+            if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
+                self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
+        
+            if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
+                self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
+                time_of_arrival = last_point[X] / self.velocity
+            
+            #print "ball intersection with body: " , self.body_isect, "    ball velocity:", self.velocity
+            #print "time of arrival:", time_of_arrival
             return True
+        if self.history[0] != None:
+            self.base_point_index -= 1
         return False  
                  
     
     def movingBallPenalty(self):
         
         ERROR_IN_Y = 4
-        
+        #chech = 4
+        #messi = 3
         
         if self.avrYplace_index >= 20:
             self.dy = (self.dist * sin(self.bearing)) - self.avrYplace
