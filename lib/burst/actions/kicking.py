@@ -76,7 +76,7 @@ class BallKicker(BurstDeferred):
     def doNextAction(self):
         self.debugPrint("\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
             self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing))
-        self.debugPrint("------------------")
+        self.debugPrint("-"*100)
 
         # if kicking-point is not known, search for it
         if not self.ballLocationKnown:

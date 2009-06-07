@@ -3,12 +3,16 @@
 import player_init
 
 from burst.player import Player
+import burst.moves as moves
 
 class trackerTester(Player):
     
     def onStart(self):
         self.count = 1
-        self._actions.initPoseAndStiffness().onDone(self.track)
+        self._actions.initPoseAndStiffness().onDone(self.initHeadPosition)
+    
+    def initHeadPosition(self):
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.track)
     
     def track(self):
         print "trackerTester: TRACKING %s" % (self.count)

@@ -7,7 +7,7 @@ import burst
 
 FAR_FAR_AWAY = 1000.0
 
-SONAR_DISABLED = True
+SONAR_DISABLED = False
 
 # TODO: When several robots are next to each other, do their sonars collide?
 class Sonars(object):
