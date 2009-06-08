@@ -64,6 +64,8 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
         return true;
     };
 
+    void notifyNextVisionImage();
+
   private:
 
     // Battery checking functionality
@@ -77,7 +79,6 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
     ALPtr < AL::ALMemoryProxy > m_memory;
 
     void writeToALMemory();
-    void notifyNextVisionImage();
     void processFrame();
 };
 

@@ -27,7 +27,7 @@ public:
     void stop();
     void releaseImage();
 
-private: // helper methods
+public: // helper methods
     void registerCamera(AL::ALPtr<AL::ALBroker> broker);
     void initCameraSettings(int whichCam);
     void waitForImage();

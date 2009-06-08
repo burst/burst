@@ -25,7 +25,6 @@ ALImageTranscriber::ALImageTranscriber(shared_ptr<Synchro> synchro,
         std::cerr << "Could not create a proxy to ALLogger module" << std::endl;
     }
 
-#ifdef USE_VISION
     registerCamera(broker);
     if(camera_active) {
         try{
@@ -37,7 +36,6 @@ ALImageTranscriber::ALImageTranscriber(shared_ptr<Synchro> synchro,
     }
     else
         cout << "\tCamera is inactive!" << endl;
-#endif
 }
 
 ALImageTranscriber::~ALImageTranscriber() {
@@ -56,6 +54,7 @@ void ALImageTranscriber::run() {
 
 	long long lastProcessTimeAvg = VISION_FRAME_LENGTH_uS;
     while (Thread::running) {
+
         //start timer
         const long long startTime = micro_time();
         if (camera_active)
@@ -89,7 +88,6 @@ void ALImageTranscriber::run() {
 void ALImageTranscriber::stop() {
     cout << "Stopping ALImageTranscriber" << endl;
     running = false;
-#ifdef USE_VISION
     if(camera_active){
         cout << "lem_name = " << lem_name << endl;
         try {
@@ -99,7 +97,6 @@ void ALImageTranscriber::stop() {
                        "module");
         }
     }
-#endif
 
     Thread::stop();
 }
@@ -399,7 +396,6 @@ void ALImageTranscriber::initCameraSettings(int whichCam){
 void ALImageTranscriber::waitForImage ()
 {
     try {
-#ifndef MAN_IS_REMOTE
 #ifdef DEBUG_IMAGE_REQUESTS
         printf("Requesting local image of size %ix%i, color space %i\n",
                IMAGE_WIDTH, IMAGE_HEIGHT, NAO_COLOR_SPACE);
@@ -433,41 +429,6 @@ void ALImageTranscriber::waitForImage ()
                width, height, colorSpace,nbLayers,seconds);
 #endif
 
-#else//Frame is remote:
-#ifdef DEBUG_IMAGE_REQUESTS
-        printf("Requesting remote image of size %ix%i, color space %i\n",
-               IMAGE_WIDTH, IMAGE_HEIGHT, NAO_COLOR_SPACE);
-#endif
-        ALValue ALimage;
-        ALimage.arraySetSize(7);
-
-        // Attempt to retrive the next image
-        try {
-            ALimage = camera->call<ALValue>("getDirectRawImageRemote",
-                                            lem_name);
-        }catch (ALError &e) {
-            log->error("NaoMain", "Could not call the getImageRemote method of the "
-                       "NaoCam module");
-        }
-
-        //image = static_cast<const unsigned char*>(ALimage[6].GetBinary());
-        memcpy(&image[0], ALimage[6].GetBinary(), IMAGE_BYTE_SIZE);
-#ifdef DEBUG_IMAGE_REQUESTS
-        //You can get some informations of the image.
-        int width = (int) ALimage[0];
-        int height = (int) ALimage[1];
-        int nbLayers = (int) ALimage[2];
-        int colorSpace = (int) ALimage[3];
-        long long timeStamp = ((long long)(int)ALimage[4])*1000000LL +
-            ((long long)(int)ALimage[5]);
-        int seconds = (int)(timeStamp/1000000LL);
-        printf("Retrieved an image of dimensions %ix%i, color space %i,"
-               "with %i layers and a time stamp of %is \n",
-               width, height, colorSpace,nbLayers,seconds);
-#endif
-
-#endif//IS_REMOTE
-
         if (image != NULL) {
             // Update Sensors image pointer
             sensors->lockImage();
@@ -482,7 +443,6 @@ void ALImageTranscriber::waitForImage ()
 
 
 void ALImageTranscriber::releaseImage(){
-#ifndef MAN_IS_REMOTE
     if (!camera_active)
         return;
 
@@ -495,5 +455,5 @@ void ALImageTranscriber::releaseImage(){
         log->error( "ALImageTranscriber",
                     "could not call the releaseImage method of the NaoCam module" );
     }
-#endif
 }
+

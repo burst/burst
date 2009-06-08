@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <fcntl.h> // O_WRONLY
 #include <stdlib.h>
+#include <pthread.h>
 
 #include <altypes.h>
 #include <alxplatform.h>
@@ -45,6 +46,52 @@
 
 #include "imopsmodule.h"
 #include "imops.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
+ImopsModule *g_limops;
+
+////////////////////////////////////////////////////////////////////////////////
+
+// This is the equivalent of the ALImageTranscriber, no mutexes involved.
+// Not that I had any problem with that, only it stopped working for some
+// reason.
+template<typename T>
+    inline T t_max(T a, T b) {
+        if (a > b) return a;
+        return b;
+    }
+void *getImageLoop(void *arg)
+{
+	long long lastProcessTimeAvg = VISION_FRAME_LENGTH_uS;
+#ifdef BURST_DEBUG_VISION_THREAD
+    int count = 0;
+    std::cout << "ImopsModule, getImageLoop: " << VISION_FRAME_LENGTH_uS << ", " << VISION_FRAME_LENGTH_PRINT_THRESH_uS << std::endl;
+#endif
+
+    while(true) {
+        const long long startTime = micro_time();
+        g_imageTranscriber->waitForImage();
+        g_limops->notifyNextVisionImage();
+#ifdef BURST_DEBUG_VISION_THREAD
+        std::cout << "image " << count++ << std::endl;
+#endif
+        const long long processTime = micro_time() - startTime;
+        if (lastProcessTimeAvg > VISION_FRAME_LENGTH_uS){
+            if (lastProcessTimeAvg > VISION_FRAME_LENGTH_PRINT_THRESH_uS)
+                cout << "Time spent in ALImageTranscriber loop longer than"
+                     << " frame length: " << processTime <<endl;
+            //Don't sleep at all
+        } else{
+            const long long sleepTime = t_max((long long)0, VISION_FRAME_LENGTH_uS - processTime);
+#ifdef BURST_DEBUG_VISION_THREAD
+            std::cout << "sleeping for " << sleepTime << " us" << std::endl;
+#endif
+            usleep(static_cast<useconds_t>(sleepTime));
+        }
+    }
+	return 0;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -80,17 +127,7 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
 
 void ImopsModule::processFrame ()
 {
-    PROF_EXIT(g_profiler.get(), P_GETIMAGE);
-
-    PROF_ENTER(g_profiler.get(), P_FINAL);
-    //if(camera_active)
     g_vision->notifyImage(g_sensors->getImage());
-    //vision->notifyImage();
-
-    PROF_EXIT(g_profiler.get(), P_FINAL);
-    PROF_NFRAME(g_profiler.get());
-
-    PROF_ENTER(g_profiler.get(), P_GETIMAGE);
 }
 
 
@@ -108,6 +145,8 @@ void ImopsModule::notifyNextVisionImage() {
     //Release the camera image
     //if(camera_active)
     g_imageTranscriber->releaseImage();
+
+    std::cout << "ImopsModule another frame" << std::endl;
 
     // Make sure messages are printed
     fflush(stdout);
@@ -264,12 +303,28 @@ void ImopsModule::initVisionThread( ALPtr<ALBroker> broker )
     // or I hope it's just a function call from a naoqi thread that was already
     // there)
     init_vision(); // creates everything except the threading stuff and the proxy stuff.
-    g_synchro = boost::shared_ptr<Synchro>(new Synchro());
-    g_imageTranscriber =
-        boost::shared_ptr<ALImageTranscriber>
-        (new ALImageTranscriber(g_synchro, g_sensors, broker));
-    g_imageTranscriber->setSubscriber(this);
-    g_imageTranscriber->start();
+    #if 0
+    {
+        // stops after about 30 frames, no idea why.
+        g_synchro = boost::shared_ptr<Synchro>(new Synchro());
+        g_imageTranscriber =
+            boost::shared_ptr<ALImageTranscriber>
+            (new ALImageTranscriber(g_synchro, g_sensors, broker));
+        g_imageTranscriber->setSubscriber(this);
+        g_imageTranscriber->start();
+    }
+    #else
+    {
+        g_synchro = boost::shared_ptr<Synchro>(new Synchro());
+        g_imageTranscriber =
+            boost::shared_ptr<ALImageTranscriber>
+            (new ALImageTranscriber(g_synchro, g_sensors, broker));
+        g_imageTranscriber->setSubscriber(this);
+
+        pthread_t thread;
+        pthread_create(&thread, NULL, getImageLoop, NULL);
+    }
+    #endif
 }
 
 //______________________________________________
@@ -288,14 +343,11 @@ std::string ImopsModule::version ()
 //______________________________________________
 ImopsModule::~ImopsModule ()
 {
+    std::cout << "ImopsModule:: being deleted" << std::endl;
     g_imageTranscriber->stop();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-using namespace std;
-
-ImopsModule *limops;
 
 #ifdef __cplusplus
 extern "C"
@@ -314,7 +366,7 @@ extern "C"
 
 
     // create modules instance
-    limops = new ImopsModule(pBroker, "imops");
+    g_limops = new ImopsModule(pBroker, "imops");
 
     return 0;
   }
@@ -322,7 +374,7 @@ extern "C"
   int _closeModule ()
   {
     // Delete module instance
-    delete limops;
+    delete g_limops;
 
     return 0;
   }
