@@ -1,4 +1,10 @@
+# Makefile.local is the local configuration,
+# contains the ROBOT variable (ip or host name of robot to install to)
 include Makefile.local
+
+# color table to use, copied to the robot at /home/root/burst/lib/
+# from data/tables/
+TABLE=maverick/default.mtb
 
 all: install
 
@@ -8,7 +14,7 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule clean
+.PHONY: burstmem recordermodule imops colortable clean
 
 clean:
 	rm -R src/burstmem/crossbuild
@@ -20,7 +26,14 @@ burstmem:
 recordermodule:
 	cd src/recordermodule; ./makelocal
 
-install: Makefile.local burstmem recordermodule
+imops:
+	cd src/imops; $(MAKE) cross
+
+colortable:
+	cp data/tables/$(TABLE) lib/etc/table.mtb
+	echo data/tables/$(TABLE) > lib/etc/whichtable.txt
+
+install: Makefile.local burstmem recordermodule imops colortable
 	rsync -avr lib root@$(ROBOT):/home/root/burst/
 
 installall: install

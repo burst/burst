@@ -74,22 +74,13 @@ Threshold::Threshold(Vision* vis, shared_ptr<NaoPose> posPtr)
     visualHorizonDebug = true;
 #endif
 
-    // loads the color table on the MS into memory
-#if ROBOT(NAO_RL)
-# if ! defined WEBOTS_BACKEND && ! defined OFFLINE && ! defined STRAIGHT
-    initTable("/opt/naoqi/modules/etc/table.mtb");
-# elif defined WEBOTS_BACKEND
-    initTable(string(string(getenv("WEBOTS_HOME"))+
-                  "/projects/contests/nao_robocup/" +
-                     "controllers/nao_soccer_player_red/etc/table.mtb"));
+    // loads the color table. We set the default b
+
+# if ! defined OFFLINE
+    initTable("/home/root/burst/lib/etc/table.mtb");
 # else
     std::string table_path = std::string(getenv("HOME")) + "/" + "src/nao-man/install/etc/table.mtb";
     initTable(table_path.c_str());
-# endif
-#elif ROBOT(NAO_SIM)
-#  error Compressed table not set up for simulator Nao yet
-#else
-#  error Undefined robot type
 #endif // OFFLINE
     // Set up object recognition object pointers
     blue = shared_ptr<ObjectFragments>(new ObjectFragments(vision, this,
