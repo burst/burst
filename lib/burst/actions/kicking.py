@@ -4,12 +4,11 @@ from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
 import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
-from actionconsts import MINIMAL_CHANGELOCATION_SIDEWAYS
 import burst.moves as moves
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX, 
                                    calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, 
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
-from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR
+from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y
 
 #===============================================================================
 #    Logic for Kicking behavior:
@@ -65,18 +64,30 @@ class BallKicker(BurstDeferred):
     def searchBall(self):
         #self._actions.tracker.stop() # needed???
         self.debugPrint("Starting search")
-        self._actions.search([self._world.ball]).onDone(self.onSearchBallOver)
+        self._actions.search([self._world.ball], center_on_targets=False).onDone(self.onSearchBallOver)
 
     def onSearchBallOver(self):
         # Ball found, track it
         self.debugPrint("onSearchBallOver")
+        
+        # TODO: TEMP!!! move code elsewhere (should be done in search...)
+        self.debugPrint("centering on ball (from search results")
+        centeredBall = self._world.ball.centered_self
+        self.debugPrint("XXX Moving towards and centering on Ball - (%1.2f, %1.2f)" % (centeredBall.head_yaw, centeredBall.head_pitch))
+        a1 = centeredBall.head_yaw, centeredBall.head_pitch
+        a2 = (a1[0] - PIX_TO_RAD_X * (centeredBall.centerX - IMAGE_CENTER_X),
+              a1[1] + PIX_TO_RAD_Y * (centeredBall.centerY - IMAGE_CENTER_Y))
+        self._actions.moveHead(*a2).onDone(self.onSearchCenteringDone)
+        
+    def onSearchCenteringDone(self):
+        # TODO: TEMP!!! should be at onSearchBallOver, moved temporarily here since we do the centering by ourself
         self._actions.track(self._world.ball, self.onLostBall)
         self.ballLocationKnown = True
         self.doNextAction()
         
     def onLostBall(self):
         self.debugPrint("BALL LOST, clearing footsteps")
-        self._actions.clearFootsteps() # TODO: Check if possible to do this via post
+        self._actions.clearFootsteps()
         self.ballLocationKnown = False
         #self.doNextAction()
 
@@ -120,12 +131,13 @@ class BallKicker(BurstDeferred):
         print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
         
         # Use circle-strafing when near ball
-        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal:
-            self.debugPrint("Aligning to goal! (stopping ball tracker)")
-            self._actions.tracker.stop()
-            self._actions.search([self._world.yglp, self._world.ygrp]).onDone(self.onSearchResults)
-        # Ball inside kicking area, kick it
-        elif ball_location == BALL_IN_KICKING_AREA:
+#        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal:
+#            self.debugPrint("Aligning to goal! (stopping ball tracker)")
+#            self._actions.tracker.stop()
+#            self._actions.search([self._world.yglp, self._world.ygrp]).onDone(self.onSearchResults)
+#        # Ball inside kicking area, kick it
+#        el
+        if ball_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
             if not self.DISABLE_MOVEMENT:
                 self._actions.tracker.stop()
@@ -135,7 +147,7 @@ class BallKicker(BurstDeferred):
                 self.debugPrint("Walking straight!")
                 if not self.DISABLE_MOVEMENT:
                     self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE).onDone(self.doNextAction)
-            elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR): # and abs(kp_y*MOVEMENT_PERCENTAGE) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if not self.DISABLE_MOVEMENT:
                     self._actions.changeLocationRelativeSideways(0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
