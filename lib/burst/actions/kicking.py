@@ -134,7 +134,7 @@ class BallKicker(BurstDeferred):
             elif ball_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if not self.DISABLE_MOVEMENT:
-                    self._actions.turn(kp_bearing*0.6).onDone(self.doNextAction)
+                    self._actions.turn(kp_bearing*0.8).onDone(self.doNextAction)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
         

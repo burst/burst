@@ -14,6 +14,8 @@ import mmap
 import struct
 import linecache
 
+from burst_consts import ULTRASOUND_DISTANCES_VARNAME
+
 import burst
 from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
