@@ -20,10 +20,9 @@ PY_INC=-I/usr/include/python2.5
 CFLAGS=-fPIC -ggdb $(NB_FLAGS) $(CFLAGS_DEBUG) $(PY_INC) $(AL_INC)
 CXXFLAGS=$(CFLAGS)
 
-all: install
+all: imops_pynaoqi.so
 
 install: imops.so
-	cp imops.so ../../lib
 	cp imops.so $(AL_DIR)/modules/lib/libimops.so
 
 SRC=ConcreteCorner.cpp       ConcreteLine.cpp  Kinematics.cpp       objrec.cpp    Threshold.cpp  VisualBall.cpp      VisualDetection.cpp    VisualLine.cpp \
@@ -35,6 +34,10 @@ OBJ=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Thresh
 ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
 ConcreteLandmark.o     imops.o         ObjectFragments.o  Sensors.o   Vision.o     VisualCrossbar.o  VisualLandmark.o     Zlib.o\
 imopsmodule.o ALImageTranscriber.o synchro.o
+
+OBJ_PYNAOQI=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Threshold.o  VisualBall.o      VisualDetection.o    VisualLine.o \
+ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
+ConcreteLandmark.o     imops.o         ObjectFragments.o  Sensors.o   Vision.o     VisualCrossbar.o  VisualLandmark.o     Zlib.o
 
 # Localization - right now done in burst code (out in python land)
 LOC_SRC=BallEKF.cpp Observation.cpp
@@ -50,4 +53,8 @@ clean:
 
 imops.so: $(OBJ)
 	g++ -shared -o imops.so $(OBJ)
+
+imops_pynaoqi.so: $(OBJ_PYNAOQI)
+	g++ -shared -o imops_pynaoqi.so $(OBJ_PYNAOQI)
+	cp imops_pynaoqi.so ../../lib
 

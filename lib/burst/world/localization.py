@@ -83,13 +83,14 @@ class Localization(object):
                 print "Localization: UPDATE SELF POSITION"
             self.updateRobotPosition()
         
-        #seeing blue goal - yellow is unseen
-        if self._world.bglp.seen and self._world.bgrp.seen:
-            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
-        
-        #seeing yellow goal - blue is unseen
-        if self._world.yglp.seen and self._world.ygrp.seen:
-            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+        # TODO: Broken (variable "d" is missing), Vova - please fix
+#        #seeing blue goal - yellow is unseen
+#        if self._world.bglp.seen and self._world.bgrp.seen:
+#            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+#        
+#        #seeing yellow goal - blue is unseen
+#        if self._world.yglp.seen and self._world.ygrp.seen:
+#            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()
@@ -103,7 +104,7 @@ class Localization(object):
                 obj._name, obj.my_dist, obj.dist, obj.focDist)
 
     def calcPostDist(self, post):
-        print "please add the pix dist"
+        #print "please add the pix dist"
         #import pdb; pdb.set_trace()
         return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
 

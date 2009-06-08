@@ -200,6 +200,7 @@ class Locatable(Namable):
         xNormalized = normalized2_image_width(self.centerX)
         # Normalize ball Y between 1 (top) to -1 (bottom)
         yNormalized = normalized2_image_height(self.centerY)
+        
         return (abs(xNormalized) <= normalized_error_x and
                 abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
 
