@@ -17,7 +17,6 @@ def pr(s):
     print s
 
 class KickTest(Player):
-    
     def onStart(self):
         #self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
@@ -67,7 +66,6 @@ class KickTest(Player):
         ballDist = self._world.ball.distSmoothed
         (ball_x, ball_y) = polar2cart(ballDist, ballBearing)
         print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
-        
         # determine kicking leg
         side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
         if (side == LEFT): print "LEFT"

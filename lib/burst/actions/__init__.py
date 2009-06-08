@@ -274,12 +274,6 @@ class Actions(object):
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
 
-
-
-    
-        
-
-
     # Kick type - one of the kick types defined in actionconsts KICK_TYPE_STRAIGHT/KICK_TYPE_PASSING/etc...
     # Kick leg - the leg used to kick
     # Kick strength - strength of the kick (between 0..1)
@@ -289,7 +283,7 @@ class Actions(object):
             description=('kick', kick_type, kick_leg, kick_strength))
 
     def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
-        if kick_leg==LEFT: 
+        if kick_leg==LEFT:
             return self.executeMove(burst.moves.getGreatKickLeft(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
         else :
             return self.executeMove(burst.moves.getGreatKickRight(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
