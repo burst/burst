@@ -11,6 +11,7 @@ import burst
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
     CROSSBAR_CM_WIDTH)
 from burst.position import xyt_from_two_dist_one_angle
+from math import asin
 
 # TODO - utilize constants from central location in place of those
 GOAL_SIZE = 150 #sizeof goal (cm)
@@ -30,7 +31,7 @@ class Localization(object):
         # store bottom and top posts
         self._bottom, self._top = self._world.team.target_posts.bottom_top
         # read verboseness flag at construction time
-        verbose = burst.options.verbose_localization
+        self.verbose = burst.options.verbose_localization
 
     def calc_events(self, events, deferreds):
         """
@@ -91,14 +92,13 @@ class Localization(object):
                 print "Localization: UPDATE SELF POSITION"
             self.updateRobotPosition()
         
-        # TODO: Broken (variable "d" is missing), Vova - please fix
-#        #seeing blue goal - yellow is unseen
-#        if self._world.bglp.seen and self._world.bgrp.seen:
-#            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
-#        
-#        #seeing yellow goal - blue is unseen
-#        if self._world.yglp.seen and self._world.ygrp.seen:
-#            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+        #seeing blue goal - yellow is unseen
+        if self._world.bglp.seen and self._world.bgrp.seen:
+            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+        
+        #seeing yellow goal - blue is unseen
+        if self._world.yglp.seen and self._world.ygrp.seen:
+            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()
@@ -148,7 +148,7 @@ class Localization(object):
         #debug 
         #(x1,y1, theta1) = xyt_from_two_dist_one_angle(200, 250, 0,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
 
-        (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,d , (0, d) ,(0, -d) )       
+        (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )       
 
         uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
         ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5
