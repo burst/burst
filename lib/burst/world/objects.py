@@ -333,6 +333,7 @@ class Ball(Movable):
         
         ERROR_VAL_X = 10
         ERROR_VAL_Y = 0
+        NUM_OF_POINTS = 10
         
         #vars for least mean squares
         sumX = 0
@@ -389,14 +390,14 @@ class Ball(Movable):
                 last_point = cor_point
                 n += 1
             else:
-                if (n-1) < 11: #TODO: need some kind of col' for diffrent speeds....
+                if (n-1) < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
         
         n = (n-1) - self.base_point_index #real number of valid points
         
         
-        if (n-1) > 9:#TODO: need some kind of col' for diffrent speeds....
+        if (n-1) >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
             if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
@@ -415,13 +416,13 @@ class Ball(Movable):
     
     def movingBallPenalty(self):
         
-        ERROR_IN_Y = 4
+        ERROR_IN_Y = 2
         #chech = 4
         #messi = 3
         
         if self.avrYplace_index >= 20:
             self.dy = (self.dist * sin(self.bearing)) - self.avrYplace
-            if (fabs(self.dy) - self.avrYplace) > ERROR_IN_Y:
+            if fabs(self.dy) > ERROR_IN_Y:
                 return True
         
         self.avrYplace_index += 1

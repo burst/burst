@@ -17,6 +17,7 @@ import time
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
 TIME_WAITING = 3 #time to wait when finishing the leap for getting up
+WAITING_FOR_HEAD = 5
 
 class goalie(Player):
 #    def onStop(self):
@@ -24,7 +25,7 @@ class goalie(Player):
     
 
     def onStart(self):
-        self.isPenalty = False
+        self.isPenalty = True
         
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
@@ -37,11 +38,14 @@ class goalie(Player):
         
     def whichBehavior (self):
         if self.isPenalty:
-            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
             self.isTrackingBall = True
             self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
+            self._eventmanager.callLater(WAITING_FOR_HEAD, self.penaltyRegister)
         else:
             self.watchIncomingBall()
+
+    def penaltyRegister(self):
+        self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
 
     def watchIncomingBall(self):            
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
@@ -54,9 +58,9 @@ class goalie(Player):
         self._eventmanager.unregister(self.trackBall)
         print self._world.ball.dy
         if self._world.ball.dy < 0:
-            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+            self._actions.executeLeapRight().onDone(self.waitingOnRight)
         else:
-            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft) 
+            self._actions.executeLeapLeft().onDone(self.waitingOnLeft) 
             
     def leap(self):
         self._eventmanager.unregister(self.leap)
@@ -66,14 +70,14 @@ class goalie(Player):
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapLeftSafe().onDone(self.watingOnLeft)   
+            self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)   
         else:
             self.watchIncomingBall()
 
     def waitingOnRight(self):
         self._eventmanager.callLater(TIME_WAITING, self.gettingUpRight)
 
-    def watingOnLeft(self):
+    def waitingOnLeft(self):
         self._eventmanager.callLater(TIME_WAITING, self.gettingUpLeft)
 
 

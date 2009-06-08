@@ -16,7 +16,8 @@ import time
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
-TIME_WAITING = 6 #time to wait when finishing the leap for getting up
+TIME_WAITING = 3 #time to wait when finishing the leap for getting up
+WAITING_FOR_HEAD = 5
 
 class goalie(Player):
 #    def onStop(self):
@@ -29,16 +30,23 @@ class goalie(Player):
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.whichBehavior)
+        self._actions.executeMove(moves.SIT_POS).onDone(self.goalieInitPos2)
+        
+    # TODO: TEMP!!! combine with goalieInitPos
+    def goalieInitPos2(self):
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.whichBehavior)
         
     def whichBehavior (self):
         if self.isPenalty:
-            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
             self.isTrackingBall = True
             self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
+            self._eventmanager.callLater(WAITING_FOR_HEAD, self.penaltyRegister)
         else:
             self.watchIncomingBall()
         self._actions.say("ready")
+
+    def penaltyRegister(self):
+        self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
 
     def watchIncomingBall(self):            
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
