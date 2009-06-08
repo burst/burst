@@ -87,7 +87,7 @@ class Actions(object):
             raise Exception("Can't start tracking while searching")
         self.tracker.track(target, on_lost_callback=on_lost_callback)
 
-    def search(self, targets):
+    def search(self, targets, center_on_targets=True):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
         return self.searcher.search(targets)

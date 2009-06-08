@@ -473,6 +473,7 @@ def createNewSearchMovesIterator(searcher):
             self.headYaw = headYaw
             self.headPitch = headPitch
         def __call__(self):
+            # XXX: shouldn't we also pass the interp_time parameter?
             return searcher._actions.moveHead(self.headYaw, self.headPitch)
 
     class TurnCommand(object):
@@ -565,6 +566,9 @@ class Searcher(object):
     def _onSeen(self, obj, event):
         if self.verbose:
             print "Searcher: seeing %s" % obj._name
+#            print "\nSearcher seeing ball?: (ball seen %s, ball recently seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
+#                self._world.ball.seen, self._world.ball.recently_seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+
         if not obj in self._seen_objects:
             #self._eventmanager.unregister(self._onSeen, event)
             for cb, ev in self._callbackToEventMapping:
@@ -580,7 +584,10 @@ class Searcher(object):
     # TODO: Alon, notice that the previous TODO has been accomplished, and is another benefit.
     def _nextSearchMove(self):
         try:
-            self._searchMoves.next().__call__().onDone(self._nextSearchMove)
+            # XXX: prevents cases where self._searchMoves is None and so next() can't be called...
+            #      we probably need better solution...
+            if not self._searchMoves is None:
+                self._searchMoves.next().__call__().onDone(self._nextSearchMove)
         except StopIteration:
             raise Exception("Search iterators are expected to be never-ending.")
 
