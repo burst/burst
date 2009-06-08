@@ -556,8 +556,8 @@ class Joints(BaseWindow):
 
 class JointsMain(Joints):
 
-    def onDestroy(self, *args):
-        super(JointsMain, self).onDestroy()
+    def _onDestroy(self, *args):
+        super(JointsMain, self)._onDestroy(*args)
         print "quitting.."
         reactor.stop()
 
