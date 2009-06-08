@@ -6,7 +6,7 @@ from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
     DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR,
-    CONSOLE_LINE_LENGTH)
+    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
@@ -161,6 +161,7 @@ class Locatable(Namable):
         self.seen = False
         self.recently_seen = False          # Was the object seen within MISSING_FRAMES_MINIMUM
         self.centered = False               # whether the distance from the center is smaller then XXX
+        self.centered_at_pitch_limit = False # centered on X axis, on pitch low limit (looking most upwardly)
         self.missingFramesCounter = 0
         
         # smoothed variables
@@ -200,9 +201,16 @@ class Locatable(Namable):
         xNormalized = normalized2_image_width(self.centerX)
         # Normalize ball Y between 1 (top) to -1 (bottom)
         yNormalized = normalized2_image_height(self.centerY)
+
+        cur_pitch = self._world.getAngle('HeadPitch')
+        pitch_barrier = CENTERING_MINIMUM_PITCH
+        elevation_on_upper_edge = cur_pitch < pitch_barrier
+        centered_at_pitch_limit = (elevation_on_upper_edge and yNormalized < 0 and
+            abs(xNormalized) < normalized_error_x)
+        centered = (abs(xNormalized) <= normalized_error_x and
+                abs(yNormalized) <= normalized_error_y)
         
-        return (abs(xNormalized) <= normalized_error_x and
-                abs(yNormalized) <= normalized_error_y), xNormalized, yNormalized
+        return centered, centered_at_pitch_limit ,xNormalized, yNormalized
 
     def calc_recently_seen(self, new_seen):
         """ sometimes we don't want to know if the object is visible this frame,
@@ -267,6 +275,7 @@ class Locatable(Namable):
         [-1, 1]) and stores in self.centered_self the most centered sighting with
         all parameters including body angles. """
         (self.centered,
+         self.centered_at_pitch_limit,
          self.normalized2_centerX,
          self.normalized2_centerY,
             ) = self.centering_error()

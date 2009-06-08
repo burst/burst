@@ -61,10 +61,7 @@ ConcreteFieldObject.cpp  FieldLines.cpp    NaoPose.cpp          Profiler.cpp  Ut
 ConcreteLandmark.cpp     imops.cpp         ObjectFragments.cpp  Sensors.cpp   Vision.cpp     VisualCrossbar.cpp  VisualLandmark.cpp     Zlib.cpp \
 imopsmodule.cpp ALImageTranscriber.cpp synchro.cpp
 
-OBJ=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Threshold.o  VisualBall.o      VisualDetection.o    VisualLine.o \
-ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
-ConcreteLandmark.o     imops.o         ObjectFragments.o  Sensors.o   Vision.o     VisualCrossbar.o  VisualLandmark.o     Zlib.o\
-imopsmodule.o ALImageTranscriber.o synchro.o
+OBJ=$(SRC:.cpp=.o)
 
 OBJ_PYNAOQI=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Threshold.o  VisualBall.o      VisualDetection.o    VisualLine.o \
 ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
@@ -79,8 +76,11 @@ LOC_OBJ=BallEKF.o Observation.h
 clean:
 	rm -f $(OBJ) imops.so
 
-%.cpp,%.o:
-	$(CXX) $(CXXCLAGS) -o $% $@
+precompiled.h.gch: precompiled.h
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+%.cpp,%.o: %.cpp
+	$(CXX) $(CXXCLAGS) -o $@ $<
 
 imops.so: $(OBJ)
 	$(CXX) -shared $(LDFLAGS) $(CXXFLAGS) -o imops.so $(OBJ)
@@ -89,6 +89,14 @@ imops_pynaoqi.so: $(OBJ_PYNAOQI)
 	$(CXX) -shared $(LDFLAGS) $(CXXFLAGS) -o imops_pynaoqi.so $(OBJ_PYNAOQI)
 	cp imops_pynaoqi.so ../../lib
 
+# Compile and build for webots - just the usual with an additional copy rule
+webots: imops.so
+	cp imops.so $(AL_DIR)/modules/lib/libimops.so
+
+# Compile and build for the robot.
+# Uses cross_helper to set the flags as a release build
+# (if we want a debug build, needs a little work - maybe
+# just a cross_debug target)
 cross:
 	$(MAKE) cross_helper BUILD="$(RELEASE_BUILD)"
 

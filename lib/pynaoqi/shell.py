@@ -174,10 +174,15 @@ class PlayerRunner(object):
         self.name = name
         self._players = players
 
-    def start(self):
-        self.loop = startplayer(self.name)
+    def make(self):
+        self.loop = makeplayerloop(self.name)
         self._players.last = self.loop
-        self._players.player = self.loop._player
+        if hasattr(self.loop, '_player'): # why? network problems?
+            self._players.player = self.loop._player
+
+    def start(self):
+        self.make()
+        self.loop.start()
 
     def stop(self):
         self.loop.shutdown()
@@ -192,7 +197,7 @@ class Players(object):
 
 players = Players()
 
-def startplayer(name, clazz=None):
+def makeplayerloop(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
     """
@@ -229,7 +234,9 @@ def startplayer(name, clazz=None):
     print "Initializing player %s" % ctor.__name__
     # Finally, start the update task.
     import burst.eventmanager as eventmanager
-    return eventmanager.TwistedMainLoop(ctor, control_reactor=False)
+    loop = eventmanager.TwistedMainLoop(ctor, control_reactor=False, startRightNow=False)
+    loop.initMainObjectsAndPlayer()
+    return loop
 
 #############################################################################
 
@@ -352,7 +359,7 @@ def make_shell_namespace(use_pylab):
         strange_ones = strange_ones,
         format_vision_vars = format_vision_vars,
         onevision = onevision,
-        startplayer = startplayer,
+        makeplayerloop = makeplayerloop,
         players = players,
         # burst
         burst = burst,

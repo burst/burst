@@ -268,6 +268,11 @@ class BasicMainLoop(object):
             raise SystemExit('BURST Event Loop constructed twice')
         self.__running_instance = self
 
+        self._world = None
+        self._actions = None
+        self._eventmanager = None
+        self._player = None
+
         # flags for external use
         self.finished = False       # True when quit has been called
 
@@ -283,6 +288,8 @@ class BasicMainLoop(object):
         """
         import actions
         import world
+
+        if self._world is not None: return # prevent reinitialization
 
         # main objects: world, eventmanager, actions and player
         self._world = world.World()

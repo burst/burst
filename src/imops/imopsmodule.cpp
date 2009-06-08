@@ -53,14 +53,15 @@ ImopsModule *g_limops;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// This is the equivalent of the ALImageTranscriber, no mutexes involved.
-// Not that I had any problem with that, only it stopped working for some
-// reason.
 template<typename T>
     inline T t_max(T a, T b) {
         if (a > b) return a;
         return b;
     }
+
+// This is the equivalent of the ALImageTranscriber, no mutexes involved.
+// Not that I had any problem with that, only it stopped working for some
+// reason.
 void *getImageLoop(void *arg)
 {
 	long long lastProcessTimeAvg = VISION_FRAME_LENGTH_uS;
@@ -145,8 +146,6 @@ void ImopsModule::notifyNextVisionImage() {
     //Release the camera image
     //if(camera_active)
     g_imageTranscriber->releaseImage();
-
-    std::cout << "ImopsModule another frame" << std::endl;
 
     // Make sure messages are printed
     fflush(stdout);

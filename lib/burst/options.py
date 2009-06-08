@@ -7,7 +7,7 @@ from burst_consts import ROBOT_IP_TO_NAME
 import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
-    'options', 'ip', 'port']
+    'options', 'ip', 'port', 'set_all_verbose']
 
 try: # doesn't work on opennao
     from socket import getaddrinfo # for resolving a hostname
@@ -51,6 +51,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
     parser.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
+    parser.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
     parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
     parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
@@ -92,8 +93,9 @@ port = 9559
 # now override them (possibly)
 parse_command_line_arguments()
 
+# TODO: an ugly twist.
 # Now a twist - at the end the ip and port are taken from
-# burst_target.ip, burst_target.port
+# burst_target.ip, burst_target.port .
 # if they are not None, we take them as is. This allows for
 # working with pynaoqi nicely.
 
@@ -116,6 +118,12 @@ else:
     robotname = ROBOT_IP_TO_NAME.get(ip, ip)
 
 burst_target.robotname = robotname
+
+def set_all_verbose():
+    options.verbose_tracker = True
+    options.verbose_eventmanager = True
+    options.verbose_localization = True
+    options.verbose_movecoordinator = True
 
 print "_"*80
 print "You are running with robotname = %s" % robotname

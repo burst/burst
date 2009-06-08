@@ -109,18 +109,13 @@ class Tracker(object):
         if hasattr(self, '_call_me_later'):
             del self._call_me_later
             print "CenteringStep: called later"
-        centered, delta_angles, error = self.calculateTracking(self._target,
+        centered, centered_at_pitch_limit, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
             normalized_error_y=self._centering_normalized_y_error)
-        cur_pitch = self._world.getAngle('HeadPitch')
-        pitch_barrier = consts.CENTERING_MINIMUM_PITCH
-        elevation_on_upper_edge = cur_pitch < pitch_barrier
-        center_too_high = elevation_on_upper_edge and error[1] < 0
         if self.verbose:
-            print "CenteringStep: centered = %s, delta_angles %s, center_too_high = %s (%s, %s)" % (centered,
-                delta_angles or 'is None', center_too_high, cur_pitch, pitch_barrier)
-        if centered or (
-            abs(error[0]) < self._centering_normalized_x_error and center_too_high):
+            print "CenteringStep: centered = %s, delta_angles %s, centered_at_pitch_limit = %s" % (centered,
+                delta_angles or 'is None', centered_at_pitch_limit)
+        if centered or centered_at_pitch_limit:
             if self.verbose:
                 print "CenteringStep: DONE"
             bd = self._on_centered_bd
@@ -219,7 +214,7 @@ class Tracker(object):
         # handle it. (using same tactic, or check for "noop" for too long)
 
         delta_angles = None
-        centered, xNormalized, yNormalized = target.centering_error(
+        centered, centered_at_pitch_limit, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
         head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
         if self.verbose:
@@ -241,12 +236,12 @@ class Tracker(object):
             #       deltaHeadYaw, deltaHeadPitch)
             #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
-        return centered, delta_angles, (xNormalized, yNormalized)
+        return centered, centered_at_pitch_limit, delta_angles, (xNormalized, yNormalized)
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
         """ Calculate Tracking correction and execute it in a single step. """
-        centered, delta_angles, error = self.calculateTracking(target,
+        centered, centered_at_pitch_limit, delta_angles, error = self.calculateTracking(target,
             normalized_error_x, normalized_error_y)
         bd = None
         if delta_angles:
@@ -404,7 +399,7 @@ class Searcher(object):
                         [t._name for t in seen], [t._name for t in unseen])
             else:
                 if self.verbose:
-                    print "Searcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in self._targets))
+                    print "Searcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in unseen))
                 self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
                 bd = self._actions.lookaround(self._searchlevel)
             bd.onDone(self._onScanDone)
@@ -416,12 +411,14 @@ class Searcher(object):
 
         return None if we don't have a special strategy.
         """
+        # TODO - specialized strategies fail, then what? should go back to overall scan.
         world = self._world
-        (tgt_bot, tgt_top), (our_bot, our_top) = world.team.target_posts.bottom_top, world.team.our_posts.bottom_top
+        yellow_bot, yellow_top, blue_bot, blue_top = (
+            world.yglp, world.ygrp, world.bgrp, world.bglp)
         R, L = consts.joint_limits['HeadYaw'][:2]
         pitch = self._world.getAngle('HeadPitch')
-        for yaw, s, u in [( R, tgt_bot, tgt_top), ( L, tgt_top, tgt_bot),
-                          ( L, our_bot, our_top), ( R, our_top, our_bot)]:
+        for yaw, s, u in [( L, yellow_bot, yellow_top), ( R, yellow_top, yellow_bot),
+                          ( R, blue_bot, blue_top), ( L, blue_top, blue_bot)]:
             if s in seen and u in unseen:
                 return self._actions.moveHead(yaw, pitch)
         return None

@@ -381,6 +381,7 @@ class VideoWindow(TaskBaseWindow):
         self._reading_nbfrm = False
         self._threshold = False # to threshold or not to threshold
         self._con = con
+        self._tables = {}
         self._con.registerToCamera().addCallback(self._finishInit)
         self._im = gtkim = gtk.Image()
         # you don't get button press on gtk.Image(), setting add_events on window
@@ -418,15 +419,27 @@ class VideoWindow(TaskBaseWindow):
             with open(table_name) as fd:
                 setattr(self, attr_name, fd.read())
 
+    def update_table(self, table_filename):
+        if not os.path.exists(table_filename):
+            print "no such file"
+            return
+        if table_filename not in self._tables:
+            with open(table_filename) as fd:
+                self._tables[table_filename] = fd.read()
+        self._table = self._tables[table_filename]
+        self.imops.update_table()
+
     def webots_table(self):
         """ switch to webots colortable """
         self._load_table('_webots_table', consts.WEBOTS_TABLE_FILENAME)
         self._table = self._webots_table
+        self.imops.update_table()
 
     def default_table(self):
         """ switch to default colortable """
         self._load_table('_default_table', consts.DEFAULT_TABLE_FILENAME)
         self._table = self._default_table
+        self.imops.update_table()
 
     def installed_table(self):
         self._table = self._installed_table
@@ -488,6 +501,7 @@ class VideoWindow(TaskBaseWindow):
         self.yuv422_to_thresholded = self._imops.yuv422_to_thresholded
         self.thresholded_to_rgb = self._imops.thresholded_to_rgb
         self.write_index_to_rgb = self._imops.write_index_to_rgb
+        self.imops = ImopsHelp(self)
         self.default_table()
         self.webots_table()
         self._table = self._installed_table = image.get_nao_mtb()
@@ -496,8 +510,6 @@ class VideoWindow(TaskBaseWindow):
             self.webots_table()
         else:
             self.default_table()
-
-        self.imops = ImopsHelp(self)
         self.imops.update_table()
         self._startTaskFirstTime()
 
