@@ -31,6 +31,7 @@ params.KICK_X_MIN[:] = [30.0,30.0] #[17.5,17.5]
 params.KICK_X_MAX[:] = [33.0,33.0] #[21.5,21.5]
 params.KICK_Y_MIN[:] = [6.0,-6.0] #[4.0,-4.0]
 params.KICK_Y_MAX[:] = [12.5,-12.5] #[7.5,-7.5]
+params.MOVEMENT_PERCENTAGE = 0.6
 
 import burst.actions.actionconsts as actionconsts
 actionconsts.DEFAULT_STEPS_FOR_TURN = 60

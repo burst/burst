@@ -24,7 +24,7 @@ class goalie(Player):
     
 
     def onStart(self):
-        self.isPenalty = True
+        self.isPenalty = False
         
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
@@ -45,7 +45,7 @@ class goalie(Player):
 
     def watchIncomingBall(self):            
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.isTrackingBall = True
+        self.isTrackingBall = False #should be True...
         self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         
     def leapPenalty(self):

@@ -371,6 +371,10 @@ def CIRCLE_STRAFE_CLOCKWISE():
     angles.append([float(0.00000), float(0.00000), float(0.07505), float(-0.30892)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
 
+    jointCodes.append("RHipYawPitch")
+    angles.append([float(0.00000), float(0.00000), float(0.07505), float(-0.30892)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
     jointCodes.append("LKneePitch")
     angles.append([float(0.00000), float(0.00000), float(0.01745), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
@@ -475,6 +479,10 @@ def CIRCLE_STRAFER_INIT_POSE():
     angles.append([float(-0.30892)])
     times.append([float(0.40000)])
 
+    jointCodes.append("RHipYawPitch")
+    angles.append([float(-0.30892)])
+    times.append([float(0.40000)])
+
     jointCodes.append("LKneePitch")
     angles.append([float(0.00000)])
     times.append([float(0.40000)])
@@ -563,6 +571,10 @@ def TURN_CW():
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LHipYawPitch")
+    angles.append([float(0.22515), float(-0.26529)])
+    times.append([float(0.26667), float(0.46667)])
+
+    jointCodes.append("RHipYawPitch")
     angles.append([float(0.22515), float(-0.26529)])
     times.append([float(0.26667), float(0.46667)])
 
@@ -658,6 +670,10 @@ def TURN_CCW():
     times.append([float(0.26667), float(0.46667)])
 
     jointCodes.append("LHipYawPitch")
+    angles.append([float(0.22515), float(-0.26529)])
+    times.append([float(0.26667), float(0.46667)])
+
+    jointCodes.append("RHipYawPitch")
     angles.append([float(0.22515), float(-0.26529)])
     times.append([float(0.26667), float(0.46667)])
 
