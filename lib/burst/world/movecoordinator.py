@@ -146,6 +146,9 @@ class MoveCoordinator(object):
          motion - assume parallel, doesn't work if we check isRunning before motion started. (missing isFinished..)
          head   - only check the first event in the list 
         """
+
+        # TODO: Use profiling to see if the redefinition of this filter every frame is something that's worth avoiding.
+
         def filter(dictionary, visitor):
             def collectResults(results):
                 deleted_posts = [result for success, result in results]
