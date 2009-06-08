@@ -461,21 +461,19 @@ class OldSearcher(object):
 
 ############################################################################
 
-# TODO: It could be that some callbacks remain to be fired if the list of events is 
-
 def createNewSearchMovesIterator(searcher):
 
     class HeadMovementCommand(object):
         def __init__(self, headYaw, headPitch):
             self.headYaw = headYaw
             self.headPitch = headPitch
-        def execute(self):
+        def __call__(self):
             return searcher._actions.moveHead(self.headYaw, self.headPitch)
 
     class TurnCommand(object):
         def __init__(self, thetadelta):
             self.thetadelta = thetadelta
-        def execute(self):
+        def __call__(self):
             return searcher._actions.turn(self.thetadelta)
 
     def iterator(searcher=searcher):
@@ -517,23 +515,37 @@ class Searcher(object):
         self.reset()
 
     def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+        '''
+        Search fo the objects in /targets/.
+        If /center_on_targets/ is True, center on those objects.
+        If a /timeout/ is provided, quit the search after that many seconds.
+        If a /timeoutCallback/ is provided, call that when and if a timeout occurs.
+        '''
+
         self.targets = targets[:]
         self.center_on_targets = center_on_targets
         self._timeoutCallback = timeoutCallback
 
+        # Forget where you've previously seen these objects - you wouldn't be looking for them if they were still there.
+        for target in targets:
+            target.centered_self.clear()
+
+        # Register for the timeout, if one has been asked for.
         if not timeout is None:
             self._eventmanager.callLater(timeout, self._onTimeout)
 
+        # For each target you are searching for, have a callback lined up for the event of seeing it.
         for target in targets:
             callback = lambda obj=target: self._onSeen(obj)
             event = target.in_frame_event
             self._eventmanager.register(callback, event)
             self._callbackToEventMapping.append((callback, event))
 
-        self._searchMoves = createNewSearchMovesIterator(self)
-#        self._eventmanager.register(self._nextSearchMove, EVENT_STEP) # Start searching the very next turn, in case you see the ball now.
+        # Launch the search, according to some search strategy.
+        self._searchMoves = createNewSearchMovesIterator(self) # TODO: Give that function the world+search state, so it makes informed decisions.
         self._nextSearchMove()
 
+        # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
         self._deferred = BurstDeferred(self)
         return self._deferred
 
@@ -545,8 +557,8 @@ class Searcher(object):
             self._eventmanager.cancelCallLater(self._timeoutCallback)
 
     def _onSeen(self, obj):
-        print "seeing " + str(obj)
         if not obj in self._seen_objects:
+            # TODO: Remove the registration for this event?
             self._seen_objects.append(obj)
             if self._seenAll():
                 self._onSeenAll()
@@ -555,8 +567,7 @@ class Searcher(object):
     # TODO: Alon, notice that the previous TODO has been accomplished, and is another benefit.
     def _nextSearchMove(self):
         try:
-            self._searchMoves.next().execute().onDone(self._nextSearchMove)
-#            self._actions.moveHead(*self._searchMoves.next()).onDone(self._nextSearchMove)
+            self._searchMoves.next().__call__().onDone(self._nextSearchMove)
         except StopIteration:
             raise Exception("Search iterators are expected to be never-ending.")
 
@@ -567,13 +578,14 @@ class Searcher(object):
         return True
 
     def _onSeenAll(self):
-        print "here"
-        self._deferred.callOnDone()
+        deferred = self._deferred
         self.stop()
+        deferred.callOnDone()
 
     def _onTimeout(self):
         if not self.stopped():
-            if not self._timeoutCallback is None:
-                self._timeoutCallback()
+            timeoutCallback = self._timeoutCallback
             self.stop()
+            if not timeoutCallback is None:
+                timeoutCallback()
 
