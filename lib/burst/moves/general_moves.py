@@ -131,12 +131,12 @@ GREAT_KICK_LEFT_EXTD = (
     ((80.,40.,-50.,-70.),
      (0.,25.,-10.,40.,-30.,-20.),
      (0.,20.,-20.,40.,-25.,-30.),
-     (80.,-40.,50.,70.),0.8),
+     (80.,-40.,50.,70.),1.8),
     #lift the left leg
     ((80.,40.,-50.,-70.),
      (0.,25.,-20.,80.,-45.,-20.),
      (0.,20.,-30.,40.,-20.,-30.),
-     (80.,-40.,50.,70.),1.0),
+     (80.,-40.,50.,70.),1.5),
     #Get ready
     ((80.,40.,-50.,-70.),
      (-10.,35.,-20.,120.,-20.,0.),
@@ -330,7 +330,6 @@ def makeback(x):
     return (x[0][:4],x[1],x[2],x[3][:4],x[4][0])
 
 def getGreatKickLeft(cntr_param):
-
     return map(makeback, (    ( array(map(makesym,GREAT_KICK_LEFT_EXTD))  +array(map(makesym,GREAT_KICK_LEFT_OFFSET))  )*(1-cntr_param)  +   array(map(makesym,GREAT_KICK_LEFT))*cntr_param    ).tolist()) 
 
 def getGreatKickRight(cntr_param):
