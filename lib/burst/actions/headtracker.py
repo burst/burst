@@ -89,11 +89,13 @@ class Tracker(object):
         #  but it doesn't have an associated "lost" event? lost can
         # happen because of occlusion, and because of vision problems (which
         # can be minimized maybe).
+        '''
         if not target.recently_seen: # sanity check (also makes sure we get the
                             # lost event when it happens
             print "ERROR: center called when target not recently in sight"
             #import pdb; pdb.set_trace()
             return
+        '''
         if self.verbose:
             print "Tracker: Start Centering on %s" % target._name
         self._start(target, self._centeringOnLost)
@@ -119,8 +121,10 @@ class Tracker(object):
         if not self._target.recently_seen: # TODO - manually looking for lost event. should be event based, no?
             if self.verbose:
                 print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+            '''
             self._onLost()
             return
+            '''
         if hasattr(self, '_call_me_later'):
             del self._call_me_later
             print "CenteringStep: called later"
@@ -460,6 +464,8 @@ class OldSearcher(object):
 
 ############################################################################
 
+UGLY = 0 # TODO: Remove this debugging line.
+
 def createNewSearchMovesIterator(searcher):
 
     class HeadMovementCommand(object):
@@ -487,6 +493,7 @@ def createNewSearchMovesIterator(searcher):
 # TODO: Clear foot steps if found while turning.
 # TODO: More efficient head movements (speed).
 # TODO: More efficient head movements (order).
+# TODO: Center while searching, so that you can move freely about.
 
 ############################################################################
 
@@ -521,7 +528,6 @@ class Searcher(object):
         If a /timeout/ is provided, quit the search after that many seconds.
         If a /timeoutCallback/ is provided, call that when and if a timeout occurs.
         '''
-
         self.targets = targets[:]
         self.center_on_targets = center_on_targets
         self._timeoutCallback = timeoutCallback
@@ -536,10 +542,10 @@ class Searcher(object):
 
         # For each target you are searching for, have a callback lined up for the event of seeing it.
         for target in targets:
-            callback = lambda obj=target: self._onSeen(obj)
             event = target.in_frame_event
+            callback = lambda obj=target, event=event: self._onSeen(obj, event)
             self._eventmanager.register(callback, event)
-            self._callbackToEventMapping.append((callback, event))
+            self._callbackToEventMapping.append((callback, event)) # TODO: I seem not to be using this.
 
         # Launch the search, according to some search strategy.
         self._searchMoves = createNewSearchMovesIterator(self) # TODO: Give that function the world+search state, so it makes informed decisions.
@@ -556,11 +562,16 @@ class Searcher(object):
         if not self._timeoutCallback is None:
             self._eventmanager.cancelCallLater(self._timeoutCallback)
 
-    def _onSeen(self, obj):
+    def _onSeen(self, obj, event):
         if self.verbose:
             print "Searcher: seeing %s" % obj._name
         if not obj in self._seen_objects:
-            # TODO: Remove the registration for this event?
+            #self._eventmanager.unregister(self._onSeen, event)
+            for cb, ev in self._callbackToEventMapping:
+                if event == ev:
+                    self._eventmanager.unregister(cb, ev)
+                break
+            self._callbackToEventMapping.remove((cb, ev))
             self._seen_objects.append(obj)
             if self._seenAll():
                 self._onSeenAll()
@@ -582,6 +593,25 @@ class Searcher(object):
     def _onSeenAll(self):
         if self.verbose:
             print "Searcher: found all targets"
+        if not self.center_on_targets:
+            self._onSearchDone()
+        else:
+            self._moveTowardsNextTarget()
+
+    def _moveTowardsNextTarget(self):
+        if len(self._seen_objects) == 0:
+            self._onSearchDone()
+        else:
+            target = self._seen_objects.pop()
+            yaw_delta = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
+            pitch_delta = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
+            self._actions.moveHead(yaw_delta, pitch_delta).onDone(lambda target=target: self._centerOnNextTarget(target))
+
+    def _centerOnNextTarget(self, target):
+        self._moveTowardsNextTarget() # TODO: Remove.
+#        self._actions.tracker.center(target).onDone(self._moveTowardsNextTarget)
+
+    def _onSearchDone(self):
         deferred = self._deferred
         self.stop()
         deferred.callOnDone()
