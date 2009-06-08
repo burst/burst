@@ -36,7 +36,7 @@ class SerialPostQueue(object):
         self._motion = world._motion
         self._start_time = None
         # print stuff
-        self.verbose = False
+        self.verbose = burst.options.verbose_movecoordinator
 
     def isNotEmpty(self):
         return len(self._posts) > 0

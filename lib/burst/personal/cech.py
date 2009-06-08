@@ -37,7 +37,7 @@ walks.STRAIGHT_WALK.defaultSpeed = 100
 ## Behavior params
 
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [15.0, 15.0]
-params.KICK_X_MAX[:] = [18.0, 18.0]
+params.KICK_X_MIN[:] = [14.0, 14.0]
+params.KICK_X_MAX[:] = [20.0, 20.0]
 params.KICK_Y_MIN[:] = [2.0, -3.5]
 params.KICK_Y_MAX[:] = [5.0, -6.5]

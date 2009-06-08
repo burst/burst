@@ -28,8 +28,7 @@
 
 using namespace AL;
 
-class ImopsModule:public
-    AL::ALModule
+class ImopsModule : public AL::ALModule, public ImageSubscriber
 {
   public:
     /**
@@ -65,29 +64,13 @@ class ImopsModule:public
         return true;
     };
 
-    // callback - signal to do all of our work (TODO: make this 15hz or whatever
-    // - or just create a different thread for us? yeah, probably right.
-    // OR, mmap the whole frame, whooping 150KiB of it!)
-    void dataChanged (const std::string & pDataName, const ALValue & pValue,
-                 const std::string & pMessage);
+    void notifyNextVisionImage();
 
   private:
 
     // Battery checking functionality
 
-    static const int CHARGER_UNKNOWN, CHARGER_CONNECTED, CHARGER_DISCONNECTED;
-    int numberOfTicksBeforeAnnouncement;
-    int ticksLastStatusHasHeld;
-    int lastBatteryStatus;
-    void readBatteryChargerWarningConfig();
-    
-    void checkBatteryStatus();
-
-    void announceChargerChange( int status );
-
-    void subscribeToDataChange();
-
-    void updateMemoryMappedVariables();
+    void initVisionThread( ALPtr<ALBroker> broker );
 
     AL::ALPtr < AL::ALBroker >      m_broker;        // needed for ConnectToVariables
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
@@ -95,6 +78,8 @@ class ImopsModule:public
     //proxy to the memory module
     ALPtr < AL::ALMemoryProxy > m_memory;
 
+    void writeToALMemory();
+    void processFrame();
 };
 
 #endif // IMOPS_H

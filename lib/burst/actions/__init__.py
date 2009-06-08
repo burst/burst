@@ -281,6 +281,12 @@ class Actions(object):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
         return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
             description=('kick', kick_type, kick_leg, kick_strength))
+
+    def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
+        if kick_leg==LEFT:
+            return self.executeMove(burst.moves.getGreatKickLeft(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
+        else :
+            return self.executeMove(burst.moves.getGreatKickRight(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
     
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         duration = max(col[-1] for col in times)

@@ -4039,7 +4039,7 @@ void ObjectFragments::printObjs() {
             cout << "Vision found yellow backstop " << endl;
             //printObject(vision->ygCrossbar);
         }
-        cout << "Done with frame" << endl;
+        //cout << "Done with frame" << endl;
     }
 #endif
 }

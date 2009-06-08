@@ -24,7 +24,7 @@ import pynaoqi
 from pynaoqi.widgets import Localization, Inertial, BaseWindow
 from pynaoqi.consts import LOC_SCREEN_X_SIZE, LOC_SCREEN_Y_SIZE
 from burst_util import (cached, cached_deferred, Deferred, clip,
-    DeferredList)
+    DeferredList, host_to_ip)
 from burst.walkparameters import WalkParameters
 
 ################################################################################
@@ -329,7 +329,7 @@ class Joints(BaseWindow):
         self.con.modulesDeferred.addCallback(lambda _: self.battery_level_task.start(
             DT_CHECK_BATTERY_LEVEL))
         w = self._w
-        w.set_title('naojoints - %s' % self.con.host)
+        w.set_title('naojoints - %s (%s)' % (self.con.host, host_to_ip(self.con.host)))
         self.c = c = gtk.VBox()
         self._joints_container = gtk.VBox() # top - buttons, bottom - joints sliders table
         w.add(c)
@@ -556,8 +556,8 @@ class Joints(BaseWindow):
 
 class JointsMain(Joints):
 
-    def onDestroy(self, *args):
-        super(JointsMain, self).onDestroy()
+    def _onDestroy(self, *args):
+        super(JointsMain, self)._onDestroy(*args)
         print "quitting.."
         reactor.stop()
 

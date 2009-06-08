@@ -5,6 +5,7 @@ and otherwise.
 """
 
 from burst_util import nicefloat
+from burst_consts import RAD_TO_DEG
 
 import burst
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
@@ -19,8 +20,6 @@ HALF_GOAL_SIZE = (GOAL_SIZE/2)
 
 class Localization(object):
     
-    verbose = burst.options.verbose_localization
-
     def __init__(self, world):
         self._world = world
         self._pose = world.pose
@@ -30,6 +29,8 @@ class Localization(object):
         self._ball_location = None
         # store bottom and top posts
         self._bottom, self._top = self._world.team.target_posts.bottom_top
+        # read verboseness flag at construction time
+        verbose = burst.options.verbose_localization
 
     def calc_events(self, events, deferreds):
         """
@@ -49,8 +50,15 @@ class Localization(object):
         # We defer updating pose until we actually need it.
         new_dist = False
         bottom, top = self._bottom, self._top
+        #if self.verbose:
+        #    bottom_c, top_c = bottom.centered_self, top.centered_self
+        #    if self.verbose and bottom.seen and top.seen:
+        #        print "Localization: UPDATE DIST POSSIBLE? (%s, %s), (%s, %s)" % (
+        #            bottom_c.normalized2_centerX, bottom_c.normalized2_centerY,
+        #            top_c.normalized2_centerX, top_c.normalized2_centerY
+        #        )
         for obj, other_obj in ((bottom, top), (top, bottom)):
-            if obj.seen and obj.centered:
+            if obj.seen and obj.centered_at_pitch_limit:
                 if self.verbose:
                     o_centered = other_obj.centered_self
                     other = (o_centered.sighted_centered and
@@ -83,13 +91,14 @@ class Localization(object):
                 print "Localization: UPDATE SELF POSITION"
             self.updateRobotPosition()
         
-        #seeing blue goal - yellow is unseen
-        if self._world.bglp.seen and self._world.bgrp.seen:
-            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
-        
-        #seeing yellow goal - blue is unseen
-        if self._world.yglp.seen and self._world.ygrp.seen:
-            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+        # TODO: Broken (variable "d" is missing), Vova - please fix
+#        #seeing blue goal - yellow is unseen
+#        if self._world.bglp.seen and self._world.bgrp.seen:
+#            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+#        
+#        #seeing yellow goal - blue is unseen
+#        if self._world.yglp.seen and self._world.ygrp.seen:
+#            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()
@@ -103,7 +112,7 @@ class Localization(object):
                 obj._name, obj.my_dist, obj.dist, obj.focDist)
 
     def calcPostDist(self, post):
-        print "please add the pix dist"
+        #print "please add the pix dist"
         #import pdb; pdb.set_trace()
         return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
 

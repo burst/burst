@@ -20,15 +20,11 @@ of this competition.
 #include "Vision.h"
 #include "Threshold.h" // strangely enough, this uses Vision, not the other way around.
 
-// Color Table definitions. The color table is YMAXxUMAXxVMAX, and
-// to lookup in it you take a YUV tripplet and shift them with
-// YSHIFT, USHIFT and VSHIFT respectively.
-#define YMAX 128
-#define UMAX 128
-#define VMAX 128
-#define YSHIFT 1
-#define USHIFT 1
-#define VSHIFT 1
+// These two are not actually inited or used here, but in imopsmodule.cpp
+#include "ALImageTranscriber.h"
+#include "synchro.h"
+
+#include "imops.h"
 
 #ifndef IMAGE_HEIGHT
 #define IMAGE_HEIGHT 240
@@ -66,6 +62,20 @@ of this competition.
 #define MAGENTA 26
 #define PURPLE 27
 
+// Globals
+// Keep all the crucial instances (all singletons) including the
+// thread pointer. Created with init_vision. Accessible either
+// through the c-interface (anything that is written in imops.h)
+// or directly by the ImopsModule. First case is for pynaoqi,
+// second is for usage as a naoqi module.
+boost::shared_ptr<Profiler> g_profiler;
+boost::shared_ptr<Sensors> g_sensors;
+boost::shared_ptr<NaoPose> g_naopose;
+boost::shared_ptr<Vision> g_vision;
+Threshold* g_threshold;
+
+boost::shared_ptr<Synchro> g_synchro;
+boost::shared_ptr<ALImageTranscriber> g_imageTranscriber;
 
 // Not C++ includes after this point - will get the dreaded
 //          error: template with C linkage
@@ -302,13 +312,7 @@ void yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size)
  get the data out of it..
 */
 
-static boost::shared_ptr<Profiler> g_profiler;
-static boost::shared_ptr<Sensors> g_sensors;
-static boost::shared_ptr<NaoPose> g_naopose;
-static boost::shared_ptr<Vision> g_vision;
-static Threshold* g_threshold;
-
-void init_threshold() {
+void init_vision() {
     if (!g_profiler) {
         std::cout << "Creating Profiler\n";
         g_profiler = boost::shared_ptr<Profiler>(new Profiler(micro_time));
@@ -332,7 +336,7 @@ void init_threshold() {
 // update g_threshold's table
 void update_table(unsigned char bigTable[YMAX][UMAX][VMAX])
 {
-    if (!g_threshold) init_threshold();
+    if (!g_threshold) init_vision();
     unsigned char* bigtable = (unsigned char*)(void*)(bigTable);
     g_threshold->initTableFromBuffer(bigtable);
 }
@@ -340,7 +344,7 @@ void update_table(unsigned char bigTable[YMAX][UMAX][VMAX])
 // do the object recognition thing (thresholding, runs, lines, objects).
 void on_frame(unsigned char* yplane)
 {
-    if (!g_threshold) init_threshold();
+    if (!g_threshold) init_vision();
     g_threshold->initDebugImage(); // I guess TOOL calls this?
     g_vision->notifyImage(yplane);
 }
@@ -348,7 +352,7 @@ void on_frame(unsigned char* yplane)
 // This is just debug code - it is basically the above broken down
 void partwise_on_frame(unsigned char* yplane)
 {
-    if (!g_threshold) init_threshold();
+    if (!g_threshold) init_vision();
     
     // Basically we can do anything until the <<pose needed>> line
     // before initing the pose
@@ -378,13 +382,13 @@ void partwise_on_frame(unsigned char* yplane)
 // thresholded = thresholded_type.from_address(get_thresholded())
 unsigned char* get_thresholded()
 {
-    if (!g_threshold) init_threshold();
+    if (!g_threshold) init_vision();
     return (unsigned char*)(g_threshold->thresholded);
 }
 
 unsigned char* get_big_table()
 {
-    if (!g_threshold) init_threshold();
+    if (!g_threshold) init_vision();
     return (unsigned char*)(g_threshold->bigTable);
 }
 

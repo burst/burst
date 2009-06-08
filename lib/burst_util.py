@@ -513,7 +513,14 @@ def get_hostname():
     return os.popen('hostname').read().strip()
 
 def getip():
+    """ TODO - rename to getlocalip """
     return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+
+def host_to_ip(host):
+    res = socket.getaddrinfo(host, 0)
+    if len(res) < 1:
+        return 'unknown ip'
+    return res[0][4][0]
 
 #def not_on_nao():
 #    #is_nao = os.popen("uname -m").read().strip() == 'i586'
