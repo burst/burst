@@ -23,7 +23,7 @@ from burst.world import World
  BALL_DIAGONAL
  ) = range(6)
 
-MOVEMENT_PERCENTAGE = 1.0
+MOVEMENT_PERCENTAGE = 0.9
 
 ## Kicks
 # Kick consts (Measurements acquired via headTrackingTester)
