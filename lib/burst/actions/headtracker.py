@@ -275,8 +275,6 @@ class OldSearcher(object):
     The results are stored in the target.center of each target.
     """
 
-    verbose = burst.options.verbose_tracker
-
     def __init__(self, actions):
         self._actions = actions
         self._world = actions._world
@@ -289,6 +287,7 @@ class OldSearcher(object):
         self._events = []
         self._searchlevel = None
         self._timeoutCallback = None
+        self.verbose = burst.options.verbose_tracker
 
     def stopped(self):
         return self._stop
@@ -494,6 +493,7 @@ def createNewSearchMovesIterator(searcher):
 class Searcher(object):
 
     def __init__(self, actions):
+        self.verbose = burst.options.verbose_tracker
         self._actions = actions
         self._world = actions._world
         self._eventmanager = actions._eventmanager
@@ -557,6 +557,8 @@ class Searcher(object):
             self._eventmanager.cancelCallLater(self._timeoutCallback)
 
     def _onSeen(self, obj):
+        if self.verbose:
+            print "Searcher: seeing %s" % obj._name
         if not obj in self._seen_objects:
             # TODO: Remove the registration for this event?
             self._seen_objects.append(obj)
@@ -578,6 +580,8 @@ class Searcher(object):
         return True
 
     def _onSeenAll(self):
+        if self.verbose:
+            print "Searcher: found all targets"
         deferred = self._deferred
         self.stop()
         deferred.callOnDone()
