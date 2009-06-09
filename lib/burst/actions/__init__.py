@@ -288,8 +288,12 @@ class Actions(object):
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw,
-                                        self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
+        cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
+        yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
+        if burst.options.debug:
+            print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
+                cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
+        return self.executeHeadMove( (((yaw, pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
