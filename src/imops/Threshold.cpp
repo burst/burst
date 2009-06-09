@@ -79,7 +79,7 @@ Threshold::Threshold(Vision* vis, shared_ptr<NaoPose> posPtr)
 # if ! defined OFFLINE
     initTable("/home/root/burst/lib/etc/table.mtb");
 # else
-    std::string table_path = std::string(getenv("HOME")) + "/" + "src/nao-man/install/etc/table.mtb";
+    std::string table_path = std::string(getenv("HOME")) + "/" + "src/burst/data/tables/maverick/webots.mtb";
     initTable(table_path.c_str());
 #endif // OFFLINE
     // Set up object recognition object pointers

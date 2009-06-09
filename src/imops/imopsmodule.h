@@ -79,11 +79,11 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
     void initVisionThread( ALPtr<ALBroker> broker );
 
-    AL::ALPtr < AL::ALBroker >      m_broker;        // needed for ConnectToVariables
+    AL::ALPtr < AL::ALBroker >       m_broker;        // needed for ConnectToVariables
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
 
-    //proxy to the memory module
-    ALPtr < AL::ALMemoryProxy > m_memory;
+    ALPtr < AL::ALMemoryProxy >      m_memory;
+    ALPtr < AL::ALMotionProxy >      m_motion;
 
     void writeToALMemory();
 };
