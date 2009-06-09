@@ -21,7 +21,7 @@ walks.STRAIGHT_WALK.defaultSpeed = 100 # Eran: 80 seems to fall within ~40cm whe
 walks.SIDESTEP_WALK.defaultSpeed = 20 # 20 seems just fine
 
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [14,14]
+params.KICK_X_MIN[:] = [12,12]
 params.KICK_X_MAX[:] = [18,18]
-params.KICK_Y_MIN[:] = [4.0,-2.5]
-params.KICK_Y_MAX[:] = [6.0,-4.5]
+params.KICK_Y_MIN[:] = [3.5,-1.5]
+params.KICK_Y_MAX[:] = [9.5,-8.5]

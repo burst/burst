@@ -128,6 +128,13 @@ class BallKicker(BurstDeferred):
         # ball location, as defined at behavior parameters (front, side, etc...)
         ball_location = calcBallArea(ball_x, ball_y, side)
         
+        # by Vova - new kick
+        if side==LEFT:
+            cntr_param = 1.1-1.2*(ball_y-KICK_Y_MIN[LEFT])/7
+        else: 
+            cntr_param = 1.1- 1.2*(abs(ball_y-KICK_Y_MIN[RIGHT])/7)
+
+        
         print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
         
         # Use circle-strafing when near ball
@@ -140,8 +147,12 @@ class BallKicker(BurstDeferred):
         if ball_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
             if not self.DISABLE_MOVEMENT:
+        
                 self._actions.tracker.stop()
-                self.doKick(side)
+                # by Vova - new kick
+                #self.doKick(side)
+                self.debugPrint("cntr_param: %3.3f" % (cntr_param))
+                self.doKick(side, cntr_param)
         else:
             if ball_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
@@ -195,5 +206,7 @@ class BallKicker(BurstDeferred):
             self.ballLocationKnown = False
             self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
         
-    def doKick(self, side):
-        self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
+    def doKick(self, side, cntr_param):
+        # by Vova - new kick
+        #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
+        self._actions.adjusted_straight_kick(side, cntr_param)
