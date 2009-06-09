@@ -212,19 +212,28 @@ class EventManager(object):
         # too simple for this to happen) we create a copy of the lists
         # and loop on them.
 
+        # Code handling this "removal in cb" is noted as "handle possible removal"
+        # to make the code more readable.
+
         # TODO - rename deferreds to burstdeferreds
         events, deferreds = self._world.getEventsAndDeferreds()
         deferreds = list(deferreds) # make copy, avoid endless loop
 
         # Handle regular events - we keep a copy of the current
         # cb's for all events to make sure there is no loop.
-        loop_event_cb = [list(self._events[event]) for event in events]
-        for cbs in loop_event_cb:
+        loop_event_cb = [(event, list(self._events[event])) for event in events]
+        for event, cbs in loop_event_cb:
             for cb in cbs:
-                cb()
+                if cb in self._events[event]:  # handle possible removal
+                    cb()
+                elif self.verbose:
+                    print "EventManager: %s removed by prior during step" % cb
         # EVENT_STEP registrators are always called (again, list used to create a temp copy)
         for cb in list(self._events[EVENT_STEP]):
-            cb()
+            if cb in self._events[EVENT_STEP]: # handle possible removal
+                cb()
+            elif self.verbose:
+                print "EventManager: %s removed by prior during step" % cb
 
         # Handle call later's
         cur_call_later = self._call_later

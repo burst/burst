@@ -569,7 +569,10 @@ class Searcher(object):
 #            print "\nSearcher seeing ball?: (ball seen %s, ball recently seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
 #                self._world.ball.seen, self._world.ball.recently_seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
 
+        #if len(self._callbackToEventMapping) == 0: return
         if not obj in self._seen_objects:
+            if self.verbose:
+                print "Searcher: first time seen %s" % obj._name
             #self._eventmanager.unregister(self._onSeen, event)
             for cb, ev in self._callbackToEventMapping:
                 if event == ev:
@@ -610,6 +613,8 @@ class Searcher(object):
             self._onSearchDone()
         else:
             target = self._seen_objects.pop()
+            if self.verbose:
+                print "Searcher: centering on %s" % target._name
             yaw_delta = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
             pitch_delta = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
             self._actions.moveHead(yaw_delta, pitch_delta).onDone(lambda target=target: self._centerOnNextTarget(target))

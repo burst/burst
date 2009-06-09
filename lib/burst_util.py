@@ -179,6 +179,9 @@ class BurstDeferred(object):
     is the only use case right now.  So basically you are expected to
     return from onDone a new BurstDeferred that will be called when the
     argument of onDone actually finishes.
+
+    Another possible utility from this being a seperate class: We can
+    trace it and not worry about tracing low level stuff.
     """
 
     def __init__(self, data, parent=None):
@@ -227,6 +230,87 @@ class BurstDeferred(object):
         self.onDone(lambda: self._d.callback(None))
         return self._d
 
+if '--history' in sys.argv: # TODO - ugly, should be through burst.options
+    D_CREATE, D_ON_DONE, D_CALL_ON_DONE = 'create', 'onDone', 'callOnDone'
+    class BurstDeferredWithHistory(BurstDeferred):
+        history = []
+
+        def __init__(self, data, parent=None):
+            super(BurstDeferredWithHistory, self).__init__(data, parent)
+            self.history.append((D_CREATE, (self,)))
+
+        def onDone(self, cb):
+            self.history.append((D_ON_DONE, (self, cb)))
+            return super(BurstDeferredWithHistory, self).onDone(cb)
+
+        def callOnDone(self):
+            self.history.append((D_CALL_ON_DONE, (self,)))
+            return super(BurstDeferredWithHistory, self).callOnDone()
+
+    import atexit
+    import sys
+
+    def dot_from_data(fd, title, nodes, links):
+        fd.write('digraph %s {\n' % title.replace('.','_'))
+        def pairs(d):
+            return ','.join('%s=%s' % (k, v) for k, v in d)
+        for n, d in nodes:
+            fd.write('%s [%s];\n' % (n, pairs(d)))
+        for (a, b), d in links:
+            fd.write('%s -> %s [%s]\n' % (a, b, pairs(d)))
+        # TODO - {rank=same; b x}
+        fd.write('}\n')
+
+    def classname(cb):
+        if hasattr(cb, 'im_self'):
+            return cb.im_self.__class__.__name__
+
+    def funcname(cb):
+        if hasattr(cb, 'im_self'):
+            return cb.im_func.func_name
+        return cb.func_name
+
+    def pretty(c):
+        # this can be anything
+        if hasattr(c, '__class__'):
+            return '%s: %s' % (c.__class__.__name__, id(c))
+        return str(c)
+
+    def prettybd(bd):
+        if bd._data:
+            return pretty(bd._data)
+        return pretty(bd)
+
+    def print_deferred_history(output_filename='deferred.dot',
+            png_filename='deferred.png'):
+        print "openning %s for output" % output_filename
+        history = BurstDeferredWithHistory.history
+        # bdname, bd
+        bd_data = [(prettybd(data[0]), data[0]) for cmd, data in history if cmd == D_CREATE]
+        bd_to_name = dict([(b,a) for a,b in bd_data])
+        # cbname, cb, bd, classname
+        cb_data = [(funcname(data[1]), data[1], data[0], classname(data[1])) for cmd, data in history if cmd == D_ON_DONE]
+        # cname
+        class_data = [cname for cbname, cb, bd, cname in cb_data if cname]
+        nodes = ([(name, [('shape', 'box')]) for name, bd in bd_data] +
+                 [(cbname, [('shape', 'circle')]) for cbname, cb, bd, cname in cb_data] +
+                 [(cname, []) for cname in class_data])
+        # bdnam
+        links = ([((cbname, bd_to_name[bd]), []) for cbname, cb, bd, cname in cb_data] +
+                 [((cbname, cname), []) for cbname, cb, bd, cname in cb_data if cname])
+        with open(output_filename, 'w+') as fd:
+            dot_from_data(fd, title=sys.argv[0],
+                nodes = nodes,
+                links = links)
+        # create the png
+        os.system('dot -Tpng -o%s %s' % (png_filename, output_filename))
+        # open it
+        os.system('xdg-open %s &' % png_filename)
+
+    atexit.register(print_deferred_history)
+
+    BurstDeferred=BurstDeferredWithHistory
+
 # Various Decorators
 
 # Debugging
@@ -251,7 +335,6 @@ def traceme(f):
         sys.settrace(old_trace)
         return ret
     return wrapper
-
 
 
 # D* - Cacheing
