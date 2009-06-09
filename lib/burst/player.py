@@ -126,23 +126,23 @@ class Player(object):
 
     def _announceSeeingBall(self):
         pass # For now, this feature is provided by the /man/ module.
-        #self._world.robot.leds.rightEyeLED.turnOn(burst_consts.RED)
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.RED)
 
     def _announceNotSeeingBall(self):
         pass # For now, this feature is provided by the /man/ module.
-        # self._world.robot.leds.rightEyeLED.turnOn(burst_consts.BLUE)
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.BLUE)
 
     def _announceSeeingBlueGoal(self):
         pass # For now, a feature provided by /man/ overrides this.
-        # self._world.robot.leds.rightEyeLED.turnOn(burst_consts.LIGHT_BLUE)
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.LIGHT_BLUE)
 
     def _announceSeeingYellowGoal(self):
         pass # For now, a feature provided by /man/ overrides this.
-        # self._world.robot.leds.rightEyeLED.turnOn(burst_consts.YELLOW)
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.YELLOW)
 
     def _announceSeeingNoGoal(self):
         pass # For now, a feature provided by /man/ overrides this.
-        # self._world.robot.leds.rightEyeLED.turnOn(burst_consts.OFF)
+        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.OFF)
 
 if __name__ == '__main__':
     print "Welcome to the player module's testing procedure. Have fun."
