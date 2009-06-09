@@ -157,9 +157,8 @@ unsigned char indexed_as_rgb[][3] = {
 };
 
 // Used by python code to update the table the indexed_to_rgb function uses.
-void write_index_to_rgb(char* index_to_rgb, int color_start, int color_end) {
+void write_index_to_rgb(char* index_to_rgb, unsigned int color_start, unsigned int color_end) {
     if (color_end < color_start) return;
-    if (color_start < 0 || color_end < 0) return;
     if (color_end > sizeof(indexed_as_rgb)/3) return;
     memcpy(&indexed_as_rgb[color_start], index_to_rgb, (color_end-color_start)*3);
 }
