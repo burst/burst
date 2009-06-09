@@ -506,6 +506,7 @@ class Searcher(object):
         self._world = actions._world
         self._eventmanager = actions._eventmanager
         self.reset()
+        self._seenTargets = self._seenAll
 
     def reset(self):
         self._stopped = True # TODO: For timeouts, use an "ack".
@@ -521,6 +522,10 @@ class Searcher(object):
     def stop(self):
         self._unregisterEvents()
         self.reset()
+
+    def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+        self._seenTargets = self._seenOne
+        self.search(targets, center_on_targets, timeout, timeoutCallback)
 
     def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
         '''
@@ -580,7 +585,7 @@ class Searcher(object):
                 break
             self._callbackToEventMapping.remove((cb, ev))
             self._seen_objects.append(obj)
-            if self._seenAll():
+            if self._seenTargets():
                 self._onSeenAll()
 
     # TODO: Make the iterator return something more general (a command pattern), so that not only head movements are supported, but the whole body.
@@ -594,7 +599,14 @@ class Searcher(object):
         except StopIteration:
             raise Exception("Search iterators are expected to be never-ending.")
 
+    def _seenOne(self):
+        """ function for search_one_of, checks if one of the supplied targets
+        has been seen """
+        return len(self._seen_objects) >= 1
+
     def _seenAll(self):
+        """ default _seenTargets function, checks that all
+        targets have been seen """
         for target in self.targets:
             if not target in self._seen_objects:
                 return False
