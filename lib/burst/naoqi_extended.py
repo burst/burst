@@ -92,6 +92,7 @@ for getter, global_name, proxy_name in [
     ('getSpeechProxy', 'speechProxy', 'ALTextToSpeech'),
     ('getLedsProxy',   'ledsProxy',   'ALLeds'),
     ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
+    ('getNaoCamProxy', 'naocamProxy', 'NaoCam'),
     ('getVisionProxy', 'visionProxy', 'vision'),
     ('getDCMProxy',    'dcmProxy',    'DCM'),
     ('getUltraSoundProxy', 'ultraSoundProxy', 'ALUltraSound')]:
