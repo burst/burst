@@ -6,7 +6,7 @@ import player_init
 from burst_consts import CAMERA_WHICH_TOP_CAMERA, CAMERA_WHICH_BOTTOM_CAMERA
 from burst.player import Player
 
-class Nod(Player):
+class CameraSwitchTester(Player):
     
     def onStart(self):
         # Down, Left, Up, Right - learn your directions!
@@ -19,5 +19,5 @@ class Nod(Player):
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(Nod).run()
+    MainLoop(CameraSwitchTester).run()
 

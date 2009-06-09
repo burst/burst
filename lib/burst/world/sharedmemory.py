@@ -6,7 +6,7 @@ import mmap
 
 import burst
 from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
-    MMAP_FILENAME, MMAP_LENGTH)
+    MMAP_FILENAME, MMAP_LENGTH, BURST_SHARED_MEMORY_VARIABLES_START_OFFSET)
 
 class SharedMemoryReader(object):
     """ read from memory mapped file and not from ALMemory proxy, which
@@ -37,7 +37,9 @@ class SharedMemoryReader(object):
         self.vars = dict((k, 0.0) for k in self._var_names)
         # TODO - this is slow (but still should be fast compared to ALMemory)
         self._unpack = 'f' * len(self._var_names)
-        self._unpack_size = struct.calcsize(self._unpack)
+        start_offset = BURST_SHARED_MEMORY_VARIABLES_START_OFFSET
+        self._unpack_start = start_offset
+        self._unpack_end = start_offset + struct.calcsize(self._unpack)
         self._fd = None
         self._buf = None
 
@@ -67,7 +69,7 @@ class SharedMemoryReader(object):
         # TODO - instead of updating the dict I could just update the
         # values and only make the dict if someone explicitly wants it,
         # and give values using cached indices created in constructor.
-        values = struct.unpack(self._unpack, self._buf[:self._unpack_size])
+        values = struct.unpack(self._unpack, self._buf[self._unpack_start:self._unpack_end])
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):
             self.vars[k] = v
