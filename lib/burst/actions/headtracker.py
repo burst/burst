@@ -506,6 +506,8 @@ class Searcher(object):
         self._world = actions._world
         self._eventmanager = actions._eventmanager
         self.reset()
+        # this is the default "did I see all targets" function, used
+        # by searchHelper to provide both "all" and "one off" behavior.
         self._seenTargets = self._seenAll
 
     def reset(self):
@@ -515,6 +517,7 @@ class Searcher(object):
         self._callbackToEventMapping = []
         self._searchMoves = None
         self._deferred = None
+        self._targets = []
 
     def stopped(self):
         return self._stopped
@@ -589,12 +592,12 @@ class Searcher(object):
                 break
             self._callbackToEventMapping.remove((cb, ev))
             self._seen_objects.append(obj)
-            if self._seenTargets():
-                self._onSeenAll()
 
     # TODO: Make the iterator return something more general (a command pattern), so that not only head movements are supported, but the whole body.
     # TODO: Alon, notice that the previous TODO has been accomplished, and is another benefit.
     def _nextSearchMove(self):
+        if self._seenTargets():
+            return self._onSeenAll()
         try:
             # XXX: prevents cases where self._searchMoves is None and so next() can't be called...
             #      we probably need better solution...
@@ -631,9 +634,9 @@ class Searcher(object):
             target = self._seen_objects.pop()
             if self.verbose:
                 print "Searcher: centering on %s" % target._name
-            yaw_delta = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
-            pitch_delta = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
-            self._actions.moveHead(yaw_delta, pitch_delta).onDone(lambda target=target: self._centerOnNextTarget(target))
+            yaw = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
+            pitch = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
+            self._actions.moveHead(yaw, pitch).onDone(lambda target=target: self._centerOnNextTarget(target))
 
     def _centerOnNextTarget(self, target):
         self._moveTowardsNextTarget() # TODO: Remove.
