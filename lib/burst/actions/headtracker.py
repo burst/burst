@@ -525,9 +525,13 @@ class Searcher(object):
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
         self._seenTargets = self._seenOne
-        self.search(targets, center_on_targets, timeout, timeoutCallback)
+        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback)
 
     def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+        self._seenTargets = self._seenAll
+        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback)
+
+    def _searchHelper(self, targets, center_on_targets, timeout, timeoutCallback):
         '''
         Search fo the objects in /targets/.
         If /center_on_targets/ is True, center on those objects.
