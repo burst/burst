@@ -16,6 +16,7 @@ from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
 from headtracker import Tracker, Searcher
+from passing import passBall
 
 #######
 
@@ -79,6 +80,17 @@ class Actions(object):
         ballkicker = BallKicker(self._eventmanager, self, target_bearing_distance=target_bearing_distance)
         ballkicker.start()
         return ballkicker
+
+    def passBall(self, target_world_frame=None, target_bearing_distance=None):
+        if target_world_frame is not None:
+            if target_bearing_distance is not None:
+                print "ERROR: bad parameters to passBall.. ignoring"
+                return
+            raise NotImplemented('passBall can only work with target == None right now')
+            target_bearing_distance = self._world.translateWorldFrameToBearingDistance(target_world_frame)
+        passingChallange = passBall(self._eventmanager, self, target_bearing_distance=target_bearing_distance)
+        passingChallange.start()
+        return passingChallange
 
     def track(self, target, on_lost_callback=None):
         """ Track an object that is seen. If the object is not seen,
@@ -277,10 +289,32 @@ class Actions(object):
     # Kick type - one of the kick types defined in actionconsts KICK_TYPE_STRAIGHT/KICK_TYPE_PASSING/etc...
     # Kick leg - the leg used to kick
     # Kick strength - strength of the kick (between 0..1)
-    def kick(self, kick_type, kick_leg, kick_strength=1):
+    def kick(self, kick_type, kick_leg, kick_dist):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
-        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
-            description=('kick', kick_type, kick_leg, kick_strength))
+
+        # OLDER KICKING (not including passing)
+        #return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
+        #    description=('kick', kick_type, kick_leg, kick_strength))
+
+        # FOR PASSING:
+        originalKick = KICK_TYPES[(kick_type, kick_leg)]
+        orig_value = originalKick[4][4]
+        if kick_dist > 0:
+            kick_dist = kick_dist / 100
+            originalKick[4][4] = self.getSpeedFromDistance(kick_dist)
+        bd = self.executeMove(originalKick)
+        originalKick[4][4] = orig_value
+        return bd
+
+    def getSpeedFromDistance(self,kick_dist):
+        power=self.getMax(0.62 * pow(kick_dist,-0.4) , 0.18)
+        return power
+
+    def getMax(self,exp1,exp2):
+        if exp1 < exp2:
+            return exp1
+        else:
+            return exp2
 
     def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
         if kick_leg==LEFT:
