@@ -37,7 +37,8 @@ from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR, IMAGE_CENTER_X,
 class BallKicker(BurstDeferred):
 
     VERBOSE = True
-    DISABLE_MOVEMENT = False
+    ENABLE_MOVEMENT = True
+    ENABLE_STRAFING = False
 
     def __init__(self, eventmanager, actions, target_bearing_distance=None):
         super(BallKicker, self).__init__(None)
@@ -53,6 +54,7 @@ class BallKicker(BurstDeferred):
     
     def start(self):
         self.ballLocationKnown = False
+        self.goalLocationKnown = False
         self.aligned_to_goal = False
         self.goalpost_to_track = self._world.ygrp
         
@@ -71,13 +73,15 @@ class BallKicker(BurstDeferred):
         self.debugPrint("onSearchBallOver")
         
         # TODO: TEMP!!! move code elsewhere (should be done in search...)
-        self.debugPrint("centering on ball (from search results")
-        centeredBall = self._world.ball.centered_self
-        self.debugPrint("XXX Moving towards and centering on Ball - (%1.2f, %1.2f)" % (centeredBall.head_yaw, centeredBall.head_pitch))
-        a1 = centeredBall.head_yaw, centeredBall.head_pitch
-        a2 = (a1[0] - PIX_TO_RAD_X * (centeredBall.centerX - IMAGE_CENTER_X),
-              a1[1] + PIX_TO_RAD_Y * (centeredBall.centerY - IMAGE_CENTER_Y))
-        self._actions.moveHead(*a2).onDone(self.onSearchCenteringDone)
+        self.debugPrint("manually centering on ball (from search ball results)")
+        self.manualCentering(self._world.ball.centered_self, self.onSearchCenteringDone)
+
+    def manualCentering(self, centeredTarget, onDoneCallback):
+        self.debugPrint("XXX Moving towards and centering on target - (%1.2f, %1.2f, %1.2f, %1.2f)" % (centeredTarget.head_yaw, centeredTarget.head_pitch, centeredTarget.centerX, centeredTarget.centerY))
+        a1 = centeredTarget.head_yaw, centeredTarget.head_pitch
+        a2 = (a1[0] - PIX_TO_RAD_X * (centeredTarget.centerX - IMAGE_CENTER_X),
+              a1[1] + PIX_TO_RAD_Y * (centeredTarget.centerY - IMAGE_CENTER_Y))
+        self._actions.moveHead(*a2).onDone(onDoneCallback)
         
     def onSearchCenteringDone(self):
         # TODO: TEMP!!! should be at onSearchBallOver, moved temporarily here since we do the centering by ourself
@@ -89,7 +93,7 @@ class BallKicker(BurstDeferred):
         self.debugPrint("BALL LOST, clearing footsteps")
         self._actions.clearFootsteps()
         self.ballLocationKnown = False
-        #self.doNextAction()
+        self.doNextAction()
 
     def doNextAction(self):
         print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
@@ -128,50 +132,49 @@ class BallKicker(BurstDeferred):
         # ball location, as defined at behavior parameters (front, side, etc...)
         ball_location = calcBallArea(ball_x, ball_y, side)
         
-        # by Vova - new kick
+        # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course) 
         if side==LEFT:
             cntr_param = 1.1-1.2*(ball_y-KICK_Y_MIN[LEFT])/7
         else: 
             cntr_param = 1.1- 1.2*(abs(ball_y-KICK_Y_MIN[RIGHT])/7)
-
         
         print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
         
         # Use circle-strafing when near ball
-#        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal:
-#            self.debugPrint("Aligning to goal! (stopping ball tracker)")
-#            self._actions.tracker.stop()
-#            self._actions.search([self._world.yglp, self._world.ygrp]).onDone(self.onSearchResults)
-#        # Ball inside kicking area, kick it
-#        el
-        if ball_location == BALL_IN_KICKING_AREA:
+        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self.ENABLE_STRAFING:
+            self.debugPrint("Aligning to goal! (stopping ball tracker)")
+            self._actions.tracker.stop()
+            # TODO: TEMP! should be [self._world.yglp, self._world.ygrp]
+            self._actions.search([self.goalpost_to_track], center_on_targets=False).onDone(self.onSearchResults)
+        # Ball inside kicking area, kick it
+        elif ball_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
-            if not self.DISABLE_MOVEMENT:
-        
+            if self.ENABLE_MOVEMENT:
                 self._actions.tracker.stop()
                 # by Vova - new kick
-                #self.doKick(side)
+                #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
                 self.debugPrint("cntr_param: %3.3f" % (cntr_param))
-                self.doKick(side, cntr_param)
+                self._actions.adjusted_straight_kick(side, cntr_param)
         else:
             if ball_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
-                if not self.DISABLE_MOVEMENT:
+                if self.ENABLE_MOVEMENT:
                     self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE).onDone(self.doNextAction)
             elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
-                if not self.DISABLE_MOVEMENT:
+                if self.ENABLE_MOVEMENT:
                     self._actions.changeLocationRelativeSideways(0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK).onDone(self.doNextAction)
             elif ball_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
-                if not self.DISABLE_MOVEMENT:
+                if self.ENABLE_MOVEMENT:
                     self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE).onDone(self.doNextAction)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
         
-        if self.DISABLE_MOVEMENT:
+        if not self.ENABLE_MOVEMENT:
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
     
+    ####################################### STRAFING - BEGIN:
     def onSearchResults(self):
         self.debugPrint("onSearchResults")
         
@@ -185,28 +188,32 @@ class BallKicker(BurstDeferred):
         else:
             self.debugPrint("position = %3.3f %3.3f %3.3f, dists %s" % (robot.world_x, robot.world_y, robot.world_heading, dists))
         
+        self.debugPrint("manually centering on goalpost (from search goal results)")
+        self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchGoalDone)
+        
+    def onSearchGoalDone(self):
+        self.goalLocationKnown = True
         # Track one of the goal posts (TODO: Add offset from post towards other post)
-        self._actions.tracker.track(self.goalpost_to_track, self.onLostGoalpost)
+        self._actions.tracker.track(self.goalpost_to_track, self.onLostGoal)
         self.strafe()
-    
-    def onLostGoalpost(self):
-        # TODO:...
-        self.debugPrint("Goal Post lost")
-        pass
+
+    def onLostGoal(self):
+        self.debugPrint("GOAL LOST, clearing footsteps, stopping strafing")
+        self._actions.clearFootsteps()
+        self.goalLocationKnown = False
+        self.doNextAction()
     
     def strafe(self):
-        if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
-            self._actions.executeTurnCW().onDone(self.strafe)
-        elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
-            self._actions.executeTurnCCW().onDone(self.strafe)
-        else:
-            self.debugPrint("Aligned position reached! (starting ball search)")
-            self._actions.tracker.stop()
-            self.aligned_to_goal = True
-            self.ballLocationKnown = False
-            self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
-        
-    def doKick(self, side, cntr_param):
-        # by Vova - new kick
-        #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
-        self._actions.adjusted_straight_kick(side, cntr_param)
+        if self.goalLocationKnown:
+            if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
+                self._actions.executeTurnCW().onDone(self.strafe)
+            elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
+                self._actions.executeTurnCCW().onDone(self.strafe)
+            else:
+                self.debugPrint("Aligned position reached! (starting ball search)")
+                self._actions.tracker.stop()
+                self.aligned_to_goal = True
+                self.ballLocationKnown = False
+                self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
+
+    ####################################### STRAFING - END
