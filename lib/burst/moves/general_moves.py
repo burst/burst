@@ -109,17 +109,17 @@ HEAD_SCAN_QUICK = (
 #===============================================================================
 def mirrorMove(positions):
     return list(
-          list((RShoulderPitch, -RShoulderRoll, -RElbowYaw, -RElbowRoll),
-           (RHipYawPitch, -RHipRoll, RHipPitch, RKneePitch, RAnklePitch, -RAnkleRoll),
-           (LHipYawPitch, -LHipRoll, LHipPitch, LKneePitch, LAnklePitch, -LAnkleRoll),
-           (LShoulderPitch, -LShoulderRoll, -LElbowYaw, -LElbowRoll),
-           interp_time)                 
+          list(((RShoulderPitch, -RShoulderRoll, -RElbowYaw, -RElbowRoll),
+                (RHipYawPitch, -RHipRoll, RHipPitch, RKneePitch, RAnklePitch, -RAnkleRoll),
+                (LHipYawPitch, -LHipRoll, LHipPitch, LKneePitch, LAnklePitch, -LAnkleRoll),
+                (LShoulderPitch, -LShoulderRoll, -LElbowYaw, -LElbowRoll),
+                interp_time))
                   for
-          ((LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll),
-           (LHipYawPitch, LHipRoll, LHipPitch, LKneePitch, LAnklePitch, LAnkleRoll),
-           (RHipYawPitch, RHipRoll, RHipPitch, RKneePitch, RAnklePitch, RAnkleRoll),
-           (RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll),
-           interp_time) in positions)
+              ((LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll),
+               (LHipYawPitch, LHipRoll, LHipPitch, LKneePitch, LAnklePitch, LAnkleRoll),
+               (RHipYawPitch, RHipRoll, RHipPitch, RKneePitch, RAnklePitch, RAnkleRoll),
+               (RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll),
+                interp_time) in positions)
 
 GREAT_KICK_LEFT_EXTD = (
     #Stand up more fully
