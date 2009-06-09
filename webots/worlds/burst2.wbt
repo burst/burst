@@ -9,8 +9,8 @@ WorldInfo {
   basicTimeStep 40
 }
 Viewpoint {
-  orientation 0.361853 0.863292 0.351836 4.56573
-  position -6.08829 5.68773 0.067889
+  orientation 0.0245427 0.740294 0.671835 3.19398
+  position 1.36929 1.66368 0.201569
 }
 Background {
   skyColor [
@@ -243,7 +243,8 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation 0 0.0428038 0
+  translation 1.32869 0.0428038 0.00187238
+  rotation -0.000377075 1.51739e-05 -1 2.72067
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -269,8 +270,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 2.4 0.325 0
-  rotation 0 1 0 -1.57
+  translation 1.46932 0.321955 0.0532913
+  rotation 0.0002698 1 0.000455971 -1.56864
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -279,8 +280,8 @@ DEF RED_GOAL_KEEPER Nao {
   name "red goal keeper"
 }
 DEF BLUE_GOAL_KEEPER Nao {
-  translation -2.4 0.325 0
-  rotation 0 1 0 1.57
+  translation -2.4001 0.321954 0.000175468
+  rotation -0.000314142 1 0.000386208 1.56979
   channel 1
   controller "nao_in_webots"
   name "blue goal keeper"

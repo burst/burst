@@ -113,7 +113,13 @@ class Scale(object):
     ROW_OPTIONS = [(0, 0), (0, 0), (0, 0), (both, both)]
     assert(len(ROW_OPTIONS) == NUM_ROWS)
 
-    def __init__(self, i, name, min_val, max_val, init_pos):
+    def __init__(self, onChanged, i, name, min_val, max_val, init_pos):
+        """ construct a single Scale. onChanged is the method called when
+        a slide is moved, with signature:
+            def onChanged(self, w, scroll_type, val)
+
+        it can coordinate multiple scales.
+        """
         self.last_sent_value = min_val
         self.last_sent_time = start_time
         self.name = name
@@ -123,7 +129,8 @@ class Scale(object):
         page_size = page_step
         adj = gtk.Adjustment(init_pos, min_val, max_val, step, page_step, page_size)
         self.set_scale = gtk.VScale(adj)
-        self.set_scale.connect("change-value", self.onChanged)
+        self.set_scale.connect("change-value", lambda w, scroll_type, val, joint=i: onChanged(
+            w=w, scroll_type=scroll_type, val=val, joint_name=name))
         adj = gtk.Adjustment(min_val, min_val, max_val, step, page_step, page_size)
         self.state_scale = gtk.VScale(adj)
         self.toplabel = gtk.Label()
@@ -215,7 +222,7 @@ class ScalePane(object):
         for i, (joint_name, cur_a) in enumerate(zip(joints, cur_angles)):
             start_i = start_joint_num + i
             min_val, max_val, max_change_per_step = self._parent.joint_limits[joint_name]
-            s = Scale(start_i, joint_name, min_val, max_val, cur_a)
+            s = Scale(parent.onChanged, start_i, joint_name, min_val, max_val, cur_a)
             parent.scales[joint_name] = s # for updating
             for (row, obj), (xoptions, yoptions) in zip(enumerate(s.col), Scale.ROW_OPTIONS):
                 table.attach(obj, start_i, start_i+1, row, row+1, xoptions, yoptions)
@@ -340,9 +347,11 @@ class Joints(BaseWindow):
         self._battery_level_button = battery_status_label = gtk.Label()
         bat_stat_eventbox.connect('button-press-event', self._toggleAllButtonsExceptBattery)
         bat_stat_eventbox.add(battery_status_label)
+        self._mirror_moves = mirror_moves = gtk.CheckButton('mirror moves')
 
         top_buttons_data = [
             (bat_stat_eventbox,   None),
+            (mirror_moves,        None),
             ('print angles',    self.printAngles),
             ('stiffness on',    self.setStiffnessOn),
             ('stiffness off',   self.setStiffnessOff),
@@ -487,6 +496,18 @@ class Joints(BaseWindow):
             w.show_all()
         for w in self._joints_widgets:
             w.hide_all()
+
+    def onChanged(self, w, scroll_type, val, joint_name):
+        """ called by scales, calls one scale or two, depending on the mirror checkbox
+        """
+        #import pdb; pdb.set_trace()
+        if self._mirror_moves.get_active():
+            mirrored = {'L':'R', 'R':'L'}[joint_name[0]] + joint_name[1:]
+            scales = [self.scales[joint_name], self.scales[mirrored]]
+        else:
+            scales = [self.scales[joint_name]]
+        for scale in scales:
+            scale.onChanged(w=w, scroll_type=scroll_type, val=val)
 
     def setWalkConfig(self, arg):
         self._walkconfig = arg
