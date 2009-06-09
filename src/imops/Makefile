@@ -100,6 +100,10 @@ webots: imops.so
 cross:
 	$(MAKE) cross_helper BUILD="$(RELEASE_BUILD)"
 
+crossdebug:
+	$(MAKE) cross_helper BUILD="$(DEBUG_BUILD)"
+
+
 cross_helper: imops.so
 	scp imops.so root@$(ROBOT):/opt/naoqi/modules/lib/libimops.so
 
