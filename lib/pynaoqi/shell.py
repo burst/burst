@@ -241,7 +241,8 @@ def makeplayerloop(name, clazz=None):
 #############################################################################
 
 EXAMPLES = """# Show current identified ball location
-ball = refilter('^/.*Ball.*Center', names)
+#ball = refilter('^/.*Ball.*Center', names) # just CenterX/Y
+ball = refilter('^/.*Ball.*(ear|ist|enter)', names) # More
 con.ALMemory.getListData(ball)
 
 # Vision Location of ball over time, in text, in plot
