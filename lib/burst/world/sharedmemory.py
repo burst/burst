@@ -27,51 +27,45 @@ class SharedMemoryReader(object):
             raise Exception("Don't initialize me if there is no MMAP!")
         self._shm_proxy = shm_proxy = burst.getBurstMemProxy(deferred=True)
         self._var_names = varlist
-        # set all the names of the variables we want mapped - we don't block
-        # or anything since we expect the first few frames to be eventless,
-        # but this is definitely a TODO
-        self.openDeferred = Deferred()
-        self._init_completed = False
-        shm_proxy.clearMappedVariables().addCallback(self._complete_init)
-
-    def _complete_init(self, _):
-        map_d = chainDeferreds([lambda result, i=i, varname=varname: self._shm_proxy.addMappedVariable(i, varname)
-            for i, varname in enumerate(self._var_names)])
-        print "SharedMemory: asked burstmem to map %s variables" % len(self._var_names)
-        map_d.addCallback(lambda _: self._shm_proxy.getNumberOfVariables().addCallback(
-            self.reportNumberOfVariablesInBurstmem))
-        self.vars = dict((k, 0.0) for k in self._var_names)
-        # TODO - this is slow (but still should be fast compared to ALMemory)
+        self._fd = None
+        self._buf = None
         self._unpack = 'f' * len(self._var_names)
         start_offset = BURST_SHARED_MEMORY_VARIABLES_START_OFFSET
         self._unpack_start = start_offset
         self._unpack_end = start_offset + struct.calcsize(self._unpack)
-        self._fd = None
-        self._buf = None
-        self._init_completed = True
-        map_d.addCallback(self._open)
+        self.vars = dict((k, 0.0) for k in self._var_names)
+        print "SharedMemory: asked burstmem to map %s variables" % len(self._var_names)
+        # set all the names of the variables we want mapped - we don't block
+        # or anything since we expect the first few frames to be eventless,
+        # but this is definitely a TODO
+        self.openDeferred = Deferred()
+        shm_proxy.clearMappedVariables().addCallback(self._complete_init)
 
-    def reportNumberOfVariablesInBurstmem(self, num):
+    def _complete_init(self, _):
+        # TODO - this is slow but only done on init
+        map_d = chainDeferreds([lambda result, i=i, varname=varname: self._shm_proxy.addMappedVariable(i, varname)
+            for i, varname in enumerate(self._var_names)])
+        map_d.addCallback(lambda _: self._shm_proxy.getNumberOfVariables().addCallback(
+            self._reportNumberOfVariablesInBurstmem))
+        map_d.addCallback(lambda _:
+            self._shm_proxy.isMemoryMapRunning().addCallback(self._completeOpen))
+
+    def _reportNumberOfVariablesInBurstmem(self, num):
         print "SharedMemory: burstmem says it has %s variables" % num
-
-    def _open(self, _=None):
-        """ start the shared memory proxy to write, and mmap to read """
-        if not self._init_completed: return
-        self._shm_proxy.isMemoryMapRunning().addCallback(self._completeOpen)
-        self.openDeferred.callback(None)
 
     def _completeOpen(self, mmap_running):
         """ callback for shm_proxy.isMemoryMapRunning called by open """
-        if mmap_running: return
-        self._shm_proxy.startMemoryMap().addCallback(
-            lambda: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning))
+        print "SharedMemory: _completeOpen: memory mapped = %s (if True then previous session didn't close it)" % mmap_running
         def assertMMAPRunning(is_running):
             assert(is_running)
+        self._shm_proxy.startMemoryMap().addCallback(
+            lambda _: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning))
         if self._fd is not None: return
         data = open(MMAP_FILENAME, 'r')
         self._fd = fd = data.fileno()
         self._buf = mmap.mmap(fd, MMAP_LENGTH, mmap.MAP_SHARED | mmap.ACCESS_READ, mmap.PROT_READ)
         print "world: shared memory opened successfully"
+        self.openDeferred.callback(None)
     
     def close(self):
         if self._fd is None: return
@@ -85,7 +79,7 @@ class SharedMemoryReader(object):
         # TODO - instead of updating the dict I could just update the
         # values and only make the dict if someone explicitly wants it,
         # and give values using cached indices created in constructor.
-        if not self._init_completed: return
+        if not self._buf: return
         values = struct.unpack(self._unpack, self._buf[self._unpack_start:self._unpack_end])
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):
