@@ -208,6 +208,7 @@ class BurstDeferred(object):
         self._completed = True
         if self._ondone:
             cb, chain_deferred = self._ondone
+            self._ondone = None # zero the callback - don't call twice
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:

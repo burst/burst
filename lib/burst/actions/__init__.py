@@ -40,9 +40,12 @@ class Actions(object):
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
+
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
         self._naocam = world.getNaoCamProxy()
+        self._imops = world.getImopsProxy()
+
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
@@ -284,6 +287,11 @@ class Actions(object):
         bd = BurstDeferred(self)
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
+        return bd
+
+    def setCameraFrameRate(self, fps):
+        bd = BurstDeferred(self)
+        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
         return bd
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):

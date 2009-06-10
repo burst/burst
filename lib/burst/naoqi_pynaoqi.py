@@ -35,3 +35,6 @@ def getNaoCamProxy(deferred = False):
 def getBurstMemProxy(deferred = False):
     return con.burstmem
 
+def getImopsProxy(deferred = False):
+    return con.imops
+

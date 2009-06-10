@@ -107,11 +107,14 @@ class World(object):
             callWrapper = lambda name, obj: (obj and LogCalls(name, obj) or obj)
         else:
             callWrapper = lambda name, obj: obj
+
         self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
         self._naocam = callWrapper("NaoCam", burst.getNaoCamProxy(deferred=True))
         self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
+        self._imops = callWrapper("imops", burst.getImopsProxy(deferred=True))
+
         if burst.options.run_ultrasound:
             self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
         self._events = set()
@@ -299,6 +302,9 @@ class World(object):
 
     def getNaoCamProxy(self):
         return self._naocam
+
+    def getImopsProxy(self):
+        return self._imops
 
     def getDefaultVars(self):
         """ return list of variables we want anyway, regardless of what

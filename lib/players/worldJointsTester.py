@@ -6,7 +6,7 @@ import player_init
 from burst.events import *
 from burst.player import Player
 
-class CameraSwitchTester(Player):
+class WorldJointsTester(Player):
     
     def onStart(self):
         # Down, Left, Up, Right - learn your directions!
@@ -18,5 +18,5 @@ class CameraSwitchTester(Player):
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(CameraSwitchTester).run()
+    MainLoop(WorldJointsTester).run()
 
