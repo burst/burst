@@ -5,6 +5,8 @@ import glob
 import os
 import ctypes
 
+import Image
+
 import gtk, goocanvas
 
 from twisted.internet.defer import Deferred, succeed
@@ -485,6 +487,11 @@ class VideoWindow(TaskBaseWindow):
             yuv = self._yuv, version=0, joints = [0.0]*26, sensors = [0.0]*22)
         self._frame_count += 1
         
+    def save_as(self, filename):
+        """ save rgb using Imaging module """
+        width, height = self._yuv_size
+        image = Image.fromstring('RGB', (width, height), self._rgb)
+        image.save(filename)
 
     # Initialization
 
