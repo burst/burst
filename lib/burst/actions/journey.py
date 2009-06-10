@@ -1,4 +1,4 @@
-from burst_util import BurstDeferred, chainDeferreds
+from burst_util import chainDeferreds
 from burst.walkparameters import WalkParameters
 from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
 from burst.eventmanager import EVENT_MANAGER_DT
@@ -28,6 +28,7 @@ class Journey(object):
         self._turn = [None, None]
         self._distance_left = None
         self._time_per_steps, self._step_length = None, None
+        self._make_bd = self._world.burst_deferred_maker.make
     
     def __str__(self):
         return "<Journey %3.3f distance, %3.3f bearing>" % (self._distance, self._bearing)
@@ -37,7 +38,7 @@ class Journey(object):
         """ Do first leg, if the distance is smaller than threshold do final
         leg, otherwise schedule the next leg """
         self._cmds = [] # See comment on _addCommand
-        self._deferred = BurstDeferred(None)
+        self._deferred = self._make_bd(None)
         self._distance = distance
         self._bearing = bearing
         self._delta_theta = delta_theta

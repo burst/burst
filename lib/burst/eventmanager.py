@@ -10,7 +10,7 @@ from heapq import heappush, heappop, heapify
 from twisted.python import log
 
 import burst
-from burst_util import BurstDeferred, DeferredList, Deferred, func_name
+from burst_util import DeferredList, func_name
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -131,13 +131,17 @@ class EventManager(object):
         """
         # The _events maps from an event enum to a set of callbacks (so order
         # of callback is undefined)
-        self._events = dict([(event, set()) for event in
-                xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
-        self._callbacks = {} # dictionary from callback to events set it is registered to
+        self._clearEventsAndCallbacks()
         self._world = world
+        self.burst_deferred_maker = self._world.burst_deferred_maker
         self._should_quit = False
         self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
         self.unregister_all()
+
+    def _clearEventsAndCallbacks(self):
+        self._events = dict([(event, set()) for event in
+                xrange(FIRST_EVENT_NUM, LAST_EVENT_NUM)])
+        self._callbacks = {} # dictionary from callback to events set it is registered to
 
     def get_num_registered(self):
         return sum(len(v) for k, v in self._callbacks.items())
@@ -209,6 +213,13 @@ class EventManager(object):
 
     def quit(self):
         self._should_quit = True
+
+    def _removeAllPendingEventsAndDeferreds(self):
+        """ should only be called on quit (hence the underscore) by
+        the BaseMainLoop.
+        """
+        self._clearEventsAndCallbacks()
+        self.burst_deferred_maker.clear()
 
     def handlePendingEventsAndDeferreds(self):
         """ Call all callbacks registered based on the new events
@@ -295,6 +306,7 @@ class BasicMainLoop(object):
 
         # flags for external use
         self.finished = False       # True when quit has been called
+        self._on_normal_quit_called = False
 
     def _getNumberOutgoingMessages(self):
         return 0 # implemented just in twisted for now
@@ -319,10 +331,18 @@ class BasicMainLoop(object):
             actions = self._actions)
 
     def cleanup(self):
+        """ Should not do anything that does work on the robot (nothing
+        that would return a deferred), just other cleanup: close files,
+        print any needed debug info, etc.
+        """
         self.finished = True # set here so an exception later doesn't change it
         self._world.cleanup()
 
     def onNormalQuit(self):
+        if self._on_normal_quit_called:
+            print "HARMLESS ERROR: second BaseMainLoop.onNormalQuit called"
+            return
+        self._on_normal_quit_called = True
         d = None
         if self._actions:
             if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
@@ -514,6 +534,7 @@ class SimpleMainLoop(BasicMainLoop):
             if self._eventmanager._should_quit and not quitting:
                 quitting = True
                 self.cleanup() # TODO - merge with onNormalQuit? what's the difference?
+                self._eventmanager._removeAllPendingEventsAndDeferreds()
                 if naoqi_ok:
                     d = self.onNormalQuit()
                     if d:
@@ -541,7 +562,10 @@ class TwistedMainLoop(BasicMainLoop):
             self._ctrl_c_presses += 1
             print "TwistedMainLoop: SIGBREAK caught"
             if self._ctrl_c_presses == 1:
-                self._startShutdown(naoqi_ok=True, ctrl_c_pressed=True)
+                if self.quitting:
+                    print "TwistedMainLoop: SIGBREAK: quitting already in progress"
+                else:
+                    self._startShutdown(naoqi_ok=True, ctrl_c_pressed=True)
             else:
                 print "Two ctrl-c - shutting down uncleanly"
                 orig_sigInt(*args)
@@ -592,10 +616,16 @@ class TwistedMainLoop(BasicMainLoop):
         self._eventmanager.quit()
 
     def _startShutdown(self, naoqi_ok, ctrl_c_pressed):
-        # Stop our task loop
+        """ Do first half of shutdown:
+        remove all user pending callbacks (calllaters/event handlers/deferreds)
+        start shutdown action (which when complete will call the second half of the
+        shutdown)
+        """
+        self.quitting = True
         do_cleanup = False
         ctrl_c_deferred = None
         quit_deferred = None
+        self._eventmanager._removeAllPendingEventsAndDeferreds()
         if hasattr(self, '_main_task'):
             if ctrl_c_pressed:
                 ctrl_c_deferred = self.onCtrlCPressed()
@@ -614,6 +644,10 @@ class TwistedMainLoop(BasicMainLoop):
             DeferredList(pending).addCallback(self._completeShutdown)
 
     def _completeShutdown(self, result=None):
+        """ Do second half of shutdown:
+        stop the single step task.
+        reactor shutdown (if we control it)
+        """
         print "CompleteShutdown called:"
         # stop the update task here
         # TODO - should I be worries if this is false?
@@ -629,7 +663,6 @@ class TwistedMainLoop(BasicMainLoop):
         sleep_time = self.doSingleStep()
         if self._eventmanager._should_quit and not self.quitting:
             print "TwistedMainLoop: event manager initiated quit"
-            self.quitting = True
             self._startShutdown(naoqi_ok=True, ctrl_c_pressed=False)
 
 ################################################################################

@@ -2,7 +2,7 @@ import sys
 import linecache
 
 from burst_util import (traceme, nicefloat,
-    BurstDeferred, Deferred, chainDeferreds)
+    Deferred, chainDeferreds)
 from burst.events import *
 import burst
 import burst_consts as consts
@@ -13,23 +13,6 @@ from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
 from math import pi
-
-# This is used for stuff like Localization, where there is an error
-# that is reduced by having a smaller error - otoh tracker will take longer
-# (possibly)
-TRACKER_DONE_MAX_PIXELS_FROM_CENTER = 5 # TODO - calibrate? there is an optimal number.
-
-
-
-############################################################################
-
-class HeadMove(tuple):
-    def __init__(self, headYaw, headPitch):
-        super(HeadMove, self).__init__((headYaw, headPitch))
-    def getHeadYaw(self):
-        return self[0]
-    def getHeadPitch(self):
-        return self[1]
 
 ############################################################################
 
@@ -103,7 +86,7 @@ class Tracker(object):
         if self.verbose:
             print "Tracker: Start Centering on %s" % target._name
         self._start(target, self._centeringOnLost)
-        self._on_centered_bd = BurstDeferred(None)
+        self._on_centered_bd = self._actions.burst_deferred_maker.make(self)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
         self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
         self._user_on_lost = lostCallback
@@ -290,29 +273,33 @@ class Tracker(object):
 
 ############################################################################
 
-UGLY = 0 # TODO: Remove this debugging line.
+# TODO - keep actions instead of searcher? who else would use
+# these commands? too many "smart" ways to connect actions, makes it /harder/
+# to concoct elequent 'just complex enough' behaviors
+
+class HeadMovementCommand(object):
+    def __init__(self, searcher, headYaw, headPitch):
+        self.headYaw = headYaw
+        self.headPitch = headPitch
+        self._searcher = searcher
+    def __call__(self):
+        # XXX: shouldn't we also pass the interp_time parameter?
+        return self._searcher._actions.moveHead(self.headYaw, self.headPitch)
+
+class TurnCommand(object):
+    def __init__(self, searcher, thetadelta):
+        self.thetadelta = thetadelta
+        self._searcher = searcher
+    def __call__(self):
+        return self._searcher._actions.turn(self.thetadelta)
 
 def createNewSearchMovesIterator(searcher):
-
-    class HeadMovementCommand(object):
-        def __init__(self, headYaw, headPitch):
-            self.headYaw = headYaw
-            self.headPitch = headPitch
-        def __call__(self):
-            # XXX: shouldn't we also pass the interp_time parameter?
-            return searcher._actions.moveHead(self.headYaw, self.headPitch)
-
-    class TurnCommand(object):
-        def __init__(self, thetadelta):
-            self.thetadelta = thetadelta
-        def __call__(self):
-            return searcher._actions.turn(self.thetadelta)
 
     def iterator(searcher=searcher):
         while True:
             for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
-                yield HeadMovementCommand(*headCoordinates)
-            yield TurnCommand(-pi/2)
+                yield HeadMovementCommand(searcher, *headCoordinates)
+            yield TurnCommand(searcher, -pi/2)
 
     return iterator()
 
@@ -395,7 +382,7 @@ class Searcher(object):
         self._nextSearchMove()
 
         # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
-        self._deferred = BurstDeferred(self)
+        self._deferred = self._actions.burst_deferred_maker.make(self)
         return self._deferred
 
     def _unregisterSeenEvents(self):

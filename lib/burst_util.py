@@ -133,9 +133,9 @@ class MyDeferredList(MyDeferred):
         if self._count <= 0:
             self.callback(self._results)
 
-def wrapDeferredWithBurstDeferred(d):
+def wrapDeferredWithBurstDeferred(d, data=None):
     """ call with no parameters - the only use case so far """
-    bd = BurstDeferred(None)
+    bd = BurstDeferred(data)
     d.addCallback(lambda result: bd.callOnDone())
     return bd
 
@@ -170,19 +170,27 @@ class BurstDeferred(object):
     Normal Help:
 
         A Deferred is a promise to call you when some operation is complete.
-    It is also concatenatable. What that means for implementation, is that
-    when the operation is done we need to call a deferred we stored and gave
-    the user when he gave us a callback. That deferred #TODO: Finish that sentence, Alon.
+    It is also concatenatable. That means that you can have actions serially
+    executed by chaining, like this:
+     >>> bd = BurstDeferred(None)
+     >>> bd.onDone(somefunc).onDone(otherfunc)
+
+    This would cause this chain of events:
+     |      bd.callOnDone
+     |       somefunc -> bd2
+     |      bd2.callOnDone
+     V       otherfunc
+     Time
+
+    Note that this is almost the same as this:
+     >>> bd = BurstDeferred(None)
+     >>> bd.onDone(lambda: somefunc().onDone(otherfunc))
 
     Twisted users:
 
         Sort of like Deferred, only geared towards chainable deferreds, which
-    is the only use case right now.  So basically you are expected to
-    return from onDone a new BurstDeferred that will be called when the
-    argument of onDone actually finishes.
-
-    Another possible utility from this being a seperate class: We can
-    trace it and not worry about tracing low level stuff.
+    is the only use case right now.  So basically we return a BD2 from onDone(func),
+    and func is expected to return a BD3 which is then chained to the former BD2.
     """
 
     def __init__(self, data, parent=None):
@@ -205,8 +213,7 @@ class BurstDeferred(object):
         return chain_deferred
 
     def callOnDone(self):
-        self._completed = True
-        if self._ondone:
+        if self._ondone and not self._completed:
             cb, chain_deferred = self._ondone
             self._ondone = None # zero the callback - don't call twice
             if expected_argument_count(cb) == 0:
@@ -217,6 +224,7 @@ class BurstDeferred(object):
             # we handed out once it is done.
             if isinstance(ret, BurstDeferred):
                 ret.onDone(chain_deferred.callOnDone)
+        self._completed = True
 
     def onDoneCallDeferred(self, d):
         """ Helper for t.i.d.Deferred mingling - will call this deferred when

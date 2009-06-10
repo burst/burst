@@ -22,6 +22,9 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
 from ..sensing import FalldownDetector
 from burst_util import running_average, LogCalls
 
+from burst.deferreds import BurstDeferredMaker
+import burst.field as field
+
 from sharedmemory import *
 from objects import Ball, GoalPost
 from robot import Robot
@@ -32,7 +35,6 @@ from localization import Localization
 from movecoordinator import MoveCoordinator
 from kinematics import Pose
 from odometry import Odometry
-import burst.field as field
 
 # TODO: Shouldn't require adding something to the path at any point
 # after player_init
@@ -119,6 +121,8 @@ class World(object):
             self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
         self._events = set()
         self._deferreds = []
+
+        self.burst_deferred_maker = BurstDeferredMaker()
 
         # This makes sure stuff actually works if nothing is being updated on the nao.
         self._default_proxied_variable_value = 0.0

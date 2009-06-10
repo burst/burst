@@ -2,8 +2,7 @@ from math import atan2
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
-    BurstDeferred, Deferred, DeferredList, chainDeferreds,
-    wrapDeferredWithBurstDeferred)
+    Deferred, DeferredList, chainDeferreds)
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
@@ -40,6 +39,7 @@ class Actions(object):
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
+        self.burst_deferred_maker = self._world.burst_deferred_maker
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
@@ -221,7 +221,7 @@ class Actions(object):
         Returns a BurstDeferred.
         """
         # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
-        bd = BurstDeferred(None)
+        bd = self.burst_deferred_maker.make(self)
         def doMove(_):
             DeferredList([
                 #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
@@ -233,7 +233,7 @@ class Actions(object):
         return bd
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        return wrapDeferredWithBurstDeferred(self.sitPoseAndRelax_returnDeferred())
+        return self.burst_deferred_maker.wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
 
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
@@ -284,13 +284,13 @@ class Actions(object):
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
         and CAMERA_WHICH_TOP_CAMERA """
-        bd = BurstDeferred(self)
+        bd = self.burst_deferred_maker.make(self)
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
         return bd
 
     def setCameraFrameRate(self, fps):
-        bd = BurstDeferred(self)
+        bd = self.burst_deferred_maker.make(self)
         self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
         return bd
 
