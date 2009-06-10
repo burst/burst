@@ -418,6 +418,9 @@ class VideoWindow(TaskBaseWindow):
 
     def _load_table(self, attr_name, table_name):
         if not hasattr(self, attr_name):
+            if not os.path.exists(table_name):
+                print "WARNING: missing color table %s" % table_name
+                return
             with open(table_name) as fd:
                 setattr(self, attr_name, fd.read())
 

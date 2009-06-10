@@ -312,10 +312,10 @@ joint_names, joint_limits = (['HeadYaw',
 
 # Color tables filenames
 WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/nao-man/tables/maverick/webots.mtb')
+                'src/burst/data/tables/maverick/webots.mtb')
 
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/nao-man/tables/maverick/default.mtb')
+                'src/burst/data/tables/maverick/default.mtb')
 
 # Debugging constants
 CONSOLE_LINE_LENGTH = 73
