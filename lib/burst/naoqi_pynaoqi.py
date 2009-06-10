@@ -23,9 +23,12 @@ def getUltraSoundProxy(deferred = False):
 
 def getBroker():
     """ this is BROKEN """
-    return con
+    return None
 
 def getSpeechProxy(deferred = False):
     """ return None if nothing there """
     return hasattr(con, 'ALTextToSpeech') and con.ALTextToSpeech or None
+
+def getNaoCamProxy(deferred = False):
+    return con.NaoCam
 

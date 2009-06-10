@@ -28,7 +28,6 @@ ifdef BUILD
 # TODO - broken;
 # if BUILD is defined we assume you want a release build, otherwise a debug.
 STAGING=$(AL_DIR)/crosstoolchain/staging
-BUILD=$(RELEASE_BUILD)
 CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
 CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
 # TODO - this cannot be the right way to do this.

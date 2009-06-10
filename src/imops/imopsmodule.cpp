@@ -34,6 +34,7 @@
 #include <albrokermanager.h>
 #include <alproxy.h>
 #include <almemoryproxy.h>
+#include <almotionproxy.h>
 
 #include "Profiler.h"
 #include "synchro.h"
@@ -127,6 +128,15 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
             cout << "could not create a proxy to ALMemory module" <<
             std::endl;
     }
+    //Create a proxy on motion module
+    try {
+        m_motion = getParentBroker ()->getMotionProxy ();
+    }
+    catch (ALError & e) {
+        std::
+            cout << "could not create a proxy to ALMotion module" <<
+            std::endl;
+    }
 
     // init the vision parts (reads color table, does some allocs for threshold
     // data, object fragments)
@@ -148,6 +158,9 @@ void ImopsModule::setFramesPerSecond(double fps)
 void ImopsModule::notifyNextVisionImage() {
     // Synchronize noggin's information about joint angles with the motion
     // thread's information
+
+    // this is brain dead now, but good for testing - Alon
+    g_sensors->setBodyAngles(m_motion->getBodyAngles());
 
     g_sensors->updateVisionAngles();
 

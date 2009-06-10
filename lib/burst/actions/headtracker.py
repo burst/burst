@@ -223,8 +223,8 @@ class Tracker(object):
         Return value:
          centerd, maybe_bd, exact_error
          centered - True if centered, False otherwise
-         maybe_bd - a BurstDeferred if head movement initiated, else None
-         exact_error - the error value (x, y)
+         delta_angles - None if no move possible (target is not visible), otherwise correction.
+         (xNormalized, yNormalized) - error
         """
 
         # Need to handle possible out of bounds - if we are requested to
@@ -237,10 +237,6 @@ class Tracker(object):
         centered, centered_at_pitch_limit, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
         head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
-        if self.verbose:
-            print "Tracker calculation: %s, center %3.1f, %3.1f, error %1.2f, %1.2f" % (
-                head_motion_in_progress and 'head moving' or 'head ready',
-                target.centerX, target.centerY, xNormalized, yNormalized)
         if target.seen and not centered and not head_motion_in_progress:
             CAM_X_TO_RAD_FACTOR = FOV_X / 4 # do half the error in a single step.
             CAM_Y_TO_RAD_FACTOR = FOV_Y / 4 # TODO - do more then half, or at least set the speed.
@@ -256,6 +252,11 @@ class Tracker(object):
             #       deltaHeadYaw, deltaHeadPitch)
             #print "deltaHeadYaw, deltaHeadPitch (deg): %3.3f, %3.3f" % (
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
+        if self.verbose:
+            angles = (delta_angles and ', angles (%1.2f %1.2f)' % delta_angles) or ''
+            print "Tracker calculation: %s, center %3.1f, %3.1f, error (%1.2f, %1.2f)%s" % (
+                head_motion_in_progress and 'head moving' or 'head ready',
+                target.centerX, target.centerY, xNormalized, yNormalized, angles)
         return centered, centered_at_pitch_limit, delta_angles, (xNormalized, yNormalized)
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
@@ -265,6 +266,8 @@ class Tracker(object):
             normalized_error_x, normalized_error_y)
         bd = None
         if delta_angles:
+            if self.verbose:
+                print "Tracker: change angles by yaw=%1.2f, pitch=%1.2f" % delta_angles
             bd = self._actions.changeHeadAnglesRelative(*delta_angles)
         if return_exact_error:
             return centered, bd, error

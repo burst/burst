@@ -42,12 +42,12 @@ class Actions(object):
         self._world = world = eventmanager._world
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
+        self._naocam = world.getNaoCamProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
-
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
@@ -281,10 +281,22 @@ class Actions(object):
     #    Low Level
     #===============================================================================
     
+    def setCamera(self, whichCamera):
+        """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
+        and CAMERA_WHICH_TOP_CAMERA """
+        bd = BurstDeferred(self)
+        self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
+            lambda _: bd.callOnDone())
+        return bd
+
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw,
-                                        self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
+        cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
+        yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
+        if burst.options.debug:
+            print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
+                cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
+        return self.executeHeadMove( (((yaw, pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
