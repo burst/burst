@@ -13,7 +13,7 @@ class GoalAlignerTester(Player):
     def onStart(self):
         self._actions.initPoseAndStiffness()
         self.targets=[self._world.yglp, self._world.ygrp]
-        
+        self.movement_deferred = None
         self._actions.setCameraFrameRate(20)
         self._actions.search(self.targets, stop_on_first=True, center_on_targets=True).onDone(self.onFound)
 
@@ -84,7 +84,7 @@ class GoalAlignerTester(Player):
             print "Goalpost lost, restart search"
             self._actions.tracker.stop()
             self._actions.setCameraFrameRate(20)
-            self._actions.search([self._world.yglp, self._world.ygrp], stop_on_first=True).onDone(self.onSearchResults)
+            self._actions.search(self.targets, stop_on_first=True, center_on_targets=True).onDone(self.onFound)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
