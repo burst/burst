@@ -5,21 +5,25 @@ from burst.player import Player
 import burst.events as events
 from burst.actions.headtracker import Searcher
 
-class SearchTimeoutTester(Player):
+class SearchTester(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
-        self._actions.searcher.search(targets=[self._world.yglp, self._world.ygrp]).onDone(self.onFound)
+        self.targets=[self._world.yglp, self._world.ygrp]
+        self._actions.searcher.search(self.targets).onDone(self.onFound)
 
     def onFound(self):
         self._actions.say('Found it!')
-        self._eventmanager.quit()
-
-    def onTimeout(self):
-        print 'Couldn\'t find it!'
+        
+        for t in self.targets:
+            if t.centered_self.sighted_centered:
+                print "%s sighted centered" % t._name
+            else:
+                print "%s NOT sighted centered" % t._name
+        
         self._eventmanager.quit()
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(SearchTimeoutTester).run()
+    MainLoop(SearchTester).run()
 

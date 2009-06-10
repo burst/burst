@@ -339,7 +339,7 @@ class BasicMainLoop(object):
 
     def _printTraceTickerHeader(self):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
-        print "Time Objs-CL|IN|PO|YRt        |YLt        |Ball       |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+        print "Time Objs-CL|IN|PO|YRt          |YLt          |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
         print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def _printTraceTicker(self):
@@ -351,7 +351,7 @@ class BasicMainLoop(object):
             if obj not in targets: return '-----------'
             r = obj.centered_self
             if not r.sighted: return '           '
-            return ('%0.2f %0.2f' % (r.head_yaw, r.head_pitch)).rjust(11)
+            return ('%0.2f %0.2f %s' % (r.head_yaw, r.head_pitch, r.sighted_centered and 'T' or 'F')).rjust(11)
         yglp_joints = getjoints(self._world.yglp)
         ygrp_joints = getjoints(self._world.ygrp)
         ball_joints = getjoints(self._world.ball)

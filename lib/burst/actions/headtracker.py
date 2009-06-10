@@ -79,10 +79,13 @@ class Tracker(object):
                 self._on_centered_bd and 'centering' or 'tracking')
         self._stop = True
         self._on_centered_bd = None
+        self._user_on_lost = None
+        self._user_on_timeout = None
+        self._timeout = None
 
     ############################################################################
 
-    def center(self, target):
+    def center(self, target, lostCallback=None, timeout=None, timeoutCallback=None):
         """
         Center on target, returns a BurstDeferred.
         """
@@ -103,19 +106,31 @@ class Tracker(object):
         self._on_centered_bd = BurstDeferred(None)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
         self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
+        self._user_on_lost = lostCallback
+        self._timeout = timeout
+        self._user_on_timeout = timeoutCallback
+        if timeout:
+            self._eventmanager.callLater(timeout, self._centeringOnTimeout)
         #self._centeringStep()
         # centering step we are already centered (by calling center twice!)
         return self._on_centered_bd
 
+    def _centeringOnTimeout(self):
+        if self.verbose:
+            print "Tracking: Centering: Timeout (%s)" % (self._timeout)
+        user_cb = self._user_on_timeout
+        self.stop()
+        if user_cb:
+            user_cb()
+
     def _centeringOnLost(self):
         if not self._target.recently_seen:
-            if self.verbose:
+            if self.verbose and not self._user_on_lost:
                 print "Centering: %s not recently seen, continue waiting" % (self._target._name)
-        # We can lose the target for a few frames, we can't assume vision is
-        # perfect. In this case just wait for next frame.
-        # TODO - call callback on too many lost frames. (lost ball, etc - higher up,
-        # presumably the Player instance, should deal with this).
-        pass
+        user_cb = self._user_on_lost
+        self.stop()
+        if user_cb:
+            user_cb()
 
     def _centeringStep(self):
         if self._stop: return
@@ -354,6 +369,8 @@ class Searcher(object):
         If a /timeout/ is provided, quit the search after that many seconds.
         If a /timeoutCallback/ is provided, call that when and if a timeout occurs.
         '''
+        if self.verbose:
+            print "Searcher: search started for %s" % (','.join([t._name for t in targets]))
         self.targets = targets[:]
         self.center_on_targets = center_on_targets
         self._timeoutCallback = timeoutCallback
@@ -467,7 +484,11 @@ class Searcher(object):
                 print "Searcher: centering on %s" % target._name
             yaw = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
             pitch = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
-            self._actions.moveHead(yaw, pitch).onDone(lambda target=target: self._centerOnNextTarget(target))
+            self._actions.moveHead(yaw, pitch).onDone(
+                    lambda _, target=target: self._actions.tracker.center(target, timeoutCallback=
+                        lambda _, target=target: self._centerOnNextTarget(target))
+                    ).onDone(
+                    lambda _, target=target: self._centerOnNextTarget(target))
 
     def _centerOnNextTarget(self, target):
         self._moveTowardsNextTarget() # TODO: Remove.

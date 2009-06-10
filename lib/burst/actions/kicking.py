@@ -38,7 +38,7 @@ class BallKicker(BurstDeferred):
 
     VERBOSE = True
     ENABLE_MOVEMENT = True
-    ENABLE_STRAFING = False
+    ENABLE_STRAFING = True
 
     def __init__(self, eventmanager, actions, target_bearing_distance=None):
         super(BallKicker, self).__init__(None)
@@ -177,11 +177,11 @@ class BallKicker(BurstDeferred):
         
         # Determine which goalpost was seen
         self.goalpost_to_track = None
-        if self._world.ygrp.centered_self.sighted_centered:
-            self.debugPrint("YGRP SIGHTED CENTERED")
+        if self._world.ygrp.centered_self.sighted:
+            self.debugPrint("YGRP SIGHTED")
             self.goalpost_to_track = self._world.ygrp
-        if self._world.yglp.centered_self.sighted_centered:
-            self.debugPrint("YGLP SIGHTED CENTERED")
+        if self._world.yglp.centered_self.sighted:
+            self.debugPrint("YGLP SIGHTED")
             self.goalpost_to_track = self._world.yglp
         
         if self.goalpost_to_track is None:

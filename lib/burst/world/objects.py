@@ -98,7 +98,9 @@ class CenteredLocatable(object):
         self.y = target.y #
         # flag the sighted flag
         self.sighted = True
-        self.sighted_centered = target.centered
+        # TODO - all of these centered flags are very confused - bad naming, not
+        # clear who computed what, multiple ways to compute same thing (is Ball centered)
+        self.sighted_centered = target.centered or target.centered_at_pitch_limit
         self.update_time = self._world.time
  
 class Locatable(Namable):
@@ -412,7 +414,10 @@ class Ball(Movable):
             dt1 = last_point [T] - self.base_point[T]
             self.velocity = dx1/dt1
             dx2 = 0 - last_point[X]
-            dt2 = dx2/self.velocity
+            if self.velocity != 0:
+                dt2 = dx2/self.velocity
+            else:
+                dt2 = 0
             
             #print "velocity: ", self.velocity
             #print "time for intersection: ", dt2
