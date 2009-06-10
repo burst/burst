@@ -9,7 +9,7 @@
 #-DBURST_DEBUG_VISION -DOFFLINE -DDEBUG_IMAGE
 
 # BURST_DEBUG_VISION - print vision related stuff
-# BURST_DEBUG_VISION_THREAD
+# BURST_DEBUG_VISION_THREAD - prints time per loop, and frame count
 
 # Burst flags:
 # BURST_DO_LOCALIZATION_IN_MODULE - not working right now (or ever?)
@@ -20,7 +20,7 @@ DEBUG_BUILD=-fPIC -ggdb
 # ok, there is a -march=geode but only in newer g++.
 RELEASE_BUILD=-O3 -DNDEBUG -Wall -Wno-unused -Wno-strict-aliasing -march=k6-2 -mtune=k6-2
 
-CFLAGS_DEBUG=-DBURST_DEBUG_VISION_THREAD
+CFLAGS_DEBUG=
 
 # defaults - overridden if 
 

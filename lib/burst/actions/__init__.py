@@ -234,15 +234,12 @@ class Actions(object):
         def removeStiffness(_):
             if burst.options.debug:
                 print "sitPoseAndRelax: removing body stiffness"
-            d = self._motion.setBodyStiffness(0)
-            self._removeStiffnessDeferred = d   # XXX DEBUG Helper
-            return d
+            return self._motion.setBodyStiffness(0)
         dgens.append(lambda _: self.clearFootsteps())
         #dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
         dgens.append(lambda _: self.executeMove(moves.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
-        self._sitpose_deferred = chainDeferreds(dgens) # XXX DEBUG Helper
-        return self._sitpose_deferred
+        return chainDeferreds(dgens)
      
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """

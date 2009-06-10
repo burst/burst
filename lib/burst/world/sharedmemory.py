@@ -5,6 +5,7 @@ import linecache
 import mmap
 
 import burst
+from burst_util import Deferred, chainDeferreds
 from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
     MMAP_FILENAME, MMAP_LENGTH, BURST_SHARED_MEMORY_VARIABLES_START_OFFSET)
 
@@ -17,23 +18,28 @@ class SharedMemoryReader(object):
     verbose = False
 
     def __init__(self, varlist):
+        """ construct a SharedMemoryReader, given a variable list (names
+        from ALMemory). Since this is done in async style, there is a deferred
+        for completion of the init called self.openDeferred which
+        can be used, i.e. self.openDeferred.addCallback(on_shm_inited)
+        """
         if not self.isMMapAvailable():
             raise Exception("Don't initialize me if there is no MMAP!")
-        self._shm_proxy = shm_proxy = burst.ALProxy(BURST_SHARED_MEMORY_PROXY_NAME)
+        self._shm_proxy = shm_proxy = burst.getBurstMemProxy(deferred=True)
+        self._var_names = varlist
         # set all the names of the variables we want mapped - we don't block
         # or anything since we expect the first few frames to be eventless,
         # but this is definitely a TODO
-        shm_proxy.clearMappedVariables()
-        for i, varname in enumerate(varlist):
-            shm_proxy.addMappedVariable(i, varname)
-        print "SharedMemory: asked burstmem to map %s variables" % len(varlist)
-        d_or_num = shm_proxy.getNumberOfVariables()
-        # TODO - ugly, and untested (also - maybeDeferred?)
-        if isinstance(d_or_num, int):
-            self.reportNumberOfVariablesInBurstmem(d_or_num)
-        else:
-            d_or_num.addCallback(self.reportNumberOfVariablesInBurstmem)
-        self._var_names = varlist
+        self.openDeferred = Deferred()
+        self._init_completed = False
+        shm_proxy.clearMappedVariables().addCallback(self._complete_init)
+
+    def _complete_init(self, _):
+        map_d = chainDeferreds([lambda result, i=i, varname=varname: self._shm_proxy.addMappedVariable(i, varname)
+            for i, varname in enumerate(self._var_names)])
+        print "SharedMemory: asked burstmem to map %s variables" % len(self._var_names)
+        map_d.addCallback(lambda _: self._shm_proxy.getNumberOfVariables().addCallback(
+            self.reportNumberOfVariablesInBurstmem))
         self.vars = dict((k, 0.0) for k in self._var_names)
         # TODO - this is slow (but still should be fast compared to ALMemory)
         self._unpack = 'f' * len(self._var_names)
@@ -42,15 +48,25 @@ class SharedMemoryReader(object):
         self._unpack_end = start_offset + struct.calcsize(self._unpack)
         self._fd = None
         self._buf = None
+        self._init_completed = True
+        map_d.addCallback(self._open)
 
     def reportNumberOfVariablesInBurstmem(self, num):
         print "SharedMemory: burstmem says it has %s variables" % num
 
-    def open(self):
+    def _open(self, _=None):
         """ start the shared memory proxy to write, and mmap to read """
-        if not self._shm_proxy.isMemoryMapRunning(): # blocking
-            self._shm_proxy.startMemoryMap()
-            assert(self._shm_proxy.isMemoryMapRunning())
+        if not self._init_completed: return
+        self._shm_proxy.isMemoryMapRunning().addCallback(self._completeOpen)
+        self.openDeferred.callback(None)
+
+    def _completeOpen(self, mmap_running):
+        """ callback for shm_proxy.isMemoryMapRunning called by open """
+        if mmap_running: return
+        self._shm_proxy.startMemoryMap().addCallback(
+            lambda: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning))
+        def assertMMAPRunning(is_running):
+            assert(is_running)
         if self._fd is not None: return
         data = open(MMAP_FILENAME, 'r')
         self._fd = fd = data.fileno()
@@ -69,6 +85,7 @@ class SharedMemoryReader(object):
         # TODO - instead of updating the dict I could just update the
         # values and only make the dict if someone explicitly wants it,
         # and give values using cached indices created in constructor.
+        if not self._init_completed: return
         values = struct.unpack(self._unpack, self._buf[self._unpack_start:self._unpack_end])
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):

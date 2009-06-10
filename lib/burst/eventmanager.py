@@ -10,7 +10,7 @@ from heapq import heappush, heappop, heapify
 from twisted.python import log
 
 import burst
-from burst_util import BurstDeferred, DeferredList
+from burst_util import BurstDeferred, DeferredList, Deferred
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -171,7 +171,7 @@ class EventManager(object):
         if callback not in self._callbacks:
             self._callbacks[callback] = set()
         if event in self._callbacks[callback]:
-            print "WARNING: harmless register overwrite of %s to %s" % (callback, event)
+            print "WARNING: harmless re-register of %s to %s" % (callback, event)
         self._callbacks[callback].add(event)
         # add to _events
         self._events[event].add(callback)
@@ -311,78 +311,31 @@ class BasicMainLoop(object):
         self.finished = True # set here so an exception later doesn't change it
         self._world.cleanup()
 
+    def onNormalQuit(self):
+        d = None
+        if self._actions:
+            if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
+                print "BasicMainLoop: exiting"
+            else:
+                print "BasicMainLoop: sitting, removing stiffness and quitting."
+                d = self._actions.sitPoseAndRelax_returnDeferred()
+            self._world._gameController.shutdown() # in parallel to sitting
+        if not d:
+            print "BasicMainLoop: quitting before starting are we?"
+        self.__running_instance = None
+        return d
+
     def setCtrlCCallback(self, ctrl_c_cb):
         self._ctrl_c_cb = ctrl_c_cb
-
-    def run(self):
-        """ wrap the actual run in _run to allow profiling - from the command line
-        use --profile
-        """
-        if burst.options.profile:
-            print "running via hotshot"
-            import hotshot
-            filename = "pythongrind.prof"
-            prof = hotshot.Profile(filename, lineevents=1)
-            prof.runcall(self._run)
-            prof.close()
-        else:
-            self._run()
-
-    def _run(self):
-        """ wrap the real loop to catch keyboard interrupt and network errors """
-        ctrl_c_pressed, normal_quit = False, True # default is normal_quit so we sit
-        if burst.options.catch_player_exceptions:
-            try:
-                ctrl_c_pressed, normal_quit = self._run_exception_wrap()
-            except Exception, e:
-                print "caught player exception: %s" % e
-                import traceback
-                import sys
-                traceback.print_tb(sys.exc_info()[2])
-        else:
-            ctrl_c_pressed, normal_quit = self._run_exception_wrap()
-        if ctrl_c_pressed:
-            self.onCtrlCPressed()
-        if normal_quit:
-            self.onNormalQuit()
-           
-    def onNormalQuit(self):
-        if self._actions:
-            if burst.options.passive_ctrl_c or not self._world.connected_to_nao:
-                print "exiting"
-            else:
-                print "sitting, removing stiffness and quitting."
-                self._sit_deferred = self._actions.sitPoseAndRelax_returnDeferred()
-            self._world._gameController.shutdown()
-            return True
-        print "quitting before starting are we?"
-        self.__running_instance = None
-        return False
 
     def onCtrlCPressed(self):
         """ Returns None or the result of the callback, which may be a deferred.
         In that case shutdown will wait for that deferred
         """
+        self._eventmanager._should_quit = True
         if self._ctrl_c_cb:
             return self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
                 world=self._world)
-
-    def _run_exception_wrap(self):
-        """ returns (ctrl_c_pressed, normal_quit_happened)
-        A normal quit is either: Ctrl-C or eventmanager.quit()
-        so only non normal quit is a caught exception (uncaught and
-        you wouldn't be here)"""
-        ctrl_c_pressed, normal_quit = False, True
-        try:
-            self._run_loop()
-        except KeyboardInterrupt:
-            print "ctrl-c detected."
-            ctrl_c_pressed = True
-        except RuntimeError, e:
-            print "naoqi exception caught:", e
-            print "quitting"
-            normal_quit = False
-        return ctrl_c_pressed, normal_quit
 
     def _printTraceTickerHeader(self):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
@@ -463,27 +416,102 @@ class SimpleMainLoop(BasicMainLoop):
 
     def __init__(self, playerclass):
         super(SimpleMainLoop, self).__init__(playerclass = playerclass)
+        self._keep_the_loop = True
 
         # need to call burst.init first
         burst.init()
 
         self.initMainObjectsAndPlayer()
 
+    def run(self):
+        """ wrap the actual run in _run to allow profiling - from the command line
+        use --profile
+        """
+        if burst.options.profile:
+            print "running via hotshot"
+            import hotshot
+            filename = "pythongrind.prof"
+            prof = hotshot.Profile(filename, lineevents=1)
+            prof.runcall(self._run_loop)
+            prof.close()
+        else:
+            self._run_loop()
+
+    def _step_while_handling_exceptions(self):
+        """ returns (naoqi_ok, sleep_time)
+        A normal quit is either: Ctrl-C or eventmanager.quit()
+        so only non normal quit is a caught exception (uncaught and
+        you wouldn't be here)"""
+        naoqi_ok, sleep_time = True, None
+        if burst.options.catch_player_exceptions:
+            try:
+                naoqi_ok, sleep_time = (
+                    self._step_while_handling_non_player_exceptions())
+            except Exception, e:
+                print "BasicMainLoop: caught player exception: %s" % e
+                import traceback
+                import sys
+                traceback.print_tb(sys.exc_info()[2])
+        else:
+            naoqi_ok, sleep_time = self._step_while_handling_non_player_exceptions()
+        return naoqi_ok, sleep_time
+
+    def _step_while_handling_non_player_exceptions(self):
+        naoqi_ok, sleep_time = True, None
+        try:
+            sleep_time = self.doSingleStep()
+        except RuntimeError, e:
+            print "BasicMainLoop: naoqi exception caught:", e
+            print "BasicMainLoop: quitting"
+            naoqi_ok = False
+
+        return naoqi_ok, sleep_time
+
     def _run_loop(self):
+        # actually start the loop twice:
+        # once for real
+        # second time for wrapup if ctrl-c caught
+
+        ctrl_c_pressed = False
+        self.preMainLoopInit() # Start point for Player / GameController
+
+        try:
+            self._run_loop_helper()
+        except KeyboardInterrupt:
+            print "BasicMainLoop: ctrl-c detected."
+            ctrl_c_pressed = True
+        # No ctrl-c here I hope
+        if ctrl_c_pressed:
+            try:
+                self.onCtrlCPressed()
+                self._run_loop_helper() # continue the loop, wait for pending moves etc.
+            except KeyboardInterrupt:
+                print "BasicMainLoop: ctrl-c detected a second time. unclean exit."
+                raise SystemExit
+
+    def _run_loop_helper(self):
         import burst
         print "running custom event loop with sleep time of %s milliseconds" % (EVENT_MANAGER_DT*1000)
         from time import sleep, time
-        # TODO: this should be called from the gamecontroller, this is just
-        # a temporary measure. The gamecontroller should keep track of the game state,
-        # and when it is changed call the player.
-        self.preMainLoopInit()
-        while True:
-            sleep_time = self.doSingleStep()
-            if self._eventmanager._should_quit:
-                break
+        quitting = False
+        # we need the eventmanager until the total end, to sit down and stuff,
+        # so we actually quit on a callback, namely self._exitApp (hence the
+        # seemingly endless loop)
+        while self._keep_the_loop:
+            naoqi_ok, sleep_time = self._step_while_handling_exceptions()
+            # if quitting, start quitting sequence (sit down, remove stiffness)
+            if self._eventmanager._should_quit and not quitting:
+                quitting = True
+                self.cleanup() # TODO - merge with onNormalQuit? what's the difference?
+                if naoqi_ok:
+                    d = self.onNormalQuit()
+                    if d:
+                        d.addCallback(self._exitApp)
             if sleep_time:
                 sleep(sleep_time)
-        self.cleanup()
+
+    def _exitApp(self, _):
+        self._keep_the_loop = False
 
 ################################################################################
 
@@ -502,7 +530,7 @@ class TwistedMainLoop(BasicMainLoop):
             self._ctrl_c_presses += 1
             print "TwistedMainLoop: SIGBREAK caught"
             if self._ctrl_c_presses == 1:
-                self._startShutdown(normal_quit=True, ctrl_c_pressed=True)
+                self._startShutdown(naoqi_ok=True, ctrl_c_pressed=True)
             else:
                 print "Two ctrl-c - shutting down uncleanly"
                 orig_sigInt(*args)
@@ -512,6 +540,7 @@ class TwistedMainLoop(BasicMainLoop):
         import pynaoqi
         self.con = pynaoqi.getDefaultConnection()
         self.started = False        # True when setStartCallback has been called
+        self.quitting = False
         if startRightNow:
             self.start()
 
@@ -551,21 +580,21 @@ class TwistedMainLoop(BasicMainLoop):
         but it acts as a shortcut for doing self._eventmanager.quit() """
         self._eventmanager.quit()
 
-    def _startShutdown(self, normal_quit, ctrl_c_pressed):
+    def _startShutdown(self, naoqi_ok, ctrl_c_pressed):
         # Stop our task loop
         do_cleanup = False
         ctrl_c_deferred = None
+        quit_deferred = None
         if hasattr(self, '_main_task'):
             if ctrl_c_pressed:
                 ctrl_c_deferred = self.onCtrlCPressed()
-            if normal_quit:
-                do_cleanup = self.onNormalQuit()
-        if do_cleanup:
-            # only reason not to is if we didn't complete initialization to begin with
+            if naoqi_ok:
+                quit_deferred = self.onNormalQuit()
+        if naoqi_ok:
             self.cleanup()
         pending = []
-        if hasattr(self, '_sit_deferred'):
-            pending.append(self._sit_deferred)
+        if quit_deferred:
+            pending.append(quit_deferred)
         if ctrl_c_deferred:
             pending.append(ctrl_c_deferred)
         if len(pending) == 0:
@@ -576,7 +605,8 @@ class TwistedMainLoop(BasicMainLoop):
     def _completeShutdown(self, result=None):
         print "CompleteShutdown called:"
         # stop the update task here
-        if self._main_task.running: # TODO - should I be worries if this is false?
+        # TODO - should I be worries if this is false?
+        if hasattr(self, '_main_task') and self._main_task.running:
             self._main_task.stop()
         # only if we are in charge of the reactor stop that too
         if not self._control_reactor: return
@@ -586,9 +616,10 @@ class TwistedMainLoop(BasicMainLoop):
     def onTimeStep(self):
         #print ">>>    twisted burst step     <<<"
         sleep_time = self.doSingleStep()
-        if self._eventmanager._should_quit:
+        if self._eventmanager._should_quit and not self.quitting:
             print "TwistedMainLoop: event manager initiated quit"
-            self._startShutdown(normal_quit=True, ctrl_c_pressed=False)
+            self.quitting = True
+            self._startShutdown(naoqi_ok=True, ctrl_c_pressed=False)
 
 ################################################################################
 

@@ -32,3 +32,6 @@ def getSpeechProxy(deferred = False):
 def getNaoCamProxy(deferred = False):
     return con.NaoCam
 
+def getBurstMemProxy(deferred = False):
+    return con.burstmem
+

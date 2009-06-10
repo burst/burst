@@ -130,7 +130,7 @@ class World(object):
         self.addMemoryVars(default_vars)
         self._shm = None
 
-        self.time = time()
+        self.time = 0.0
         self.start_time = self.time     # construction time
 
         # Variables for body joint angles from dcm
@@ -234,13 +234,16 @@ class World(object):
                 if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
                     self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
                 self._shm = SharedMemoryReader(self._vars_to_get_list)
-                self._shm.open()
-                self.vars = self._shm.vars
-                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+                self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
+                self._shm.openDeferred.addCallback(self._switchToSharedMemory)
         if self._shm is None:
             print "world: using ALMemory"
 
         self.checkManModule()
+
+    def _switchToSharedMemory(self, _):
+        self.vars = self._shm.vars
+        self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
 
     def getRecorderVariableNames(self):
         joints = self.jointnames
@@ -393,6 +396,9 @@ class World(object):
             return [self.vars.get(k, None) for k in vars]
         return [self.vars[k] for k in vars]
 
+    def _updateMemoryVariables_noop(self):
+        pass
+
     def _updateMemoryVariablesFromSharedMem(self):
         self._shm.update()
 
@@ -415,7 +421,7 @@ class World(object):
     # Callbacks
 
     def collectNewUpdates(self, cur_time):
-        self.time = cur_time
+        self.time = cur_time - self.start_time
         self._updateMemoryVariables() # must be first in update
         self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)

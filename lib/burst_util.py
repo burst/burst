@@ -143,6 +143,7 @@ try:
     # use the real thing if it is there
     from twisted.internet.defer import Deferred, DeferredList
 except:
+    print "WARNING: USING MyDeferred instead of t.i.d.Deferred"
     Deferred = MyDeferred
     DeferredList = MyDeferredList
 
