@@ -27,6 +27,9 @@ if (('webots' in which and burst.connecting_to_nao()) or
     print "which = %s" % which
 
 def get_nao_mtb():
+    if not os.path.exists(TABLE):
+        print "WARNING: get_nao_mtb can't find the table %s" % TABLE
+        return None
     with open(TABLE) as fd:
         table = fd.read()
     return table

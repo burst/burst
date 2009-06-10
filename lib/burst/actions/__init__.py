@@ -99,10 +99,13 @@ class Actions(object):
             raise Exception("Can't start tracking while searching")
         self.tracker.track(target, on_lost_callback=on_lost_callback)
 
-    def search(self, targets, center_on_targets=True):
+    def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
-        return self.searcher.search(targets)
+        if stop_on_first:
+            return self.searcher.search_one_of(targets, center_on_targets)
+        else:
+            return self.searcher.search(targets, center_on_targets)
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
@@ -316,14 +319,7 @@ class Actions(object):
         return bd
 
     def getSpeedFromDistance(self,kick_dist):
-        power=self.getMax(0.62 * pow(kick_dist,-0.4) , 0.18)
-        return power
-
-    def getMax(self,exp1,exp2):
-        if exp1 < exp2:
-            return exp1
-        else:
-            return exp2
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
     def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
         if kick_leg==LEFT:

@@ -9,7 +9,7 @@ class SearchTimeoutTester(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness()
-        self._actions.searcher.search(targets=[self._world.yglp, self._world.ygrp],).onDone(self.onFound)
+        self._actions.searcher.search(targets=[self._world.yglp, self._world.ygrp]).onDone(self.onFound)
 
     def onFound(self):
         self._actions.say('Found it!')
