@@ -25,8 +25,8 @@ class goalie(Player):
     
 
     def onStart(self):
-        self.isPenalty = True
-        self.isWebots = False
+        self.isPenalty = False
+        self.isWebots = True
         
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
@@ -82,6 +82,7 @@ class goalie(Player):
             self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)   
         else:
             self.watchIncomingBall()
+            #assert(self._eventmanager.isregistered(self.returnHead))
 
     def waitingOnRight(self):
         self._eventmanager.callLater(TIME_WAITING, self.gettingUpRight)
