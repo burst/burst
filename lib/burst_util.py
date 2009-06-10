@@ -639,6 +639,11 @@ def set_robot_ip_from_argv():
 
 # Python language util
 
+def func_name(f_or_m):
+    if hasattr(f_or_m, 'im_func'):
+        return f_or_m.im_func.func_name
+    return f_or_m.func_name
+
 def pairit(n):
     return [n[i:i+2] for i in xrange(0,len(n),2)]
 

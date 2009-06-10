@@ -10,7 +10,7 @@ from heapq import heappush, heappop, heapify
 from twisted.python import log
 
 import burst
-from burst_util import BurstDeferred, DeferredList, Deferred
+from burst_util import BurstDeferred, DeferredList, Deferred, func_name
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -177,6 +177,17 @@ class EventManager(object):
         self._events[event].add(callback)
         if self.verbose:
             print "EventManager: #_events[%d] = %s" % (event, len(self._events[event]))
+
+    def register_oneshot(self, callback, event):
+        def on_one_event():
+            if self.verbose:
+                print "EventManager: one shot removal, before: %s, %s" % (len(self._events[event]), self._events[event])
+            self.unregister(on_one_event, event)
+            if self.verbose:
+                print "EventManager: one shot removal, after: %s, %s" % (len(self._events[event]), self._events[event])
+            callback()
+        on_one_event.func_name = 'on_one_event__%s' % (func_name(callback))
+        self.register(on_one_event, event)
 
     def unregister(self, callback, event=None):
         """Unregister the callback function callback, if event is given then from that
