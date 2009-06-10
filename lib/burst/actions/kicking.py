@@ -56,7 +56,6 @@ class BallKicker(BurstDeferred):
         self.ballLocationKnown = False
         self.goalLocationKnown = False
         self.aligned_to_goal = False
-        self.goalpost_to_track = self._world.ygrp
         
         self._actions.initPoseAndStiffness().onDone(self.initKickerPosition)
         
@@ -66,25 +65,11 @@ class BallKicker(BurstDeferred):
     def searchBall(self):
         #self._actions.tracker.stop() # needed???
         self.debugPrint("Starting search")
-        self._actions.search([self._world.ball], center_on_targets=False).onDone(self.onSearchBallOver)
+        self._actions.search([self._world.ball]).onDone(self.onSearchBallOver)
 
     def onSearchBallOver(self):
         # Ball found, track it
         self.debugPrint("onSearchBallOver")
-        
-        # TODO: TEMP!!! move code elsewhere (should be done in search...)
-        self.debugPrint("manually centering on ball (from search ball results)")
-        self.manualCentering(self._world.ball.centered_self, self.onSearchCenteringDone)
-
-    def manualCentering(self, centeredTarget, onDoneCallback):
-        self.debugPrint("XXX Moving towards and centering on target - (%1.2f, %1.2f, %1.2f, %1.2f)" % (centeredTarget.head_yaw, centeredTarget.head_pitch, centeredTarget.centerX, centeredTarget.centerY))
-        a1 = centeredTarget.head_yaw, centeredTarget.head_pitch
-        a2 = (a1[0] - PIX_TO_RAD_X * (centeredTarget.centerX - IMAGE_CENTER_X),
-              a1[1] + PIX_TO_RAD_Y * (centeredTarget.centerY - IMAGE_CENTER_Y))
-        self._actions.moveHead(*a2).onDone(onDoneCallback)
-        
-    def onSearchCenteringDone(self):
-        # TODO: TEMP!!! should be at onSearchBallOver, moved temporarily here since we do the centering by ourself
         self._actions.track(self._world.ball, self.onLostBall)
         self.ballLocationKnown = True
         self.doNextAction()
@@ -144,8 +129,7 @@ class BallKicker(BurstDeferred):
         if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self.ENABLE_STRAFING:
             self.debugPrint("Aligning to goal! (stopping ball tracker)")
             self._actions.tracker.stop()
-            # TODO: TEMP! should be [self._world.yglp, self._world.ygrp]
-            self._actions.search([self.goalpost_to_track], center_on_targets=False).onDone(self.onSearchResults)
+            self._actions.search([self._world.yglp, self._world.ygrp], stop_on_first=True).onDone(self.onSearchResults)
         # Ball inside kicking area, kick it
         elif ball_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
@@ -154,7 +138,7 @@ class BallKicker(BurstDeferred):
                 # by Vova - new kick
                 #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
                 self.debugPrint("cntr_param: %3.3f" % (cntr_param))
-                self._actions.adjusted_straight_kick(side, cntr_param)
+                self._actions.adjusted_straight_kick(side, cntr_param).onDone(self.callOnDone)
         else:
             if ball_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
@@ -178,22 +162,33 @@ class BallKicker(BurstDeferred):
     def onSearchResults(self):
         self.debugPrint("onSearchResults")
         
+        # Determine which goalpost was seen
+        self.goalpost_to_track = None
+        if self._world.ygrp.centered_self.sighted_centered:
+            self.debugPrint("YGRP SIGHTED CENTERED")
+            self.goalpost_to_track = self._world.ygrp
+        if self._world.yglp.centered_self.sighted_centered:
+            self.debugPrint("YGLP SIGHTED CENTERED")
+            self.goalpost_to_track = self._world.yglp
+        
+        if self.goalpost_to_track is None:
+            self.debugPrint("Goalpost LOST!!!")
+            self.onLostGoal()
+            return
+        
         # Get world position from goal (to decide where to turn to)
-        robot = self._world.robot
-        world_pos = (robot.world_x, robot.world_y, robot.world_heading)
-        dists = tuple(nicefloats([x.dist, x.focDist])
-                    for x in self._world.team.target_posts.bottom_top)
-        if not all(isinstance(x, float) for x in world_pos):
-            self.debugPrint("ERROR: world position not computed. It is %r. dists are %s" % (world_pos, dists))
-        else:
-            self.debugPrint("position = %3.3f %3.3f %3.3f, dists %s" % (robot.world_x, robot.world_y, robot.world_heading, dists))
+#        robot = self._world.robot
+#        world_pos = (robot.world_x, robot.world_y, robot.world_heading)
+#        dists = tuple(nicefloats([x.dist, x.focDist])
+#                    for x in self._world.team.target_posts.bottom_top)
+#        if not all(isinstance(x, float) for x in world_pos):
+#            self.debugPrint("ERROR: world position not computed. It is %r. dists are %s" % (world_pos, dists))
+#        else:
+#            self.debugPrint("position = %3.3f %3.3f %3.3f, dists %s" % (robot.world_x, robot.world_y, robot.world_heading, dists))
         
-        self.debugPrint("manually centering on goalpost (from search goal results)")
-        self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchGoalDone)
-        
-    def onSearchGoalDone(self):
         self.goalLocationKnown = True
-        # Track one of the goal posts (TODO: Add offset from post towards other post)
+        
+        # Track one of the goal posts (note we actually align against the goal center)
         self._actions.tracker.track(self.goalpost_to_track, self.onLostGoal)
         self.strafe()
 
@@ -204,11 +199,17 @@ class BallKicker(BurstDeferred):
         self.doNextAction()
     
     def strafe(self):
+        self.debugPrint("strafing")
         if self.goalLocationKnown:
+            # TODO: Add align-to-goal-center support
             if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
-                self._actions.executeTurnCW().onDone(self.strafe)
+                #self._actions.executeTurnCW().onDone(self.strafe)
+                # TEMP (for Webots)
+                self._actions.turn(-0.1).onDone(self.strafe)
             elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
-                self._actions.executeTurnCCW().onDone(self.strafe)
+                #self._actions.executeTurnCCW().onDone(self.strafe)
+                # TEMP (for Webots)
+                self._actions.turn(0.1).onDone(self.strafe)
             else:
                 self.debugPrint("Aligned position reached! (starting ball search)")
                 self._actions.tracker.stop()
