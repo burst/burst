@@ -111,6 +111,8 @@ PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
 # Shared memory constants
 
+# burstmem starts by writing variables for the sonars
+BURST_SHARED_MEMORY_VARIABLES_START_OFFSET = 8
 MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
 MMAP_LENGTH      = 4096
 
