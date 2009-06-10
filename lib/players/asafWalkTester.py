@@ -20,7 +20,7 @@ class walkTester(Player):
 
     def onStart(self):
         self.kp = None
-        self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)        
+        self._eventmanager.register(self.onChangeLocationDone, EVENT_CHANGE_LOCATION_DONE)        
         self.walkStartTime = time.time()
         self._actions.initPoseAndStiffness().onDone(self.doWalk)
 
@@ -64,23 +64,12 @@ class walkTester(Player):
         motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 2.0 )
         # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
         motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.015)
-        motionProxy.addWalkStraight(0.66, 25)
+        motionProxy.addWalkStraight(0.05, 150)
+        motionProxy.addWalkStraight(0.05, 125)
 #        motionProxy.addWalkStraight(0.44, 21)
         motionProxy.gotoBodyAnglesWithSpeed(readyStand,20,1)
 #        time.sleep(3)
-        motionProxy.post.walk()
-        time.sleep(4)
-        motionProxy.clearFootsteps()
-        motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 20.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
-        motionProxy.setWalkArmsEnable(True)
-
-        # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 2.0 )
-        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
-        motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.015)
-
-        motionProxy.addWalkStraight(0.66, 25)        
-        motionProxy.post.walk()
+        motionProxy.walk()
 
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()

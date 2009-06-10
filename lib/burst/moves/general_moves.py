@@ -108,18 +108,18 @@ HEAD_SCAN_QUICK = (
 #    KICK_RIGHT = mirrorMove(KICK_LEFT)
 #===============================================================================
 def mirrorMove(positions):
-    return tuple(
-          ((RShoulderPitch, -RShoulderRoll, -RElbowYaw, -RElbowRoll),
-           (RHipYawPitch, -RHipRoll, RHipPitch, RKneePitch, RAnklePitch, -RAnkleRoll),
-           (LHipYawPitch, -LHipRoll, LHipPitch, LKneePitch, LAnklePitch, -LAnkleRoll),
-           (LShoulderPitch, -LShoulderRoll, -LElbowYaw, -LElbowRoll),
-           interp_time)                 
+    return list(
+          list(((RShoulderPitch, -RShoulderRoll, -RElbowYaw, -RElbowRoll),
+                (RHipYawPitch, -RHipRoll, RHipPitch, RKneePitch, RAnklePitch, -RAnkleRoll),
+                (LHipYawPitch, -LHipRoll, LHipPitch, LKneePitch, LAnklePitch, -LAnkleRoll),
+                (LShoulderPitch, -LShoulderRoll, -LElbowYaw, -LElbowRoll),
+                interp_time))
                   for
-          ((LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll),
-           (LHipYawPitch, LHipRoll, LHipPitch, LKneePitch, LAnklePitch, LAnkleRoll),
-           (RHipYawPitch, RHipRoll, RHipPitch, RKneePitch, RAnklePitch, RAnkleRoll),
-           (RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll),
-           interp_time) in positions)
+              ((LShoulderPitch, LShoulderRoll, LElbowYaw, LElbowRoll),
+               (LHipYawPitch, LHipRoll, LHipPitch, LKneePitch, LAnklePitch, LAnkleRoll),
+               (RHipYawPitch, RHipRoll, RHipPitch, RKneePitch, RAnklePitch, RAnkleRoll),
+               (RShoulderPitch, RShoulderRoll, RElbowYaw, RElbowRoll),
+                interp_time) in positions)
 
 GREAT_KICK_LEFT_EXTD = (
     #Stand up more fully
@@ -170,53 +170,53 @@ GREAT_KICK_LEFT_EXTD = (
 )
 
 
-GREAT_KICK_LEFT = (
+GREAT_KICK_LEFT = [
     #Stand up more fully
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,0.,-10.,20.,-10.,0.),
      (0.,0.,-10.,20.,-10.,0.),
-     (80.,-40.,50.,70.),2.0),
+     (80.,-40.,50.,70.),2.0],
     #swing to the right
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-10.,20.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),0.8),
+     (80.,-40.,50.,70.),0.8],
     #lift the left leg
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-30.,80.,-30.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),1.0),
+     (80.,-40.,50.,70.),1.0],
     #Get ready
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (-10.,30.,-20.,120.,-40.,0.),
      (0.,30.,-10.,10.,-10.,-20.),
-     (80.,-40.,50.,70.),1.2),
+     (80.,-40.,50.,70.),1.2],
     #Kick
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-70.,60.,-30.,0.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),0.18),
+     (80.,-40.,50.,70.),0.18],
     #make leg go further away
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-50.,10.,120.,0.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),0.18),
+     (80.,-40.,50.,70.),0.18],
     #lift the left leg
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-30.,60.,-30.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),2.0),
+     (80.,-40.,50.,70.),2.0],
     #swing to the right
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,20.,-10.,20.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-40.,50.,70.),2.0),
+     (80.,-40.,50.,70.),2.0],
     #Stand up more fully
-    ((80.,40.,-50.,-70.),
+    [(80.,40.,-50.,-70.),
      (0.,0.,-10.,20.,-10.,0.),
      (0.,0.,-10.,20.,-10.,0.),
-     (80.,-40.,50.,70.),2.0)
-)
+     (80.,-40.,50.,70.),2.0]
+]
 
 
 #Personalizible
@@ -335,61 +335,6 @@ def getGreatKickLeft(cntr_param):
 def getGreatKickRight(cntr_param):
     return map(makeback, (    ( array(map(makesym,GREAT_KICK_RIGHT_EXTD))  +array(map(makesym,GREAT_KICK_RIGHT_OFFSET))  )*(1-cntr_param)  +   array(map(makesym,GREAT_KICK_RIGHT))*cntr_param    ).tolist()) 
 
-
-
-
-
-
-
-
-#GREAT_KICK_RIGHT = (
-#    #Stand up more fully
-#    ((80.,40.,-50.,-70.),
-#     (0.,0.,-10.,20.,-10.,0.),
-#     (0.,0.,-10.,20.,-10.,0.),
-#     (80.,-40.,50.,70.),2.0),
-#    #swing to the left
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (80.,-40.,50.,70.),0.8),
-#    #lift the right leg
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-30.,80.,-30.,20.),
-#     (80.,-40.,50.,70.),1.0),
-#    #Get ready
-#    ((80.,40.,-50.,-70.),
-#     (0.,-30.,-10.,10.,-10.,20.),
-#     (-10.,-30.,-20.,120.,-40.,0.),
-#     (80.,-40.,50.,70.),1.2),
-#    #Kick
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-70.,60.,-30.,0.),
-#     (80.,-40.,50.,70.),0.18),
-#    #make leg go further away
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-50.,10.,120.,0.),
-#     (80.,-40.,50.,70.),0.18),
-#    #lift the right leg
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-30.,60.,-30.,20.),
-#     (80.,-40.,50.,70.),1.5),
-#    #swing to the left
-#    ((80.,40.,-50.,-70.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (0.,-20.,-10.,20.,-10.,20.),
-#     (80.,-40.,50.,70.),1.5),
-#    #Stand up more fully
-#    ((80.,40.,-50.,-70.),
-#     (0.,0.,-10.,20.,-10.,0.),
-#     (0.,0.,-10.,20.,-10.,0.),
-#     (80.,-40.,50.,70.),1.0)
-#    )
-
 SHPAGAT = (
     #Stand up more fully
     ((80.,40.,-50.,-70.),
@@ -434,28 +379,28 @@ INSIDE_KICK=(
      (80.,-40.,50.,70.),2.0),
     #swing to the right
     ((80.,40.,-50.,-70.),
-     (0.,20.,-10.,20.,-10.,-20.),
-     (0.,20.,-10.,20.,-10.,-20.),
+     (0.,22.,-10.,20.,-10.,-22.),
+     (0.,22.,-10.,20.,-10.,-22.),
      (80.,-40.,50.,70.),0.8),
     #Lift left leg    
     ((80.,40.,-50.,-70.),
-     (0.,40.,-10.,20.,-10.,-20.),
-     (0.,20.,-10.,20.,-10.,-20.),
-     (80.,-90.,50.,0.),1.5),
+     (0.,40.,-10.,20.,-10.,-22.),
+     (0.,22.,-10.,20.,-10.,-22.),
+     (80.,-90.,50.,0.),2.0),
     #left leg forward    
     ((80.,40.,-50.,-70.),
      (0.,45.,-40.,20.,10.,30.),
-     (0.,20.,-10.,20.,-10.,-20.),
+     (0.,22.,-10.,20.,-10.,-22.),
      (80.,-90.,50.,0.),2.5),
     #kick, poo, kick    
     ((80.,40.,-50.,-70.),
-     (0.,17.,-50.,30.,10.,-10.),
-     (0.,20.,-10.,20.,-10.,-20.),
+     (0.,17.,-60.,40.,10.,-20.),
+     (0.,22.,-10.,20.,-10.,-22.),
      (80.,-90.,50.,0.),0.18),
     #swing to the right
     ((80.,40.,-50.,-70.),
-     (0.,20.,-10.,20.,-10.,-20.),
-     (0.,20.,-10.,20.,-10.,-20.),
+     (0.,22.,-10.,20.,-10.,-22.),
+     (0.,22.,-10.,20.,-10.,-22.),
      (80.,-40.,50.,70.),0.8),
     #Stand up more fully
     ((80.,40.,-50.,-70.),

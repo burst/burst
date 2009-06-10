@@ -1,10 +1,10 @@
 /**
  * \mainpage
  * \section Author
- * @author Patrick de Pas and Olivier Leroy
+ * @author Alon Levy, heavily based on Northern Bites code
  *
  * \section Copyright
- * Aldebaran Robotics (c) 2007 All Rights Reserved - This is an example of use.\n
+ * BURST team
  * Version : $Id$
  *
  * \section Description
@@ -34,6 +34,7 @@
 #include <albrokermanager.h>
 #include <alproxy.h>
 #include <almemoryproxy.h>
+#include <almotionproxy.h>
 
 #include "Profiler.h"
 #include "synchro.h"
@@ -47,9 +48,14 @@
 #include "imopsmodule.h"
 #include "imops.h"
 
-////////////////////////////////////////////////////////////////////////////////
+using namespace AL;
 
-ImopsModule *g_limops;
+////////////////////////////////////////////////////////////////////////////////
+// Globals
+
+ALPtr<ImopsModule> g_limops;
+volatile bool g_run_vision_thread = true;
+pthread_t g_vision_thread;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -64,27 +70,28 @@ template<typename T>
 // reason.
 void *getImageLoop(void *arg)
 {
-	long long lastProcessTimeAvg = VISION_FRAME_LENGTH_uS;
 #ifdef BURST_DEBUG_VISION_THREAD
     int count = 0;
-    std::cout << "ImopsModule, getImageLoop: " << VISION_FRAME_LENGTH_uS << ", " << VISION_FRAME_LENGTH_PRINT_THRESH_uS << std::endl;
 #endif
-
-    while(true) {
-        const long long startTime = micro_time();
+    while(g_run_vision_thread) {
+        const useconds_t startTime = micro_time();
         g_imageTranscriber->waitForImage();
         g_limops->notifyNextVisionImage();
 #ifdef BURST_DEBUG_VISION_THREAD
         std::cout << "image " << count++ << std::endl;
 #endif
-        const long long processTime = micro_time() - startTime;
-        if (lastProcessTimeAvg > VISION_FRAME_LENGTH_uS){
-            if (lastProcessTimeAvg > VISION_FRAME_LENGTH_PRINT_THRESH_uS)
+        const useconds_t processTime = micro_time() - startTime;
+        volatile useconds_t vision_frame_length_us =
+                        g_limops->vision_frame_length_us;
+        volatile useconds_t vision_frame_length_print_thresh_us =
+                        g_limops->vision_frame_length_print_thresh_us;
+        if (processTime > vision_frame_length_us){
+            if (processTime > vision_frame_length_print_thresh_us)
                 cout << "Time spent in ALImageTranscriber loop longer than"
                      << " frame length: " << processTime <<endl;
             //Don't sleep at all
         } else{
-            const long long sleepTime = t_max((long long)0, VISION_FRAME_LENGTH_uS - processTime);
+            useconds_t sleepTime = vision_frame_length_us - processTime;
 #ifdef BURST_DEBUG_VISION_THREAD
             std::cout << "sleeping for " << sleepTime << " us" << std::endl;
 #endif
@@ -95,11 +102,12 @@ void *getImageLoop(void *arg)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-using namespace AL;
+// ImopsModule Constructor
 
 ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
-    : ALModule (pBroker, pName)
+    : ALModule (pBroker, pName),
+    vision_frame_length_us(VISION_FRAME_LENGTH_uS),
+    vision_frame_length_print_thresh_us(VISION_FRAME_LENGTH_PRINT_THRESH_uS)
 {
 
     std::cout << "ImopsModule: Module starting" << std::endl;
@@ -108,8 +116,8 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
         ("This is the imops module - does all the image processing");
 
     // Define callable methods with there description (left for easy copy/paste if required)
-    //functionName ("startMemoryMap", "imops", "start copying almemory->mmap periodically");
-    //BIND_METHOD (burstmem::startMemoryMap);
+    functionName ("setFramesPerSecond", "imops", "change frames per second (doesn't change the grabs, just the processing)");
+    BIND_METHOD (ImopsModule::setFramesPerSecond);
 
     //Create a proxy on memory module
     try {
@@ -120,26 +128,44 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
             cout << "could not create a proxy to ALMemory module" <<
             std::endl;
     }
+    //Create a proxy on motion module
+    try {
+        m_motion = getParentBroker ()->getMotionProxy ();
+    }
+    catch (ALError & e) {
+        std::
+            cout << "could not create a proxy to ALMotion module" <<
+            std::endl;
+    }
 
     // init the vision parts (reads color table, does some allocs for threshold
     // data, object fragments)
     this->initVisionThread(pBroker);
+    std::cout << "ImopsModule: Done creating vision thread" << std::endl;
 }
 
-void ImopsModule::processFrame ()
+void ImopsModule::setFramesPerSecond(double fps)
 {
-    g_vision->notifyImage(g_sensors->getImage());
+#ifdef BURST_DEBUG_VISION_THREAD
+    std::cout << "ImopsModule: setFramesPerSecond: " << fps << std::endl;
+#endif
+    vision_frame_length_us = 1000000.0 / fps;
+    vision_frame_length_print_thresh_us = vision_frame_length_us * 1.5; // TODO - set this to?
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 void ImopsModule::notifyNextVisionImage() {
     // Synchronize noggin's information about joint angles with the motion
     // thread's information
 
+    // this is brain dead now, but good for testing - Alon
+    g_sensors->setBodyAngles(m_motion->getBodyAngles());
+
     g_sensors->updateVisionAngles();
 
     // Process current frame
-    this->processFrame();
+    g_vision->notifyImage(g_sensors->getImage());
 
     this->writeToALMemory();
 
@@ -320,8 +346,12 @@ void ImopsModule::initVisionThread( ALPtr<ALBroker> broker )
             (new ALImageTranscriber(g_synchro, g_sensors, broker));
         g_imageTranscriber->setSubscriber(this);
 
-        pthread_t thread;
-        pthread_create(&thread, NULL, getImageLoop, NULL);
+#ifdef BURST_DEBUG_VISION_THREAD
+        std::cout << "ImopsModule, getImageLoop: " << vision_frame_length_us
+            << ", " << vision_frame_length_print_thresh_us << std::endl;
+#endif
+
+        pthread_create(&g_vision_thread, NULL, getImageLoop, NULL);
     }
     #endif
 }
@@ -365,7 +395,7 @@ extern "C"
 
 
     // create modules instance
-    g_limops = new ImopsModule(pBroker, "imops");
+    g_limops = ALModule::createModule<ImopsModule>(pBroker, "imops");
 
     return 0;
   }
@@ -373,7 +403,11 @@ extern "C"
   int _closeModule ()
   {
     // Delete module instance
-    delete g_limops;
+    // ALPtr - reference counted, right?
+    //delete g_limops;
+    g_run_vision_thread = false;
+    pthread_join(g_vision_thread, NULL);
+    std::cout << "ImopsModule: joined vision thread" << std::endl;
 
     return 0;
   }

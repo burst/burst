@@ -315,11 +315,11 @@ class Ball(Movable):
         self.body_isect = None
         self.base_point = None
         self.base_point_index = 0
-        self.velocity = None
         self.avrYplace = None
         self.avrYplace_index = 0
         self.sumY = 0
         self.dy = 0
+        self.velocity = None
     
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
@@ -348,19 +348,18 @@ class Ball(Movable):
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
                                    , self.history[0][DIST] * sin(self.history[0][BEARING])]
-                self.base_point_index = 1
-                last_point = self.base_point
-                sumX += last_point[X]
-                sumXY += last_point[X] * last_point[Y]
-                sumY += last_point[Y]
-                sumSqrX +=  last_point[X] * last_point[X]
-                sumT += 0 # T0= 0 #last_point[T]
-                sumXT += last_point[X] * last_point[T]
-                sumSqrT += last_point[T] * last_point[T]
-            else:
-                last_point = self.base_point
         else:
             return False
+        
+        self.base_point_index = 1
+        last_point = self.base_point
+        sumX += last_point[X]
+        sumXY += last_point[X] * last_point[Y]
+        sumY += last_point[Y]
+        sumSqrX +=  last_point[X] * last_point[X]
+        sumT += last_point[T] # T0= 0 
+        sumXT += last_point[X] * last_point[T]
+        sumSqrT += last_point[T] * last_point[T]
         
         n = 1
         for point in self.history:
@@ -383,31 +382,41 @@ class Ball(Movable):
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
                 sumSqrX +=  cor_point[X] * cor_point[X]
-                sumT += cor_point[T] - last_point[T]
+                sumT += cor_point[T]
                 sumXT += cor_point[X] * cor_point[T]
                 sumSqrT += cor_point[T] * cor_point[T]
                 
                 last_point = cor_point
                 n += 1
             else:
-                if (n-1) < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
+                if n < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
         
-        n = (n-1) - self.base_point_index #real number of valid points
+        n = n - self.base_point_index #real number of valid points
         
         
-        if (n-1) >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
+        if n >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
             if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-        
-            if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
-                self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
-                time_of_arrival = last_point[X] / self.velocity
             
-            #print "ball intersection with body: " , self.body_isect, "    ball velocity:", self.velocity
-            #print "time of arrival:", time_of_arrival
+            #calc time for intersection:
+            #if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
+            #    self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
+            #    time_of_arrival = last_point[X] / (-1/self.velocity) #changing to positive velocity
+            #    print "velocity: ", self.velocity
+            #    print "time for intersection: ", time_of_arrival
+            
+            dx1 = last_point [X] - self.base_point[X]
+            dt1 = last_point [T] - self.base_point[T]
+            self.velocity = dx1/dt1
+            dx2 = 0 - last_point[X]
+            dt2 = dx2/self.velocity
+            
+            #print "velocity: ", self.velocity
+            #print "time for intersection: ", dt2
+            
             return True
         if self.history[0] != None:
             self.base_point_index -= 1

@@ -1,0 +1,8 @@
+code started from:
+
+commit 9596bc952315934a284c03b0ba0fb37981ac7d94
+Author: Johannes Strom <jstrom@bowdoin.edu>
+Date:   Thu Jun 4 18:29:05 2009 -0400
+
+    GPS example code
+

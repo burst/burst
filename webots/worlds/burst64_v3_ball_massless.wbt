@@ -7,10 +7,11 @@ WorldInfo {
   ]
   title "Nao Robocup"
   basicTimeStep 40
+  runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.0245427 0.740294 0.671835 3.19398
-  position 1.36929 1.66368 0.201569
+  orientation -0.00070977 0.705987 0.708224 3.14025
+  position -0.0356587 4.4226 0.0457337
 }
 Background {
   skyColor [
@@ -239,12 +240,12 @@ DEF LARGER_YELLOW_GOAL Transform {
     }
     DEF BLUE_GOAL Goal {
       translation 3.11 0 0
+      postColor 0 0.5 1
     }
   ]
 }
 DEF BALL Solid {
-  translation 1.32869 0.0428038 0.00187238
-  rotation -0.000377075 1.51739e-05 -1 2.72067
+  translation -0.4 0.0428038 0
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -261,32 +262,16 @@ DEF BALL Solid {
     }
   ]
   boundingObject USE BALL_SHAPE
-  physics Physics {
-    density -1
-    mass 0.1
-    bounce 0.9
-    coulombFriction 0.5
-    forceDependentSlip 0.5
-  }
 }
-DEF RED_GOAL_KEEPER Nao {
-  translation 1.46932 0.321955 0.0532913
-  rotation 0.0002698 1 0.000455971 -1.56864
+DEF RED_GOAL_KEEPER NaoV3RHybrid {
+  translation 0 0.3333 0
+  rotation 0 1 0 -1.57
   color 1 0 0
   texture [
     "textures/red_logo.png"
   ]
-  controller "nao_in_webots"
+  controller "nao_in_webots64"
   name "red goal keeper"
-}
-DEF BLUE_GOAL_KEEPER Nao {
-  translation -2.4001 0.321954 0.000175468
-  rotation -0.000314142 1 0.000386208 1.56979
-  channel 1
-  controller "nao_in_webots"
-  name "blue goal keeper"
-  topCameraWindowPosition 1 1
-  bottomCameraWindowPosition 0 1
 }
 Supervisor {
   children [
@@ -294,5 +279,4 @@ Supervisor {
       name "emitter"
     }
   ]
-  controller "nao_burst_supervisor"
 }

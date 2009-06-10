@@ -16,6 +16,7 @@ from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
 from headtracker import Tracker, Searcher
+from passing import passBall
 
 #######
 
@@ -41,12 +42,12 @@ class Actions(object):
         self._world = world = eventmanager._world
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
+        self._naocam = world.getNaoCamProxy()
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
-
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
@@ -80,6 +81,17 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
+    def passBall(self, target_world_frame=None, target_bearing_distance=None):
+        if target_world_frame is not None:
+            if target_bearing_distance is not None:
+                print "ERROR: bad parameters to passBall.. ignoring"
+                return
+            raise NotImplemented('passBall can only work with target == None right now')
+            target_bearing_distance = self._world.translateWorldFrameToBearingDistance(target_world_frame)
+        passingChallange = passBall(self._eventmanager, self, target_bearing_distance=target_bearing_distance)
+        passingChallange.start()
+        return passingChallange
+
     def track(self, target, on_lost_callback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
@@ -87,10 +99,13 @@ class Actions(object):
             raise Exception("Can't start tracking while searching")
         self.tracker.track(target, on_lost_callback=on_lost_callback)
 
-    def search(self, targets, center_on_targets=True):
+    def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
-        return self.searcher.search(targets)
+        if stop_on_first:
+            return self.searcher.search_one_of(targets, center_on_targets)
+        else:
+            return self.searcher.search(targets, center_on_targets)
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
@@ -266,10 +281,22 @@ class Actions(object):
     #    Low Level
     #===============================================================================
     
+    def setCamera(self, whichCamera):
+        """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
+        and CAMERA_WHICH_TOP_CAMERA """
+        bd = BurstDeferred(self)
+        self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
+            lambda _: bd.callOnDone())
+        return bd
+
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw,
-                                        self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
+        cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
+        yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
+        if burst.options.debug:
+            print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
+                cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
+        return self.executeHeadMove( (((yaw, pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
@@ -277,10 +304,25 @@ class Actions(object):
     # Kick type - one of the kick types defined in actionconsts KICK_TYPE_STRAIGHT/KICK_TYPE_PASSING/etc...
     # Kick leg - the leg used to kick
     # Kick strength - strength of the kick (between 0..1)
-    def kick(self, kick_type, kick_leg, kick_strength=1):
+    def kick(self, kick_type, kick_leg, kick_dist):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
-        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
-            description=('kick', kick_type, kick_leg, kick_strength))
+
+        # OLDER KICKING (not including passing)
+        #return self.executeMove(KICK_TYPES[(kick_type, kick_leg)],
+        #    description=('kick', kick_type, kick_leg, kick_strength))
+
+        # FOR PASSING:
+        originalKick = KICK_TYPES[(kick_type, kick_leg)]
+        orig_value = originalKick[4][4]
+        if kick_dist > 0:
+            kick_dist = kick_dist / 100
+            originalKick[4][4] = self.getSpeedFromDistance(kick_dist)
+        bd = self.executeMove(originalKick)
+        originalKick[4][4] = orig_value
+        return bd
+
+    def getSpeedFromDistance(self,kick_dist):
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
     def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
         if kick_leg==LEFT:

@@ -96,3 +96,9 @@ EVENT_MOTION_SEQUENCE_SENT = counter; counter+=1
 LAST_EVENT_NUM = counter
 ################################################################################
 
+# Util for debugging
+the_items = [(event, name) for name, event in globals().items() if name == name.upper() and isinstance(event, int)]
+event_name_d = dict(the_items)
+def event_name(event):
+    return event_name_d[event]
+

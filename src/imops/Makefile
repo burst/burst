@@ -18,9 +18,9 @@ include ../../Makefile.local
 
 DEBUG_BUILD=-fPIC -ggdb
 # ok, there is a -march=geode but only in newer g++.
-RELEASE_BUILD=-O3 -march=i586
+RELEASE_BUILD=-O3 -DNDEBUG -Wall -Wno-unused -Wno-strict-aliasing -march=k6-2 -mtune=k6-2
 
-CFLAGS_DEBUG=
+CFLAGS_DEBUG=-DBURST_DEBUG_VISION_THREAD
 
 # defaults - overridden if 
 
@@ -28,7 +28,6 @@ ifdef BUILD
 # TODO - broken;
 # if BUILD is defined we assume you want a release build, otherwise a debug.
 STAGING=$(AL_DIR)/crosstoolchain/staging
-BUILD=$(RELEASE_BUILD)
 CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
 CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
 # TODO - this cannot be the right way to do this.
@@ -45,7 +44,14 @@ endif
 
 # Flags originally found in Northern Bites.
 # all are in manconfig.h anyway (at least USE_VISION is)
-NB_FLAGS=
+# The following are from VERBOSE=1 when doing a make in nao-man:
+# NO_ZLIB - I guess affects the initTable?
+# WITH_NOIDREF - no idea
+# ROBOT_TYPE=NAO_RL - well, seems ok
+# -DTRUNK_REVISION="\"rr0\"" - ??
+# -pthread - TODO read help!
+# -Wno-write-strings - TODO
+NB_FLAGS=-DNO_ZLIB -DWITH_NOIDREF -DROBOT_TYPE=NAO_RL -pthread -Wno-write-strings -DTRUNK_REVISION="\"rr0\""
 AL_INC=-I$(AL_DIR)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR)/extern/c/aldebaran/alcommon/include -I$(AL_DIR)/modules/proxies
 CFLAGS=$(BUILD) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC)
 CXXFLAGS=$(CFLAGS)

@@ -26,6 +26,7 @@ class goalie(Player):
 
     def onStart(self):
         self.isPenalty = True
+        self.isWebots = False
         
         self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
 
@@ -49,8 +50,14 @@ class goalie(Player):
 
     def watchIncomingBall(self):            
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.isTrackingBall = False #should be True...
+        self.isTrackingBall = True
         self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
+        if self.isWebots:
+            self._eventmanager.register(self.returnHead, EVENT_BALL_LOST)
+
+    def returnHead(self):
+        self._eventmanager.unregister(self.returnHead)
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR)
         
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
@@ -66,6 +73,8 @@ class goalie(Player):
         self._eventmanager.unregister(self.leap)
         self.isTrackingBall = False
         self._eventmanager.unregister(self.trackBall)
+        if self.isWebots:
+            self._eventmanager.unregister(self.returnHead)
         print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)

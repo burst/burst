@@ -1,0 +1,17 @@
+POST / HTTP/1.1
+Host: 127.0.0.1:9560
+User-Agent: gSOAP/2.7
+Content-Type: text/xml; charset=utf-8
+Content-Length: 713
+Connection: keep-alive
+SOAPAction: ""
+
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:albroker="urn:albroker" xmlns:al="urn:aldebaran"><SOAP-ENV:Body><albroker:callNaoqi><albroker:mod>ALMotion</albroker:mod><albroker:meth>gotoAngleWithSpeed</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">LShoulderRoll</item><item xsi:type="xsd:float">2</item><item xsi:type="xsd:int">50</item><item xsi:type="xsd:int">1</item></item></albroker:p></albroker:callNaoqi></SOAP-ENV:Body></SOAP-ENV:Envelope>HTTP/1.1 200 OK
+Server: gSOAP/2.7
+Content-Type: text/xml; charset=utf-8
+Content-Length: 473
+Connection: keep-alive
+
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:albroker="urn:albroker" xmlns:al="urn:aldebaran"><SOAP-ENV:Body><albroker:callNaoqiResponse><albroker:return></albroker:return></albroker:callNaoqiResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>

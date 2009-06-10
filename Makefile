@@ -33,10 +33,10 @@ colortable:
 	cp data/tables/$(TABLE) lib/etc/table.mtb
 	echo data/tables/$(TABLE) > lib/etc/whichtable.txt
 
-install: Makefile.local burstmem recordermodule imops colortable
+install: Makefile.local burstmem recordermodule colortable
 	rsync -avr lib root@$(ROBOT):/home/root/burst/
 
-installall: install
+installall: imops install
 	# TODO - each copyto is an ssh initiation, many secundas.
 	cd src/burstmem; ./copyto
 	cd src/recordermodule; ./copyto

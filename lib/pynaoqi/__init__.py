@@ -26,19 +26,14 @@ if DEBUG:
 
 from burst_util import (succeed, Deferred, whichlib, is64,
     is_64bit_elf)
+from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
+    CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA, CAMERA_WHICH_TOP_CAMERA)
+
 
 #########################################################################
 # Constants
 
 WEBOTS_LOCALHOST_URL = "http://localhost:9560/"
-
-CAMERA_WHICH_PARAM = 18
-CAMERA_WHICH_BOTTOM_CAMERA = 1
-CAMERA_WHICH_TOP_CAMERA = 0
-
-# ALMotion.gotoBodyAngles
-INTERPOLATION_LINEAR = 0
-INTERPOLATION_SMOOTH = 1
 
 ################################################################################
 # Image Ops

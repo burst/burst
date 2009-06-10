@@ -44,7 +44,7 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
     // External module interface
 
-    // NONE - we just update ALMemory vars directly.
+    void setFramesPerSecond(double fps);
 
     /**
      * version
@@ -64,22 +64,28 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
         return true;
     };
 
+    virtual std::string httpGet() const {
+        return "Image Processing module - nao-man slim version";
+    }
+
+    // public interface for thread that calls us
+
     void notifyNextVisionImage();
+
+    useconds_t                      vision_frame_length_us;
+    useconds_t                      vision_frame_length_print_thresh_us;
 
   private:
 
-    // Battery checking functionality
-
     void initVisionThread( ALPtr<ALBroker> broker );
 
-    AL::ALPtr < AL::ALBroker >      m_broker;        // needed for ConnectToVariables
+    AL::ALPtr < AL::ALBroker >       m_broker;        // needed for ConnectToVariables
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
 
-    //proxy to the memory module
-    ALPtr < AL::ALMemoryProxy > m_memory;
+    ALPtr < AL::ALMemoryProxy >      m_memory;
+    ALPtr < AL::ALMotionProxy >      m_motion;
 
     void writeToALMemory();
-    void processFrame();
 };
 
 #endif // IMOPS_H
