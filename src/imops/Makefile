@@ -33,7 +33,7 @@ CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
 CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
 # TODO - this cannot be the right way to do this.
 BASE_CFLAGS=--sysroot $(STAGING)/i486-linux/ -I$(STAGING)/i486-linux/usr/include/c++/i486-linux -I$(STAGING)/i486-linux/usr/include/c++/
-PY_INC=-I/usr/local/nao/crosstoolchain/staging/i486-linux/usr/include/python2.5/
+PY_INC=-I$(STAGING)/i486-linux/usr/include/python2.5/
 #AL_INC
 CFLAGS_DEBUG_BUILD=
 else

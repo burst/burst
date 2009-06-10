@@ -583,7 +583,6 @@ class Searcher(object):
             return
         if self.verbose:
             print "Searcher: seeing %s" % obj._name
-
         for cb, ev in self._callbackToEventMapping:
             if event == ev:
                 self._eventmanager.unregister(cb, ev)
@@ -612,6 +611,8 @@ class Searcher(object):
             self._onSearchDone()
         else:
             target = self._seen_objects.pop()
+            if self.verbose:
+                print "Searcher: centering on %s" % target._name
             yaw_delta = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
             pitch_delta = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
             self._actions.moveHead(yaw_delta, pitch_delta).onDone(lambda target=target: self._centerOnNextTarget(target))
