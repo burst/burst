@@ -40,6 +40,8 @@ class Actions(object):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
         self.burst_deferred_maker = self._world.burst_deferred_maker
+        self._make = self.burst_deferred_maker.make
+        self._wrap = self.burst_deferred_maker.wrap
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
@@ -221,7 +223,7 @@ class Actions(object):
         Returns a BurstDeferred.
         """
         # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
-        bd = self.burst_deferred_maker.make(self)
+        bd = self._make(self)
         def doMove(_):
             DeferredList([
                 #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
@@ -233,7 +235,7 @@ class Actions(object):
         return bd
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        return self.burst_deferred_maker.wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
+        return self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
 
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
@@ -241,7 +243,7 @@ class Actions(object):
             if burst.options.debug:
                 print "sitPoseAndRelax: removing body stiffness"
             return self._motion.setBodyStiffness(0)
-        dgens.append(lambda _: self.clearFootsteps())
+        dgens.append(lambda _: self._clearFootsteps_returnDeferred())
         #dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
         dgens.append(lambda _: self.executeMove(moves.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
@@ -284,13 +286,13 @@ class Actions(object):
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
         and CAMERA_WHICH_TOP_CAMERA """
-        bd = self.burst_deferred_maker.make(self)
+        bd = self._make(self)
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
         return bd
 
     def setCameraFrameRate(self, fps):
-        bd = self.burst_deferred_maker.make(self)
+        bd = self._make(self)
         self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
         return bd
 
@@ -425,8 +427,11 @@ class Actions(object):
             description=description,
             kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
-    def clearFootsteps(self):
+    def _clearFootsteps_returnDeferred(self):
         return self._motion.clearFootsteps()
+
+    def clearFootsteps(self):
+        return self._wrap(self._motion.clearFootsteps(), data=self)
 
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within
