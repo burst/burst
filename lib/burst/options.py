@@ -43,6 +43,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--pynaoqi', action='store_true', dest='use_pynaoqi', help='use pynaoqi and twisted (TESTING)')
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
     parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
+    parser.add_option('', '--profile-player', action='store_true', dest='profile_player', default=False, help='profile player code')
     parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
     parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
