@@ -48,8 +48,8 @@ class Player(object):
                     del self._eventsToCallbackMapping[ev]
 
     def _clearAllRegistrations(self):
-        for event in self._eventsToCallbacksMapping:
-            self._eventsToCallbacksMapping.remove(self._eventsToCallbacksMapping[event], event)
+        for event, callback in self._eventsToCallbacksMapping.items():
+            self._eventsToCallbacksMapping.remove(callback, event)
         self._eventsToCallbacksMapping.clear()
 
     def onStart(self):

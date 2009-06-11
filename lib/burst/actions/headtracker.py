@@ -313,7 +313,7 @@ class Searcher(object):
         self._eventToCallbackMapping = {}
         self._searchMoves = None
         self._deferred = None
-        self._targets = []
+        self.targets = []
         self._next_move_bd = None
 
     def stopped(self):
@@ -443,7 +443,7 @@ class Searcher(object):
     def _onSeenTargets(self):
         if self.verbose:
             print "Searcher: found all targets"
-            print "len(self._seen_objects): %f" % len(self._seen_objects)
+            print "len(self._seen_objects): %s" % len(self._seen_objects)
         if not self.center_on_targets:
             self._onSearchDone()
         else:
@@ -456,18 +456,14 @@ class Searcher(object):
         else:
             target = self._seen_objects.pop()
             if self.verbose:
-                print "Searcher: centering on %s" % target._name
+                print "Searcher: centering initial move towards %s" % target._name
             yaw = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
             pitch = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
+            # move closer to next target, then center on it, then return here. on timeout also return here.
             self._actions.moveHead(yaw, pitch).onDone(
-                    lambda _, target=target: self._actions.tracker.center(target, timeoutCallback=
-                        lambda _, target=target: self._centerOnNextTarget(target))
-                    ).onDone(
-                    lambda _, target=target: self._centerOnNextTarget(target))
-
-    def _centerOnNextTarget(self, target):
-        self._moveTowardsNextTarget() # TODO: Remove.
-#        self._actions.tracker.center(target).onDone(self._moveTowardsNextTarget)
+                    lambda _, target=target:
+                        self._actions.tracker.center(target, timeoutCallback=self._moveTowardsNextTarget)
+                    ).onDone(self._moveTowardsNextTarget)
 
     def _onSearchDone(self):
         deferred = self._deferred

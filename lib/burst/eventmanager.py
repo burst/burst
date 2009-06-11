@@ -338,21 +338,38 @@ class BasicMainLoop(object):
         self.finished = True # set here so an exception later doesn't change it
         self._world.cleanup()
 
-    def onNormalQuit(self):
+    def onNormalQuit(self, naoqi_ok):
+        """
+        Start the quitting process -
+            call Player.onStop
+            remove all pending callbacks when that is done.
+
+        return deferred for caller (SimpleMainLoop, TwistedMainLoop) to wait
+        on if required, or None if nothing to wait on (maybe just replace with succeed - TODO
+        """
         if self._on_normal_quit_called:
             print "HARMLESS ERROR: second BaseMainLoop.onNormalQuit called"
             return
         self._on_normal_quit_called = True
+        self._on_normal_quit__naoqi_ok = naoqi_ok
+        stop_deferred = self._player.onStop()
+        if stop_deferred:
+            return stop_deferred.onDone(self._onNormalQuit_playerStopDone).getDeferred()
+        else:
+            return self._onNormalQuit_playerStopDone()
+
+    def _onNormalQuit_playerStopDone(self):
+        naoqi_ok = self._on_normal_quit__naoqi_ok
+        self._eventmanager._removeAllPendingEventsAndDeferreds()
         d = None
         if self._actions:
             if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
                 print "BasicMainLoop: exiting"
             else:
-                print "BasicMainLoop: sitting, removing stiffness and quitting."
-                d = self._actions.sitPoseAndRelax_returnDeferred()
+                if naoqi_ok:
+                    print "BasicMainLoop: sitting, removing stiffness and quitting."
+                    d = self._actions.sitPoseAndRelax_returnDeferred()
             self._world._gameController.shutdown() # in parallel to sitting
-        if not d:
-            print "BasicMainLoop: quitting before starting are we?"
         self.__running_instance = None
         return d
 
@@ -377,11 +394,11 @@ class BasicMainLoop(object):
         ball = self._world.ball.seen and 'B' or ' '
         yglp = self._world.yglp.seen and 'L' or ' '
         ygrp = self._world.ygrp.seen and 'R' or ' '
-        targets = self._actions.searcher._targets
+        targets = self._actions.searcher.targets
         def getjoints(obj):
-            if obj not in targets: return '-----------'
+            if obj not in targets: return '-------------'
             r = obj.centered_self
-            if not r.sighted: return '           '
+            if not r.sighted: return '             '
             return ('%0.2f %0.2f %s' % (r.head_yaw, r.head_pitch, r.sighted_centered and 'T' or 'F')).rjust(11)
         yglp_joints = getjoints(self._world.yglp)
         ygrp_joints = getjoints(self._world.ygrp)
@@ -390,7 +407,7 @@ class BasicMainLoop(object):
         num_in = self._getNumberIncomingMessages()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%3.2f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
+        print ("%4.1f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
             ball, yglp, ygrp,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
@@ -534,11 +551,9 @@ class SimpleMainLoop(BasicMainLoop):
             if self._eventmanager._should_quit and not quitting:
                 quitting = True
                 self.cleanup() # TODO - merge with onNormalQuit? what's the difference?
-                self._eventmanager._removeAllPendingEventsAndDeferreds()
-                if naoqi_ok:
-                    d = self.onNormalQuit()
-                    if d:
-                        d.addCallback(self._exitApp)
+                d = self.onNormalQuit(naoqi_ok)
+                if d:
+                    d.addCallback(self._exitApp)
             if sleep_time:
                 sleep(sleep_time)
 
@@ -625,12 +640,10 @@ class TwistedMainLoop(BasicMainLoop):
         do_cleanup = False
         ctrl_c_deferred = None
         quit_deferred = None
-        self._eventmanager._removeAllPendingEventsAndDeferreds()
         if hasattr(self, '_main_task'):
             if ctrl_c_pressed:
                 ctrl_c_deferred = self.onCtrlCPressed()
-            if naoqi_ok:
-                quit_deferred = self.onNormalQuit()
+        quit_deferred = self.onNormalQuit(naoqi_ok)
         if naoqi_ok:
             self.cleanup()
         pending = []
