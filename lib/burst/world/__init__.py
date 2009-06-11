@@ -112,6 +112,7 @@ class World(object):
 
         self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
+        self._sentinel = callWrapper("ALSentinel", burst.getSentinelProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
         self._naocam = callWrapper("NaoCam", burst.getNaoCamProxy(deferred=True))
         self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
