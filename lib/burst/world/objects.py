@@ -245,7 +245,7 @@ class Locatable(Namable):
         """
         update_time = self._world.time
         dt = update_time - self.update_time
-        if dt < 0.0:
+        if dt <= 0.0:
             print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
             raise SystemExit
         body_x, body_y = new_dist * cos(new_bearing), new_dist * sin(new_bearing)
@@ -394,9 +394,9 @@ class Ball(Movable):
         
         if n >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
-            if fabs((sumY * sumY) - (n * sumSqrX))  >  ERROR_VAL_X: 
+            if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-                slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX)) 
+                slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX))
             
             #calc time for intersection: when x(t) the slop is v. using least mean squares - don't work good
             #if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
