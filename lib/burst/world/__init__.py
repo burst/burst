@@ -223,7 +223,8 @@ class World(object):
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
-            [self.computed, self.localization],
+            [self.localization],
+            [self.computed],
         ]
 
         # logging variables

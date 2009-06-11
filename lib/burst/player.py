@@ -24,11 +24,21 @@ class Player(object):
         self._eventmanager = eventmanager
         self._actions = actions
         self._eventsToCallbacksMapping = {}
+        # Fall-handling:
         self._eventmanager.register(self.onFallenDown, EVENT_FALLEN_DOWN)
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
         self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
+        # Debugging aids via the eye-LEDs:
+        ### Ball:
         self._eventmanager.register(self._announceSeeingBall, EVENT_BALL_SEEN)
         self._eventmanager.register(self._announceNotSeeingBall, EVENT_BALL_LOST)
+        ### Goals:
+        self._seeingAllBlueGoal = False
+        self._seeingAllYellowGoal = False
+        self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_YELLOW_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
 
     def _register(self, callback, event):
         self._eventsToCallbacksMapping[event] = callback
@@ -68,11 +78,13 @@ class Player(object):
         """
         self._actions.clearFootsteps()
         self._world._sentinel.enableDefaultActionSimpleClick(True)
+        self._world.leds.turnEverythingOff()
         # TODO: initPoseAndRelax?
 
     def onInitial(self):
         if debug:
             self._actions.say("Entering Initial-Game-State.")
+        # Buttons:
         self._eventmanager.register(self._onLeftBumperPressed, EVENT_LEFT_BUMPER_PRESSED)
         self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
         self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
@@ -127,13 +139,13 @@ class Player(object):
         self._world.robot.leds.rightEyeLED.turnOn(burst_consts.BLUE)
 
     def _announceSeeingBlueGoal(self):
-        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.LIGHT_BLUE)
+        self._world.robot.leds.leftEyeLED.turnOn(burst_consts.LIGHT_BLUE)
 
     def _announceSeeingYellowGoal(self):
-        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.YELLOW)
+        self._world.robot.leds.leftEyeLED.turnOn(burst_consts.YELLOW)
 
     def _announceSeeingNoGoal(self):
-        self._world.robot.leds.rightEyeLED.turnOn(burst_consts.OFF)
+        self._world.robot.leds.leftEyeLED.turnOn(burst_consts.OFF)
 
     def _onLeftBumperPressed(self):
         self._world.playerSettings.toggleteamColor()

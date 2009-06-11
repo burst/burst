@@ -13,6 +13,7 @@ from ..events import (EVENT_BALL_IN_FRAME,
 from burst_util import running_median, RingBuffer
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
+import burst.events as events_module
 
 class Namable(object):
     def __init__(self, name='unnamed'):
@@ -534,6 +535,7 @@ class GoalPost(Locatable):
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
+            events.add(getattr(events_module, "EVENT_"+self._name+"_IN_FRAME"))
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
