@@ -97,12 +97,12 @@ class Actions(object):
         passingChallange.start()
         return passingChallange
 
-    def track(self, target, on_lost_callback=None):
+    def track(self, target, lostCallback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
         if not self.searcher.stopped():
             raise Exception("Can't start tracking while searching")
-        self.tracker.track(target, on_lost_callback=on_lost_callback)
+        self.tracker.track(target, lostCallback=lostCallback)
 
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():

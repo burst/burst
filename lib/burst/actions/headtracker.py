@@ -77,19 +77,16 @@ class Tracker(object):
         # happen because of occlusion, and because of vision problems (which
         # can be minimized maybe).
         '''
-        if not target.recently_seen: # sanity check (also makes sure we get the
-                            # lost event when it happens
+        if not target.recently_seen: # don't start centering on a target that isn't visible
             print "ERROR: center called when target not recently in sight"
-            #import pdb; pdb.set_trace()
             return
         '''
         if self.verbose:
             print "Tracker: Start Centering on %s" % target._name
-        self._start(target, self._centeringOnLost)
+        self._start(target, lostCallback)
         self._on_centered_bd = self._actions.burst_deferred_maker.make(self)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
         self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
-        self._user_on_lost = lostCallback
         self._timeout = timeout
         self._user_on_timeout = timeoutCallback
         if timeout:
@@ -106,27 +103,13 @@ class Tracker(object):
         if user_cb:
             user_cb()
 
-    def _centeringOnLost(self):
-        if not self._target.recently_seen:
-            if self.verbose and not self._user_on_lost:
-                print "Centering: %s not recently seen, continue waiting" % (self._target._name)
-        user_cb = self._user_on_lost
-        self.stop()
-        if user_cb:
-            user_cb()
-
     def _centeringStep(self):
         if self._stop: return
-        if not self._target.recently_seen: # TODO - manually looking for lost event. should be event based, no?
+        if not self._target.recently_seen:
             if self.verbose:
                 print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target._name
-            '''
             self._onLost()
             return
-            '''
-        if hasattr(self, '_call_me_later'):
-            del self._call_me_later
-            print "CenteringStep: called later"
         centered, centered_at_pitch_limit, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
             normalized_error_y=self._centering_normalized_y_error)
@@ -139,6 +122,7 @@ class Tracker(object):
             bd = self._on_centered_bd
             self.stop() # this sets self.on_centered_bd=None
             if bd == None or not bd._ondone or not bd._ondone[0]:
+                print "CenteringStep: pdb - no callback set on bd"
                 import pdb; pdb.set_trace()
             if self.debug and bd._ondone and bd._ondone[0]:
                 print "CenteringStep: %s" % bd._ondone[0].im_self.__dict__
@@ -146,35 +130,34 @@ class Tracker(object):
         elif delta_angles:
             # Out path 1: wait for change angles relative to complete
             self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
-        else:
-            print "CenteringStep: callLater"
+        else: # target.recently_seen is True
             # Out path 2: wait a little, try again
-            self._call_me_later = 1
             self._eventmanager.callLater(consts.EVENT_MANAGER_DT, self._centeringStep)
 
     ############################################################################
 
-    def track(self, target, on_lost_callback=None):
+    def track(self, target, lostCallback=None):
         """ Continuous tracking: keep the target in sight.
         """
         # don't track objects that are not seen
         if not target.recently_seen:
             # TODO we immediately call the on_lost_callback - might
             # not be wise - could lead to loops
-            if on_lost_callback:
-                on_lost_callback()
+            if lostCallback:
+                lostCallback()
             return
         if self._on_centered_bd is not None:
             print "ERROR - can't start tracking while centering"
             import pdb; pdb.set_trace()
-        self._start(target, on_lost_callback)
+        self._start(target, lostCallback)
         self._on_centered_bd = None
         self._trackingStep()
     
     def _onLost(self):
+        on_lost_cb = self._on_lost_callback
         self.stop()
-        if self._on_lost_callback:
-            self._on_lost_callback()
+        if on_lost_cb:
+            on_lost_cb()
     
     def _trackingStep(self):
         # TODO - we check self._target.seen explicitly, not relying on the
