@@ -432,6 +432,11 @@ class Actions(object):
 
     def clearFootsteps(self):
         return self._wrap(self._motion.clearFootsteps(), data=self)
+#        def debugme(result):
+#            import pdb; pdb.set_trace()
+#        d = self._motion.clearFootsteps()
+#        d.addCallback(debugme)
+#        return self._wrap(d, data=self)
 
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within

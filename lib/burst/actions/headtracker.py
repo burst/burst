@@ -314,6 +314,7 @@ class Searcher(object):
         self._searchMoves = None
         self._deferred = None
         self._targets = []
+        self._next_move_bd = None
 
     def stopped(self):
         return self._stopped
@@ -321,6 +322,8 @@ class Searcher(object):
     def stop(self):
         if self.verbose:
             print "Searcher: STOPPING"
+        if self._next_move_bd:
+            self._next_move_bd.clear()
         self._unregisterAllEvents()
         self.reset()
 
@@ -366,6 +369,7 @@ class Searcher(object):
 
         # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
         self._deferred = self._actions.burst_deferred_maker.make(self)
+        assert(self._deferred)
         return self._deferred
 
     def _unregisterSeenEvents(self):
@@ -412,7 +416,8 @@ class Searcher(object):
             # XXX: prevents cases where self._searchMoves is None and so next() can't be called...
             #      we probably need better solution...
             if not self._searchMoves is None:
-                self._searchMoves.next().__call__().onDone(self._nextSearchMove)
+                self._next_move_bd = self._searchMoves.next().__call__()
+                self._next_move_bd.onDone(self._nextSearchMove)
         except StopIteration:
             raise Exception("Search iterators are expected to be never-ending.")
 

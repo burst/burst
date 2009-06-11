@@ -199,6 +199,9 @@ class BurstDeferred(object):
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
     
+    def clear(self):
+        self._ondone = None
+    
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
         If it is already complete then it will be called right away. 
@@ -213,7 +216,8 @@ class BurstDeferred(object):
         return chain_deferred
 
     def callOnDone(self):
-        if self._ondone and not self._completed:
+        self._completed = True
+        if self._ondone:
             cb, chain_deferred = self._ondone
             self._ondone = None # zero the callback - don't call twice
             if expected_argument_count(cb) == 0:
@@ -224,7 +228,6 @@ class BurstDeferred(object):
             # we handed out once it is done.
             if isinstance(ret, BurstDeferred):
                 ret.onDone(chain_deferred.callOnDone)
-        self._completed = True
 
     def onDoneCallDeferred(self, d):
         """ Helper for t.i.d.Deferred mingling - will call this deferred when

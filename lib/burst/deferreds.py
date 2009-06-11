@@ -26,7 +26,10 @@ class BurstDeferredMaker(object):
     def wrap(self, deferred, data):
         """ return a BD that is called on the deferred """
         bd = self.make(data)
-        deferred.addCallback(lambda _: bd.callOnDone())
+        if deferred.called:
+            bd._completed = True
+        else:
+            deferred.addCallback(lambda _: bd.callOnDone())
         return bd
 
     def clear(self):
