@@ -371,7 +371,9 @@ class BasicMainLoop(object):
             return
         self._on_normal_quit_called = True
         self._on_normal_quit__naoqi_ok = naoqi_ok
-        stop_deferred = self._player.onStop()
+        stop_deferred = None
+        if self._player:
+            stop_deferred = self._player.onStop()
         if stop_deferred:
             return stop_deferred.onDone(self._onNormalQuit_playerStopDone).getDeferred()
         else:
