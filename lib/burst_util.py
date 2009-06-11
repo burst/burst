@@ -707,6 +707,44 @@ class LogCalls(object):
                 return LogCalls('%s.%s' % (self._name, k), f)
         return f
 
+# Python Profiling
+
+def run_with_hotshot(func, filename):
+    print "running via hotshot"
+    import hotshot
+    prof = hotshot.Profile(filename, lineevents=1)
+    prof.runcall(func)
+    prof.close()
+    base = os.path.splitext(filename)[0]
+    if burst_util.which('hotshot2calltree'):
+        os.system('hotshot2calltree -o %s.kcachegrind %s' % (base, base))
+        os.system('kcachegrind %s.kcachegrind &' % base)
+    else:
+        print "missing hotshot2calltree. sudo apt-get install kcachegrind-converters"
+
+class Profiler(object):
+    """ profile using cProfile and lsprofcalltree which makes a kcachegrind compatible
+    output file """
+
+    def __init__(self, filename):
+        import cProfile
+        self._profiler = cProfile.Profile()
+        self._filename = filename
+        print "Profiler created, using cProfile, output in %s" % self._filename
+
+    def runcall(self, func, *args, **kw):
+        self._profiler.runcall(func, *args, **kw)
+
+    def close(self):
+        from lsprofcalltree import KCacheGrind
+        kg = KCacheGrind(self._profiler)
+        kg.output(file(self._filename, 'w'))
+        if not burst_util.which('kcachegrind'):
+            print "missing kcachegrind; sudo apt-get install kcachegrind"
+        else:
+            os.system('kcachegrind %s &' % self._filename)
+
+
 # File utils
 def read_ld_so_conf():
     def clean(ls):

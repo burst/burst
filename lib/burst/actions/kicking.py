@@ -5,18 +5,18 @@ import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
 import burst.moves as moves
-from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX, 
-                                   calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, 
+from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
+                                   calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
 from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y
 
 #===============================================================================
 #    Logic for Kicking behavior:
-# 
+#
 # 1. Scan for ball
 # 2. Advance towards ball (while tracking ball)
 # 3. When near ball, circle-strafe (to correct direction) till goal is seen and centered (goal is tracked)
-# 4. Search ball down, align against ball and kick 
+# 4. Search ball down, align against ball and kick
 #
 # Handling ball lost:
 # 1. While walking towards it => notify caller (kind of restart behavior)
@@ -25,6 +25,7 @@ from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR, IMAGE_CENTER_X,
 #
 # *TODO*:
 # * RESET self.aligned_to_goal when needed
+# * Area for strafing different from kicking-area
 # * Handle "ball lost" only when ball isn't seen for several frames (use the "recently seen" variable)
 # * Notify caller when ball moves (yet doesn't disappear)? Since measurements are noisy, need to decide
 #    how to determine when ball moved.
@@ -38,20 +39,37 @@ class BallKicker(BurstDeferred):
 
     VERBOSE = True
     ENABLE_MOVEMENT = True
-    ENABLE_STRAFING = True
 
-    def __init__(self, eventmanager, actions, target_bearing_distance=None):
+    def __init__(self, eventmanager, actions, target_is_goal=True):
         super(BallKicker, self).__init__(None)
-        if target_bearing_distance is not None:
-            raise NotImplemented('BallKicker can only hit the goal right now')
+        self._target_is_goal = target_is_goal
         self._eventmanager = eventmanager
         self._actions = actions
         self._world = eventmanager._world
 
+        # Strafing differs between webots since webots cannot do the CW/CCW
+        # turns, so we emulate it with a turn in place.
+        if burst.connecting_to_webots():
+            self.strafe_cw = lambda: self._actions.turn(-0.2)
+            self.strafe_ccw = lambda: self._actions.turn(0.2)
+        else:
+            self.strafe_cw = self._actions.executeTurnCW
+            self.strafe_ccw = self._actions.executeTurnCCW
+
+    ################################################################################
+
     def debugPrint(self, message):
         if self.VERBOSE:
-            print message
-    
+            print "Kicking:", message
+
+    def _nextMovement(self, bd):
+        """ store current movement deferred for clearing if we need to stop movement
+        """
+        self._movement_deferred = bd
+        return bd
+
+    ################################################################################
+
     def start(self):
         self.ballLocationKnown = False
         self.goalLocationKnown = False
@@ -60,30 +78,38 @@ class BallKicker(BurstDeferred):
         self.movement_deferred = None
         self._actions.setCameraFrameRate(20)
         self._actions.initPoseAndStiffness().onDone(self.initKickerPosition)
-        
+
     def initKickerPosition(self):
         self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(self.doNextAction)
-        
+
+    ################################################################################
+    # doNextAction helpers (XXX - should they be submethods of doNextAction? would
+    # make it cleared to understand the relationship, not require this comment)
+
     def searchBall(self):
         #self._actions.tracker.stop() # needed???
         self.debugPrint("Starting ball search")
         self._actions.setCameraFrameRate(20)
-        self._actions.search([self._world.ball]).onDone(self.onSearchBallOver)
+        self._actions.search([self._world.ball], center_on_targets=False).onDone(self.onSearchBallOver)
 
     def onSearchBallOver(self):
         # Ball found, track it
         self.debugPrint("onSearchBallOver")
-        self._actions.setCameraFrameRate(20)
-        self._actions.track(self._world.ball, self.onLostBall)
         self.ballLocationKnown = True
-        self.doNextAction()
+        print "manually centering on goal post (from search goal results)"
+        self.manualCentering(self._world.ball.centered_self).onDone(self.onSearchBallCenteringDone)
         
+    def onSearchBallCenteringDone(self):
+        self.debugPrint("onSearchBallCenteringDone")
+        self._actions.track(self._world.ball, self.onLostBall)
+        self.doNextAction()
+
+
     def onLostBall(self):
         self.debugPrint("BALL LOST, clearing footsteps")
-        self.ballLocationKnown = False
-        if self.movement_deferred != None:
-            self.movement_deferred.clear()
-        self._actions.clearFootsteps().onDone(self.doNextAction)
+        self._actions.clearFootsteps().onDone(lambda: setattr(self,'ballLocationKnown',False))
+
+    ################################################################################
 
     def doNextAction(self):
         print "\nDeciding on next move: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
@@ -108,7 +134,7 @@ class BallKicker(BurstDeferred):
         ballDist = self._world.ball.distSmoothed
         (ball_x, ball_y) = polar2cart(ballDist, ballBearing)
         print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
-        
+
         # determine kicking leg
         side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
         if (side == LEFT): self.debugPrint("Designated kick leg: Left")
@@ -119,20 +145,20 @@ class BallKicker(BurstDeferred):
         (kp_dist, kp_bearing) = cart2polar(kp_x, kp_y)
         self.debugPrint("kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y))
         self.debugPrint("kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing))
-        
+
         # ball location, as defined at behavior parameters (front, side, etc...)
         ball_location = calcBallArea(ball_x, ball_y, side)
-        
-        # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course) 
+
+        # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course)
         if side==LEFT:
             cntr_param = 1.1-1.2*(ball_y-KICK_Y_MIN[LEFT])/7
-        else: 
+        else:
             cntr_param = 1.1- 1.2*(abs(ball_y-KICK_Y_MIN[RIGHT])/7)
-        
+
         print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
-        
-        # Use circle-strafing when near ball
-        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self.ENABLE_STRAFING:
+
+        # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
+        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._target_is_goal:
             self.debugPrint("Aligning to goal! (stopping ball tracker)")
             self.searchGoalPosts()
         # Ball inside kicking area, kick it
@@ -150,26 +176,27 @@ class BallKicker(BurstDeferred):
                 self.debugPrint("Walking straight!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self.movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE)
-                    self.movement_deferred.onDone(self.doNextAction)
+                    self._nextMovement(self._actions.changeLocationRelative(
+                            kp_x*MOVEMENT_PERCENTAGE)).onDone(self.doNextAction)
             elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self.movement_deferred = self._actions.changeLocationRelativeSideways(0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)
-                    self.movement_deferred.onDone(self.doNextAction)
+                    self._nextMovement(self._actions.changeLocationRelativeSideways(
+                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)).onDone(self.doNextAction)
             elif ball_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self.movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)
-                    self.movement_deferred.onDone(self.doNextAction)
+                    self._nextMovement(self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)).onDone(self.doNextAction)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
-        
+
         if not self.ENABLE_MOVEMENT:
             self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
-    
+
+    ################################################################################
+
     ####################################### STRAFING - BEGIN:
     def searchGoalPosts(self):
         self.debugPrint("Starting goal post search")
@@ -177,10 +204,10 @@ class BallKicker(BurstDeferred):
         self.goalpost_to_track = None
         self._actions.setCameraFrameRate(20)
         self._actions.search(self.goalposts, stop_on_first=True, center_on_targets=False).onDone(self.onGoalPostFound)
-    
+
     def onGoalPostFound(self):
         self.debugPrint("onGoalPostFound")
-        
+
         # Determine which goalpost was seen
         self.goalpost_to_track = None
         for t in self.goalposts:
@@ -190,12 +217,12 @@ class BallKicker(BurstDeferred):
                     self.goalpost_to_track = t
                 else:
                     print "%s sighted" % t._name
-                    # update goalpost_to_track, but only if not already set (as to not override sighted_centered) 
+                    # update goalpost_to_track, but only if not already set (as to not override sighted_centered)
                     if self.goalpost_to_track is None:
                         self.goalpost_to_track = t
             else:
                 print "%s NOT sighted" % t._name
-        
+
         if self.goalpost_to_track is None:
             self.debugPrint("Goalpost LOST!!!")
             self.onLostGoal()
@@ -204,56 +231,28 @@ class BallKicker(BurstDeferred):
             # track goal post, align against it
             self.goalLocationKnown = True
             self._actions.setCameraFrameRate(20)
-            
+
             print "manually centering on goal post (from search goal results)"
-            self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchCenteringDone)
-            
-        # Get world position from goal (to decide where to turn to)
-#        robot = self._world.robot
-#        world_pos = (robot.world_x, robot.world_y, robot.world_heading)
-#        dists = tuple(nicefloats([x.dist, x.focDist])
-#                    for x in self._world.team.target_posts.bottom_top)
-#        if not all(isinstance(x, float) for x in world_pos):
-#            self.debugPrint("ERROR: world position not computed. It is %r. dists are %s" % (world_pos, dists))
-#        else:
-#            self.debugPrint("position = %3.3f %3.3f %3.3f, dists %s" % (robot.world_x, robot.world_y, robot.world_heading, dists))
+            self.manualCentering(self.goalpost_to_track.centered_self).onDone(self.onSearchCenteringDone)
 
     def onSearchCenteringDone(self):
         self._actions.track(self.goalpost_to_track, self.onLostGoal)
-        # if we lost the goal post don't start strafing
-        if not self._actions.tracker.stopped():
-            self.debugPrint("Kicking: onSearchCenteringDone: starting strafe")
-            self.strafe()
-        
+        self.strafe()
+
     def onLostGoal(self):
-        self.debugPrint("Kicking: onLostGoal: GOAL POST LOST, clearing footsteps, stopping strafing")
+        self.debugPrint("onLostGoal(): GOAL POST LOST, clearing footsteps, stopping strafing, restart goal-post search")
         self.goalLocationKnown = False
-        if self.movement_deferred != None:
-            self.debugPrint("movement_deferred != None, clearing it")
-            self.movement_deferred.clear()
-        self.debugPrint("Kicking: onLostGoal: restart goal post search")
-        self._actions.clearFootsteps().onDone(self.searchGoalPosts)
-    
-    def _nextMovement(self, bd):
-        self._movement_deferred = bd
-        return bd
-    
+
     def strafe(self):
-        self.debugPrint("strafing")
         if self.goalLocationKnown:
+            self.debugPrint("strafe(): goal location known")
             # TODO: Add align-to-goal-center support
             if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
-                if burst.connecting_to_webots():
-                    self._nextMovement(self._actions.turn(-0.2)).onDone(self.strafe)
-                else:
-                    self._nextMovement(self._actions.executeTurnCW()).onDone(self.strafe)
+                self._nextMovement(self.strafe_cw()).onDone(self.strafe)
             elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
-                if burst.connecting_to_webots():
-                    self._nextMovement(self._actions.turn(0.2)).onDone(self.strafe)
-                else:
-                    self._nextMovement(self._actions.executeTurnCCW()).onDone(self.strafe)
+                self._nextMovement(self.strafe_ccw()).onDone(self.strafe)
             else:
                 self.debugPrint("Aligned position reached! (starting ball search)")
                 self._actions.tracker.stop()
@@ -262,14 +261,14 @@ class BallKicker(BurstDeferred):
                 self._actions.setCameraFrameRate(20)
                 self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
         else:
-            self.debugPrint("Kicking: strafe: restart goal post search")
+            self.debugPrint("strafe(): goal location known, restart goal post search")
             self.searchGoalPosts()
 
-    def manualCentering(self, centeredTarget, onDoneCallback):
+    def manualCentering(self, centeredTarget):
         print "XXX Moving towards and centering on target - (%1.2f, %1.2f, %1.2f, %1.2f)" % (centeredTarget.head_yaw, centeredTarget.head_pitch, centeredTarget.centerX, centeredTarget.centerY)
         a1 = centeredTarget.head_yaw, centeredTarget.head_pitch
         a2 = (a1[0] - PIX_TO_RAD_X * (centeredTarget.centerX - IMAGE_CENTER_X),
               a1[1] + PIX_TO_RAD_Y * (centeredTarget.centerY - IMAGE_CENTER_Y))
-        self._actions.moveHead(*a2).onDone(onDoneCallback)
+        return self._actions.moveHead(*a2)
 
     ####################################### STRAFING - END
