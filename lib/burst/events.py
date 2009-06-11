@@ -80,6 +80,9 @@ EVENT_SWITCHED_FROM_PLAY_GAME_STATE = counter; counter += 1
 EVENT_SWITCHED_TO_FINISH_GAME_STATE = counter; counter += 1
 EVENT_SWITCHED_FROM_FINISH_GAME_STATE = counter; counter += 1
 
+##### Location events
+EVENT_WORLD_LOCATION_UPDATED = counter; counter += 1
+
 ##### Computed events
 #EVENT_KP_CHANGED = counter; counter+=1
 
