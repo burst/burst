@@ -53,6 +53,7 @@ class Player(object):
         self._eventsToCallbacksMapping.clear()
 
     def onStart(self):
+        self._world._sentinel.enableDefaultActionSimpleClick(False)
         self._announceNotSeeingBall()
         self._announceSeeingNoGoal()
         self.onInitial()
@@ -66,6 +67,7 @@ class Player(object):
         i.e. clearFootsteps.
         """
         self._actions.clearFootsteps()
+        self._world._sentinel.enableDefaultActionSimpleClick(True)
         # TODO: initPoseAndRelax?
 
     def onInitial(self):
