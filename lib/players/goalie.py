@@ -1,12 +1,6 @@
 #!/usr/bin/python
-import os
-in_tree_dir = os.path.join(os.environ['HOME'], 'src/burst/lib/players')
-if os.getcwd() == in_tree_dir:
-    # for debugging only - use the local and not the installed burst
-    print "DEBUG - using in tree burst.py"
-    import sys
-    sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
+import player_init
 from burst.player import Player
 from burst.events import *
 from burst_consts import *
@@ -19,23 +13,21 @@ ERROR_IN_LENGTH = 0
 TIME_WAITING = 3 #time to wait when finishing the leap for getting up
 WAITING_FOR_HEAD = 5
 
-class goalie(Player):
-#    def onStop(self):
-#        super(Goalie, self).onStop()
-    
+class Goalie(Player):
 
     def onStart(self):
-        self.isPenalty = False
-        self.isWebots = True
-        
-        self._actions.initPoseAndStiffness().onDone(self.goalieInitPos)
+        super(Goalie, self).onStart()
+        self.isPenalty = True # TODO: Use the gameStatus object.
 
-    def goalieInitPos(self):
+    def enterGame(self):
+        self._actions.say("in play")
+        self._actions.initPoseAndStiffness(moves.SIT_POS)
+
+    def getToPosition(self):
+        pass
+
+    def _goToInitStandingPose(self):
         self._actions.executeMove(moves.SIT_POS).onDone(self.goalieInitPos2)
-        
-    # TODO: TEMP!!! combine with goalieInitPos
-    def goalieInitPos2(self):
-        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.whichBehavior)
         
     def whichBehavior (self):
         if self.isPenalty:
@@ -111,5 +103,6 @@ class goalie(Player):
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    MainLoop(goalie).run()
+    MainLoop(Goalie).run()
+
 
