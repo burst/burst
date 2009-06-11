@@ -1,5 +1,16 @@
 #!/usr/bin/python
 
+# TODO: Someone please refactor this long-winded, repetitive, redundant explanation.
+'''
+The first thing that happens when the eventmanager starts managing a player is, it calls its onStart method.
+A player that inherits from Player may choose to override onStart. If it has, it may still call Player's onStart with super().
+Player (the class) has the following behaviour in its onStart - it makes the robot accept configuration through its bumpers, then,
+as soon as the chest button is pressed, the configuration is locked-in, and the robot moves on to its enterGame method.
+Now, if one doesn't wish for this behaviour to take place, one can just override onStart (the way all our players have thus far), and not
+call super's onStart. This way, one's robot moves on directly to the player's actual behaviour - which is more convenient for testing purposes.
+When one wishes to make a player into a game-worthy player - the kind that is subject to configuration prior to entering the game - all one
+has to do is rename one's onStart to enterGame, et voila.
+'''
 
 from events import *
 from burst.debug_flags import player_py_debug as debug
@@ -68,7 +79,7 @@ class Player(object):
         pass
 
     def onConfigured(self):
-        self._world.gameStatus.reset()
+        self._world.gameStatus.reset() # TODO: Reconsider.
         self._enterGame()
 
     '''
