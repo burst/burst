@@ -24,7 +24,6 @@ from events import *
 from burst.debug_flags import player_py_debug as debug
 import burst_consts
 
-
 class Player(object):
 
     def __init__(self, world, eventmanager, actions):
@@ -46,6 +45,7 @@ class Player(object):
         ### Goals:
         self._seeingAllBlueGoal = False
         self._seeingAllYellowGoal = False
+        self._announceSeeingNoGoal()
         self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_YELLOW_GOAL_SEEN)
         self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
@@ -117,7 +117,7 @@ class Player(object):
     def onOnBack(self):
         print "I'm on my back."
         self._eventmanager.unregister(self.onOnBack)
-        self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
+        #self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
     
     def onGottenUpFromBack(self):
         print "Getting up done (from back)"
@@ -126,7 +126,7 @@ class Player(object):
     def onOnBelly(self):
         print "I'm on my belly."
         self._eventmanager.unregister(self.onOnBelly)
-        self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
+        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
         
     def onGottenUpFromBelly(self):
         print "Getting up done (from belly)"
