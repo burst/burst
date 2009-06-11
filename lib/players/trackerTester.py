@@ -20,7 +20,7 @@ class trackerTester(Player):
     def track(self):
         print "trackerTester: TRACKING %s" % (self.count)
         self.count += 1
-        self._actions.tracker.track(self._world.ball, on_lost_callback=self.trackNextFrame)
+        self._actions.tracker.track(self._world.ball, lostCallback=self.trackNextFrame)
 
     def trackNextFrame(self):
         self._eventmanager.callLater(0.0, self.track)

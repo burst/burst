@@ -8,9 +8,13 @@ class centerTester(Player):
     
     def onStart(self):
         self._actions.initPoseAndStiffness().onDone(
-            lambda: self._actions.tracker.center(self._world.ball)).onDone(
+            lambda: self._actions.tracker.center(self._world.ball, self.onLost)).onDone(
             self.wrapUp)
-    
+
+    def onLost(self):
+        print "lost ball"
+        self._eventmanager.quit()
+
     def wrapUp(self):
         print "center done"
         print "calling center again to make sure it works when already centered"
