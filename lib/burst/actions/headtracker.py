@@ -455,10 +455,14 @@ class Searcher(object):
             self._onSearchDone()
         else:
             target = self._seen_objects.pop()
+            delta_yaw   = - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
+            delta_pitch =   PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
+            yaw = target.centered_self.head_yaw + delta_yaw
+            pitch = target.centered_self.head_pitch + delta_pitch
             if self.verbose:
-                print "Searcher: centering initial move towards %s" % target._name
-            yaw = target.centered_self.head_yaw - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
-            pitch = target.centered_self.head_pitch + PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
+                print "Searcher: centering initial move towards %s, %1.2f+%1.2f, %1.2f+%1.2f" % (
+                    target._name, target.centered_self.head_yaw, delta_yaw,
+                    target.centered_self.head_pitch, delta_pitch)
             # move closer to next target, then center on it, then return here. on timeout also return here.
             self._actions.moveHead(yaw, pitch).onDone(
                     lambda _, target=target:

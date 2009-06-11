@@ -118,6 +118,9 @@ class Actions(object):
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
 
+    def localize(self):
+        return self.search([self._world.yglp, self._world.ygrp])
+
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
     #===============================================================================
