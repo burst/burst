@@ -28,8 +28,11 @@ class Player(object):
         self._eventmanager.register(self.onFallenDown, EVENT_FALLEN_DOWN)
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
         self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
-        # Debugging aids via the eye-LEDs:
+        # Debugging aids via the LEDs:
         ### Ball:
+        self._world.robot.leds.rightEarLED.turnOn()
+        self._world.robot.leds.leftEarLED.turnOn()
+        self._announceNotSeeingBall()
         self._eventmanager.register(self._announceSeeingBall, EVENT_BALL_SEEN)
         self._eventmanager.register(self._announceNotSeeingBall, EVENT_BALL_LOST)
         ### Goals:
@@ -64,9 +67,25 @@ class Player(object):
 
     def onStart(self):
         self._world._sentinel.enableDefaultActionSimpleClick(False)
-        self._announceNotSeeingBall()
-        self._announceSeeingNoGoal()
-        self.onInitial()
+        Player._announceNotSeeingBall(self)
+        Player._announceSeeingNoGoal(self)
+        Player.onInitial(self)
+
+    def onInitial(self):
+        if debug:
+            self._actions.say("Initial")
+        # Buttons:
+        self._eventmanager.register(self._onLeftBumperPressed, EVENT_LEFT_BUMPER_PRESSED)
+        self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
+        self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
+        self._onChestButtonPressed() # TODO: Remove this short-circuit.
+
+    def onConfigured(self):
+        self._world.gameStatus.reset() # TODO: Reconsider.
+        self._enterGame()
+
+    def _enterGame(self):
+        self.enterGame()
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player
@@ -79,36 +98,9 @@ class Player(object):
         self._actions.clearFootsteps()
         self._world._sentinel.enableDefaultActionSimpleClick(True)
         self._world.robot.leds.turnEverythingOff()
+        self._world.robot.leds.rightEarLED.turnOn()
+        self._world.robot.leds.leftEarLED.turnOn()
         # TODO: initPoseAndRelax?
-
-    def onInitial(self):
-        if debug:
-            self._actions.say("Entering Initial-Game-State.")
-        # Buttons:
-        self._eventmanager.register(self._onLeftBumperPressed, EVENT_LEFT_BUMPER_PRESSED)
-        self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
-        self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
-
-    def onLeavingInitial(self):
-        pass
-
-    def onConfigured(self):
-        self._world.gameStatus.reset() # TODO: Reconsider.
-        self._enterGame()
-
-    '''
-    def onPlay(self):
-        pass
-
-    def onReady(self):
-        pass
-
-    def onSet(self):
-        pass
-
-    def onPenalized(self):
-        pass
-    '''
 
     def onFallenDown(self):
         print "I'm down!"
@@ -164,9 +156,6 @@ class Player(object):
         for callback in [self._onLeftBumperPressed, self._onRightBumperPressed, self._onChestButtonPressed]:
             self._eventmanager.unregister(callback)
         self.onConfigured()
-
-    def _enterGame(self):
-        self.enterGame()
 
     #############
     # Utilities #
