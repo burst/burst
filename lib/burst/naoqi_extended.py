@@ -14,7 +14,7 @@ from options import host_to_ip, LOCALHOST_IP
 import burst
 
 __all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
-    ,'getLedsProxy', 'getUltraSoundProxy', 'getNaoCamProxy', 'getBurstMemProxy', 'getImopsProxy']
+    ,'getLedsProxy', 'getUltraSoundProxy', 'getNaoCamProxy', 'getBurstMemProxy', 'getImopsProxy', 'getSentinelProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -85,6 +85,7 @@ for getter, global_name, proxy_name in [
     ('getSpeechProxy', 'speechProxy', 'ALTextToSpeech'),
     ('getLedsProxy',   'ledsProxy',   'ALLeds'),
     ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
+    ('getSentinelProxy', 'sentinelProxy', 'ALSentinel'),
     ('getNaoCamProxy', 'naocamProxy', 'NaoCam'),
     ('getVisionProxy', 'visionProxy', 'vision'),
     ('getDCMProxy',    'dcmProxy',    'DCM'),

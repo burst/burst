@@ -38,3 +38,6 @@ def getBurstMemProxy(deferred = False):
 def getImopsProxy(deferred = False):
     return con.imops
 
+def getSentinelProxy(deferred = False):
+    return con.ALSentinel
+
