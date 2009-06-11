@@ -21,12 +21,12 @@ import burst
 
 import burst.moves.walks as walks
 walks.STRAIGHT_WALK.defaultSpeed = 90
-walks.SIDESTEP_WALK.defaultSpeed = 27 # 20 seems just fine
+walks.SIDESTEP_WALK.defaultSpeed = 22 # 20 seems just fine
 
 
 import burst.behavior_params as params
 params.KICK_X_MIN[:] = [14,14]
-params.KICK_X_MAX[:] = [18,18]
+params.KICK_X_MAX[:] = [19,19]
 params.KICK_Y_MIN[:] = [3.5,-2]
 params.KICK_Y_MAX[:] = [10.5,-9]
 
