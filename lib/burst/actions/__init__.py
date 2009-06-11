@@ -59,7 +59,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
-    def kickBall(self, target_world_frame=None, target_bearing_distance=None):
+    def kickBall(self, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
         
@@ -76,24 +76,12 @@ class Actions(object):
         being able to detect the location.
         TODO: have several kick types, one for passing, one for kicking towards goal.
         """
-        if target_world_frame is not None:
-            if target_bearing_distance is not None:
-                print "ERROR: bad parameters to kickBall.. ignoring"
-                return
-            raise NotImplemented('ballKick can only work with target == None right now')
-            target_bearing_distance = self._world.translateWorldFrameToBearingDistance(target_world_frame)
-        ballkicker = BallKicker(self._eventmanager, self, target_bearing_distance=target_bearing_distance)
+        ballkicker = BallKicker(self._eventmanager, self)
         ballkicker.start()
         return ballkicker
 
-    def passBall(self, target_world_frame=None, target_bearing_distance=None):
-        if target_world_frame is not None:
-            if target_bearing_distance is not None:
-                print "ERROR: bad parameters to passBall.. ignoring"
-                return
-            raise NotImplemented('passBall can only work with target == None right now')
-            target_bearing_distance = self._world.translateWorldFrameToBearingDistance(target_world_frame)
-        passingChallange = passBall(self._eventmanager, self, target_bearing_distance=target_bearing_distance)
+    def passBall(self, target_world_frame=None):
+        passingChallange = passBall(self._eventmanager, self)
         passingChallange.start()
         return passingChallange
 

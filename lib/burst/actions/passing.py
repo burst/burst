@@ -50,10 +50,8 @@ class passBall(BurstDeferred):
 
     verbose = True
 
-    def __init__(self, eventmanager, actions, target_bearing_distance=None):
+    def __init__(self, eventmanager, actions):
         super(passBall, self).__init__(None)
-        if target_bearing_distance is not None:
-            raise NotImplemented('BallKicker can only hit the goal right now')
         self._eventmanager = eventmanager
         self._actions = actions
         self._world = eventmanager._world
