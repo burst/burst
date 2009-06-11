@@ -218,7 +218,7 @@ class Actions(object):
             description=('sideway', delta_x, delta_y, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def initPoseAndStiffness(self):
+    def initPoseAndStiffness(self, pose=moves.INITIAL_POS):
         """ Sets stiffness, then sets initial position for body and head.
         Returns a BurstDeferred.
         """
@@ -227,7 +227,7 @@ class Actions(object):
         def doMove(_):
             DeferredList([
                 #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
-                self.executeMove(moves.INITIAL_POS).getDeferred()
+                self.executeMove(pose).getDeferred()
             ]).addCallback(lambda _: bd.callOnDone())
         self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
