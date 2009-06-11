@@ -593,6 +593,12 @@ def compresstoprint(s, first, last):
 
 # Operating System utilities
 
+def get_num_cores():
+    ret = 1
+    with open('/proc/cpuinfo') as fd:
+        ret = len([x for x in fd.readlines() if x.startswith('processor')])
+    return ret
+
 def get_first_available_tcp_port(start_number, host='127.0.0.1'):
     number = start_number
     s = socket.socket()
@@ -725,7 +731,7 @@ def which(fname, realpath=True):
 
 def whichlib(fname, realpath=True):
     default_dirs = LD_DEFAULT_PATHS
-    all_dirs = default_dirs + os.environ['LD_LIBRARY_PATH'].split(':')
+    all_dirs = default_dirs + os.environ.get('LD_LIBRARY_PATH','').split(':')
     return find_in_paths(all_dirs, fname, realpath=realpath)
 
 # Northern Bites specific, but still standalone

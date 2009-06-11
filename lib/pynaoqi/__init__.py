@@ -25,7 +25,7 @@ if DEBUG:
     import memory
 
 from burst_util import (succeed, Deferred, whichlib, is64,
-    is_64bit_elf)
+    is_64bit_elf, get_num_cores)
 from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
     CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA, CAMERA_WHICH_TOP_CAMERA)
 
@@ -47,18 +47,17 @@ def has_imops():
     imops_fname = whichlib(IMOPS_PYNAOQI_SO)
     HOME = os.environ['HOME']
     src_imops = '%s/src/burst/src/imops/imops.cpp' % HOME
-    bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
-    assert(not bad_architecture)
+    bad_architecture = imops_fname and is_64bit_elf(imops_fname) != is64() or False
     if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
         or bad_architecture):
         if bad_architecture: # force make to remake the so file
             os.system('cd %s/src/burst/src/imops; make clean' % HOME)
         # make it (either it doesn't exist, is too old, or doesn't match the architecture)
-        os.system('cd %s/src/burst/src/imops; make %s' % (HOME, IMOPS_PYNAOQI_SO))
+        os.system('cd %s/src/burst/src/imops; make pynaoqi -j %s' % (HOME, get_num_cores() + 1))
     try:
         imops = ctypes.CDLL(IMOPS_PYNAOQI_SO)
     except:
-        print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+        print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH)"
         return None
     return imops
 
