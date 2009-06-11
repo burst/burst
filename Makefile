@@ -19,7 +19,7 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi
 
 clean:
 	rm -R src/burstmem/crossbuild
@@ -29,8 +29,11 @@ clean:
 webots:
 	cd src/imops; $(MAKE) webots
 
+pynaoqi:
+	cd src/imops; $(MAKE) pynaoqi
+
 install: Makefile.local burstmem recordermodule colortable
-	rsync -avr lib root@$(ROBOT):/home/root/burst/
+	rsync -avr --exclude imops_pynaoqi*.so lib root@$(ROBOT):/home/root/burst/
 
 installall: imops install
 	# TODO - each copyto is an ssh initiation, many secundas.

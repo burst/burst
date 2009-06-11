@@ -6,21 +6,20 @@
 
 # Rules explanation:
 #
-# I implement a crude build directory to seperate the objects for the
-# three targets:
-#  host 32bit
-#  host 64bit
-#  robot
+# There are three build directories for the four targets:
+#  host 32bit <- webots 32 bit + pynaoqi
+#  host 64bit <- pynaoqi 64 bit
+#  robot      <- robot
 #
-# This works by calling my self from the main targets with a BUILD
-# variable set, which can have the three values HOST64 HOST32 ROBOT
+# This works by calling my self from the main targets after chdir
+# to the build dir, and setting VPATH to contain the original directory.
 #
 # The main targets are:
-#  robot - cross compile for the robot (cross is the same as robot)
-#  host64 - compile the 64bit target
-#  host32 - same
+#  robot - cross compile and install for the robot (cross is the same as robot)
+#  pynaoqi - compile and install the pynaoqi module, regardless of word size
+#  webots - compile and install the webots module, will complain if in 64 bit environment.
 #
-# compilation will always end up in the BUILD dir, which is
+# compilation results will always end up in the BUILD dir, which is
 #  build_host32, build_host64 or build_robot
 # 
 
@@ -83,6 +82,7 @@ CFLAGS_DEBUG_BUILD=-DOFFLINE -DDEBUG_IMAGE
 PY_INC=-I/usr/include/python2.5
 else
 # robot
+$(info COMPILING FOR ROBOT)
 BUILD_DIR=$(ROBOT_BUILD_DIR)
 STAGING=$(AL_DIR)/crosstoolchain/staging
 CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
@@ -127,9 +127,6 @@ CFLAGS=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG
 CXXFLAGS=$(CFLAGS)
 LDFLAGS=-lz
 
-local_install: imops.so
-	cp imops.so $(AL_DIR)/modules/lib/libimops.so
-
 SRC=ConcreteCorner.cpp       ConcreteLine.cpp  Kinematics.cpp       objrec.cpp    Threshold.cpp  VisualBall.cpp      VisualDetection.cpp    VisualLine.cpp \
 ConcreteFieldObject.cpp  FieldLines.cpp    NaoPose.cpp          Profiler.cpp  Utility.cpp    VisualCorner.cpp    VisualFieldObject.cpp  VisualRobot.cpp \
 ConcreteLandmark.cpp     imops.cpp         ObjectFragments.cpp  Sensors.cpp   Vision.cpp     VisualCrossbar.cpp  VisualLandmark.cpp     Zlib.cpp \
@@ -158,6 +155,7 @@ clean_32:
 clean_64:
 	cd $(HOST_64_BUILD_DIR); rm -f $(OBJ) *.so
 
+# This is not really used right now.
 precompiled.h.gch: precompiled.h
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
@@ -187,12 +185,11 @@ $(ROBOT_BUILD_DIR):
 ################################################################################
 # Main Targets
 
+# TODO - cannot move this to the top, it breaks the makefile.
+
 .PHONY: webots cross robot pynaoqi
 
 # Compile and build for the robot.
-# Uses cross_helper to set the flags as a release build
-# (if we want a debug build, needs a little work - maybe
-# just a cross_debug target)
 
 robot: cross
 
@@ -216,7 +213,6 @@ pynaoqi_helper: $(IMOPS_PYNAOQI_TARGET)
 
 # webots
 
-# Compile and build for webots - just the usual with an additional copy rule
 ifeq ($(IS64),1)
 webots:
 	@echo you cannot build the webots target in 64 bit - try a chroot
@@ -228,4 +224,7 @@ endif
 
 webots_helper: $(IMOPS_WEBOTS_TARGET)
 	cp $(IMOPS_WEBOTS_TARGET) $(AL_DIR)/modules/lib/libimops.so
+
+################################################################################
+
 

@@ -4,13 +4,15 @@
 
 import traceback
 import sys
+import os
 from time import time
 from heapq import heappush, heappop, heapify
 
 from twisted.python import log
 
 import burst
-from burst_util import DeferredList, func_name
+from burst_util import DeferredList, func_name, Profiler
+import burst_util
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -327,6 +329,8 @@ class BasicMainLoop(object):
         self.finished = False       # True when quit has been called
         self._on_normal_quit_called = False
 
+        self._profiler = None
+
     def _getNumberOutgoingMessages(self):
         return 0 # implemented just in twisted for now
 
@@ -461,7 +465,11 @@ class BasicMainLoop(object):
         if burst.options.trace_proxies:
             self._printTraceTicker()
 
-        self._eventmanager.handlePendingEventsAndDeferreds()
+        # reverse the order? arg.
+        if burst.options.profile_player:
+            self._profiler.runcall(self._eventmanager.handlePendingEventsAndDeferreds)
+        else:
+            self._eventmanager.handlePendingEventsAndDeferreds()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
         self.cur_time = time()
@@ -473,6 +481,24 @@ class BasicMainLoop(object):
             return None
         else:
             return self.next_loop - self.cur_time
+
+    def profile_filename(self):
+        """ return name of file to keep profile results in, with extension """
+        raise NotImplementedError("profile_filename")
+
+    def profile_player_filename(self):
+        raise NotImplementedError('profile_player_filename')
+
+    def run(self):
+        if burst.options.profile:
+            self._profiler = Profiler(self.profile_filename())
+            self._profiler.runcall(self._run_loop)
+        else:
+            if burst.options.profile_player:
+                self._profiler = Profiler(self.profile_player_filename())
+            self._run_loop()
+        if self._profiler:
+            self._profiler.close()
 
 ################################################################################
 
@@ -492,19 +518,11 @@ class SimpleMainLoop(BasicMainLoop):
 
         self.initMainObjectsAndPlayer()
 
-    def run(self):
-        """ wrap the actual run in _run to allow profiling - from the command line
-        use --profile
-        """
-        if burst.options.profile:
-            print "running via hotshot"
-            import hotshot
-            filename = "pythongrind.prof"
-            prof = hotshot.Profile(filename, lineevents=1)
-            prof.runcall(self._run_loop)
-            prof.close()
-        else:
-            self._run_loop()
+    def profile_filename(self):
+        return '%s.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
+
+    def profile_player_filename(self):
+        return '%s_player.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
 
     def _step_while_handling_exceptions(self):
         """ returns (naoqi_ok, sleep_time)
@@ -615,6 +633,12 @@ class TwistedMainLoop(BasicMainLoop):
         if startRightNow:
             self.start()
 
+    def profile_filename(self):
+        return '%s_twisted.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
+
+    def profile_player_filename(self):
+        return '%s_twisted_player.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
+
     def start(self):
         self.con.modulesDeferred.addCallback(self._twistedStart).addErrback(log.err)
         self.started = True
@@ -635,9 +659,6 @@ class TwistedMainLoop(BasicMainLoop):
         self._main_task.start(EVENT_MANAGER_DT)
 
     def _run_loop(self):
-        pass # we override run too, work is done there.
-
-    def run(self):
         if not self._control_reactor:
             print "TwistedMainLoop: not in control of reactor"
             return
