@@ -1,6 +1,4 @@
-ROBOT=192.168.7.107
-#ROBOT=192.168.7.X:
-# gerrard - 107
-# maldini - 110
-# raul - 109
-
+ROBOT=messi
+# or any of the other robots, or an ip address
+#Robots:
+# messi cech gerrard hagi raul maldini
