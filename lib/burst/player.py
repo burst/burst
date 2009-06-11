@@ -78,7 +78,7 @@ class Player(object):
         """
         self._actions.clearFootsteps()
         self._world._sentinel.enableDefaultActionSimpleClick(True)
-        self._world.leds.turnEverythingOff()
+        self._world.robot.leds.turnEverythingOff()
         # TODO: initPoseAndRelax?
 
     def onInitial(self):
