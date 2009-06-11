@@ -982,6 +982,8 @@ void Threshold::setVisualRobotInfo(VisualRobot *objPtr) {
         objPtr->setCenterX(objPtr->getX() + ROUND(objPtr->getWidth()/2));
         objPtr->setCenterY(objPtr->getY() + ROUND(objPtr->getHeight()/2));
 
+        std::cout << "Other Robot Info: " << objPtr->getCenterX() << ", " << objPtr->getCenterY() << std::endl;
+
         // find angle x/y (relative to camera)
         objPtr->setAngleX( static_cast<float>(HALF_IMAGE_WIDTH -
 											  objPtr->getCenterX() ) /
