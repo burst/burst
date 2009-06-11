@@ -14,17 +14,10 @@ from options import host_to_ip, LOCALHOST_IP
 import burst
 
 __all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
-    ,'getLedsProxy', 'getUltraSoundProxy']
+    ,'getLedsProxy', 'getUltraSoundProxy', 'getNaoCamProxy', 'getBurstMemProxy', 'getImopsProxy', 'getSentinelProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
-motionProxy = None
-speechProxy = None
-memoryProxy = None
-visionProxy = None
-dcmProxy = None
-ledsProxy = None
-ultraSoundProxy = None
 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
@@ -92,11 +85,17 @@ for getter, global_name, proxy_name in [
     ('getSpeechProxy', 'speechProxy', 'ALTextToSpeech'),
     ('getLedsProxy',   'ledsProxy',   'ALLeds'),
     ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
+    ('getSentinelProxy', 'sentinelProxy', 'ALSentinel'),
+    ('getNaoCamProxy', 'naocamProxy', 'NaoCam'),
     ('getVisionProxy', 'visionProxy', 'vision'),
     ('getDCMProxy',    'dcmProxy',    'DCM'),
-    ('getUltraSoundProxy', 'ultraSoundProxy', 'ALUltraSound')]:
+    ('getUltraSoundProxy', 'ultraSoundProxy', 'ALUltraSound'),
+    ('getBurstMemProxy', 'burstmemProxy',   'burstmem'),
+    ('getImopsProxy',    'imopsProxy',      'imops'),
+    ]:
+    globals()[global_name] = None
     globals()[getter] = once(
-        lambda deferred, proxy_name=proxy_name, global_name=global_name:
+        lambda deferred=False, proxy_name=proxy_name, global_name=global_name:
             getProxy(proxy_name, global_name, deferred))
 
 def shutdown():

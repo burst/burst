@@ -25,42 +25,39 @@ if DEBUG:
     import memory
 
 from burst_util import (succeed, Deferred, whichlib, is64,
-    is_64bit_elf)
+    is_64bit_elf, get_num_cores)
+from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
+    CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA, CAMERA_WHICH_TOP_CAMERA)
+
 
 #########################################################################
 # Constants
 
 WEBOTS_LOCALHOST_URL = "http://localhost:9560/"
 
-CAMERA_WHICH_PARAM = 18
-CAMERA_WHICH_BOTTOM_CAMERA = 1
-CAMERA_WHICH_TOP_CAMERA = 0
-
-# ALMotion.gotoBodyAngles
-INTERPOLATION_LINEAR = 0
-INTERPOLATION_SMOOTH = 1
-
 ################################################################################
 # Image Ops
 
-IMOPS_PYNAOQI_SO = 'imops_pynaoqi.so'
+IMOPS_PYNAOQI_SO = is64() and 'imops_pynaoqi_64.so' or 'imops_pynaoqi_32.so'
 
 def has_imops():
+    """ get the imops.so library, does a crude check to see if it needs makeing,
+    and if so does it """
     import ctypes
     imops_fname = whichlib(IMOPS_PYNAOQI_SO)
     HOME = os.environ['HOME']
     src_imops = '%s/src/burst/src/imops/imops.cpp' % HOME
-    bad_architecture = not imops_fname or is_64bit_elf(imops_fname) != is64()
+    bad_architecture = imops_fname and is_64bit_elf(imops_fname) != is64() or False
     if (not imops_fname or os.stat(imops_fname)[stat.ST_MTIME] < os.stat(src_imops)[stat.ST_MTIME]
         or bad_architecture):
         if bad_architecture: # force make to remake the so file
             os.system('cd %s/src/burst/src/imops; make clean' % HOME)
         # make it (either it doesn't exist, is too old, or doesn't match the architecture)
-        os.system('cd %s/src/burst/src/imops; make %s' % (HOME, IMOPS_PYNAOQI_SO))
+        os.system('cd %s/src/burst/src/imops; make pynaoqi -j %s' % (HOME, get_num_cores() + 1))
     try:
         imops = ctypes.CDLL(IMOPS_PYNAOQI_SO)
     except:
-        print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH"
+        print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH)"
         return None
     return imops
 

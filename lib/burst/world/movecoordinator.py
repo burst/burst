@@ -1,5 +1,5 @@
 import burst
-from burst_util import (BurstDeferred, DeferredList, succeed)
+from burst_util import (DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
 
 ################################################################################
@@ -35,6 +35,7 @@ class SerialPostQueue(object):
         self._world = world
         self._motion = world._motion
         self._start_time = None
+        self._make_bd = self._world.burst_deferred_maker.make
         # print stuff
         self.verbose = burst.options.verbose_movecoordinator
 
@@ -42,7 +43,7 @@ class SerialPostQueue(object):
         return len(self._posts) > 0
 
     def add(self, postid, event, duration):
-        deferred = BurstDeferred(data=postid)
+        deferred = self._make_bd(data=postid)
         # we keep for each move: postid -> (event code, deferred, start time, duration)
         if self._start_time is None:
             self._start_time = self._world.time
@@ -116,6 +117,7 @@ class MoveCoordinator(object):
 
     def __init__(self, world):
         self._world = world
+        self._make_bd = self._world.burst_deferred_maker.make
         # HACK - Add ourselves to the list of updated objects,
         # so calc_events is called. Basically until now all such objects
         # were constructed in world, but world doesn't depend on actions.
@@ -196,9 +198,9 @@ class MoveCoordinator(object):
         self._walk_posts.calc_events(events, deferreds)
 
     def _add_expected_motion_post(self, postid, event, duration):
-        deferred = BurstDeferred(data=postid)
-        self._motion_posts[postid] = Motion(event, deferred, self._world.time, duration)
-        return deferred
+        bd = self._make_bd(data=postid)
+        self._motion_posts[postid] = Motion(event, bd, self._world.time, duration)
+        return bd
 
     def _add_expected_head_post(self, postid, event, duration):
         return self._head_posts.add(postid, event, duration)
@@ -245,7 +247,7 @@ class MoveCoordinator(object):
         """
         #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
         initiated = self._add_initiated(self._world.time, kind, description, event, duration)
-        bd = BurstDeferred(None)
+        bd = self._make_bd(self)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
             self._onPostId(postid, initiated, bd))
         return bd

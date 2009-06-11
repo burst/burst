@@ -17,7 +17,7 @@ class kickTuner(Player):
     def track(self):
         print "kickTuner: TRACKING %s" % (self.count)
         self.count += 1
-        self._actions.tracker.track(self._world.ball, on_lost_callback=self.trackNextFrame)
+        self._actions.tracker.track(self._world.ball, lostCallback=self.trackNextFrame)
 
     def onBallInFrame(self):
         ball = self._world.ball

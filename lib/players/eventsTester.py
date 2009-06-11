@@ -17,8 +17,8 @@ class EventsTester(Player):
     def onStart(self):
         super(EventsTester, self).onStart()
         for attribute in dir(events):
-            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME',
-                'EVENT_BALL_BODY_INTERSECT_UPDATE', 'EVENT_LEFT_BUMPER_PRESSED', 'EVENT_RIGHT_BUMPER_PRESSED', 'EVENT_CHEST_BUTTON_PRESSED']:
+#        for attribute in ['EVENT_YGRP_POSITION_CHANGED', 'EVENT_YGLP_POSITION_CHANGED']:
+            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP']:
                 self._eventmanager.register(lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"), getattr(events, attribute[:]))
 
 

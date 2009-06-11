@@ -356,7 +356,7 @@ burstmem::updateMemoryMappedVariables()
         }
     }
     catch (AL::ALError e) {
-        std::cout << "Recorder caught ALError: " << e.toString () << std::
+        std::cout << "burstmem: caught ALError: " << e.toString () << std::
             endl;
     }
 }

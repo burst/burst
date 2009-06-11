@@ -5,8 +5,9 @@ import linecache
 import mmap
 
 import burst
+from burst_util import Deferred, chainDeferreds
 from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
-    MMAP_FILENAME, MMAP_LENGTH)
+    MMAP_FILENAME, MMAP_LENGTH, BURST_SHARED_MEMORY_VARIABLES_START_OFFSET)
 
 class SharedMemoryReader(object):
     """ read from memory mapped file and not from ALMemory proxy, which
@@ -17,43 +18,54 @@ class SharedMemoryReader(object):
     verbose = False
 
     def __init__(self, varlist):
+        """ construct a SharedMemoryReader, given a variable list (names
+        from ALMemory). Since this is done in async style, there is a deferred
+        for completion of the init called self.openDeferred which
+        can be used, i.e. self.openDeferred.addCallback(on_shm_inited)
+        """
         if not self.isMMapAvailable():
             raise Exception("Don't initialize me if there is no MMAP!")
-        self._shm_proxy = shm_proxy = burst.ALProxy(BURST_SHARED_MEMORY_PROXY_NAME)
+        self._shm_proxy = shm_proxy = burst.getBurstMemProxy(deferred=True)
+        self._var_names = varlist
+        self._fd = None
+        self._buf = None
+        self._unpack = 'f' * len(self._var_names)
+        start_offset = BURST_SHARED_MEMORY_VARIABLES_START_OFFSET
+        self._unpack_start = start_offset
+        self._unpack_end = start_offset + struct.calcsize(self._unpack)
+        self.vars = dict((k, 0.0) for k in self._var_names)
+        print "SharedMemory: asked burstmem to map %s variables" % len(self._var_names)
         # set all the names of the variables we want mapped - we don't block
         # or anything since we expect the first few frames to be eventless,
         # but this is definitely a TODO
-        shm_proxy.clearMappedVariables()
-        for i, varname in enumerate(varlist):
-            shm_proxy.addMappedVariable(i, varname)
-        print "SharedMemory: asked burstmem to map %s variables" % len(varlist)
-        d_or_num = shm_proxy.getNumberOfVariables()
-        # TODO - ugly, and untested (also - maybeDeferred?)
-        if isinstance(d_or_num, int):
-            self.reportNumberOfVariablesInBurstmem(d_or_num)
-        else:
-            d_or_num.addCallback(self.reportNumberOfVariablesInBurstmem)
-        self._var_names = varlist
-        self.vars = dict((k, 0.0) for k in self._var_names)
-        # TODO - this is slow (but still should be fast compared to ALMemory)
-        self._unpack = 'f' * len(self._var_names)
-        self._unpack_size = struct.calcsize(self._unpack)
-        self._fd = None
-        self._buf = None
+        self.openDeferred = Deferred()
+        shm_proxy.clearMappedVariables().addCallback(self._complete_init)
 
-    def reportNumberOfVariablesInBurstmem(self, num):
+    def _complete_init(self, _):
+        # TODO - this is slow but only done on init
+        map_d = chainDeferreds([lambda result, i=i, varname=varname: self._shm_proxy.addMappedVariable(i, varname)
+            for i, varname in enumerate(self._var_names)])
+        map_d.addCallback(lambda _: self._shm_proxy.getNumberOfVariables().addCallback(
+            self._reportNumberOfVariablesInBurstmem))
+        map_d.addCallback(lambda _:
+            self._shm_proxy.isMemoryMapRunning().addCallback(self._completeOpen))
+
+    def _reportNumberOfVariablesInBurstmem(self, num):
         print "SharedMemory: burstmem says it has %s variables" % num
 
-    def open(self):
-        """ start the shared memory proxy to write, and mmap to read """
-        if not self._shm_proxy.isMemoryMapRunning(): # blocking
-            self._shm_proxy.startMemoryMap()
-            assert(self._shm_proxy.isMemoryMapRunning())
+    def _completeOpen(self, mmap_running):
+        """ callback for shm_proxy.isMemoryMapRunning called by open """
+        print "SharedMemory: _completeOpen: memory mapped = %s (if True then previous session didn't close it)" % mmap_running
+        def assertMMAPRunning(is_running):
+            assert(is_running)
+        self._shm_proxy.startMemoryMap().addCallback(
+            lambda _: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning))
         if self._fd is not None: return
         data = open(MMAP_FILENAME, 'r')
         self._fd = fd = data.fileno()
         self._buf = mmap.mmap(fd, MMAP_LENGTH, mmap.MAP_SHARED | mmap.ACCESS_READ, mmap.PROT_READ)
         print "world: shared memory opened successfully"
+        self.openDeferred.callback(None)
     
     def close(self):
         if self._fd is None: return
@@ -67,7 +79,8 @@ class SharedMemoryReader(object):
         # TODO - instead of updating the dict I could just update the
         # values and only make the dict if someone explicitly wants it,
         # and give values using cached indices created in constructor.
-        values = struct.unpack(self._unpack, self._buf[:self._unpack_size])
+        if not self._buf: return
+        values = struct.unpack(self._unpack, self._buf[self._unpack_start:self._unpack_end])
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):
             self.vars[k] = v

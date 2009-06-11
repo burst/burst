@@ -8,17 +8,36 @@ TABLE=maverick/default.mtb
 
 all: install
 
+# Main Targets:
+#  robot
+#  clean
+#  
+
 Makefile.local:
 	echo Creating a brand new Makefile.local, it contains
 	echo the ip of the robot to install to, needs editing
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean
+.PHONY: burstmem recordermodule imops colortable clean webots
 
 clean:
 	rm -R src/burstmem/crossbuild
 	rm -R src/recordermodule/crossbuild
+	cd src/imops; $(MAKE) clean
+
+webots:
+	cd src/imops; $(MAKE) webots
+
+install: Makefile.local burstmem recordermodule colortable
+	rsync -avr lib root@$(ROBOT):/home/root/burst/
+
+installall: imops install
+	# TODO - each copyto is an ssh initiation, many secundas.
+	cd src/burstmem; ./copyto
+	cd src/recordermodule; ./copyto
+
+# Subtargets
 
 burstmem:
 	cd src/burstmem; ./makelocal
@@ -32,12 +51,4 @@ imops:
 colortable:
 	cp data/tables/$(TABLE) lib/etc/table.mtb
 	echo data/tables/$(TABLE) > lib/etc/whichtable.txt
-
-install: Makefile.local burstmem recordermodule colortable
-	rsync -avr lib root@$(ROBOT):/home/root/burst/
-
-installall: imops install
-	# TODO - each copyto is an ssh initiation, many secundas.
-	cd src/burstmem; ./copyto
-	cd src/recordermodule; ./copyto
 

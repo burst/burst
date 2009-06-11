@@ -73,6 +73,11 @@ X, Y, Z = 0, 1, 2
 
 # Camera / Vision constants
 
+# setting top/bottom camera
+CAMERA_WHICH_PARAM = 18
+CAMERA_WHICH_BOTTOM_CAMERA = 1
+CAMERA_WHICH_TOP_CAMERA = 0
+
 # Acceptable Centering error - normalized values (in [-1, 1])
 DEFAULT_CENTERING_X_ERROR = 0.05*3
 DEFAULT_CENTERING_Y_ERROR = 0.05*3
@@ -106,6 +111,8 @@ PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
 # Shared memory constants
 
+# burstmem starts by writing variables for the sonars
+BURST_SHARED_MEMORY_VARIABLES_START_OFFSET = 8
 MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
 MMAP_LENGTH      = 4096
 
@@ -305,10 +312,10 @@ joint_names, joint_limits = (['HeadYaw',
 
 # Color tables filenames
 WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/nao-man/tables/maverick/webots.mtb')
+                'src/burst/data/tables/maverick/webots.mtb')
 
 DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/nao-man/tables/maverick/default.mtb')
+                'src/burst/data/tables/maverick/default.mtb')
 
 # Debugging constants
 CONSOLE_LINE_LENGTH = 73

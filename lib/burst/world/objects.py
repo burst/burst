@@ -13,6 +13,7 @@ from ..events import (EVENT_BALL_IN_FRAME,
 from burst_util import running_median, RingBuffer
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
+import burst.events as events_module
 
 class Namable(object):
     def __init__(self, name='unnamed'):
@@ -98,7 +99,9 @@ class CenteredLocatable(object):
         self.y = target.y #
         # flag the sighted flag
         self.sighted = True
-        self.sighted_centered = target.centered
+        # TODO - all of these centered flags are very confused - bad naming, not
+        # clear who computed what, multiple ways to compute same thing (is Ball centered)
+        self.sighted_centered = target.centered or target.centered_at_pitch_limit
         self.update_time = self._world.time
  
 class Locatable(Namable):
@@ -315,11 +318,12 @@ class Ball(Movable):
         self.body_isect = None
         self.base_point = None
         self.base_point_index = 0
-        self.velocity = None
         self.avrYplace = None
         self.avrYplace_index = 0
         self.sumY = 0
         self.dy = 0
+        self.velocity = None
+        self.time_intersection = None
     
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
@@ -335,32 +339,23 @@ class Ball(Movable):
         ERROR_VAL_Y = 0
         NUM_OF_POINTS = 10
         
-        #vars for least mean squares
-        sumX = 0
-        sumXY = 0
-        sumY = 0
-        sumSqrX = 0
-        sumXT = 0
-        sumT = 0
-        sumSqrT = 0
-        
         if self.history[0] != None:
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
                                    , self.history[0][DIST] * sin(self.history[0][BEARING])]
-                self.base_point_index = 1
-                last_point = self.base_point
-                sumX += last_point[X]
-                sumXY += last_point[X] * last_point[Y]
-                sumY += last_point[Y]
-                sumSqrX +=  last_point[X] * last_point[X]
-                sumT += 0 # T0= 0 #last_point[T]
-                sumXT += last_point[X] * last_point[T]
-                sumSqrT += last_point[T] * last_point[T]
-            else:
-                last_point = self.base_point
         else:
             return False
+        
+        #vars for least mean squares
+        self.base_point_index = 1
+        last_point = self.base_point
+        sumX = last_point[X]
+        sumXY = last_point[X] * last_point[Y]
+        sumY = last_point[Y]
+        sumSqrX =  last_point[X] * last_point[X]
+        sumT = 0 # T0= 0 
+        sumXT = last_point[X] * 0 # T0= 0
+        sumSqrT = 0 * 0 # T0= 0
         
         n = 1
         for point in self.history:
@@ -384,30 +379,50 @@ class Ball(Movable):
                 sumY += cor_point[Y]
                 sumSqrX +=  cor_point[X] * cor_point[X]
                 sumT += cor_point[T] - last_point[T]
-                sumXT += cor_point[X] * cor_point[T]
-                sumSqrT += cor_point[T] * cor_point[T]
+                sumXT += cor_point[X] * (cor_point[T] - last_point[T])
+                sumSqrT += (cor_point[T] - last_point[T]) * (cor_point[T] - last_point[T])
                 
                 last_point = cor_point
                 n += 1
             else:
-                if (n-1) < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
+                if n < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
         
-        n = (n-1) - self.base_point_index #real number of valid points
+        n = n - self.base_point_index #real number of valid points
         
         
-        if (n-1) >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
+        if n >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
-            if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
+            if fabs((sumY * sumY) - (n * sumSqrX))  >  ERROR_VAL_X: 
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
-        
-            if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
-                self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
-                time_of_arrival = last_point[X] / self.velocity
+                slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX)) 
             
-            #print "ball intersection with body: " , self.body_isect, "    ball velocity:", self.velocity
-            #print "time of arrival:", time_of_arrival
+            #calc time for intersection: when x(t) the slop is v. using least mean squares - don't work good
+            #if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
+            #    self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
+            #    self.time_intersection = -last_point[X] / self.velocity 
+            #    print "velocity: ", self.velocity
+            #    print "time for intersection: ", self.time_intersection
+            
+                #calc time for intersection:
+                #finding the x coordinate of two point on the regression line
+                if slop != 0:
+                    slop2 = -1/slop
+                    n_last_point = last_point[Y] - slop2 * last_point [X]
+                    n_base_point = self.base_point[Y] - slop2 * self.base_point[X]
+                    if (slop - slop2) != 0:
+                        x_last_point = (n_last_point - self.body_isect) / (slop - slop2)
+                        x_base_point = (n_base_point - self.body_isect) / (slop - slop2)
+                        dx1 = x_last_point - x_base_point
+                        dt1 = last_point [T] - self.base_point[T]
+                        if dt1 != 0 and dx1 != 0:
+                            self.velocity = dx1/dt1
+                            dx2 = 0 - last_point[X]
+                            self.time_intersection = dx2/self.velocity
+                            #print "velocity: ", self.velocity
+                            #print "time for intersection: ", self.time_intersection
+            
             return True
         if self.history[0] != None:
             self.base_point_index -= 1
@@ -520,6 +535,7 @@ class GoalPost(Locatable):
         # calculate events
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
         if new_seen:
+            events.add(getattr(events_module, "EVENT_"+self._name+"_IN_FRAME"))
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):

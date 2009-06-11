@@ -52,6 +52,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
     parser.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
     parser.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
+    parser.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
     parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
     parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')

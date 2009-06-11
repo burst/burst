@@ -79,7 +79,7 @@ Threshold::Threshold(Vision* vis, shared_ptr<NaoPose> posPtr)
 # if ! defined OFFLINE
     initTable("/home/root/burst/lib/etc/table.mtb");
 # else
-    std::string table_path = std::string(getenv("HOME")) + "/" + "src/nao-man/install/etc/table.mtb";
+    std::string table_path = std::string(getenv("HOME")) + "/" + "src/burst/data/tables/maverick/webots.mtb";
     initTable(table_path.c_str());
 #endif // OFFLINE
     // Set up object recognition object pointers
@@ -981,6 +981,8 @@ void Threshold::setVisualRobotInfo(VisualRobot *objPtr) {
         // set center x,y
         objPtr->setCenterX(objPtr->getX() + ROUND(objPtr->getWidth()/2));
         objPtr->setCenterY(objPtr->getY() + ROUND(objPtr->getHeight()/2));
+
+        std::cout << "Other Robot Info: " << objPtr->getCenterX() << ", " << objPtr->getCenterY() << std::endl;
 
         // find angle x/y (relative to camera)
         objPtr->setAngleX( static_cast<float>(HALF_IMAGE_WIDTH -

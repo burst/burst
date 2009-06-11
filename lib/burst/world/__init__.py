@@ -22,6 +22,9 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
 from ..sensing import FalldownDetector
 from burst_util import running_average, LogCalls
 
+from burst.deferreds import BurstDeferredMaker
+import burst.field as field
+
 from sharedmemory import *
 from objects import Ball, GoalPost
 from robot import Robot
@@ -32,7 +35,6 @@ from localization import Localization
 from movecoordinator import MoveCoordinator
 from kinematics import Pose
 from odometry import Odometry
-import burst.field as field
 
 # TODO: Shouldn't require adding something to the path at any point
 # after player_init
@@ -107,18 +109,25 @@ class World(object):
             callWrapper = lambda name, obj: (obj and LogCalls(name, obj) or obj)
         else:
             callWrapper = lambda name, obj: obj
+
         self._memory = callWrapper("ALMemory", burst.getMemoryProxy(deferred=True))
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
+        self._sentinel = callWrapper("ALSentinel", burst.getSentinelProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
+        self._naocam = callWrapper("NaoCam", burst.getNaoCamProxy(deferred=True))
         self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
+        self._imops = callWrapper("imops", burst.getImopsProxy(deferred=True))
+
         if burst.options.run_ultrasound:
             self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
         self._events = set()
         self._deferreds = []
-        
+
+        self.burst_deferred_maker = BurstDeferredMaker()
+
         # This makes sure stuff actually works if nothing is being updated on the nao.
         self._default_proxied_variable_value = 0.0
-        
+
         # We do memory.getListData once per self.update, in one go.
         # later when this is done with shared memory, it will be changed here.
         # initialize these before initializing objects that use them (Ball etc.)
@@ -129,7 +138,7 @@ class World(object):
         self.addMemoryVars(default_vars)
         self._shm = None
 
-        self.time = time()
+        self.time = 0.0
         self.start_time = self.time     # construction time
 
         # Variables for body joint angles from dcm
@@ -167,7 +176,7 @@ class World(object):
         self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED, yglp_x, yglp_y)
         self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED, ygrp_x, ygrp_y)
         # TODO - other robots
-        # Buttons, Leds (TODO: ultrasound, 
+        # Buttons, Leds (TODO: ultrasound,
         self.robot = Robot(self)
         self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a
@@ -214,7 +223,8 @@ class World(object):
             # anything that relies on basics but nothing else should go next
             [self],
             # self.computed should always be last
-            [self.computed, self.localization],
+            [self.localization],
+            [self.computed],
         ]
 
         # logging variables
@@ -233,13 +243,16 @@ class World(object):
                 if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
                     self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
                 self._shm = SharedMemoryReader(self._vars_to_get_list)
-                self._shm.open()
-                self.vars = self._shm.vars
-                self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+                self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
+                self._shm.openDeferred.addCallback(self._switchToSharedMemory)
         if self._shm is None:
             print "world: using ALMemory"
 
         self.checkManModule()
+
+    def _switchToSharedMemory(self, _):
+        self.vars = self._shm.vars
+        self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
 
     def getRecorderVariableNames(self):
         joints = self.jointnames
@@ -292,7 +305,13 @@ class World(object):
 
     def getSpeechProxy(self):
         return self._speech
-    
+
+    def getNaoCamProxy(self):
+        return self._naocam
+
+    def getImopsProxy(self):
+        return self._imops
+
     def getDefaultVars(self):
         """ return list of variables we want anyway, regardless of what
         the objects we use want. This currently includes:
@@ -318,11 +337,11 @@ class World(object):
         return self.vars[self._getAnglesMap[jointname]]
 
     def getBodyAngles(self):
-        # TODO - OPTIMIZE? 
+        # TODO - OPTIMIZE?
         return self.getVars(self._body_angles_vars)
 
     def getInclinationAngles(self):
-        # TODO - OPTIMIZE? 
+        # TODO - OPTIMIZE?
         return self.getVars(self._inclination_vars)
 
     # accessors that wrap ALMotion
@@ -389,6 +408,9 @@ class World(object):
             return [self.vars.get(k, None) for k in vars]
         return [self.vars[k] for k in vars]
 
+    def _updateMemoryVariables_noop(self):
+        pass
+
     def _updateMemoryVariablesFromSharedMem(self):
         self._shm.update()
 
@@ -411,7 +433,7 @@ class World(object):
     # Callbacks
 
     def collectNewUpdates(self, cur_time):
-        self.time = cur_time
+        self.time = cur_time - self.start_time
         self._updateMemoryVariables() # must be first in update
         self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)
@@ -448,7 +470,7 @@ class World(object):
         for obj, (fd, writer) in self._logged_objects:
             fd.close()
 
-    # record robot state 
+    # record robot state
     def startRecordAll(self, filename):
         import csv
         import gzip
@@ -459,7 +481,7 @@ class World(object):
         self._record_csv = csv.writer(self._record_file)
         self._record_csv.writerow(self._recorded_header)
         self._record_line_num = 0
-    
+
     def _doRecord(self):
         if not self._record_csv: return
         # actuators and sensors for all dcm values

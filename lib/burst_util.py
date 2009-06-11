@@ -133,9 +133,9 @@ class MyDeferredList(MyDeferred):
         if self._count <= 0:
             self.callback(self._results)
 
-def wrapDeferredWithBurstDeferred(d):
+def wrapDeferredWithBurstDeferred(d, data=None):
     """ call with no parameters - the only use case so far """
-    bd = BurstDeferred(None)
+    bd = BurstDeferred(data)
     d.addCallback(lambda result: bd.callOnDone())
     return bd
 
@@ -143,6 +143,7 @@ try:
     # use the real thing if it is there
     from twisted.internet.defer import Deferred, DeferredList
 except:
+    print "WARNING: USING MyDeferred instead of t.i.d.Deferred"
     Deferred = MyDeferred
     DeferredList = MyDeferredList
 
@@ -169,19 +170,27 @@ class BurstDeferred(object):
     Normal Help:
 
         A Deferred is a promise to call you when some operation is complete.
-    It is also concatenatable. What that means for implementation, is that
-    when the operation is done we need to call a deferred we stored and gave
-    the user when he gave us a callback. That deferred #TODO: Finish that sentence, Alon.
+    It is also concatenatable. That means that you can have actions serially
+    executed by chaining, like this:
+     >>> bd = BurstDeferred(None)
+     >>> bd.onDone(somefunc).onDone(otherfunc)
+
+    This would cause this chain of events:
+     |      bd.callOnDone
+     |       somefunc -> bd2
+     |      bd2.callOnDone
+     V       otherfunc
+     Time
+
+    Note that this is almost the same as this:
+     >>> bd = BurstDeferred(None)
+     >>> bd.onDone(lambda: somefunc().onDone(otherfunc))
 
     Twisted users:
 
         Sort of like Deferred, only geared towards chainable deferreds, which
-    is the only use case right now.  So basically you are expected to
-    return from onDone a new BurstDeferred that will be called when the
-    argument of onDone actually finishes.
-
-    Another possible utility from this being a seperate class: We can
-    trace it and not worry about tracing low level stuff.
+    is the only use case right now.  So basically we return a BD2 from onDone(func),
+    and func is expected to return a BD3 which is then chained to the former BD2.
     """
 
     def __init__(self, data, parent=None):
@@ -189,6 +198,12 @@ class BurstDeferred(object):
         self._ondone = None
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
+    
+    def clear(self):
+        if self._ondone is not None:
+            # recursively clear all child deferreds
+            self._ondone[1].clear()
+            self._ondone = None
     
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
@@ -207,6 +222,7 @@ class BurstDeferred(object):
         self._completed = True
         if self._ondone:
             cb, chain_deferred = self._ondone
+            self._ondone = None # zero the callback - don't call twice
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:
@@ -580,6 +596,12 @@ def compresstoprint(s, first, last):
 
 # Operating System utilities
 
+def get_num_cores():
+    ret = 1
+    with open('/proc/cpuinfo') as fd:
+        ret = len([x for x in fd.readlines() if x.startswith('processor')])
+    return ret
+
 def get_first_available_tcp_port(start_number, host='127.0.0.1'):
     number = start_number
     s = socket.socket()
@@ -636,6 +658,11 @@ def set_robot_ip_from_argv():
                 return
 
 # Python language util
+
+def func_name(f_or_m):
+    if hasattr(f_or_m, 'im_func'):
+        return f_or_m.im_func.func_name
+    return f_or_m.func_name
 
 def pairit(n):
     return [n[i:i+2] for i in xrange(0,len(n),2)]
@@ -707,7 +734,7 @@ def which(fname, realpath=True):
 
 def whichlib(fname, realpath=True):
     default_dirs = LD_DEFAULT_PATHS
-    all_dirs = default_dirs + os.environ['LD_LIBRARY_PATH'].split(':')
+    all_dirs = default_dirs + os.environ.get('LD_LIBRARY_PATH','').split(':')
     return find_in_paths(all_dirs, fname, realpath=realpath)
 
 # Northern Bites specific, but still standalone

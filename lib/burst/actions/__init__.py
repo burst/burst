@@ -2,8 +2,7 @@ from math import atan2
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
-    BurstDeferred, Deferred, DeferredList, chainDeferreds,
-    wrapDeferredWithBurstDeferred)
+    Deferred, DeferredList, chainDeferreds)
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
@@ -40,14 +39,20 @@ class Actions(object):
     def __init__(self, eventmanager):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
+        self.burst_deferred_maker = self._world.burst_deferred_maker
+        self._make = self.burst_deferred_maker.make
+        self._wrap = self.burst_deferred_maker.wrap
+
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
+        self._naocam = world.getNaoCamProxy()
+        self._imops = world.getImopsProxy()
+
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
-
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
@@ -92,23 +97,29 @@ class Actions(object):
         passingChallange.start()
         return passingChallange
 
-    def track(self, target, on_lost_callback=None):
+    def track(self, target, lostCallback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
         if not self.searcher.stopped():
             raise Exception("Can't start tracking while searching")
-        self.tracker.track(target, on_lost_callback=on_lost_callback)
+        self.tracker.track(target, lostCallback=lostCallback)
 
-    def search(self, targets, center_on_targets=True):
+    def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
-        return self.searcher.search(targets)
+        if stop_on_first:
+            return self.searcher.search_one_of(targets, center_on_targets)
+        else:
+            return self.searcher.search(targets, center_on_targets)
 
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
         return self.tracker.executeTracking(target,
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
+
+    def localize(self):
+        return self.search([self._world.yglp, self._world.ygrp])
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
@@ -210,16 +221,16 @@ class Actions(object):
             description=('sideway', delta_x, delta_y, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def initPoseAndStiffness(self):
+    def initPoseAndStiffness(self, pose=moves.INITIAL_POS):
         """ Sets stiffness, then sets initial position for body and head.
         Returns a BurstDeferred.
         """
         # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
-        bd = BurstDeferred(None)
+        bd = self._make(self)
         def doMove(_):
             DeferredList([
                 #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
-                self.executeMove(moves.INITIAL_POS).getDeferred()
+                self.executeMove(pose).getDeferred()
             ]).addCallback(lambda _: bd.callOnDone())
         self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
@@ -227,22 +238,19 @@ class Actions(object):
         return bd
     
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        return wrapDeferredWithBurstDeferred(self.sitPoseAndRelax_returnDeferred())
+        return self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
 
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
         def removeStiffness(_):
             if burst.options.debug:
                 print "sitPoseAndRelax: removing body stiffness"
-            d = self._motion.setBodyStiffness(0)
-            self._removeStiffnessDeferred = d   # XXX DEBUG Helper
-            return d
-        dgens.append(lambda _: self.clearFootsteps())
+            return self._motion.setBodyStiffness(0)
+        dgens.append(lambda _: self._clearFootsteps_returnDeferred())
         #dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
         dgens.append(lambda _: self.executeMove(moves.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
-        self._sitpose_deferred = chainDeferreds(dgens) # XXX DEBUG Helper
-        return self._sitpose_deferred
+        return chainDeferreds(dgens)
      
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
@@ -278,10 +286,27 @@ class Actions(object):
     #    Low Level
     #===============================================================================
     
+    def setCamera(self, whichCamera):
+        """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
+        and CAMERA_WHICH_TOP_CAMERA """
+        bd = self._make(self)
+        self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
+            lambda _: bd.callOnDone())
+        return bd
+
+    def setCameraFrameRate(self, fps):
+        bd = self._make(self)
+        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
+        return bd
+
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
         #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
-        return self.executeHeadMove( (((self._world.getAngle("HeadYaw")+delta_yaw,
-                                        self._world.getAngle("HeadPitch")+delta_pitch),interp_time),) )
+        cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
+        yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
+        if burst.options.debug:
+            print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
+                cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
+        return self.executeHeadMove( (((yaw, pitch),interp_time),) )
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
@@ -307,14 +332,7 @@ class Actions(object):
         return bd
 
     def getSpeedFromDistance(self,kick_dist):
-        power=self.getMax(0.62 * pow(kick_dist,-0.4) , 0.18)
-        return power
-
-    def getMax(self,exp1,exp2):
-        if exp1 < exp2:
-            return exp1
-        else:
-            return exp2
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
     def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
         if kick_leg==LEFT:
@@ -412,8 +430,16 @@ class Actions(object):
             description=description,
             kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
-    def clearFootsteps(self):
+    def _clearFootsteps_returnDeferred(self):
         return self._motion.clearFootsteps()
+
+    def clearFootsteps(self):
+        return self._wrap(self._motion.clearFootsteps(), data=self)
+#        def debugme(result):
+#            import pdb; pdb.set_trace()
+#        d = self._motion.clearFootsteps()
+#        d.addCallback(debugme)
+#        return self._wrap(d, data=self)
 
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within

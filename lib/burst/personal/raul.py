@@ -19,8 +19,9 @@ walks.SIT_POS[2] = 10
 
 import burst
 
+
 import burst.moves.walks as walks
-walks.STRAIGHT_WALK.defaultSpeed = 90
+walks.STRAIGHT_WALK.defaultSpeed = 100
 walks.SIDESTEP_WALK.defaultSpeed = 22 # 20 seems just fine
 
 

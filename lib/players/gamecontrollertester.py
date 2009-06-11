@@ -31,7 +31,4 @@ if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
     mainloop = MainLoop(GameControllerTester)
-#    mainloop.setCtrlCCallback(moduleCleanup)
     mainloop.run()
-    #burst.getMotionProxy().getRemainingFootStepCount()
-

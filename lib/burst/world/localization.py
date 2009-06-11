@@ -8,6 +8,7 @@ from burst_util import nicefloat
 from burst_consts import RAD_TO_DEG
 
 import burst
+from burst.events import EVENT_WORLD_LOCATION_UPDATED
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
     CROSSBAR_CM_WIDTH)
 from burst.position import xyt_from_two_dist_one_angle
@@ -59,7 +60,7 @@ class Localization(object):
         #            top_c.normalized2_centerX, top_c.normalized2_centerY
         #        )
         for obj, other_obj in ((bottom, top), (top, bottom)):
-            if obj.seen and obj.centered_at_pitch_limit:
+            if obj.seen and obj.centered_at_pitch_limit or obj.centered:
                 if self.verbose:
                     o_centered = other_obj.centered_self
                     other = (o_centered.sighted_centered and
@@ -91,6 +92,7 @@ class Localization(object):
             if self.verbose:
                 print "Localization: UPDATE SELF POSITION"
             self.updateRobotPosition()
+            events.add(EVENT_WORLD_LOCATION_UPDATED)
         
         #seeing blue goal - yellow is unseen
         if self._world.bglp.seen and self._world.bgrp.seen:
@@ -122,6 +124,9 @@ class Localization(object):
         p0 = top.xy
         p1 = bottom.xy
         # TODO - use all dists, compare
+        if not hasattr(top, 'my_dist') or not hasattr(bottom, 'my_dist'):
+            print "BUG ALERT: we should have my_dist updated at this point."
+            return
         r1, r2, a1 = (top.my_dist, bottom.my_dist, top.bearing)
         # compute distance using r_avg and angle - note that it is not correct
         if abs(r1 - r2) > 2*d:

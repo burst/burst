@@ -19,7 +19,7 @@ from burst_numpy_util import (sin, cos, zeros,
     vector4D)
 
 from burst_util import nicefloats, DeferredList, grid_points
-from burst_consts import HEAD_PITCH_JOINT_INDEX
+from burst_consts import HEAD_PITCH_JOINT_INDEX, INFTY
 
 from burst import options, field
 from burst_consts import *
@@ -681,6 +681,7 @@ class Pose(object):
         Return the distance to the object based on the image magnification of its
         height
         """
+        if not pixHeight: return INFTY
         return (FOCAL_LENGTH_MM / (pixHeight * PIX_Y_TO_MM)) * cmHeight
 
     def pixWidthToDistance(self, pixWidth, cmWidth):
@@ -688,6 +689,7 @@ class Pose(object):
         Return the distance to the object based on the image magnification of its
         height
         """
+        if not pixWidth: return INFTY
         return (FOCAL_LENGTH_MM / (pixWidth * PIX_X_TO_MM)) * cmWidth
 
 def correctDistance(uncorrectedDist):

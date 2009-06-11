@@ -5,6 +5,8 @@ import glob
 import os
 import ctypes
 
+import Image
+
 import gtk, goocanvas
 
 from twisted.internet.defer import Deferred, succeed
@@ -416,6 +418,9 @@ class VideoWindow(TaskBaseWindow):
 
     def _load_table(self, attr_name, table_name):
         if not hasattr(self, attr_name):
+            if not os.path.exists(table_name):
+                print "WARNING: missing color table %s" % table_name
+                return
             with open(table_name) as fd:
                 setattr(self, attr_name, fd.read())
 
@@ -485,6 +490,11 @@ class VideoWindow(TaskBaseWindow):
             yuv = self._yuv, version=0, joints = [0.0]*26, sensors = [0.0]*22)
         self._frame_count += 1
         
+    def save_as(self, filename):
+        """ save rgb using Imaging module """
+        width, height = self._yuv_size
+        image = Image.fromstring('RGB', (width, height), self._rgb)
+        image.save(filename)
 
     # Initialization
 

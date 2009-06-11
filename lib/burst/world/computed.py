@@ -1,5 +1,6 @@
 from math import cos, sin, sqrt, atan2
 from ..events import EVENT_BALL_IN_FRAME #EVENT_KP_CHANGED
+import burst.events as events_module
 
 class Computed(object):
     """ place holder for any computed value, currently just the kicking point, that
@@ -9,13 +10,35 @@ class Computed(object):
     def __init__(self, world):
         self._world = world
         self._team = world.team
+        self._blueGoalSeen = False
+        self._yellowGoalSeen = False
 
     def calc_events(self, events, deferreds):
         """
         we calculate:
-          Nothing (was kick point, see calc_kicking_point)
+          1. Whether we fully see either of the goals.
+          2. LOG OF EVENTS LONG PAST: Nothing (was kick point, see calc_kicking_point)
         """
-        pass
+        # Blue goal:
+        if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
+            events.add(events_module.EVENT_ALL_BLUE_IN_FRAME)
+            if not self._blueGoalSeen:
+                events.add(events_module.EVENT_ALL_BLUE_GOAL_SEEN)
+                self._blueGoalSeen = True
+        else:
+            if self._blueGoalSeen:
+                events.add(events_module.EVENT_ALL_BLUE_GOAL_LOST)
+            self._blueGoalSeen = False
+        # Yellow goal:
+        if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
+            events.add(events_module.EVENT_ALL_YELLOW_IN_FRAME)
+            if not self._yellowGoalSeen:
+                events.add(events_module.EVENT_ALL_YELLOW_GOAL_SEEN)
+                self._yellowGoalSeen = True
+        else:
+            if self._yellowGoalSeen:
+                events.add(events_module.EVENT_ALL_YELLOW_GOAL_LOST)
+            self._yellowGoalSeen = False
 
     def calc_kicking_point(self, events, deferreds):
         """
