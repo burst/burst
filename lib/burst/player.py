@@ -10,6 +10,14 @@ Now, if one doesn't wish for this behaviour to take place, one can just override
 call super's onStart. This way, one's robot moves on directly to the player's actual behaviour - which is more convenient for testing purposes.
 When one wishes to make a player into a game-worthy player - the kind that is subject to configuration prior to entering the game - all one
 has to do is rename one's onStart to enterGame, et voila.
+
+Callbacks in Player that are called externally:
+ onStart - when the player has been constructed. Not meant to be used
+           during the game except by the Player class itself.
+ onConfigured - after the robot knows it's team and number. This is what the inheritor
+           should reimplement, while remembering to call the super.
+ onStop  - called right before shutdown of process, to let Player clean things up.
+           implemented in Player and can be overridden (again, remember to super).
 '''
 
 from events import *
