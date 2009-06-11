@@ -267,9 +267,10 @@ class EventManager(object):
         num_call_laters = len(call_laters_this_frame)  
         num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
         if num_cbs_in_round > 1:
-            print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
-                num_cbs_in_round, num_deferreds, num_events, num_time_step,
-                num_call_laters)
+            if self.verbose:
+                print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
+                    num_cbs_in_round, num_deferreds, num_events, num_time_step,
+                    num_call_laters)
 
         # Handle regular events - we keep a copy of the current
         # cb's for all events to make sure there is no loop.
