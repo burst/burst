@@ -199,6 +199,9 @@ class BurstDeferred(object):
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
     
+    def clear(self):
+        self._ondone = None
+    
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
         If it is already complete then it will be called right away. 

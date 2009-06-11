@@ -12,16 +12,21 @@ class GoalAlignerTester(Player):
 
     def onStart(self):
         self._actions.initPoseAndStiffness()
-        self.targets=[self._world.yglp, self._world.ygrp]
+        self.goalposts = [self._world.yglp, self._world.ygrp]
         self.movement_deferred = None
+        self.searchGoalPosts()
+        
+    def searchGoalPosts(self):
+        self._actions.tracker.stop()
+        self.goalpost_to_track = None
         self._actions.setCameraFrameRate(20)
-        self._actions.search(self.targets, stop_on_first=True, center_on_targets=True).onDone(self.onFound)
+        self._actions.search(self.goalposts, stop_on_first=True, center_on_targets=False).onDone(self.onGoalPostFound)
 
-    def onFound(self):
+    def onGoalPostFound(self):
         print "Search finished"
         
-        self.goalpost_to_track = None
-        for t in self.targets:
+        # select a sighted goal post
+        for t in self.goalposts:
             if t.centered_self.sighted:
                 if t.centered_self.sighted_centered:
                     print "%s sighted centered" % t._name
@@ -29,7 +34,7 @@ class GoalAlignerTester(Player):
                 else:
                     print "%s sighted" % t._name
                     # update goalpost_to_track, but only if not already set (as to not override sighted_centered) 
-                    if not self.goalpost_to_track is None:
+                    if self.goalpost_to_track is None:
                         self.goalpost_to_track = t
             else:
                 print "%s NOT sighted" % t._name
@@ -41,16 +46,20 @@ class GoalAlignerTester(Player):
             # track goal post, align against it
             self.goalLocationKnown = True
             self._actions.setCameraFrameRate(20)
-            self._actions.tracker.track(self.goalpost_to_track, self.onLostGoal)
-            self.strafe()
+            
+            print "manually centering on goal post (from search goal results)"
+            self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchCenteringDone)
+
+    def onSearchCenteringDone(self):
+        self._actions.track(self.goalpost_to_track, self.onLostGoal)
+        self.strafe()
 
     def onLostGoal(self):
         print "GOAL LOST, clearing footsteps, stopping strafing"
         self.goalLocationKnown = False
         if self.movement_deferred != None:
-            self._actions.clearFootsteps().onDone(self.movement_deferred.callOnDone)
-        else:
-            self.strafe()
+            self.movement_deferred.clear()
+        self._actions.clearFootsteps().onDone(self.searchGoalPosts)
     
     def strafe(self):
         print "strafing"
@@ -82,9 +91,14 @@ class GoalAlignerTester(Player):
                 self._eventmanager.quit()
         else:
             print "Goalpost lost, restart search"
-            self._actions.tracker.stop()
-            self._actions.setCameraFrameRate(20)
-            self._actions.search(self.targets, stop_on_first=True, center_on_targets=True).onDone(self.onFound)
+            self.searchGoalPosts()
+
+    def manualCentering(self, centeredTarget, onDoneCallback):
+        print "XXX Moving towards and centering on target - (%1.2f, %1.2f, %1.2f, %1.2f)" % (centeredTarget.head_yaw, centeredTarget.head_pitch, centeredTarget.centerX, centeredTarget.centerY)
+        a1 = centeredTarget.head_yaw, centeredTarget.head_pitch
+        a2 = (a1[0] - PIX_TO_RAD_X * (centeredTarget.centerX - IMAGE_CENTER_X),
+              a1[1] + PIX_TO_RAD_Y * (centeredTarget.centerY - IMAGE_CENTER_Y))
+        self._actions.moveHead(*a2).onDone(onDoneCallback)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
