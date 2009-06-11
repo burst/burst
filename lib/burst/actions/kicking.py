@@ -90,15 +90,20 @@ class BallKicker(BurstDeferred):
         #self._actions.tracker.stop() # needed???
         self.debugPrint("Starting ball search")
         self._actions.setCameraFrameRate(20)
-        self._actions.search([self._world.ball]).onDone(self.onSearchBallOver)
+        self._actions.search([self._world.ball], center_on_targets=False).onDone(self.onSearchBallOver)
 
     def onSearchBallOver(self):
         # Ball found, track it
         self.debugPrint("onSearchBallOver")
-        self._actions.setCameraFrameRate(20)
         self.ballLocationKnown = True
+        print "manually centering on goal post (from search goal results)"
+        self.manualCentering(self._world.ball.centered_self).onDone(self.onSearchBallCenteringDone)
+        
+    def onSearchBallCenteringDone(self):
+        self.debugPrint("onSearchBallCenteringDone")
         self._actions.track(self._world.ball, self.onLostBall)
         self.doNextAction()
+
 
     def onLostBall(self):
         self.debugPrint("BALL LOST, clearing footsteps")
