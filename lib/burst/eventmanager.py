@@ -241,6 +241,34 @@ class EventManager(object):
         events, deferreds = self._world.getEventsAndDeferreds()
         deferreds = list(deferreds) # make copy, avoid endless loop
 
+        # call later part 1 - find out which are called this round.
+        cur_call_later = self._call_later
+        self._call_later = [] # new heap for anything created by the callbacks themselves,
+                              # avoid endless loops.
+        call_laters_this_frame = []
+        while len(cur_call_later) > 0:
+            next_time = cur_call_later[0][0]
+            if self.verbose:
+                print "EventManager: we have some callLaters"
+            if next_time <= self._world.time:
+                next_time, cb, args, kw = heappop(cur_call_later)
+                call_laters_this_frame.append(cb)
+            else:
+                break # VERY IMPORTANT..
+
+
+        # Warn user on the tricky cases - when more then one cb happens
+        # in a single frame
+        num_deferreds = len(deferreds)
+        num_events = sum(len(self._events[event]) for event in events)
+        num_time_step = len(self._events[EVENT_STEP])
+        num_call_laters = len(call_laters_this_frame)  
+        num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
+        if num_cbs_in_round > 1:
+            print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
+                num_cbs_in_round, num_deferreds, num_events, num_time_step,
+                num_call_laters)
+
         # Handle regular events - we keep a copy of the current
         # cb's for all events to make sure there is no loop.
         loop_event_cb = [(event, list(self._events[event])) for event in events]
@@ -257,21 +285,12 @@ class EventManager(object):
             elif self.verbose:
                 print "EventManager: %s removed by prior during step" % cb
 
-        # Handle call later's
-        cur_call_later = self._call_later
-        self._call_later = [] # new heap for anything created by the callbacks themselves,
-                              # avoid endless loops.
-        while len(cur_call_later) > 0:
-            next_time = cur_call_later[0][0]
+        # Handle call later's (we counted before, now we run and merge)
+        for cb in call_laters_this_frame:
             if self.verbose:
-                print "EventManager: we have some callLaters"
-            if next_time <= self._world.time:
-                next_time, cb, args, kw = heappop(cur_call_later)
-                if self.verbose:
-                    print "EventManager: calling callLater callback"
-                cb(*args, **kw)
-            else:
-                break # VERY IMPORTANT..
+                print "EventManager: calling callLater callback"
+            cb(*args, **kw)
+
         # now merge the new with the old
         if len(self._call_later) > 0:
             if self.verbose:

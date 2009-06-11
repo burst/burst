@@ -200,7 +200,10 @@ class BurstDeferred(object):
         self._parent = parent # DEBUG only
     
     def clear(self):
-        self._ondone = None
+        if self._ondone is not None:
+            # recursively clear all child deferreds
+            self._ondone[1].clear()
+            self._ondone = None
     
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.

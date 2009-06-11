@@ -179,7 +179,7 @@ class BallKicker(BurstDeferred):
         self._actions.search(self.goalposts, stop_on_first=True, center_on_targets=False).onDone(self.onGoalPostFound)
     
     def onGoalPostFound(self):
-        self.debugPrint("onSearchResults")
+        self.debugPrint("onGoalPostFound")
         
         # Determine which goalpost was seen
         self.goalpost_to_track = None
@@ -220,14 +220,23 @@ class BallKicker(BurstDeferred):
 
     def onSearchCenteringDone(self):
         self._actions.track(self.goalpost_to_track, self.onLostGoal)
-        self.strafe()
+        # if we lost the goal post don't start strafing
+        if not self._actions.tracker.stopped():
+            self.debugPrint("Kicking: onSearchCenteringDone: starting strafe")
+            self.strafe()
         
     def onLostGoal(self):
-        self.debugPrint("GOAL LOST, clearing footsteps, stopping strafing")
+        self.debugPrint("Kicking: onLostGoal: GOAL POST LOST, clearing footsteps, stopping strafing")
         self.goalLocationKnown = False
         if self.movement_deferred != None:
+            self.debugPrint("movement_deferred != None, clearing it")
             self.movement_deferred.clear()
+        self.debugPrint("Kicking: onLostGoal: restart goal post search")
         self._actions.clearFootsteps().onDone(self.searchGoalPosts)
+    
+    def _nextMovement(self, bd):
+        self._movement_deferred = bd
+        return bd
     
     def strafe(self):
         self.debugPrint("strafing")
@@ -236,19 +245,15 @@ class BallKicker(BurstDeferred):
             if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
-                    self.movement_deferred = self._actions.turn(-0.2)
-                    self.movement_deferred.onDone(self.strafe)
+                    self._nextMovement(self._actions.turn(-0.2)).onDone(self.strafe)
                 else:
-                    self.movement_deferred = self._actions.executeTurnCW()
-                    self.movement_deferred.onDone(self.strafe)
+                    self._nextMovement(self._actions.executeTurnCW()).onDone(self.strafe)
             elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
-                    self.movement_deferred = self._actions.turn(0.2)
-                    self.movement_deferred.onDone(self.strafe)
+                    self._nextMovement(self._actions.turn(0.2)).onDone(self.strafe)
                 else:
-                    self.movement_deferred = self._actions.executeTurnCCW()
-                    self.movement_deferred.onDone(self.strafe)
+                    self._nextMovement(self._actions.executeTurnCCW()).onDone(self.strafe)
             else:
                 self.debugPrint("Aligned position reached! (starting ball search)")
                 self._actions.tracker.stop()
@@ -257,7 +262,7 @@ class BallKicker(BurstDeferred):
                 self._actions.setCameraFrameRate(20)
                 self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
         else:
-            self.debugPrint("Goalpost lost, restart search")
+            self.debugPrint("Kicking: strafe: restart goal post search")
             self.searchGoalPosts()
 
     def manualCentering(self, centeredTarget, onDoneCallback):
