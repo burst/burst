@@ -71,7 +71,7 @@ if using_gtk:
 
     from pynaoqi.gui import Joints
 
-def watch(names):
+def watch(names, dt=1.0):
     """ watch multiple variables. For instance:
     l = refilter('Ball.*((dist)|(bearing))', names)
     watch(*l)
@@ -82,7 +82,7 @@ def watch(names):
 
     return GtkTextLogger(lambda:
         con.ALMemory.getListData(names).addCallback(prettyprint),
-        title = '%s - %s' % (options.ip, minimal_title(names)))
+        title = '%s - %s' % (options.ip, minimal_title(names)), dt=dt)
 
 def plottime(names, limits=(0.0, 320.0), dt=1.0):
     return GtkTimeTicker(lambda: con.ALMemory.getListData(names), limits=limits, dt=dt)
