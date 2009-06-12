@@ -853,6 +853,9 @@ void Threshold::storeFieldObjects() {
     vision->bgCrossbar->setDistance(0.0); // sometimes set to 1.0 for some reason
 
 #if ROBOT(NAO)
+#ifdef DEBUG_IMAGE
+    std::cout << "setting visual robot info" << std::endl;
+#endif
     setVisualRobotInfo(vision->red1);
     setVisualRobotInfo(vision->red2);
     setVisualRobotInfo(vision->navy1);
@@ -870,6 +873,10 @@ void Threshold::setFieldObjectInfo(VisualFieldObject *objPtr) {
         // set center x,y
         objPtr->setCenterX(objPtr->getX() + ROUND(objPtr->getWidth()/2));
         objPtr->setCenterY(objPtr->getY() + ROUND(objPtr->getHeight()/2));
+
+#ifdef DEBUG_IMAGE
+        std::cout << "Field Object Info: " << objPtr->getCenterX() << ", " << objPtr->getCenterY() << std::endl;
+#endif
 
         // find angle x/y (relative to camera)
         objPtr->setAngleX( static_cast<float>(HALF_IMAGE_WIDTH -
@@ -982,7 +989,9 @@ void Threshold::setVisualRobotInfo(VisualRobot *objPtr) {
         objPtr->setCenterX(objPtr->getX() + ROUND(objPtr->getWidth()/2));
         objPtr->setCenterY(objPtr->getY() + ROUND(objPtr->getHeight()/2));
 
+#ifdef DEBUG_IMAGE
         std::cout << "Other Robot Info: " << objPtr->getCenterX() << ", " << objPtr->getCenterY() << std::endl;
+#endif
 
         // find angle x/y (relative to camera)
         objPtr->setAngleX( static_cast<float>(HALF_IMAGE_WIDTH -

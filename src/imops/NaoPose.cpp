@@ -155,6 +155,10 @@ void NaoPose::transform () {
   bodyInclinationY = inertial.angleY;
 #endif
 
+#ifdef DEBUG_IMAGE
+    std::cout << "ImopsModule: NaoPose::transform: " << inertial.angleX << ", " << inertial.angleY << std::endl;
+#endif
+
   ublas::matrix <float> bodyToWorldTransform =
       prod(CoordFrame4D::rotation4D(CoordFrame4D::X_AXIS, bodyInclinationX),
       CoordFrame4D::rotation4D(CoordFrame4D::Y_AXIS, bodyInclinationY));
@@ -171,7 +175,14 @@ void NaoPose::transform () {
   focalPointInWorldFrame.x = cameraToWorldFrame(X,3);
   focalPointInWorldFrame.y = cameraToWorldFrame(Y,3);
   focalPointInWorldFrame.z = cameraToWorldFrame(Z,3);
-
+#if 0
+    std::cout << "ImopsModule: NaoPose::transform: angles "
+        << lLegAngles[0] << ", " << lLegAngles[1] << ", " << lLegAngles[2] << ", " << lLegAngles[3] << ", " << lLegAngles[4] << ", " << lLegAngles[5] << ", " << lLegAngles[6]
+        << rLegAngles[0] << ", " << rLegAngles[1] << ", " << rLegAngles[2] << ", " << rLegAngles[3] << ", " << rLegAngles[4] << ", " << rLegAngles[5] << ", " << rLegAngles[6]
+        << bodyInclinationX << ", "
+        << bodyInclinationY << ", com " << comHeight << ", focal " << focalPointInWorldFrame.x << ", "
+        << focalPointInWorldFrame.y << ", " << focalPointInWorldFrame.z << std::endl;
+#endif
 }
 
 /**

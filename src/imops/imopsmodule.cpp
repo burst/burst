@@ -121,7 +121,7 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
 
     //Create a proxy on memory module
     try {
-        m_memory = getParentBroker ()->getMemoryProxy ();
+        m_memory = getParentBroker()->getMemoryProxy();
     }
     catch (ALError & e) {
         std::
@@ -159,8 +159,36 @@ void ImopsModule::notifyNextVisionImage() {
     // Synchronize noggin's information about joint angles with the motion
     // thread's information
 
+    static char* inertial_vars_init[] = {
+    "Device/SubDeviceList/InertialSensor/AccX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AccY/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AccZ/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/GyrX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/GyrY/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
+    };
+    static std::vector<std::string> inertial_vars = std::vector<std::string>(inertial_vars_init,
+        inertial_vars_init + sizeof(inertial_vars_init)/sizeof(char*));
+
+    static FSR null_fsr(0.0F, 0.0F, 0.0F, 0.0F);
+    // x, y, z, gyrx, gyry, anglex, angley
+    
     // this is brain dead now, but good for testing - Alon
     g_sensors->setBodyAngles(m_motion->getBodyAngles());
+    
+    std::vector<float> vals = m_memory->getListData(inertial_vars);
+    Inertial inertial(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]);
+#ifdef WEBOTS
+    inertial.angleX = inertial.angleY = 0.0F;
+#endif
+
+#ifdef DEBUG_IMAGE
+    std::cout << "ImopsModule: angleX " << inertial.angleX
+              << ", angleY " << inertial.angleY << std::endl;
+#endif
+
+    g_sensors->setMotionSensors(null_fsr, null_fsr, 0.0F /* ChestButton */, inertial, inertial);
 
     g_sensors->updateVisionAngles();
 

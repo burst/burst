@@ -153,6 +153,9 @@ void FieldLines::lineLoop() {
     //startTime = vision->getMillisFromStartup();
     // Creating a copy of the list, maybe not the best way but .. it'll work for now
     linesList = createLines(linePoints); // Lines is a global member of FieldLines
+#ifdef DEBUG_IMAGE
+    std::cout << "lineLoop: created " << linesList.size() << " lines, " << linePoints.size() << " points" << std::endl;
+#endif
     // Only those linePoints which were not used in any line remain within the
     // linePoints list
     //timeInCreateLines += (vision->getMillisFromStartup() - startTime);

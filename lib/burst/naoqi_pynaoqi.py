@@ -36,7 +36,7 @@ def getBurstMemProxy(deferred = False):
     return con.burstmem
 
 def getImopsProxy(deferred = False):
-    return con.imops
+    return hasattr(con, 'imops') and con.imops or None
 
 def getSentinelProxy(deferred = False):
     return con.ALSentinel
