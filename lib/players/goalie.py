@@ -15,9 +15,8 @@ class Goalie(Player):
 
     def onStart(self):
         super(Goalie, self).onStart()
-        self.isPenalty = True # TODO: Use the gameStatus object.
+        self.isPenalty = False # TODO: Use the gameStatus object.
         self.isWebots = True
-        #self.enterGame()
 
     def enterGame(self):
         self._actions.say("in play")
@@ -67,7 +66,7 @@ class Goalie(Player):
         self._eventmanager.unregister(self.trackBall)
         if self.isWebots:
             self._eventmanager.unregister(self.returnHead)
-        print self._world.ball.body_isect
+        #print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):

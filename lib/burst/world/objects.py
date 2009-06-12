@@ -339,6 +339,9 @@ class Ball(Movable):
         ERROR_VAL_Y = 0
         NUM_OF_POINTS = 10
         
+        if not self.CalcIsBallMoving():
+            return False
+        
         if self.history[0] != None:
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
@@ -445,6 +448,42 @@ class Ball(Movable):
         self.avrYplace = self.sumY / self.avrYplace_index
 
         return False
+    
+    def CalcIsBallMoving(self):
+        
+        #The error functions (for ball.dist):
+        #10.33 < x < 120 : f = 0.2955 * x - 10.33
+        #120 <= x : f = 0.00136 * x ^ 1.94609
+        T = 0
+        DIST = 1
+        BEARING = 2
+        
+        ERROR_VAR = 1
+        NUM_OF_CHANGED_POINTS = 5
+        
+        i = 0
+        dist_list = []
+        dist_list_sub = []
+        for point in self.history:
+            if point == None:
+                break
+            if len(dist_list) == 0:
+                dist_list.append(point[DIST])
+                continue
+            if fabs(point[DIST] - dist_list[i]) > ERROR_VAR:
+                i += 1
+                dist_list.append(point[DIST])
+                dist_list_sub.append(dist_list[i] - dist_list[i-1])
+
+        if len(dist_list) < NUM_OF_CHANGED_POINTS:
+            return False
+
+        for i in range(1,NUM_OF_CHANGED_POINTS -1):
+            if dist_list_sub[-i] > 0:
+                return False
+        
+        #print "Ball comming"
+        return True
 
 
     def calc_events(self, events, deferreds):
