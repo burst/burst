@@ -21,7 +21,7 @@ class Computed(object):
         """
         # Blue goal:
         if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
-            events.add(events_module.EVENT_ALL_BLUE_IN_FRAME)
+            events.add(events_module.EVENT_ALL_BLUE_GOAL_IN_FRAME)
             if not self._blueGoalSeen:
                 events.add(events_module.EVENT_ALL_BLUE_GOAL_SEEN)
                 self._blueGoalSeen = True
@@ -31,7 +31,7 @@ class Computed(object):
             self._blueGoalSeen = False
         # Yellow goal:
         if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
-            events.add(events_module.EVENT_ALL_YELLOW_IN_FRAME)
+            events.add(events_module.EVENT_ALL_YELLOW_GOAL_IN_FRAME)
             if not self._yellowGoalSeen:
                 events.add(events_module.EVENT_ALL_YELLOW_GOAL_SEEN)
                 self._yellowGoalSeen = True
