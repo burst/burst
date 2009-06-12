@@ -547,8 +547,104 @@ def CIRCLE_STRAFE_CLOCKWISE():
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
     return jointCodes, angles, times
 
-CIRCLE_STRAFE_COUNTER_CLOCKWISE = mirrorChoreographMove(*CIRCLE_STRAFE_CLOCKWISE)
+@chorwrap
+def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
+    jointCodes = list()
+    angles = list()
+    times = list()
 
+    jointCodes.append("RAnklePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RAnkleRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RElbowYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RHipPitch")
+    angles.append([float(0.00000), float(-0.09250), float(-0.11868), float(0.12217)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RHipRoll")
+    angles.append([float(0.08727), float(-0.00698), float(-0.00698), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LHipYawPitch")
+    angles.append([float(0.00000), float(0.00000), float(0.07505), float(-0.30892)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RHipYawPitch")
+    angles.append([float(0.00000), float(0.00000), float(0.07505), float(-0.30892)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RKneePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.01745), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RShoulderPitch")
+    angles.append([float(0.87266), float(0.87266), float(0.87266), float(0.87266)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RShoulderRoll")
+    angles.append([float(-0.26180), float(-0.26180), float(-0.26180), float(-0.26180)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("RWristYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LAnklePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LAnkleRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LElbowRoll")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LElbowYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LHand")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LHipPitch")
+    angles.append([float(-0.08727), float(-0.10996), float(-0.10996), float(0.12217)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LHipRoll")
+    #angles.append([float(0.00873), float(0.2), float(0.13962), float(0.00000)]) # OLD cech + maldini
+    #angles.append([float(0.00873), float(0.19), float(0.13962), float(0.00000)]) # OLD gerrard 
+    #angles.append([float(0.00873), float(0.185), float(0.13962), float(0.00000)]) # OLD messi
+    angles.append([float(0.00873), float(0.2), float(0.13962), float(0.00000)]) # raul
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LKneePitch")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LShoulderPitch")
+    angles.append([float(0.87266), float(0.87266), float(0.87266), float(0.87266)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LShoulderRoll")
+    angles.append([float(0.26180), float(0.26180), float(0.26180), float(0.26180)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+
+    jointCodes.append("LWristYaw")
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
+    times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333)])
+    return jointCodes, angles, times
+    
 @chorwrap
 def CIRCLE_STRAFER_INIT_POSE():
     jointCodes = list()
