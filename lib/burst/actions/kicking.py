@@ -40,9 +40,9 @@ class BallKicker(BurstDeferred):
     VERBOSE = True
     ENABLE_MOVEMENT = True
 
-    def __init__(self, eventmanager, actions, target_is_goal=True):
+    def __init__(self, eventmanager, actions, align_to_target=True):
         super(BallKicker, self).__init__(None)
-        self._target_is_goal = target_is_goal
+        self._align_to_target = align_to_target
         self._eventmanager = eventmanager
         self._actions = actions
         self._world = eventmanager._world
@@ -158,7 +158,7 @@ class BallKicker(BurstDeferred):
         print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
 
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
-        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._target_is_goal:
+        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._align_to_target:
             self.debugPrint("Aligning to goal! (stopping ball tracker)")
             self.searchGoalPosts()
         # Ball inside kicking area, kick it
