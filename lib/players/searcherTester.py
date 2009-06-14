@@ -17,9 +17,9 @@ class SearchTester(Player):
         
         for t in self.targets:
             if t.centered_self.sighted_centered:
-                print "%s sighted centered" % t._name
+                print "%s sighted centered" % t.name
             else:
-                print "%s NOT sighted centered" % t._name
+                print "%s NOT sighted centered" % t.name
         
         self._eventmanager.quit()
 

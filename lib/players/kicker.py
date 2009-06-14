@@ -7,7 +7,7 @@ from burst.player import Player
 class Kicker(Player):
     
     def onStart(self):
-        self._actions.kickBall().onDone(self.onKickComplete)
+        self._actions.initPoseAndStiffness().onDone(self._actions.kickBall).onDone(self.onKickComplete)
     
     def onKickComplete(self):
         print "kick complete"

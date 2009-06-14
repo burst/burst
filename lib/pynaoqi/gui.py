@@ -210,10 +210,10 @@ class ScalePane(object):
     """ single object with multiple scales, for easy hiding """
 
     def __init__(self, parent, name, table, start_joint_num, joints, cur_angles):
-        self._name = name
+        self.name = name
         self._parent = parent
         self._joints = joints
-        self._toggle = gtk.Button(self._name)
+        self._toggle = gtk.Button(self.name)
         self._toggle.add_events(gtk.gdk.BUTTON_PRESS_MASK)
         self._toggle.connect('button-press-event', self._onToggleClicked)
         self._visible = True

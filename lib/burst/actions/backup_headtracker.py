@@ -7,8 +7,8 @@ from burst.events import *
 import burst
 import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
-    DEFAULT_CENTERING_X_ERROR,
-    DEFAULT_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
+    DEFAULT_NORMALIZED_CENTERING_X_ERROR,
+    DEFAULT_NORMALIZED_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
     IMAGE_CENTER_X, IMAGE_CENTER_Y)
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
@@ -96,7 +96,7 @@ class Tracker(object):
             #import pdb; pdb.set_trace()
             return
         if self.verbose:
-            print "Tracker: Start Centering on %s" % target._name
+            print "Tracker: Start Centering on %s" % target.name
         self._start(target, self._centeringOnLost)
         self._on_centered_bd = BurstDeferred(None)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
@@ -108,7 +108,7 @@ class Tracker(object):
     def _centeringOnLost(self):
         if not self._target.recently_seen:
             if self.verbose:
-                print "Centering: %s not recently seen, continue waiting" % (self._target._name)
+                print "Centering: %s not recently seen, continue waiting" % (self._target.name)
         # We can lose the target for a few frames, we can't assume vision is
         # perfect. In this case just wait for next frame.
         # TODO - call callback on too many lost frames. (lost ball, etc - higher up,
@@ -119,7 +119,7 @@ class Tracker(object):
         if self._stop: return
         if not self._target.recently_seen: # TODO - manually looking for lost event. should be event based, no?
             if self.verbose:
-                print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+                print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target.name
             self._onLost()
             return
         if hasattr(self, '_call_me_later'):
@@ -185,7 +185,7 @@ class Tracker(object):
         # check if target is lost, call callback
         if not self._target.recently_seen:
             if self.verbose:
-                print "TrackingStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+                print "TrackingStep: %s not recently seen, calling _on_lost_callback" % self._target.name
             self._onLost()
             return # Lost target
         centered, maybe_bd = self.executeTracking(self._target)
@@ -204,15 +204,15 @@ class Tracker(object):
                 # we don't stop when target is lost - just callLater.
                 # TODO - if lost for more then MARGIN tell user?
                 if self.verbose:
-                    print "TrackingStep: %s not visible right now" % (self._target._name)
+                    print "TrackingStep: %s not visible right now" % (self._target.name)
             # target is centered or we lost it for a short period (we thing), so just callLater
             #import pdb; pdb.set_trace()
             self._eventmanager.callLater(EVENT_MANAGER_DT, self._trackingStep)
 
     ### Work horse for actually turning head towards target
     def calculateTracking(self, target,
-            normalized_error_x=DEFAULT_CENTERING_X_ERROR,
-            normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
+            normalized_error_x=DEFAULT_NORMALIZED_CENTERING_X_ERROR,
+            normalized_error_y=DEFAULT_NORMALIZED_CENTERING_Y_ERROR):
         """ This is a controller. Does a single tracking step,
             aiming to center on the given target.
 
@@ -405,13 +405,13 @@ class Searcher(object):
     def _onSeen(self, obj, event):
         ''' An event for when a searched-for object is discovered. '''
         if not self.stopped():
-            self._report("Searcher: first time seen %s" % obj._name, "Searcher: unregistering %s (%s)" % (event, events.event_name(event)))
+            self._report("Searcher: first time seen %s" % obj.name, "Searcher: unregistering %s (%s)" % (event, events.event_name(event)))
             self._eventmanager.unregister(self._eventToCallbackMapping[event], event)
             del self._eventToCallbackMapping[event]
             self._seen_objects.append(obj)
             self._targets.remove(obj)
             if self._center_on_targets:
-                self._report("Next, I'll center on %s" % obj._name)
+                self._report("Next, I'll center on %s" % obj.name)
                 self._searchPlanner.feedNext(obj)
 
     def _nextSearchMove(self):

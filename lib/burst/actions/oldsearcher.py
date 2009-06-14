@@ -44,7 +44,7 @@ class OldSearcher(object):
             self._timeoutCallback = timeoutCallback
 
         if self.verbose:
-            print "OldSearcher: Started search for %s" % (', '.join(t._name for t in targets))
+            print "OldSearcher: Started search for %s" % (', '.join(t.name for t in targets))
         self._targets = targets
         self._center_on_targets = center_on_targets
         del self._seen_order[:]
@@ -86,7 +86,7 @@ class OldSearcher(object):
     def _onOneCentered(self):
         target = self._center_target
         if self.verbose:
-            print "OldSearcher: Center: %s centering done (updated by standard calc_events)" % target._name
+            print "OldSearcher: Center: %s centering done (updated by standard calc_events)" % target.name
         self._centerOnNext()
 
     def _centerOnNext(self):
@@ -105,7 +105,7 @@ class OldSearcher(object):
         c_target = target.centered_self
         if self.verbose:
             print "OldSearcher: moving towards and centering on %s - (%1.2f, %1.2f)" % (
-                target._name, c_target.head_yaw, c_target.head_pitch)
+                target.name, c_target.head_yaw, c_target.head_pitch)
         # Actually that head_yaw / head_pitch is suboptimal. We have also centerX and
         # centerY, it is trivial to add them to get a better estimate for the center,
         # still calling center afterwards.
@@ -144,10 +144,10 @@ class OldSearcher(object):
             if bd:
                 if self.verbose:
                     print "OldSearcher: using specialized strategy for (seen %r, unseen %r)" % (
-                        [t._name for t in seen], [t._name for t in unseen])
+                        [t.name for t in seen], [t.name for t in unseen])
             else:
                 if self.verbose:
-                    print "OldSearcher: targets {%s} NOT seen, searching again..." % (','.join(obj._name for obj in unseen))
+                    print "OldSearcher: targets {%s} NOT seen, searching again..." % (','.join(obj.name for obj in unseen))
                 self._searchlevel = (self._searchlevel + 1) % burst.actions.LOOKAROUND_MAX
                 bd = self._actions.lookaround(self._searchlevel)
             bd.onDone(self._onScanDone)
@@ -188,7 +188,7 @@ class OldSearcher(object):
         #  - call _onScanDone to start centering.
         if target not in self._seen_set:
             if self.verbose:
-                print "OldSearcher: First Sighting: %s, dist = %s, centered: %s" % (target._name, target.dist, target.centered_self)
+                print "OldSearcher: First Sighting: %s, dist = %s, centered: %s" % (target.name, target.dist, target.centered_self)
             self._seen_order.append(target)
             self._seen_set.add(target)
 
