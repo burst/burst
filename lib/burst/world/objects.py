@@ -6,7 +6,8 @@ from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
     DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR,
-    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE)
+    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE,
+    IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
@@ -103,6 +104,19 @@ class CenteredLocatable(object):
         # clear who computed what, multiple ways to compute same thing (is Ball centered)
         self.sighted_centered = target.centered or target.centered_at_pitch_limit
         self.update_time = self._world.time
+
+    def estimated_yaw_and_pitch_to_center(self):
+        """ return yaw and pitch that should bring this object into the center of
+        the image """
+        delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
+        delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
+        yaw = self.head_yaw + delta_yaw
+        pitch = self.head_pitch + delta_pitch
+        #self._report("centering initial move towards %s, %1.2f+%1.2f, %1.2f+%1.2f" % (
+        #    target._name, target.centered_self.head_yaw, delta_yaw,
+        #    target.centered_self.head_pitch, delta_pitch))
+        return yaw, pitch
+
  
 class Locatable(Namable):
     """ stupid name. It is short for "something that can be seen, holds a position,

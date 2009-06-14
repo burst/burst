@@ -290,16 +290,20 @@ class CenteringCommand(object):
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
         self._repeats = repeats
 
+    def onCenteringDone(self):
+        # called both on centering and on target lost
+        if self._target.sighted_centered or self._repeats == 0:
+            self._bd.callOnDone()
+        self._repeats -= 1
+        self._actions.tracker.center(self._target).onDone(self.centeringDone)
+            
     def __call__(self):
-        bd = self._actions.moveHead(self._yaw, self._pitch)
+        self._bd = bd = self._actions.moveHead(self._yaw, self._pitch)
         # TODO - testing. Does this actually call the right bd?
         # maybe switch to Deferreds here, since they are much
         # simpler compared to the BurstDeferred chain thing?
-        return bd.onDone(
-                lambda _, target=self._target:
-                    self._actions.tracker.center(target,
-                        lostCallback=bd.callOnDone)
-                )
+        bd.onDone(self.onCenteringDone)
+        return bd
 
 class TurnCommand(object):
 
@@ -346,13 +350,7 @@ class SearchPlanner(object):
             target = self._nextTargets[0]
             del self._nextTargets[0]
             self._report("giving a centering command: %s" % target._name)
-            delta_yaw   = - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
-            delta_pitch =   PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
-            yaw = target.centered_self.head_yaw + delta_yaw
-            pitch = target.centered_self.head_pitch + delta_pitch
-            self._report("centering initial move towards %s, %1.2f+%1.2f, %1.2f+%1.2f" % (
-                target._name, target.centered_self.head_yaw, delta_yaw,
-                target.centered_self.head_pitch, delta_pitch))
+            yaw, pitch = target.centered_self.estimated_yaw_and_pitch_to_center()
             return self._centerCommand(self._searcher._actions, yaw, pitch, target)
 
     def hasMoreCenteringTargets(self):
