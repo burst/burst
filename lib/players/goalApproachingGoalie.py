@@ -67,8 +67,10 @@ class Goalie(Player):
         self._actions.searcher.search(targets=self.ownGoal, center_on_targets=True).onDone(self.goToOwnGoal)
 
     def goToOwnGoal(self):
-        delta_x, delta_y = self.ownGoalRelativeCoordinates()
-        self._actions.changeLocationRelative(605.0-delta_x, 0.0-delta_y).onDone(self.finishedWalkingTowardsOnGoal)
+        self._report("Going towards own goal.")
+        relative_x, relative_y = self.ownGoalRelativeCoordinates()
+        base_x, base_y = self.ownGoalGlobalCartesianCoordinates
+        self._actions.changeLocationRelative(base_x-relative_x, base_y-relative_y).onDone(self.finishedWalkingTowardsOnGoal)
 
     def finishedWalkingTowardsOnGoal(self):
         pass
