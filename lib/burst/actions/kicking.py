@@ -20,12 +20,13 @@ from burst.behavior import ContinuousBehavior, Behavior
 class TargetFinder(ContinuousBehavior):
     ''' Continuous target finder & tracker '''
 
-    def __init__(self, actions, target, start = True):
-        self._target = target
+    def __init__(self, actions, targets, start = True):
+        self._targets = targets
         self._onTargetFoundCB = None
         self._onTargetLostCB = None
         # *Behavior ctor call must be last - it calls self.start
-        super(TargetFinder, self).__init__(actions=actions, name='%s Finder' % target.name, start=start)
+        super(TargetFinder, self).__init__(actions=actions, name='%s Finder' % [
+                                    target.name for target in targets], start=start)
 
     def setOnTargetFoundCB(self, cb):
         self._onTargetFoundCB = cb
@@ -43,18 +44,20 @@ class TargetFinder(ContinuousBehavior):
 
     def _start(self):
         # if target location is not known, search for it
-        if self._target.recently_seen:
-            self.printDebug("%s seen!" % self._target.name)
+        if len(self._actions.searcher.seen_objects) > 0:
+            self._targets = [self._actions.searcher.seen_objects[0]]
+            target = self._targets[0]
+            self.printDebug("will track %s" % target.name)
             # NOTE: to make the behavior happy we need to always keep the deferred we are
             # waiting on at self._bd ; because Tracker doesn't provide any bd we create
             # one using self._actions._make
             self._bd = self._actions._make(self)
             self._bd.onDone(self._start)
-            self._actions.track(self._target, lostCallback=self._bd.callOnDone)
+            self._actions.track(target, lostCallback=self._bd.callOnDone)
             self._callOnTargetFoundCB()
         else:
-            self.printDebug("%s not seen, searching for it" % self._target.name)
-            self._bd = self._actions.search([self._target], center_on_targets=True)
+            self.printDebug("targets not seen (%s), searching for it" % [t.name for t in self._targets])
+            self._bd = self._actions.search(self._targets, center_on_targets=True)
             self._bd.onDone(self._start)
             self._callOnTargetLostCB()
 
@@ -99,7 +102,10 @@ class BallKicker(BurstDeferred):
         self._eventmanager = eventmanager
         self._actions = actions
         self._world = eventmanager._world
-        self._ballFinder = TargetFinder(actions=actions, target = self._world.ball, start = False)
+        self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
+        self._ballFinder.setOnTargetFoundCB(self.doNextAction)
+        self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
+
 
         # Strafing differs between webots since webots cannot do the CW/CCW
         # turns, so we emulate it with a turn in place.
@@ -130,12 +136,9 @@ class BallKicker(BurstDeferred):
         self.aligned_to_goal = False
         self.goalposts = [self._world.yglp, self._world.ygrp]
         self.movement_deferred = None
-        
-        self._ballFinder.setOnTargetFoundCB(self.doNextAction)
-        self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
-        
+
         self._actions.setCameraFrameRate(20)
-        # kicker initial position 
+        # kicker initial position
         self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(self._ballFinder.start)
 
     def _stopOngoingMovement(self):
@@ -243,9 +246,9 @@ class BallKicker(BurstDeferred):
             self.debugPrint("ERROR: onSearchGoalPostCenteringDone but no seen objects?")
             self.onLostGoal()
             return
-        
+
         self.goalpost_to_track = self._actions.searcher.seen_objects[0]
-        
+
         # track goal post, align against it
         self.goalLocationKnown = True
         self._actions.setCameraFrameRate(20)
