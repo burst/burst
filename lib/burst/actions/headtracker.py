@@ -294,8 +294,12 @@ class CenteringCommand(object):
         # called both on centering and on target lost
         if self._target.sighted_centered or self._repeats == 0:
             self._bd.callOnDone()
+        print "CENTERING %s" % self._repeats
         self._repeats -= 1
-        self._actions.tracker.center(self._target).onDone(self.centeringDone)
+        new_yaw, new_pitch = self._target.centered_self.estimated_yaw_and_pitch_to_center()
+        self._actions.moveHead(new_yaw, new_pitch).onDone(
+            lambda: self._actions.tracker.center(self._target).onDone(self.centeringDone)
+        )
             
     def __call__(self):
         self._bd = bd = self._actions.moveHead(self._yaw, self._pitch)
