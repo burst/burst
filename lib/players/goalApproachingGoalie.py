@@ -64,7 +64,7 @@ class Goalie(Player):
 
     def findOutLocation(self):
         self._report("Finding location.")
-        self._actions.searcher.search_one_of(targets=self.ownGoal, center_on_targets=True).onDone(self.goToOwnGoal)
+        self._actions.searcher.search(targets=self.ownGoal, center_on_targets=True).onDone(self.goToOwnGoal)
 
     def goToOwnGoal(self):
         delta_x, delta_y = self.ownGoalRelativeCoordinates()
@@ -76,8 +76,8 @@ class Goalie(Player):
     ###
 
     def ownGoalRelativeCoordinates(self):
-        rightPost = toCartesian(self.ownGoal[0].bearing, self.ownGoal[0].dist)
-        leftPost  = toCartesian(self.ownGoal[1].bearing, self.ownGoal[1].dist)
+        rightPost = self.toCartesian(self.ownGoal[0].bearing, self.ownGoal[0].dist)
+        leftPost  = self.toCartesian(self.ownGoal[1].bearing, self.ownGoal[1].dist)
         x = (rightPost[0]+leftPost[0])/2
         y = (rightPost[1]+leftPost[1])/2
         return (x,y)
