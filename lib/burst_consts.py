@@ -73,6 +73,9 @@ X, Y, Z = 0, 1, 2
 
 # Camera / Vision constants
 
+# Nao-Man ID Certainty Enumeration
+ID_NOT_SURE, ID_MILDLY_SURE, ID_SURE = 0, 1, 2
+
 # setting top/bottom camera
 CAMERA_WHICH_PARAM = 18
 CAMERA_WHICH_BOTTOM_CAMERA = 1

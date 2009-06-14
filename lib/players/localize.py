@@ -23,7 +23,8 @@ class Localize(Player):
     def onStart(self):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
-        self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self._ook)
+        #self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self._ook)
+        self._ook()
 
     def _ook(self):
         self._eventmanager.register(self._worldLocationUpdated, EVENT_WORLD_LOCATION_UPDATED)

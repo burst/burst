@@ -6,7 +6,7 @@ from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
     DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR,
-    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH)
+    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
@@ -540,6 +540,45 @@ class Ball(Movable):
 #self.leftOpening = 0.0
 #self.rightOpening = 0.0
 
+class Goal(Locatable):
+    """ The location of the goal is the location of the center of the goal.
+    There is no visual object for Goal, but it is a useful abstraction since
+    we aim to defend / score to this location.
+
+    Also, since the vision code will tell us that the left post is the right
+    post if it only sees the start of it, it is useful for the code to actually
+    look at the goal and not at the post itself at times (i.e. the goal location will
+    be relatively known while the left/right is not).
+
+    This calc_events replaces the calc_events for the respective posts
+    """
+
+    def __init__(self, name, world, left_name, right_name, left_pos_changed_event,
+        right_pos_changed_event, left_world, right_world):
+        mid_x, mid_y = ((left_world[0]+right_world[0])/2.0,
+                        (left_world[1]+right_world[1])/2)
+        super(Goal, self).__init__(name, world,
+            real_length=burst.field.CROSSBAR_CM_WIDTH, world_x=mid_x, world_y=mid_y)
+        self.left = GoalPost(name=left_name, world=world,
+            position_changed_event = left_pos_changed_event, world_x=left_world[0],
+                world_y=left_world[1])
+        self.right = GoalPost(name=right_name, world=world,
+            position_changed_event = right_pos_changed_event, world_x=right_world[0],
+                world_y=right_world[1])
+        self.unknown = GoalPost(name='%s_UnknownPost' % name, world=world,
+            position_changed_event=-1, world_x=mid_x, world_y=mid_y)
+
+    def calc_events(self, events, deferreds):
+        left = self.left.calc_events(events, deferreds)
+        right = self.right.calc_events(events, deferreds)
+        if left or right:
+            state = left or right
+            self.unknown.update_from_new_state(state)
+            if self.unknown.seen:
+                print "%s: updated unknown: %s" % (self._name, left and 'left' or 'right')
+        else:
+            self.unknown.seen = False
+
 class GoalPost(Locatable):
 
     def __init__(self, name, world, position_changed_event, world_x, world_y):
@@ -549,7 +588,7 @@ class GoalPost(Locatable):
         template = '/BURST/Vision/%s/%%s' % name
         self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',
             'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
-         'FocDist', 'Height', 'Width', 'X', 'Y']]
+         'FocDist', 'Height', 'Width', 'X', 'Y', 'IDCertainty']]
         self._world.addMemoryVars(self._vars)
 
         self.angleX = 0.0
@@ -561,32 +600,36 @@ class GoalPost(Locatable):
         self.width = 0.0
         self.x = 0.0
         self.y = 0.0
+        self.id_certainty = ID_NOT_SURE
         self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
 
-    def calc_events(self, events, deferreds):
-        """ get new values from proxy, return set of events """
-        # TODO: this is ugly - there is an idiom of using a class as a list
-        # and a 'struct' at the same time - somewhere in activestate.com?
+    def get_new_state(self):
+        return self._world.getVars(self._vars)
+
+    def update_from_new_state(self, new_state, events=None, deferreds=None):
+        # calculate events
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
                 new_dist, new_elevation, new_focDist, new_height,
-                new_width, new_x, new_y, 
-                ) = new_state = self._world.getVars(self._vars)
-        # calculate events
+                new_width, new_x, new_y, new_id_certainty
+                ) = new_state
+        
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
+
         if new_seen:
             events.add(getattr(events_module, "EVENT_"+self._name+"_IN_FRAME"))
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
                 new_elevation *= DEG_TO_RAD
- 
+
         # TODO: we should only look at the localization supplied ball position,
         # and not the position in frame (image coordinates) or the relative position,
         # which may change while the ball is static.
         if new_seen and (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
-            events.add(self._position_changed_event)
+            if events:
+                events.add(self._position_changed_event)
         # store new values
         (self.angleX, self.angleY, self.centerX, self.centerY,
                 self.focDist, self.height, self.width,
@@ -598,4 +641,18 @@ class GoalPost(Locatable):
         self.recently_seen = self.calc_recently_seen(new_seen)
         if self.seen:
             self.update_centered()
+
+    def calc_events(self, events, deferreds):
+        """ get new values from proxy, return set of events """
+        # TODO: this is ugly - there is an idiom of using a class as a list
+        # and a 'struct' at the same time - somewhere in activestate.com?
+        (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
+                new_dist, new_elevation, new_focDist, new_height,
+                new_width, new_x, new_y, new_id_certainty
+                ) = new_state = self.get_new_state()
+
+        if new_id_certainty != ID_SURE:
+            return new_state
+        self.update_from_new_state(new_state, events, deferreds)
+        return None
 

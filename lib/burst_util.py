@@ -246,6 +246,19 @@ class BurstDeferred(object):
         self.onDone(lambda: self._d.callback(None))
         return self._d
 
+    def toCondensedString(self):
+        """ try to give a short description of who is being called by this callback
+        """
+        if not self._ondone: return '_'
+        if hasattr(self, '_d'):
+            return 'bd->%s' % (deferredToCondensedString(self._d))
+        if hasattr(self._ondone[0], 'im_func') and self._ondone[0].im_func.func_name == 'callOnDone':
+            return 'bd->%s' % self._ondone[0].im_self.toCondensedString()
+        return func_name(self._ondone[0])
+
+def deferredToCondensedString(d):
+    print "d-%s" % id(d)
+
 if '--history' in sys.argv: # TODO - ugly, should be through burst.options
     D_CREATE, D_ON_DONE, D_CALL_ON_DONE = 'create', 'onDone', 'callOnDone'
     class BurstDeferredWithHistory(BurstDeferred):
@@ -280,11 +293,6 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
     def classname(cb):
         if hasattr(cb, 'im_self'):
             return cb.im_self.__class__.__name__
-
-    def funcname(cb):
-        if hasattr(cb, 'im_self'):
-            return cb.im_func.func_name
-        return cb.func_name
 
     def pretty(c):
         # this can be anything
@@ -662,6 +670,14 @@ def set_robot_ip_from_argv():
 def func_name(f_or_m):
     if hasattr(f_or_m, 'im_func'):
         return f_or_m.im_func.func_name
+    if f_or_m.func_name == '<lambda>':
+        # try to get descriptive definition - mainly from where the lambda is defined,
+        # and if it possibly shortcircuits to a function (that requires disassembling the
+        # lambda)
+        closure = f_or_m.func_closure
+        closing_object = len(closure) > 0 and closure[0].cell_contents
+        closing_object = ('(%s) ' % (hasattr(closing_object, '__class__') and closing_object.__class__.__name__)) or ''
+        return '<l> %s%s' % (closing_object, f_or_m.func_code.co_names[0])
     return f_or_m.func_name
 
 def pairit(n):

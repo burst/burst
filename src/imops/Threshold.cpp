@@ -854,7 +854,7 @@ void Threshold::storeFieldObjects() {
 
 #if ROBOT(NAO)
 #ifdef DEBUG_IMAGE
-    std::cout << "setting visual robot info" << std::endl;
+    //std::cout << "setting visual robot info" << std::endl;
 #endif
     setVisualRobotInfo(vision->red1);
     setVisualRobotInfo(vision->red2);

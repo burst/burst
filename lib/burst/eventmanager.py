@@ -125,14 +125,14 @@ class EventManager(object):
     you lazy bum)
     """
 
-    verbose = burst.options.verbose_eventmanager
-
     def __init__(self, world):
         """ In charge of computing when certain events happen, keeping track
         of callbacks, and calling them.
         """
         # The _events maps from an event enum to a set of callbacks (so order
         # of callback is undefined)
+        self.verbose = burst.options.verbose_eventmanager
+        self.num_callbacks_to_report = 2
         self._clearEventsAndCallbacks()
         self._world = world
         self.burst_deferred_maker = self._world.burst_deferred_maker
@@ -187,10 +187,12 @@ class EventManager(object):
     def register_oneshot(self, callback, event):
         def on_one_event():
             if self.verbose:
-                print "EventManager: one shot removal, before: %s, %s" % (len(self._events[event]), self._events[event])
+                print "EventManager: one shot removal, before: %s, %s" % (
+                            len(self._events[event]), self._events[event])
             self.unregister(on_one_event, event)
             if self.verbose:
-                print "EventManager: one shot removal, after: %s, %s" % (len(self._events[event]), self._events[event])
+                print "EventManager: one shot removal, after: %s, %s" % (
+                            len(self._events[event]), self._events[event])
             callback()
         on_one_event.func_name = 'on_one_event__%s' % (func_name(callback))
         self.register(on_one_event, event)
@@ -216,65 +218,72 @@ class EventManager(object):
     def quit(self):
         self._should_quit = True
 
-    def _removeAllPendingEventsAndDeferreds(self):
+    def _removeAllPendingCallbacks(self):
         """ should only be called on quit (hence the underscore) by
         the BaseMainLoop.
         """
         self._clearEventsAndCallbacks()
         self.burst_deferred_maker.clear()
 
-    def handlePendingEventsAndDeferreds(self):
+    def computePendingCallbacks(self):
+        """ mainly split off from handlePendingCallbacks to allow easier debugging,
+        by printing each frame's callbacks """
+        self._pending_events, deferreds = self._world.getEventsAndDeferreds()
+        self._pending_deferreds = list(deferreds) # make copy, avoid endless loop
+
+        # call later part 1 - find out which are called this round.
+        self._current_call_later = current_call_later = self._call_later
+        self._call_later = [] # new heap for anything created by the callbacks themselves,
+                              # avoid endless loops.
+        self._pending_call_laters = call_laters_this_frame = []
+        while len(current_call_later) > 0:
+            next_time = current_call_later[0][0]
+            if self.verbose:
+                print "EventManager: we have some callLaters"
+            if next_time <= self._world.time:
+                next_time, cb, args, kw = heappop(current_call_later)
+                call_laters_this_frame.append((cb, args, kw))
+            else:
+                break # VERY IMPORTANT..
+
+        self._pending_event_callbacks = [(event, list(self._events[event])) for event in self._pending_events if len(self._events[event]) > 0]
+
+        # Warn user on the tricky cases - when more then one cb happens
+        # in a single frame
+        num_deferreds = len(self._pending_deferreds)
+        num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
+        num_time_step = len(self._events[EVENT_STEP])
+        num_call_laters = len(call_laters_this_frame)
+        num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
+        if self.verbose and num_cbs_in_round >= self.num_callbacks_to_report:
+            print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
+                num_cbs_in_round, num_deferreds, num_events, num_time_step,
+                num_call_laters)
+
+    def handlePendingCallbacks(self):
         """ Call all callbacks registered based on the new events
-        stored in self._world
+        stored in self._world, call all callLaters, and call all fired deffereds.
 
-        Also handles callLaters
+        We use a delegation scheme, where the eventloop just asks the world for
+        the actual events and deferreds that fired, and calls them itself, adding
+        the callLaters and EVENT_STEP which it handles itself.
+
+        Special care is taken so the following holds:
+         * Any cb that by running disables further cb's is effective immediately -
+           i.e. also during the rest of the current frame.
+         * Any cb that by running enables a new cb is only effective from the next
+           frame. This avoids possible recursion.
         """
-        # Implementation note: we need to avoid endless loops in here.
-        # this can happen if, for instance, one of the callLater callbacks
-        # creates another callLater during the callLater loop.
-        # So to avoid stuff like that with the deferreds too (events are
-        # too simple for this to happen) we create a copy of the lists
-        # and loop on them.
-
+        events = self._pending_events
+        deferreds = self._pending_deferreds
+        call_laters_this_frame = self._pending_call_laters
         # Code handling this "removal in cb" is noted as "handle possible removal"
         # to make the code more readable.
 
         # TODO - rename deferreds to burstdeferreds
-        events, deferreds = self._world.getEventsAndDeferreds()
-        deferreds = list(deferreds) # make copy, avoid endless loop
-
-        # call later part 1 - find out which are called this round.
-        cur_call_later = self._call_later
-        self._call_later = [] # new heap for anything created by the callbacks themselves,
-                              # avoid endless loops.
-        call_laters_this_frame = []
-        while len(cur_call_later) > 0:
-            next_time = cur_call_later[0][0]
-            if self.verbose:
-                print "EventManager: we have some callLaters"
-            if next_time <= self._world.time:
-                next_time, cb, args, kw = heappop(cur_call_later)
-                call_laters_this_frame.append(cb)
-            else:
-                break # VERY IMPORTANT..
-
-
-        # Warn user on the tricky cases - when more then one cb happens
-        # in a single frame
-        num_deferreds = len(deferreds)
-        num_events = sum(len(self._events[event]) for event in events)
-        num_time_step = len(self._events[EVENT_STEP])
-        num_call_laters = len(call_laters_this_frame)  
-        num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
-        if num_cbs_in_round > 1:
-            if self.verbose:
-                print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
-                    num_cbs_in_round, num_deferreds, num_events, num_time_step,
-                    num_call_laters)
-
         # Handle regular events - we keep a copy of the current
         # cb's for all events to make sure there is no loop.
-        loop_event_cb = [(event, list(self._events[event])) for event in events]
+        loop_event_cb = self._pending_event_callbacks
         for event, cbs in loop_event_cb:
             for cb in cbs:
                 if cb in self._events[event]:  # handle possible removal
@@ -289,7 +298,7 @@ class EventManager(object):
                 print "EventManager: %s removed by prior during step" % cb
 
         # Handle call later's (we counted before, now we run and merge)
-        for cb in call_laters_this_frame:
+        for cb, args, kw in call_laters_this_frame:
             if self.verbose:
                 print "EventManager: calling callLater callback"
             cb(*args, **kw)
@@ -298,10 +307,10 @@ class EventManager(object):
         if len(self._call_later) > 0:
             if self.verbose:
                 print "EventManager: callLater-cbs added callLaters! merging"
-            self._call_later = cur_call_later + self._call_later
+            self._call_later = self._current_call_later + self._call_later
             heapify(self._call_later) # TODO - implement merge, this is faster.
         else:
-            self._call_later = cur_call_later
+            self._call_later = self._current_call_later
 
         # Handle deferreds
         for deferred in deferreds:
@@ -386,7 +395,7 @@ class BasicMainLoop(object):
 
     def _onNormalQuit_playerStopDone(self):
         naoqi_ok = self._on_normal_quit__naoqi_ok
-        self._eventmanager._removeAllPendingEventsAndDeferreds()
+        self._eventmanager._removeAllPendingCallbacks()
         d = None
         if self._actions:
             if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
@@ -420,6 +429,7 @@ class BasicMainLoop(object):
         ball = self._world.ball.seen and 'B' or ' '
         yglp = self._world.yglp.seen and 'L' or ' '
         ygrp = self._world.ygrp.seen and 'R' or ' '
+        unknown_yellow = self._world.yellow_goal.unknown.seen and 'U' or ' '
         targets = self._actions.searcher.targets
         def getjoints(obj):
             if obj not in targets: return '-------------'
@@ -433,14 +443,32 @@ class BasicMainLoop(object):
         num_in = self._getNumberIncomingMessages()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%4.1f  %s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|" % (self.cur_time - self.main_start_time,
-            ball, yglp, ygrp,
+        print ("%4.1f %s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s" % (self.cur_time - self.main_start_time,
+            ball, yglp, ygrp, unknown_yellow,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
             len(self._world._movecoordinator._posted),
             ygrp_joints, yglp_joints, ball_joints,
             num_out, num_out - num_in,
+            self.getCondensedState(),
             )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+
+    def getCondensedState(self):
+        """ get a represnetation of the current "state". This is deemed to be the sum
+        of all current possible callbacks, probably after some filtering. Condensed means
+        less bytes, suitable for the ticker """
+        em = self._eventmanager
+        dont_print = set(['_announceSeeingYellowGoal', '_announceSeeingBlueGoal'])
+        try:
+            s = ','.join([x for x in map(func_name, [cb for cb, args, kw in em._pending_call_laters] +
+                sum((list(cbs) for event, cbs in em._pending_event_callbacks), []) +
+                list(em._events[EVENT_STEP])) +
+                [x.toCondensedString() for x in em._pending_deferreds if x._ondone]
+                if x not in dont_print]
+                )
+        except:
+            import pdb; pdb.set_trace()
+        return s
 
     def preMainLoopInit(self):
         """ call once before the main loop """
@@ -463,14 +491,15 @@ class BasicMainLoop(object):
 
         returns the amount of time to sleep in seconds
         """
+        self._eventmanager.computePendingCallbacks()
         if burst.options.trace_proxies:
             self._printTraceTicker()
 
         # reverse the order? arg.
         if burst.options.profile_player:
-            self._profiler.runcall(self._eventmanager.handlePendingEventsAndDeferreds)
+            self._profiler.runcall(self._eventmanager.handlePendingCallbacks)
         else:
-            self._eventmanager.handlePendingEventsAndDeferreds()
+            self._eventmanager.handlePendingCallbacks()
         self._world.collectNewUpdates(self.cur_time)
         self.next_loop += EVENT_MANAGER_DT
         self.cur_time = time()

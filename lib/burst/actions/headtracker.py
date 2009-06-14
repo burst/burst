@@ -440,7 +440,7 @@ class Searcher(object):
 
         # Launch the search, according to some search strategy.
         self._searchPlanner = SearchPlanner(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
-        self._eventmanager.callLater(0, lambda: self._nextSearchMove()) # The centered_selves have just been cleared. # TODO: Necessary.
+        self._eventmanager.callLater(0, self._nextSearchMove) # The centered_selves have just been cleared. # TODO: Necessary.
 
         # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
         self._deferred = self._actions.burst_deferred_maker.make(self)
