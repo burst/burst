@@ -26,7 +26,7 @@ from burst.deferreds import BurstDeferredMaker
 import burst.field as field
 
 from sharedmemory import *
-from objects import Ball, GoalPost
+from objects import Ball, GoalPost, Goal
 from robot import Robot
 from team import Team
 from computed import Computed
@@ -167,14 +167,22 @@ class World(object):
         # goal. Actually, it is so only half the time. Our system says that OUR
         # goal is at 0.0, so we should look at TEAM, see who we are, and only
         # then UPDATE THE GOALS COORDINATES.
-        bglp_x, bglp_y = field.blue_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
-        bgrp_x, bgrp_y = field.blue_goal.bottom_post.xy
-        yglp_x, yglp_y = field.yellow_goal.bottom_post.xy
-        ygrp_x, ygrp_y = field.yellow_goal.top_post.xy
-        self.bglp = GoalPost('BGLP', self, EVENT_BGLP_POSITION_CHANGED, bglp_x, bglp_y)
-        self.bgrp = GoalPost('BGRP', self, EVENT_BGRP_POSITION_CHANGED, bgrp_x, bgrp_y)
-        self.yglp = GoalPost('YGLP', self, EVENT_YGLP_POSITION_CHANGED, yglp_x, yglp_y)
-        self.ygrp = GoalPost('YGRP', self, EVENT_YGRP_POSITION_CHANGED, ygrp_x, ygrp_y)
+        bglp_xy = field.blue_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
+        bgrp_xy = field.blue_goal.bottom_post.xy
+        yglp_xy = field.yellow_goal.bottom_post.xy
+        ygrp_xy = field.yellow_goal.top_post.xy
+        self.blue_goal = Goal(name='BlueGoal', world=self, left_name='BGLP', right_name='BGRP',
+            left_pos_changed_event=EVENT_BGLP_POSITION_CHANGED,
+            right_pos_changed_event=EVENT_BGRP_POSITION_CHANGED,
+            left_world=bglp_xy, right_world=bgrp_xy)
+        self.bglp = self.blue_goal.left
+        self.bgrp = self.blue_goal.right
+        self.yellow_goal = Goal(name='YellowGoal', world=self, left_name='YGLP', right_name='YGRP',
+            left_pos_changed_event=EVENT_YGLP_POSITION_CHANGED,
+            right_pos_changed_event=EVENT_YGRP_POSITION_CHANGED,
+            left_world=yglp_xy, right_world=ygrp_xy)
+        self.yglp = self.yellow_goal.left
+        self.ygrp = self.yellow_goal.right
         # TODO - other robots
         # Buttons, Leds (TODO: ultrasound,
         self.robot = Robot(self)
@@ -217,7 +225,7 @@ class World(object):
             # All basic objects that rely on just naoproxies should be in the
             # first list
             [self._movecoordinator,
-             self.ball, self.bglp, self.bgrp, self.yglp, self.ygrp,
+             self.ball, self.blue_goal, self.yellow_goal,
              self.robot, self.falldetector, self._gameController],
             [self.gameStatus],
             # anything that relies on basics but nothing else should go next

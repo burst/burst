@@ -5,8 +5,6 @@ from burst.player import Player
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
-from math import cos, sin
-import time
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
@@ -17,19 +15,20 @@ class Goalie(Player):
 
     def onStart(self):
         super(Goalie, self).onStart()
-        self.isPenalty = True # TODO: Use the gameStatus object.
+        self.isPenalty = False # TODO: Use the gameStatus object.
+        self.isWebots = True
 
     def enterGame(self):
         self._actions.say("in play")
-        self._actions.initPoseAndStiffness(moves.SIT_POS)
+        self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self.goalieInitPos)
+
+    def goalieInitPos(self):
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.whichBehavior)
 
     def getToPosition(self):
         pass
 
-    def _goToInitStandingPose(self):
-        self._actions.executeMove(moves.SIT_POS).onDone(self.goalieInitPos2)
-        
-    def whichBehavior (self):
+    def whichBehavior(self):
         if self.isPenalty:
             self.isTrackingBall = True
             self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
@@ -67,7 +66,7 @@ class Goalie(Player):
         self._eventmanager.unregister(self.trackBall)
         if self.isWebots:
             self._eventmanager.unregister(self.returnHead)
-        print self._world.ball.body_isect
+        #print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
             self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):

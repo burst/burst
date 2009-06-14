@@ -33,7 +33,7 @@ pynaoqi:
 	cd src/imops; $(MAKE) pynaoqi
 
 install: Makefile.local burstmem recordermodule colortable
-	rsync -avr --exclude imops_pynaoqi*.so lib root@$(ROBOT):/home/root/burst/
+	rsync -avr --exclude imops_pynaoqi*.so --exclude *.kcachegrind lib root@$(ROBOT):/home/root/burst/
 
 installall: imops install
 	# TODO - each copyto is an ssh initiation, many secundas.

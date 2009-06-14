@@ -257,8 +257,9 @@ watch(ball)
 plottime(ball)
 
 # Vision positions on a canvas
-vision = refilter('^/.*[cC]enter', names)
-yellow=refilter('^/.*YG.P.*Center',names)
+vision = refilter('^/.*Center', names)
+yellow=refilter('^/.*YG.P.*(Center|IDC)',names)
+blue=refilter('^/.*BG.P.*(Center|IDC)',names)
 canvaspairs(vision)
 
 # Getting US Sensors
