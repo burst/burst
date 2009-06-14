@@ -566,7 +566,7 @@ class Goal(Locatable):
             position_changed_event = right_pos_changed_event, world_x=right_world[0],
                 world_y=right_world[1])
         self.unknown = GoalPost(name='%s_UnknownPost' % name, world=world,
-            position_changed_event=-1, world_x=mid_x, world_y=mid_y)
+            position_changed_event=-1, world_x=mid_x, world_y=mid_y, on_seen_event = -1)
 
     def calc_events(self, events, deferreds):
         left = self.left.calc_events(events, deferreds)
@@ -574,14 +574,14 @@ class Goal(Locatable):
         if left or right:
             state = left or right
             self.unknown.update_from_new_state(state)
-            if self.unknown.seen:
+            if burst.options.debug and self.unknown.seen:
                 print "%s: updated unknown: %s" % (self._name, left and 'left' or 'right')
         else:
             self.unknown.seen = False
 
 class GoalPost(Locatable):
 
-    def __init__(self, name, world, position_changed_event, world_x, world_y):
+    def __init__(self, name, world, position_changed_event, world_x, world_y, on_seen_event=None):
         super(GoalPost, self).__init__(name, world,
             real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
         self._position_changed_event = position_changed_event
@@ -602,6 +602,9 @@ class GoalPost(Locatable):
         self.y = 0.0
         self.id_certainty = ID_NOT_SURE
         self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
+        if not on_seen_event:
+            on_seen_event = getattr(events_module, "EVENT_"+self._name+"_IN_FRAME")
+        self._on_seen_event = on_seen_event
 
     def get_new_state(self):
         return self._world.getVars(self._vars)
@@ -616,7 +619,7 @@ class GoalPost(Locatable):
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
 
         if new_seen:
-            events.add(getattr(events_module, "EVENT_"+self._name+"_IN_FRAME"))
+            if events: events.add(self._on_seen_event)
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
@@ -628,8 +631,7 @@ class GoalPost(Locatable):
         if new_seen and (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
-            if events:
-                events.add(self._position_changed_event)
+            if events: events.add(self._position_changed_event)
         # store new values
         (self.angleX, self.angleY, self.centerX, self.centerY,
                 self.focDist, self.height, self.width,
@@ -651,7 +653,7 @@ class GoalPost(Locatable):
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state = self.get_new_state()
 
-        if new_id_certainty != ID_SURE:
+        if new_dist > 0 and new_id_certainty != ID_SURE:
             return new_state
         self.update_from_new_state(new_state, events, deferreds)
         return None

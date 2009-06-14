@@ -46,6 +46,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--profile-player', action='store_true', dest='profile_player', default=False, help='profile player code')
     parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
     parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
+    parser.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
     parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
     parser.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
     parser.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')

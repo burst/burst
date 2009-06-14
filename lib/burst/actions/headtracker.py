@@ -277,9 +277,18 @@ class HeadMovementCommand(object):
 
 class CenteringCommand(object):
 
-    def __init__(self, actions, headYaw, headPitch, target):
+    """ Turn towards an initial position, then execute centering
+    a few times, each time using the most centered position currently
+    known to bootstrap."""
+    
+
+    def __init__(self, actions, headYaw, headPitch, target, repeats=2):
+        """ repeats - number of times to run centering. First time the
+        target is centered, or if repeats times pass, we call the bd returned
+        """
         self._actions = actions
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
+        self._repeats = repeats
 
     def __call__(self):
         bd = self._actions.moveHead(self._yaw, self._pitch)
@@ -368,20 +377,21 @@ class Searcher(object):
         self._actions = actions
         self._world = actions._world
         self._eventmanager = actions._eventmanager
-        self.reset()
+        self._search_count = [0, 0] # starts, stops
+        self._reset()
+        self._stopped = True
         # this is the default "did I see all targets" function, used
         # by searchHelper to provide both "all" and "one off" behavior.
         self._seenTargets = self._seenAll
-        self._search_count = [0, 0] # starts, stops
 
-    def reset(self):
-        self._stopped = True # TODO: For timeouts, use an "ack".
+    def _reset(self):
         self._timeoutCallback = None
-        self._seen_objects = []
+        self.seen_objects = []
         self._eventToCallbackMapping = {}
         self._searchMoves = None
         self._deferred = None
         self.targets = []
+        self._report("Searcher: RESET")
 
     def _report(self, *strings):
         if self.verbose:
@@ -393,7 +403,7 @@ class Searcher(object):
     def stop(self):
         self._unregisterAllEvents()
         self._search_count[1] += 1
-        self.reset()
+        self._stopped = True
         self._report("Searcher: STOPPED")
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
@@ -414,6 +424,7 @@ class Searcher(object):
         if not self.stopped():
             print "Searcher: WARNING: starting new search but not stopped"
             import pdb; pdb.set_trace()
+        self._reset()
         self._stopped = False
         self._search_count[0] += 1
         self._report("Searcher: search started for %s. %s, %s" % (','.join([t._name for t in targets]),
@@ -466,7 +477,7 @@ class Searcher(object):
 #                self._world.ball.seen, self._world.ball.recently_seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
 
         #if len(self._eventToCallbackMapping) == 0: return
-        if not obj in self._seen_objects:
+        if not obj in self.seen_objects:
             self._report("Searcher: first time seen %s" % obj._name)
             #self._eventmanager.unregister(self._onSeen, event)
             if event in self._eventToCallbackMapping:
@@ -474,7 +485,7 @@ class Searcher(object):
                 cb = self._eventToCallbackMapping[event]
                 self._eventmanager.unregister(cb, event)
                 del self._eventToCallbackMapping[event]
-            self._seen_objects.append(obj)
+            self.seen_objects.append(obj)
             if self._center_on_targets:
                 self._report("Next, I'll center on %s" % obj._name)
                 self._searchPlanner.feedNext(obj)
@@ -485,7 +496,8 @@ class Searcher(object):
             if not self._seenTargets() or self._searchPlanner.hasMoreCenteringTargets():
                 try:
                     self._searchPlanner.next().__call__().onDone(self._nextSearchMove)
-                    print self.targets, self._searchPlanner.hasMoreCenteringTargets() # TODO: Remove.
+                    self._report("%s, %s" % (self.targets,
+                        self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
                 except StopIteration:
                     raise Exception("Search iterators are expected to be never-ending.")
             else:
@@ -494,14 +506,14 @@ class Searcher(object):
     def _seenOne(self):
         """ function for search_one_of, checks if one of the supplied targets
         has been seen """
-        self._report("_seenOne: len(self._seen_objects) = %s" % len(self._seen_objects))
-        return len(self._seen_objects) >= 1
+        self._report("_seenOne: len(self.seen_objects) = %s" % len(self.seen_objects))
+        return len(self.seen_objects) >= 1
 
     def _seenAll(self):
         """ default _seenTargets function, checks that all
         targets have been seen """
         for target in self.targets:
-            if not target in self._seen_objects:
+            if not target in self.seen_objects:
                 self._report("_seenAll FALSE")
                 return False
         self._report("_seenAll TRUE")

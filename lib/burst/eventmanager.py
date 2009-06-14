@@ -254,11 +254,14 @@ class EventManager(object):
         num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
         num_time_step = len(self._events[EVENT_STEP])
         num_call_laters = len(call_laters_this_frame)
-        num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
+        self._num_cbs_in_round = num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
         if self.verbose and num_cbs_in_round >= self.num_callbacks_to_report:
             print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
                 num_cbs_in_round, num_deferreds, num_events, num_time_step,
                 num_call_laters)
+
+    def numberPendingCallbacks(self):
+        return self._num_cbs_in_round
 
     def handlePendingCallbacks(self):
         """ Call all callbacks registered based on the new events
@@ -340,6 +343,9 @@ class BasicMainLoop(object):
         self._on_normal_quit_called = False
 
         self._profiler = None
+        
+        # debug flags
+        self._ticker = burst.options.ticker or burst.options.trace_proxies
 
     def _getNumberOutgoingMessages(self):
         return 0 # implemented just in twisted for now
@@ -458,7 +464,7 @@ class BasicMainLoop(object):
         of all current possible callbacks, probably after some filtering. Condensed means
         less bytes, suitable for the ticker """
         em = self._eventmanager
-        dont_print = set(['_announceSeeingYellowGoal', '_announceSeeingBlueGoal'])
+        dont_print = set(['_announceSeeingYellowGoal', '_announceSeeingBlueGoal', '_announceNotSeeingBall', '_announceSeeingBall'])
         try:
             s = ','.join([x for x in map(func_name, [cb for cb, args, kw in em._pending_call_laters] +
                 sum((list(cbs) for event, cbs in em._pending_event_callbacks), []) +
@@ -475,7 +481,7 @@ class BasicMainLoop(object):
         self.main_start_time = time()
         self.cur_time = self.main_start_time
         self.next_loop = self.cur_time
-        if burst.options.trace_proxies:
+        if self._ticker:
             self._printTraceTickerHeader()
         # First do a single world update - get values for all variables, etc.
         self.doSingleStep()
@@ -492,7 +498,7 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         self._eventmanager.computePendingCallbacks()
-        if burst.options.trace_proxies:
+        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberPendingCallbacks() > 0):
             self._printTraceTicker()
 
         # reverse the order? arg.

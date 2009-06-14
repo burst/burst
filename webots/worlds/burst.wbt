@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.575299 0.586188 0.570451 4.20873
-  position -0.196963 5.03466 0.104208
+  orientation 0.556931 0.621025 0.551504 4.25894
+  position -0.148856 1.3874 0.0429401
 }
 Background {
   skyColor [
@@ -245,7 +245,7 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation -0.448432 0.0428038 -0.213337
+  translation -0.132592 0.0428038 -0.0514088
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -272,7 +272,7 @@ DEF BALL Solid {
 }
 DEF RED_GOAL_KEEPER Nao {
   translation 0 0.330261 0
-  rotation 0 1 0 -1.57
+  rotation 0 1 0 -1.56912
   color 1 0 0
   texture [
     "textures/red_logo.png"
