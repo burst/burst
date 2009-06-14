@@ -276,7 +276,7 @@ class Actions(object):
     
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
-        and CAMERA_WHICH_TOP_CAMERA """
+        and CAMERA_WHICH_BOTTOM_CAMERA """
         bd = self._make(self)
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
