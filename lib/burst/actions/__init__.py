@@ -51,6 +51,7 @@ class Actions(object):
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
+        self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
     #===============================================================================
@@ -276,8 +277,9 @@ class Actions(object):
     
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
-        and CAMERA_WHICH_BOTTOM_CAMERA """
+        and burst_consts.CAMERA_WHICH_BOTTOM_CAMERA """
         bd = self._make(self)
+        self.currentCamera = whichCamera
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
         return bd
