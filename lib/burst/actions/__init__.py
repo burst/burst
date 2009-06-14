@@ -418,6 +418,9 @@ class Actions(object):
             description=description,
             kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
 
+    def executeSingleHeadMove(self, yaw_delta, pitch_delta, interpolation_time):
+        return self.executeHeadMove( (((yaw_delta, pitch_delta), interpolation_time),) )
+
     def _clearFootsteps_returnDeferred(self):
         return self._motion.clearFootsteps()
 
