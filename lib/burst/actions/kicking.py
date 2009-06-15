@@ -71,7 +71,7 @@ class TargetFinder(ContinuousBehavior):
         else:
             # none of our targets are currently seen, start a new search.
             self.printDebug("targets not seen (%s), searching for it" % [t.name for t in self._targets])
-            self._bd = self._actions.search(self._targets, center_on_targets=True)
+            self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
             self._bd.onDone(self._start)
             self._callOnTargetLostCB()
 
