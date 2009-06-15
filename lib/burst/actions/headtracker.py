@@ -347,10 +347,10 @@ class SearchPlanner(object):
     pattern when we center on targets - then temporarily the tracker
     takes care of both actions and seen events """
 
-    def __init__(self, searcher, center=False):
+    def __init__(self, searcher, center=False, _baseIter=baseIter):
         self.verbose = burst.options.verbose_tracker
         self._searcher = searcher
-        self._baseIter = baseIter(searcher)
+        self._baseIter = _baseIter(searcher)
         self._nextTargets = []
 #            self._lastPosition = searcher.self. # TODO: return to the last position after a chain of targets.
         if center:
@@ -363,7 +363,7 @@ class SearchPlanner(object):
         self._nextTargets.append(target)
 
     def next(self):
-        if self._nextTargets == []:
+        if len(self._nextTargets) == 0:
             self._report("giving a command according to the base-iterator.")
             return self._baseIter.next()
         else:
@@ -471,6 +471,11 @@ class Searcher(object):
         # Launch the search, according to some search strategy.
         self._searchPlanner = SearchPlanner(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
         self._eventmanager.callLater(0, self._nextSearchMove) # The centered_selves have just been cleared. # TODO: Necessary.
+
+        # shortcut if we already see some or all of the targets
+        for target in self.targets:
+            if target.seen:
+                self._onSeen(target, target.in_frame_event) # TODO - recently_seen?
 
         # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
         self._deferred = self._actions.burst_deferred_maker.make(self)

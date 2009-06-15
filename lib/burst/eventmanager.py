@@ -250,15 +250,17 @@ class EventManager(object):
 
         # Warn user on the tricky cases - when more then one cb happens
         # in a single frame
-        num_deferreds = len(self._pending_deferreds)
-        num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
-        num_time_step = len(self._events[EVENT_STEP])
-        num_call_laters = len(call_laters_this_frame)
-        self._num_cbs_in_round = num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
-        if self.verbose and num_cbs_in_round >= self.num_callbacks_to_report:
-            print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
-                num_cbs_in_round, num_deferreds, num_events, num_time_step,
-                num_call_laters)
+        self._num_deferreds = len(self._pending_deferreds)
+        self._num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
+        self._num_time_step = len(self._events[EVENT_STEP])
+        self._num_call_laters = len(call_laters_this_frame)
+        self._num_cbs_in_round = self._num_deferreds + self._num_events + self._num_time_step + self._num_call_laters
+        if self.verbose and self._num_cbs_in_round >= self.num_callbacks_to_report:
+            print 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown() 
+
+    def getPendingBreakdown(self):
+        return (self._num_cbs_in_round, self._num_deferreds, self._num_events, self._num_time_step,
+                self._num_call_laters)
 
     def numberPendingCallbacks(self):
         return self._num_cbs_in_round
@@ -447,15 +449,17 @@ class BasicMainLoop(object):
         ball_joints = getjoints(self._world.ball)
         num_out = self._getNumberOutgoingMessages()
         num_in = self._getNumberIncomingMessages()
+        total, deferreds, event_cbs, step_cbs, calllater_cbs = self._eventmanager.getPendingBreakdown()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%4.1f %s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s" % (self.cur_time - self.main_start_time,
+        print ("%4.1f %s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (self.cur_time - self.main_start_time,
             ball, yglp, ygrp, unknown_yellow,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
             len(self._world._movecoordinator._posted),
             ygrp_joints, yglp_joints, ball_joints,
             num_out, num_out - num_in,
+            deferreds, event_cbs, step_cbs, calllater_cbs,
             self.getCondensedState(),
             )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
 
