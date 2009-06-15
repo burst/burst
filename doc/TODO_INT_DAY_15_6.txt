@@ -1,0 +1,10 @@
+Kicking Behavior bugs
+=====================
+When we finish aligning, even if it fails, we kick - needs a check and possible loop.
+
+
+Walk bugs
+=========
+
+CCW strafe doesn't work.
+
