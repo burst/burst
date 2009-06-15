@@ -21,8 +21,8 @@ import burst
 
 
 import burst.moves.walks as walks
-walks.STRAIGHT_WALK.defaultSpeed = 100
-walks.SIDESTEP_WALK.defaultSpeed = 22 # 20 seems just fine
+walks.STRAIGHT_WALK.defaultSpeed = 130
+walks.SIDESTEP_WALK.defaultSpeed = 27 # 20 seems just fine
 
 
 import burst.behavior_params as params
