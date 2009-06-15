@@ -30,7 +30,7 @@ class SerialPostQueue(object):
     """
 
     def __init__(self, name, world):
-        self._name = name
+        self.name = name
         self._posts = []
         self._world = world
         self._motion = world._motion
@@ -61,7 +61,7 @@ class SerialPostQueue(object):
             import pdb; pdb.set_trace()
     
         #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
-        #    self._name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
+        #    self.name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
         #)
         if self._world.time >= self._start_time + duration:
             if not isinstance(postid, int):

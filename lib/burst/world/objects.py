@@ -5,27 +5,17 @@ from burst_util import nicefloat
 from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
-    DEFAULT_CENTERING_X_ERROR, DEFAULT_CENTERING_Y_ERROR,
-    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE)
+    DEFAULT_NORMALIZED_CENTERING_X_ERROR, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
+    CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE,
+    IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
 from ..events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
-from burst_util import running_median, RingBuffer
+from burst_util import running_median, RingBuffer, Nameable
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
 import burst.events as events_module
 
-class Namable(object):
-    def __init__(self, name='unnamed'):
-        self._name = name
-
-    def _setName(self, name):
-        self._name = name
-
-    def __str__(self):
-        return self._name
-
-    __repr__ = __str__
 
 class CenteredLocatable(object):
     """ store data for a Locatable for a current search.
@@ -76,7 +66,7 @@ class CenteredLocatable(object):
 
         if burst.options.verbose_localization:
             print "Locatable (Searcher): updating %s, (%1.2f, %1.2f) -> (%1.2f, %1.2f)" % (
-                target._name,
+                target.name,
                 self.normalized2_centerX or -100.0, self.normalized2_centerY or -100.0,
                 target.normalized2_centerX, target.normalized2_centerY)
 
@@ -103,8 +93,21 @@ class CenteredLocatable(object):
         # clear who computed what, multiple ways to compute same thing (is Ball centered)
         self.sighted_centered = target.centered or target.centered_at_pitch_limit
         self.update_time = self._world.time
+
+    def estimated_yaw_and_pitch_to_center(self):
+        """ return yaw and pitch that should bring this object into the center of
+        the image """
+        delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
+        delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
+        yaw = self.head_yaw + delta_yaw
+        pitch = self.head_pitch + delta_pitch
+        #self._report("centering initial move towards %s, %1.2f+%1.2f, %1.2f+%1.2f" % (
+        #    target.name, target.centered_self.head_yaw, delta_yaw,
+        #    target.centered_self.head_pitch, delta_pitch))
+        return yaw, pitch
+
  
-class Locatable(Namable):
+class Locatable(Nameable):
     """ stupid name. It is short for "something that can be seen, holds a position,
     has a limited velocity which can be estimated, and is also interesting to the
     soccer game"
@@ -189,8 +192,8 @@ class Locatable(Namable):
 
     xy = property(get_xy)
 
-    def centering_error(self, normalized_error_x=DEFAULT_CENTERING_X_ERROR,
-            normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
+    def centering_error(self, normalized_error_x=DEFAULT_NORMALIZED_CENTERING_X_ERROR,
+            normalized_error_y=DEFAULT_NORMALIZED_CENTERING_Y_ERROR):
         """ calculate normalized error from image center for object, using
         centerX and centerY from vision, using given defaults for what "centered"
         means (i.e. what the margins are).
@@ -254,7 +257,7 @@ class Locatable(Namable):
             # no way this body jumped that quickly
             if self.REPORT_JUMP_ERRORS:
                 print "JUMP ERROR: %s:%s - %s, %s -> %s, %s - bad new position value, not updating" % (
-                    self.__class__.__name__, self._name, self.body_x, self.body_y, body_x, body_y)
+                    self.__class__.__name__, self.name, self.body_x, self.body_y, body_x, body_y)
             return
             
         self.last_update_time, self.last_dist, self.last_elevation, self.last_bearing = (
@@ -284,13 +287,13 @@ class Locatable(Namable):
             ) = self.centering_error()
 
         if burst.options.debug:
-            print "%s: update_centered: %s %1.2f %1.2f" % (self._name,
+            print "%s: update_centered: %s %1.2f %1.2f" % (self.name,
                 self.centered, self.normalized2_centerX, self.normalized2_centerY)
 
         self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
     
     def __str__(self):
-        return "<%s at %s>" % (self._name, id(self))
+        return "<%s at %s>" % (self.name, id(self))
 
 class Movable(Locatable):
     def __init__(self, name, world, real_length):
@@ -566,22 +569,22 @@ class Goal(Locatable):
             position_changed_event = right_pos_changed_event, world_x=right_world[0],
                 world_y=right_world[1])
         self.unknown = GoalPost(name='%s_UnknownPost' % name, world=world,
-            position_changed_event=-1, world_x=mid_x, world_y=mid_y)
+            position_changed_event=-1, world_x=mid_x, world_y=mid_y, on_seen_event = -1)
 
     def calc_events(self, events, deferreds):
         left = self.left.calc_events(events, deferreds)
         right = self.right.calc_events(events, deferreds)
         if left or right:
             state = left or right
-            self.unknown.update_from_new_state(state)
-            if self.unknown.seen:
-                print "%s: updated unknown: %s" % (self._name, left and 'left' or 'right')
+            self.unknown.update_from_new_state(state, events=None, deferreds=None)
+            if burst.options.debug and self.unknown.seen:
+                print "%s: updated unknown: %s" % (self.name, left and 'left' or 'right')
         else:
             self.unknown.seen = False
 
 class GoalPost(Locatable):
 
-    def __init__(self, name, world, position_changed_event, world_x, world_y):
+    def __init__(self, name, world, position_changed_event, world_x, world_y, on_seen_event=None):
         super(GoalPost, self).__init__(name, world,
             real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
         self._position_changed_event = position_changed_event
@@ -602,21 +605,29 @@ class GoalPost(Locatable):
         self.y = 0.0
         self.id_certainty = ID_NOT_SURE
         self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
+        if not on_seen_event:
+            on_seen_event = getattr(events_module, "EVENT_"+self.name+"_IN_FRAME")
+        self._on_seen_event = on_seen_event
 
     def get_new_state(self):
         return self._world.getVars(self._vars)
 
-    def update_from_new_state(self, new_state, events=None, deferreds=None):
+    def update_from_new_state(self, new_state, events, deferreds):
+        """ returns the new_state if the special "seen but not certain" case holds.
+        """
         # calculate events
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state
         
-        new_seen = (isinstance(new_dist, float) and new_dist > 0.0)
+        # TODO: REMOVE ME OR DIE
+        new_id_certainty = ID_SURE
+
+        new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and new_id_certainty == ID_SURE)
 
         if new_seen:
-            events.add(getattr(events_module, "EVENT_"+self._name+"_IN_FRAME"))
+            if events is not None: events.add(self._on_seen_event)
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
@@ -628,8 +639,7 @@ class GoalPost(Locatable):
         if new_seen and (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
-            if events:
-                events.add(self._position_changed_event)
+            if events is not None: events.add(self._position_changed_event)
         # store new values
         (self.angleX, self.angleY, self.centerX, self.centerY,
                 self.focDist, self.height, self.width,
@@ -641,18 +651,14 @@ class GoalPost(Locatable):
         self.recently_seen = self.calc_recently_seen(new_seen)
         if self.seen:
             self.update_centered()
+        
+        if new_id_certainty != ID_SURE and new_dist > 0.0:
+            return new_state
+        return None
 
     def calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
-        (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
-                new_dist, new_elevation, new_focDist, new_height,
-                new_width, new_x, new_y, new_id_certainty
-                ) = new_state = self.get_new_state()
-
-        if new_id_certainty != ID_SURE:
-            return new_state
-        self.update_from_new_state(new_state, events, deferreds)
-        return None
+        return self.update_from_new_state(self.get_new_state(), events, deferreds)
 

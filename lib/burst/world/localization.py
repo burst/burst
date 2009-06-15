@@ -67,8 +67,8 @@ class Localization(object):
                             ('was seen centered %3.2f seconds ago' % (self._world.time -
                                 o_centered.update_time)) or 'has not been centered')
                     print "Localization: UPDATE DIST %s (%s %s)" % (
-                                obj._name, other_obj._name, other)
-                    print "            : %s is (%s, %s)" % (other_obj._name,
+                                obj.name, other_obj.name, other)
+                    print "            : %s is (%s, %s)" % (other_obj.name,
                                 nicefloat(other_obj.normalized2_centerX),
                                 nicefloat(other_obj.normalized2_centerY))
                 # update pose
@@ -87,7 +87,7 @@ class Localization(object):
             print "Localization: %s in %d+[0,%3.3f] for %s..>%s" % (
                 moved and 'moved' or 'stationary',
                 t_start - world.start_time, t_end - t_start,
-                other_obj._name, obj._name)
+                other_obj.name, obj.name)
         if not moved:
             if self.verbose:
                 print "Localization: UPDATE SELF POSITION"
@@ -111,7 +111,7 @@ class Localization(object):
         obj.my_dist = self.calcPostDist(obj)
         if self.verbose:
             print "Localization: %s new height = %3.1f, vision heights %3.1f, %3.1f" % (
-                obj._name, obj.my_dist, obj.dist, obj.focDist)
+                obj.name, obj.my_dist, obj.dist, obj.focDist)
 
     def calcPostDist(self, post):
         #print "please add the pix dist"

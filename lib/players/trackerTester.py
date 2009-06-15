@@ -11,6 +11,7 @@ class trackerTester(Player):
     
     def onStart(self):
         self.count = 1
+        self._actions.setCameraFrameRate(20)
         self._actions.initPoseAndStiffness().onDone(self.initHeadPosition)
     
     def initHeadPosition(self):

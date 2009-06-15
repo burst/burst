@@ -55,12 +55,12 @@ class MissingProxy(object):
     """
 
     def __init__(self, name):
-        self._name = name
+        self.name = name
         if not 'post' in name:
-            self.post = MissingProxy('%s.post' % self._name)
+            self.post = MissingProxy('%s.post' % self.name)
 
     def __getattr__(self, k):
-        #print "missing %s.%s" % (self._name, k)
+        #print "missing %s.%s" % (self.name, k)
         return lambda *args, **kw: None
 
 def getProxy(proxy_name, global_name, deferred):

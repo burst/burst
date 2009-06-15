@@ -3,6 +3,9 @@ echo ROBOT=$ROBOT
 #TODO - try to ping
 scp $AL_DIR/crosstoolchain/staging/i486-linux/usr/lib/libboost_python-mt.so $ROBOT:/usr/lib
 scp $AL_DIR/crosstoolchain/staging/i486-linux/usr/lib/libboost_signals-mt.so $ROBOT:/usr/lib
+
+echo The rest should be done with rsync - see shwarma wiki
+exit -1
 # used by debugsocket?
 LIST1="/usr/lib/python2.5/pickle.py /usr/lib/python2.5/struct.py /usr/lib/python2.5/re.py /usr/lib/python2.5/sre_compile.py /usr/lib/python2.5/sre_constants.py /usr/lib/python2.5/sre_parse.py"
 # used by debugsocket, definitely

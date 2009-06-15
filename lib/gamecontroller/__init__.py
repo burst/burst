@@ -4,6 +4,7 @@
 import socket
 
 import constants
+import burst_consts # sorry, should not be here - but I find a single consts file easier.
 from message import GameControllerMessage
 
 
@@ -13,7 +14,8 @@ __all__ = ['GameControllerMessage', 'constants', 'GameController', 'EmptyGameCon
 
 class GameController(object):
 
-    def __init__(self, gameStatus, host="0.0.0.0", port=3839, bufsize=1024):
+    def __init__(self, gameStatus, host="0.0.0.0",
+            port=burst_consts.GAME_CONTROLLER_BROADCAST_PORT, bufsize=1024):
         self.gameStatus = gameStatus
         self.bufsize = bufsize
         try:

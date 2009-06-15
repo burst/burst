@@ -7,8 +7,8 @@ from burst.events import *
 import burst
 import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
-    DEFAULT_CENTERING_X_ERROR,
-    DEFAULT_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
+    DEFAULT_NORMALIZED_CENTERING_X_ERROR,
+    DEFAULT_NORMALIZED_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
     IMAGE_CENTER_X, IMAGE_CENTER_Y)
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
@@ -20,36 +20,37 @@ class Tracker(object):
     
     """ track objects by moving the head """
     
-    verbose = burst.options.verbose_tracker # turn on for debugging
-    debug = verbose and burst.options.debug
-    _centering_normalized_x_error = 0.1 # TODO - this should depend on distance?
-    _centering_normalized_y_error = 0.1
-
     def __init__(self, actions):
         self._target = None
         self._actions = actions
         self._world = actions._world
         self._eventmanager = actions._eventmanager
-        self._stop = True
+        self._stopped = True
         self._on_lost = None
         self._lost_event = None
         # if _on_centered_bd != None then on centering it is called and tracking
         # is stopped
         self._on_centered_bd = None
 
+        self.verbose = burst.options.verbose_tracker # turn on for debugging
+        self.debug = self.verbose and burst.options.debug
+        self._centering_normalized_x_error = 0.1 # TODO - this should depend on distance?
+        self._centering_normalized_y_error = 0.1
+
+
         # DEBUG
         #self._trackingStep = traceme(self._trackingStep)
 
     ############################################################################
     
-    def stopped(self):
-        return self._stop
-
     def _start(self, target, on_lost_callback):
         self._target = target
-        self._stop = False
+        self._stopped = False
         self._on_lost_callback = on_lost_callback
-    
+
+    def stopped(self):
+        return self._stopped
+
     def stop(self):
         """ stop tracker and centered. unregister any events, after
         this call be ready for a new track or center action.
@@ -57,10 +58,11 @@ class Tracker(object):
         # don't erase any deferreds here! stop is called
         # before issuing the callbacks, allowing deferred's callee to
         # correctly check that tracker is not operating.
+        if self.stopped(): return
         if self.verbose:
             print "Tracker: Stopping current action - %s" % (
                 self._on_centered_bd and 'centering' or 'tracking')
-        self._stop = True
+        self._stopped = True
         self._on_centered_bd = None
         self._user_on_lost = None
         self._user_on_timeout = None
@@ -82,7 +84,7 @@ class Tracker(object):
             return
         '''
         if self.verbose:
-            print "Tracker: Start Centering on %s" % target._name
+            print "Tracker: Start Centering on %s" % target.name
         self._on_centered_bd = self._actions.burst_deferred_maker.make(self)
         self._start(target, lostCallback or self._on_centered_bd.callOnDone)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
@@ -104,10 +106,10 @@ class Tracker(object):
             user_cb()
 
     def _centeringStep(self):
-        if self._stop: return
+        if self._stopped: return
         if not self._target.recently_seen:
             if self.verbose:
-                print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+                print "CenteringStep: %s not recently seen, calling _on_lost_callback" % self._target.name
             self._onLost()
             return
         centered, centered_at_pitch_limit, delta_angles, error = self.calculateTracking(self._target,
@@ -157,25 +159,25 @@ class Tracker(object):
         self._start(target, lostCallback)
         self._on_centered_bd = None
         self._trackingStep()
-    
+
     def _onLost(self):
         on_lost_cb = self._on_lost_callback
         self.stop()
         if on_lost_cb:
             on_lost_cb()
-    
+
     def _trackingStep(self):
         # TODO - we check self._target.seen explicitly, not relying on the
         # self.stop() call in self.onLost (tied to the event_lost), because
         # this avoids the case where this callback is called before the event
         # lost one - how to solve this in a nicer manner?
-        if self._stop: return # Stopped
+        if self._stopped: return # Stopped
         if self.verbose:
             print "TrackingStep:",
         # check if target is lost, call callback
         if not self._target.recently_seen:
             if self.verbose:
-                print "TrackingStep: %s not recently seen, calling _on_lost_callback" % self._target._name
+                print "TrackingStep: %s not recently seen, calling _on_lost_callback" % self._target.name
             self._onLost()
             return # Lost target
         centered, maybe_bd = self.executeTracking(self._target)
@@ -194,15 +196,15 @@ class Tracker(object):
                 # we don't stop when target is lost - just callLater.
                 # TODO - if lost for more then MARGIN tell user?
                 if self.verbose:
-                    print "TrackingStep: %s not visible right now" % (self._target._name)
+                    print "TrackingStep: %s not visible right now" % (self._target.name)
             # target is centered or we lost it for a short period (we thing), so just callLater
             #import pdb; pdb.set_trace()
             self._eventmanager.callLater(EVENT_MANAGER_DT, self._trackingStep)
 
     ### Work horse for actually turning head towards target
     def calculateTracking(self, target,
-            normalized_error_x=DEFAULT_CENTERING_X_ERROR,
-            normalized_error_y=DEFAULT_CENTERING_Y_ERROR):
+            normalized_error_x=DEFAULT_NORMALIZED_CENTERING_X_ERROR,
+            normalized_error_y=DEFAULT_NORMALIZED_CENTERING_Y_ERROR):
         """ This is a controller. Does a single tracking step,
             aiming to center on the given target.
 
@@ -240,7 +242,8 @@ class Tracker(object):
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
         if self.verbose:
             angles = (delta_angles and ', angles (%1.2f %1.2f)' % delta_angles) or ''
-            print "Tracker calculation: %s, center %3.1f, %3.1f, error (%1.2f, %1.2f)%s" % (
+            print "Tracker calculation: %s, %s, %s, center %3.1f, %3.1f, error (%1.2f, %1.2f)%s" % (
+                centered, centered_at_pitch_limit,
                 head_motion_in_progress and 'head moving' or 'head ready',
                 target.centerX, target.centerY, xNormalized, yNormalized, angles)
         return centered, centered_at_pitch_limit, delta_angles, (xNormalized, yNormalized)
@@ -277,20 +280,37 @@ class HeadMovementCommand(object):
 
 class CenteringCommand(object):
 
-    def __init__(self, actions, headYaw, headPitch, target):
+    """ Turn towards an initial position, then execute centering
+    a few times, each time using the most centered position currently
+    known to bootstrap."""
+    
+
+    def __init__(self, actions, headYaw, headPitch, target, repeats=2):
+        """ repeats - number of times to run centering. First time the
+        target is centered, or if repeats times pass, we call the bd returned
+        """
         self._actions = actions
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
+        self._repeats = repeats
 
+    def onCenteringDone(self):
+        # called both on centering and on target lost
+        if self._target.sighted_centered or self._repeats == 0:
+            self._bd.callOnDone()
+        print "CENTERING %s" % self._repeats
+        self._repeats -= 1
+        new_yaw, new_pitch = self._target.centered_self.estimated_yaw_and_pitch_to_center()
+        self._actions.moveHead(new_yaw, new_pitch).onDone(
+            lambda: self._actions.tracker.center(self._target).onDone(self.centeringDone)
+        )
+            
     def __call__(self):
-        bd = self._actions.moveHead(self._yaw, self._pitch)
+        self._bd = bd = self._actions.moveHead(self._yaw, self._pitch)
         # TODO - testing. Does this actually call the right bd?
         # maybe switch to Deferreds here, since they are much
         # simpler compared to the BurstDeferred chain thing?
-        return bd.onDone(
-                lambda _, target=self._target:
-                    self._actions.tracker.center(target,
-                        lostCallback=bd.callOnDone)
-                )
+        bd.onDone(self.onCenteringDone)
+        return bd
 
 class TurnCommand(object):
 
@@ -301,8 +321,28 @@ class TurnCommand(object):
     def __call__(self):
         return self._actions.turn(self.thetadelta)
 
-def baseIter(searcher):
+class SwitchCameraCommand(object):
+
+    def __init__(self, actions, whichCamera):
+        self.actions = actions
+        self.whichCamera = whichCamera
+
+    def __call__(self):
+        return self.actions.setCamera(self.whichCamera)
+
+def searchMovesIter(searcher):
     while True:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield TurnCommand(searcher._actions, -pi/2)
+
+def searchMovesIterWithCameraSwitching(searcher):
+    while True:
+        if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
+            yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
         for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
@@ -314,10 +354,10 @@ class SearchPlanner(object):
     pattern when we center on targets - then temporarily the tracker
     takes care of both actions and seen events """
 
-    def __init__(self, searcher, center=False):
+    def __init__(self, searcher, center=False, _baseIter=searchMovesIter):
         self.verbose = burst.options.verbose_tracker
         self._searcher = searcher
-        self._baseIter = baseIter(searcher)
+        self._baseIter = _baseIter(searcher)
         self._nextTargets = []
 #            self._lastPosition = searcher.self. # TODO: return to the last position after a chain of targets.
         if center:
@@ -330,20 +370,14 @@ class SearchPlanner(object):
         self._nextTargets.append(target)
 
     def next(self):
-        if self._nextTargets == []:
+        if len(self._nextTargets) == 0:
             self._report("giving a command according to the base-iterator.")
             return self._baseIter.next()
         else:
             target = self._nextTargets[0]
             del self._nextTargets[0]
-            self._report("giving a centering command: %s" % target._name)
-            delta_yaw   = - PIX_TO_RAD_X * (target.centered_self.centerX - IMAGE_CENTER_X)
-            delta_pitch =   PIX_TO_RAD_Y * (target.centered_self.centerY - IMAGE_CENTER_Y)
-            yaw = target.centered_self.head_yaw + delta_yaw
-            pitch = target.centered_self.head_pitch + delta_pitch
-            self._report("centering initial move towards %s, %1.2f+%1.2f, %1.2f+%1.2f" % (
-                target._name, target.centered_self.head_yaw, delta_yaw,
-                target.centered_self.head_pitch, delta_pitch))
+            self._report("giving a centering command: %s" % target.name)
+            yaw, pitch = target.centered_self.estimated_yaw_and_pitch_to_center()
             return self._centerCommand(self._searcher._actions, yaw, pitch, target)
 
     def hasMoreCenteringTargets(self):
@@ -368,20 +402,21 @@ class Searcher(object):
         self._actions = actions
         self._world = actions._world
         self._eventmanager = actions._eventmanager
-        self.reset()
+        self._search_count = [0, 0] # starts, stops
+        self._reset()
+        self._stopped = True
         # this is the default "did I see all targets" function, used
         # by searchHelper to provide both "all" and "one off" behavior.
         self._seenTargets = self._seenAll
-        self._search_count = [0, 0] # starts, stops
 
-    def reset(self):
-        self._stopped = True # TODO: For timeouts, use an "ack".
+    def _reset(self):
         self._timeoutCallback = None
-        self._seen_objects = []
+        self.seen_objects = []
         self._eventToCallbackMapping = {}
         self._searchMoves = None
         self._deferred = None
         self.targets = []
+        self._report("Searcher: RESET")
 
     def _report(self, *strings):
         if self.verbose:
@@ -391,9 +426,10 @@ class Searcher(object):
         return self._stopped
 
     def stop(self):
+        if self.stopped(): return
         self._unregisterAllEvents()
         self._search_count[1] += 1
-        self.reset()
+        self._stopped = True
         self._report("Searcher: STOPPED")
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
@@ -414,9 +450,10 @@ class Searcher(object):
         if not self.stopped():
             print "Searcher: WARNING: starting new search but not stopped"
             import pdb; pdb.set_trace()
+        self._reset()
         self._stopped = False
         self._search_count[0] += 1
-        self._report("Searcher: search started for %s. %s, %s" % (','.join([t._name for t in targets]),
+        self._report("Searcher: search started for %s. %s, %s" % (','.join([t.name for t in targets]),
             center_on_targets and 'with centering' or 'no centering',
             self._seenTargets == self._seenAll and 'for all' or 'for one'))
         self.targets = targets[:]
@@ -442,6 +479,11 @@ class Searcher(object):
         self._searchPlanner = SearchPlanner(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
         self._eventmanager.callLater(0, self._nextSearchMove) # The centered_selves have just been cleared. # TODO: Necessary.
 
+        # shortcut if we already see some or all of the targets
+        for target in self.targets:
+            if target.seen:
+                self._onSeen(target, target.in_frame_event) # TODO - recently_seen?
+
         # Return a promise to call when done. Remember that registration to a timeout is done during the calling of this function.
         self._deferred = self._actions.burst_deferred_maker.make(self)
         assert(self._deferred)
@@ -461,22 +503,22 @@ class Searcher(object):
             self._eventmanager.cancelCallLater(self._timeoutCallback)
 
     def _onSeen(self, obj, event):
-        self._report("Searcher: seeing %s" % obj._name)
+        self._report("Searcher: seeing %s" % obj.name)
 #            print "\nSearcher seeing ball?: (ball seen %s, ball recently seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
 #                self._world.ball.seen, self._world.ball.recently_seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
 
         #if len(self._eventToCallbackMapping) == 0: return
-        if not obj in self._seen_objects:
-            self._report("Searcher: first time seen %s" % obj._name)
+        if not obj in self.seen_objects:
+            self._report("Searcher: first time seen %s" % obj.name)
             #self._eventmanager.unregister(self._onSeen, event)
             if event in self._eventToCallbackMapping:
                 self._report("Searcher: unregistering %s (%s)" % (event, events.event_name(event)))
                 cb = self._eventToCallbackMapping[event]
                 self._eventmanager.unregister(cb, event)
                 del self._eventToCallbackMapping[event]
-            self._seen_objects.append(obj)
+            self.seen_objects.append(obj)
             if self._center_on_targets:
-                self._report("Next, I'll center on %s" % obj._name)
+                self._report("Next, I'll center on %s" % obj.name)
                 self._searchPlanner.feedNext(obj)
 
     def _nextSearchMove(self):
@@ -485,7 +527,8 @@ class Searcher(object):
             if not self._seenTargets() or self._searchPlanner.hasMoreCenteringTargets():
                 try:
                     self._searchPlanner.next().__call__().onDone(self._nextSearchMove)
-                    print self.targets, self._searchPlanner.hasMoreCenteringTargets() # TODO: Remove.
+                    self._report("%s, %s" % (self.targets,
+                        self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
                 except StopIteration:
                     raise Exception("Search iterators are expected to be never-ending.")
             else:
@@ -494,14 +537,14 @@ class Searcher(object):
     def _seenOne(self):
         """ function for search_one_of, checks if one of the supplied targets
         has been seen """
-        self._report("_seenOne: len(self._seen_objects) = %s" % len(self._seen_objects))
-        return len(self._seen_objects) >= 1
+        self._report("_seenOne: len(self.seen_objects) = %s" % len(self.seen_objects))
+        return len(self.seen_objects) >= 1
 
     def _seenAll(self):
         """ default _seenTargets function, checks that all
         targets have been seen """
         for target in self.targets:
-            if not target in self._seen_objects:
+            if not target in self.seen_objects:
                 self._report("_seenAll FALSE")
                 return False
         self._report("_seenAll TRUE")

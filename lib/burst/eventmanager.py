@@ -250,15 +250,20 @@ class EventManager(object):
 
         # Warn user on the tricky cases - when more then one cb happens
         # in a single frame
-        num_deferreds = len(self._pending_deferreds)
-        num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
-        num_time_step = len(self._events[EVENT_STEP])
-        num_call_laters = len(call_laters_this_frame)
-        num_cbs_in_round = num_deferreds + num_events + num_time_step + num_call_laters
-        if self.verbose and num_cbs_in_round >= self.num_callbacks_to_report:
-            print "EventManager: you have %s = %s D + %s E + %s S + %s L cbs" % (
-                num_cbs_in_round, num_deferreds, num_events, num_time_step,
-                num_call_laters)
+        self._num_deferreds = len(self._pending_deferreds)
+        self._num_events = sum(len(cbs) for event, cbs in self._pending_event_callbacks)
+        self._num_time_step = len(self._events[EVENT_STEP])
+        self._num_call_laters = len(call_laters_this_frame)
+        self._num_cbs_in_round = self._num_deferreds + self._num_events + self._num_time_step + self._num_call_laters
+        if self.verbose and self._num_cbs_in_round >= self.num_callbacks_to_report:
+            print 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown() 
+
+    def getPendingBreakdown(self):
+        return (self._num_cbs_in_round, self._num_deferreds, self._num_events, self._num_time_step,
+                self._num_call_laters)
+
+    def numberPendingCallbacks(self):
+        return self._num_cbs_in_round
 
     def handlePendingCallbacks(self):
         """ Call all callbacks registered based on the new events
@@ -340,6 +345,9 @@ class BasicMainLoop(object):
         self._on_normal_quit_called = False
 
         self._profiler = None
+        
+        # debug flags
+        self._ticker = burst.options.ticker or burst.options.trace_proxies
 
     def _getNumberOutgoingMessages(self):
         return 0 # implemented just in twisted for now
@@ -422,7 +430,7 @@ class BasicMainLoop(object):
 
     def _printTraceTickerHeader(self):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
-        print "Time Objs-CL|IN|PO|YRt          |YLt          |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+        print "Time Objs-CL|IN|PO|Right        |Left         |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
         print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def _printTraceTicker(self):
@@ -430,26 +438,33 @@ class BasicMainLoop(object):
         yglp = self._world.yglp.seen and 'L' or ' '
         ygrp = self._world.ygrp.seen and 'R' or ' '
         unknown_yellow = self._world.yellow_goal.unknown.seen and 'U' or ' '
+        bglp = self._world.bglp.seen and 'l' or ' '
+        bgrp = self._world.bgrp.seen and 'r' or ' '
+        unknown_blue = self._world.blue_goal.unknown.seen and 'u' or ' '
         targets = self._actions.searcher.targets
         def getjoints(obj):
-            if obj not in targets: return '-------------'
+            if obj not in targets: return False
             r = obj.centered_self
             if not r.sighted: return '             '
             return ('%0.2f %0.2f %s' % (r.head_yaw, r.head_pitch, r.sighted_centered and 'T' or 'F')).rjust(11)
-        yglp_joints = getjoints(self._world.yglp)
-        ygrp_joints = getjoints(self._world.ygrp)
+        left_joints = getjoints(self._world.yglp) or getjoints(self._world.bglp) or '-------------'
+        right_joints = getjoints(self._world.ygrp) or getjoints(self._world.bgrp) or '-------------'
         ball_joints = getjoints(self._world.ball)
         num_out = self._getNumberOutgoingMessages()
         num_in = self._getNumberIncomingMessages()
+        total, deferreds, event_cbs, step_cbs, calllater_cbs = self._eventmanager.getPendingBreakdown()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%4.1f %s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s" % (self.cur_time - self.main_start_time,
-            ball, yglp, ygrp, unknown_yellow,
+        print ("%4.1f %s%s%s%s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (self.cur_time - self.main_start_time,
+            ball,
+            yglp, ygrp, unknown_yellow,
+            bglp, bgrp, unknown_blue,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
             len(self._world._movecoordinator._posted),
-            ygrp_joints, yglp_joints, ball_joints,
+            left_joints, right_joints, ball_joints,
             num_out, num_out - num_in,
+            deferreds, event_cbs, step_cbs, calllater_cbs,
             self.getCondensedState(),
             )).ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
 
@@ -458,7 +473,7 @@ class BasicMainLoop(object):
         of all current possible callbacks, probably after some filtering. Condensed means
         less bytes, suitable for the ticker """
         em = self._eventmanager
-        dont_print = set(['_announceSeeingYellowGoal', '_announceSeeingBlueGoal'])
+        dont_print = set(['_announceSeeingYellowGoal', '_announceSeeingBlueGoal', '_announceNotSeeingBall', '_announceSeeingBall'])
         try:
             s = ','.join([x for x in map(func_name, [cb for cb, args, kw in em._pending_call_laters] +
                 sum((list(cbs) for event, cbs in em._pending_event_callbacks), []) +
@@ -475,7 +490,7 @@ class BasicMainLoop(object):
         self.main_start_time = time()
         self.cur_time = self.main_start_time
         self.next_loop = self.cur_time
-        if burst.options.trace_proxies:
+        if self._ticker:
             self._printTraceTickerHeader()
         # First do a single world update - get values for all variables, etc.
         self.doSingleStep()
@@ -492,7 +507,7 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         self._eventmanager.computePendingCallbacks()
-        if burst.options.trace_proxies:
+        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberPendingCallbacks() > 0):
             self._printTraceTicker()
 
         # reverse the order? arg.

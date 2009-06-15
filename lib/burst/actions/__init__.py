@@ -51,6 +51,7 @@ class Actions(object):
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
+        self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
     #===============================================================================
@@ -59,7 +60,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
-    def kickBall(self, target_world_frame=None):
+    def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
         
@@ -76,7 +77,8 @@ class Actions(object):
         being able to detect the location.
         TODO: have several kick types, one for passing, one for kicking towards goal.
         """
-        ballkicker = BallKicker(self._eventmanager, self)
+        ballkicker = BallKicker(self._eventmanager, self,
+            target_left_right_posts=target_left_right_posts)
         ballkicker.start()
         return ballkicker
 
@@ -276,8 +278,10 @@ class Actions(object):
     
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
-        and CAMERA_WHICH_TOP_CAMERA """
+        and burst_consts.CAMERA_WHICH_BOTTOM_CAMERA """
         bd = self._make(self)
+        print "_"*20 + ("SWITCHING TO %s CAMERA" % (CAMERA_WHICH_PARAM == CAMERA_WHICH_BOTTOM_CAMERA and 'bottom' or 'top')) + '_'*20
+        self.currentCamera = whichCamera
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())
         return bd
@@ -417,6 +421,9 @@ class Actions(object):
         return self._movecoordinator.waitOnPostid(d,
             description=description,
             kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
+
+    def executeSingleHeadMove(self, yaw_delta, pitch_delta, interpolation_time):
+        return self.executeHeadMove( (((yaw_delta, pitch_delta), interpolation_time),) )
 
     def _clearFootsteps_returnDeferred(self):
         return self._motion.clearFootsteps()

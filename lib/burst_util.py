@@ -13,10 +13,27 @@ import burst_consts
 
 # Data Structures
 
+class Nameable(object):
+    
+    def __init__(self, name='unnamed'):
+        self.name = name
+        self.verbose = False
+
+    def __str__(self):
+        return self.name
+
+    def printDebug(self, message):
+        if self.verbose:
+            print "%s: %s" % (self.name, message)
+
+    __repr__ = __str__
+
 class RingBuffer(list):
+    
     """ Todo - a more efficient implementation. (only
     if this becomes an issue)
     """
+    
     def __init__(self, size):
         self.size_ = size
         self.index_ = 0
@@ -691,14 +708,14 @@ def expected_argument_count(f):
 class CallLogger(object):
 
     def __init__(self, name, f):
-        self._name = name
+        self.name = name
         self._f = f
 
     def __call__(self, *args, **kw):
         start = time()
         ret = self._f(*args, **kw)
         end = time()
-        print "%s,%3d ms,(%s)" % (self._name, (end - start) * 1000, trim(str(args) + str(kw),
+        print "%s,%3d ms,(%s)" % (self.name, (end - start) * 1000, trim(str(args) + str(kw),
             burst_consts.CONSOLE_LINE_LENGTH - 33))
         return ret
 
@@ -708,7 +725,7 @@ class LogCalls(object):
 
     def __init__(self, name, obj):
         self._obj = obj
-        self._name = name
+        self.name = name
 
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
@@ -716,11 +733,11 @@ class LogCalls(object):
         if k in DONT_LOG_CALLS:
             return f
         if callable(f):
-            return CallLogger('%s.%s' % (self._name, k), f)
+            return CallLogger('%s.%s' % (self.name, k), f)
         else:
             # hack - just catch the post option of proxies
             if k == 'post':
-                return LogCalls('%s.%s' % (self._name, k), f)
+                return LogCalls('%s.%s' % (self.name, k), f)
         return f
 
 # Python Profiling

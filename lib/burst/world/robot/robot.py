@@ -22,12 +22,26 @@ class Robot(Movable):
         self.leds = LEDs(world)
         self.leds.turnEverythingOff()
         self.sonars = Sonars(world)
-    
+        self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
+
+    def get_state(self):
+        """ return the RobotState - one of gamecontroller.constants.{Initial,Ready,Set,Penalized,Play}RobotState
+        """
+        # TODO - the interface is fine, the implementation is very cumbersome
+        return self.status.status
+
+    state = property(get_state)
+
+    def get_status(self):
+        return self._world.gameStatus.getMyPlayerStatus()
+
+    status = property(get_status)
+
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)
         self.chestButton.calc_events(events, deferreds)
         self.sonars.calc_events(events, deferreds)
-        
+
     def isHeadMotionInProgress(self):
         return self._world._movecoordinator.isHeadMotionInProgress()
 

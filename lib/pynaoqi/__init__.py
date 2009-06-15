@@ -89,13 +89,13 @@ def transpose(m):
 class XMLObject(object):
 
     def __init__(self, name, attrs=[], children=[]):
-        self._name = name
+        self.name = name
         self._attrs = list(attrs)
         self._children = list(children)
         self._d = {}
         for c in self._children:
             if type(c) in [str, unicode]: continue
-            self._d[c._name] = c
+            self._d[c.name] = c
 
     def attributes(self, attrs):
         self._attrs = attrs
@@ -110,13 +110,13 @@ class XMLObject(object):
     def child(self, child):
         self._children.append(child)
         if type(child) is not str:
-            self._d[child._name] = child
+            self._d[child.name] = child
         return self
     C = child
 
     def __str__(self):
         spacer = self._attrs and ' ' or ''
-        return '<%s%s%s>%s</%s>' % (self._name, spacer, ' '.join('%s="%s"' % (k, v) for k, v in self._attrs), ''.join(str(c) for c in self._children), self._name)
+        return '<%s%s%s>%s</%s>' % (self.name, spacer, ' '.join('%s="%s"' % (k, v) for k, v in self._attrs), ''.join(str(c) for c in self._children), self.name)
 
     def __getitem__(self, k):
         return self._d[k]
@@ -285,7 +285,7 @@ class NaoQiParam(object):
         ztype = int(ztype)
         self.__doc__ = zdoc
         _, self._type = nao_type_dict.get(ztype, (None, ztype))
-        self._name = zname
+        self.name = zname
 
     def validate(self, v):
         # TODO
@@ -297,7 +297,7 @@ class NaoQiParam(object):
         return True
     
     def docstring(self):
-        return '%s %s: %s' % (self._type, self._name, self.__doc__)
+        return '%s %s: %s' % (self._type, self.name, self.__doc__)
 
     def __str__(self):
         return str(self._type)
@@ -364,7 +364,7 @@ class NaoQiReturn(object):
         rettype = int(rettype)
         self._rettype_pprint, self._rettype = nao_type_dict.get(rettype, rettype)
         self.__doc__ = doc
-        self._name = name
+        self.name = name
 
     def __str__(self):
         return self._rettype_pprint
@@ -395,10 +395,10 @@ class NaoQiMethod(object):
     def __init__(self, mod, name):
         self._mod = mod
         self._con = mod._con
-        self._name = name
+        self.name = name
         self._has_docs = False
         self._getting_docs = False
-        self.__doc__ = 'call con.%s.%s.makeHelp() to get real help.' % (self._mod._modname, self._name)
+        self.__doc__ = 'call con.%s.%s.makeHelp() to get real help.' % (self._mod._modname, self.name)
 
     def makeHelp(self):
         if self._has_docs:
@@ -432,7 +432,7 @@ class NaoQiMethod(object):
         self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (self._return, name, ','.join(map(str, self._params)), docstring, module, ''.join(' %s\n' % p.docstring() for p in self._params))
 
     def getMethodHelp(self):
-        return self._con._sendRequest(callNaoQiObject(self._mod._modname, 'getMethodHelp', self._name))
+        return self._con._sendRequest(callNaoQiObject(self._mod._modname, 'getMethodHelp', self.name))
 
     def _realcall(self, args, callCreator, callback, d):
         """ handles normal and post calls. They all go through validation
@@ -443,9 +443,9 @@ class NaoQiMethod(object):
             raise Exception("Wrong number of parameters: expected %s, got %s" % (len(self._params), len(args)))
         for i, (p, a) in enumerate(zip(self._params, args)):
             if not p.validate(a):
-                raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self._name, p, a))
+                raise Exception("Argument %s for %s is bad: type is %s, given value is %s" % (i, self.name, p, a))
         self._con._sendRequest(callCreator(self._mod._modname,
-            self._name, *args)).addCallback(callback
+            self.name, *args)).addCallback(callback
             ).addCallback(d.callback)
 
     def __call__(self, *args):

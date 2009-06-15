@@ -27,7 +27,6 @@ class GameControllerTester(Player):
                     getattr(events, attribute[:]))
 
 
-
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop

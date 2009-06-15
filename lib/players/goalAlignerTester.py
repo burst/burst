@@ -6,7 +6,8 @@ import burst.events as events
 from burst.actions.headtracker import Searcher
 import burst
 import burst.moves as moves
-from burst_consts import LEFT, RIGHT, DEFAULT_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y
+from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
+    IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
 
 class GoalAlignerTester(Player):
 
@@ -29,15 +30,15 @@ class GoalAlignerTester(Player):
         for t in self.goalposts:
             if t.centered_self.sighted:
                 if t.centered_self.sighted_centered:
-                    print "%s sighted centered" % t._name
+                    print "%s sighted centered" % t.name
                     self.goalpost_to_track = t
                 else:
-                    print "%s sighted" % t._name
+                    print "%s sighted" % t.name
                     # update goalpost_to_track, but only if not already set (as to not override sighted_centered) 
                     if self.goalpost_to_track is None:
                         self.goalpost_to_track = t
             else:
-                print "%s NOT sighted" % t._name
+                print "%s NOT sighted" % t.name
         
         if self.goalpost_to_track is None:
             print "ERROR! no goalpost to track!"
@@ -65,7 +66,7 @@ class GoalAlignerTester(Player):
         print "strafing"
         if self.goalLocationKnown:
             # TODO: Add align-to-goal-center support
-            if self.goalpost_to_track.bearing < -DEFAULT_CENTERING_Y_ERROR:
+            if self.goalpost_to_track.bearing < -DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
                     self.movement_deferred = self._actions.turn(-0.2)
@@ -73,7 +74,7 @@ class GoalAlignerTester(Player):
                 else:
                     self.movement_deferred = self._actions.executeTurnCW()
                     self.movement_deferred.onDone(self.strafe)
-            elif self.goalpost_to_track.bearing > DEFAULT_CENTERING_Y_ERROR:
+            elif self.goalpost_to_track.bearing > DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
                 self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
                     self.movement_deferred = self._actions.turn(0.2)
