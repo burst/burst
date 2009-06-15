@@ -438,8 +438,6 @@ class Ball(Movable):
     def movingBallPenalty(self):
         
         ERROR_IN_Y = 2
-        #chech = 4
-        #messi = 3
         
         if self.avrYplace_index >= 20:
             self.dy = (self.dist * sin(self.bearing)) - self.avrYplace

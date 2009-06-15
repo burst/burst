@@ -15,12 +15,14 @@ WAITING = 6
 class GoalieTester(Player):
 
     def onStart(self):
-        super(GoalieTester, self).onStart()
+        #super(GoalieTester, self).onStart()
         self.isPenalty = False # TODO: Use the gameStatus object.
         self.isWebots = False
+        self.enterGame() # temporary for disabling game-controller stuff
 
     def enterGame(self):
         self._actions.say("in play")
+        self._actions.setCameraFrameRate(20)
         self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
