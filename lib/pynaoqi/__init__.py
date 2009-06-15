@@ -121,7 +121,7 @@ class XMLObject(object):
     def __getitem__(self, k):
         return self._d[k]
 
-class Requester(object):
+class MessageMaker(object):
 
     def __init__(self, url):
         self._url = url
@@ -484,6 +484,37 @@ class NaoQiMethod(object):
         return ret
 
 ##################################################################
+# Implement a server - used for subscriptions, naoqi calls us
+
+# TODO - move to pynaoqi_twisted
+# TODO - IMPLEMENT
+if False:
+    # NOTE: STILL THE HANGS. If you uncomment this, twisted hangs.
+    # I will get eternal glory if I debug this. Yet I cannot.
+    import twisted.internet.protocol as tip
+    import pynaoqi_twisted
+    class SoapServerFactory(tip.ServerFactory):
+        pass
+
+    def makeListener(host, port):
+        f = SoapServerFactory()
+        f.protocol = pynaoqi_twisted.SoapProtocol
+
+    class NaoQiServer(object):
+        """ The logic part - all handle_X messages are called when
+        a corresponding xml message with head <albroker:X></albroker:X> is received,
+        and the parameter is the contents
+        """
+        
+        def __init__(self, host, port):
+            url = "http://%s:%s/" % (host, port)
+            self._message_maker = MessageMaker(url)
+
+        def handle_getBrokerInfo(self):
+            return 
+
+
+##################################################################
 
 class ModulesHolder(object):
     pass
@@ -633,8 +664,8 @@ class BaseNaoQiConnection(object):
         self.verbose = verbose
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
-        self._req = Requester(url)
-        self._is_webots = self._req._port == 9560
+        self._message_maker = MessageMaker(url)
+        self._is_webots = self._message_maker._port == 9560
         self.s = None # socket to connect to broker. reusing - will it work?
         self._myip = getip()
         self._myport = 12345 # bogus - we are acting as a broker - this needs to be a seperate class
@@ -659,7 +690,7 @@ class BaseNaoQiConnection(object):
         self._initModules()
     
     def getHost(self):
-        return self._req._host
+        return self._message_maker._host
     host = property(getHost)
 
     def _initModules(self):
@@ -712,9 +743,9 @@ class BaseNaoQiConnection(object):
         """
         if self.s is None:
             self.s = socket.socket()
-            self.s.connect((self._req._host, self._req._port))
+            self.s.connect((self._message_maker._host, self._message_maker._port))
         s = self.s
-        tosend = self._req.make(o, keepalive=True)
+        tosend = self._message_maker.make(o, keepalive=True)
         if DEBUG:
             print "***     Sending:     ***\n%s" % tosend
         s.send(tosend)
@@ -762,7 +793,7 @@ class BaseNaoQiConnection(object):
         """ send a request for object o, return deferred to be called with result as soapbody
         instance
         """
-        tosend = self._req.make(o, keepalive=True)
+        tosend = self._message_maker.make(o, keepalive=True)
         return self.connection_manager.sendPacket(tosend)
 
     # Reflection api - getMethods, getModules
@@ -978,7 +1009,7 @@ def test():
     gi2 = getInfoObject('NaoQi')
     print gi2
     assert(str(gi2) == str(getInfoBase))
-    req = Requester(target_url)
+    req = MessageMaker(target_url)
     print req.make(getInfoObject('NaoQi'))
     con = NaoQiConnection(target_url)
     broker_info = con.getBrokerInfo()
