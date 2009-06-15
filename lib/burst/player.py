@@ -2,27 +2,38 @@
 
 # TODO: Someone please refactor this long-winded, repetitive, redundant explanation.
 '''
-The first thing that happens when the eventmanager starts managing a player is, it calls its onStart method.
-A player that inherits from Player may choose to override onStart. If it has, it may still call Player's onStart with super().
-Player (the class) has the following behaviour in its onStart - it makes the robot accept configuration through its bumpers, then,
-as soon as the chest button is pressed, the configuration is locked-in, and the robot moves on to its enterGame method.
-Now, if one doesn't wish for this behaviour to take place, one can just override onStart (the way all our players have thus far), and not
-call super's onStart. This way, one's robot moves on directly to the player's actual behaviour - which is more convenient for testing purposes.
-When one wishes to make a player into a game-worthy player - the kind that is subject to configuration prior to entering the game - all one
-has to do is rename one's onStart to enterGame, et voila.
+The player module implements the Player class, which all players including Goalie and Kicker
+inherit from.
 
-Callbacks in Player that are called externally:
- onStart - when the player has been constructed. Not meant to be used
-           during the game except by the Player class itself.
- onConfigured - after the robot knows it's team and number. This is what the inheritor
-           should reimplement, while remembering to call the super.
+Player implements all the common behavior, including gamecontroller handling and fall
+handling, with suitable places for higher level behavior to take over.
+
+Callbacks that Inheritor needs to reimplement:
+ enterGame - called when PLAYING state is achieved.
  onStop  - called right before shutdown of process, to let Player clean things up.
            implemented in Player and can be overridden (again, remember to super).
+
+Other callbacks that are more like implementation details but might be important:
+
+ onPlaying will call enterGame. This is the real main for users.
+
+ onStart - when the player has been constructed. Not meant to be used
+           during the game except by the Player class itself.
+ onConfigured - called by _onChestButtonPressed. when called it means the
+            robot stopps checking for bumper button or changes to kick off team (TODO
+            the later), will check current broadcast state, enter it (exactly as if
+            it was there to begin with), and register to all other state changes.
 '''
 
 from events import *
-from burst.debug_flags import player_py_debug as debug
+import burst
 import burst_consts
+from gamecontroller.constants import (InitialRobotState,
+    PenalizedRobotState, PlayRobotState, SetRobotState,
+    ReadyRobotState,
+    InitialGameState, ReadyGameState, FinishGameState,
+    SetGameState, PlayGameState, FinishGameState,
+    UNKNOWN_GAME_STATE, gameStateToString)
 
 class Player(object):
 
@@ -31,6 +42,7 @@ class Player(object):
         self._eventmanager = eventmanager
         self._actions = actions
         self._eventsToCallbacksMapping = {}
+        self.verbose = burst.options.verbose_player
         # Fall-handling:
         self._eventmanager.register(self.onFallenDown, EVENT_FALLEN_DOWN)
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
@@ -73,27 +85,88 @@ class Player(object):
             self._eventsToCallbacksMapping.remove(callback, event)
         self._eventsToCallbacksMapping.clear()
 
+    # Start game callbacks
+
     def onStart(self):
+        """ this is called by event manager. does all initial registrations:
+        handle all gamecontroller events
+        handle fall down events
+        setup led changers - video debug and team color and kickoff presentation (TODO kickoff)
+        """
         self._world._sentinel.enableDefaultActionSimpleClick(False)
         Player._announceNotSeeingBall(self)
         Player._announceSeeingNoGoal(self)
         Player.onInitial(self)
 
     def onInitial(self):
-        if debug:
-            self._actions.say("Initial")
+        """ This is the Initial Robot State - the actual game state not withstanding, we
+        allow configuration from buttons in this state, and we exit this state either by
+        a chest button click (then we move to penalized), or by a gamecontroller state
+        change
+        """
+        self._configuring = True
         # Buttons:
         self._eventmanager.register(self._onLeftBumperPressed, EVENT_LEFT_BUMPER_PRESSED)
         self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
         self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
-        self._onChestButtonPressed() # TODO: Remove this short-circuit.
+        # Game Controller:
+        self._eventmanager.register_oneshot(self._waitForKnownGameState, EVENT_GAME_STATE_CHANGED)
+        if self.verbose:
+            self._actions.say("Initial")
+
+    def _waitForKnownGameState(self):
+        game_state = self._world.gameStatus.gameState
+        if game_state is UNKNOWN_GAME_STATE:
+            self._eventmanager.register_oneshot(self._waitForKnownGameState,
+                    EVENT_GAME_STATE_CHANGED)
+        elif self._configuring:
+            if game_state is InitialGameState:
+                if self.verbose:
+                    print "Player: saw Initial game state, unconfigured"
+                self._eventmanager.register_oneshot(self._onExpectingConfigureGameStateChange,
+                    EVENT_GAME_STATE_CHANGED) # TODO - use SWITCHED_FROM?
+            else:
+                if self.verbose:
+                    print "Player: Game already in progress, wait for chest button to be configured"
+
+    def _onExpectingConfigureGameStateChange(self):
+        """ handle any generic change to game state - should probably use
+        specific functions for onPlaying, onReady, onPlay, onPenalized, onFininshed
+        """
+        if self._world.gameStatus.gameState is InitialGameState:
+            if self.verbose:
+                print "Player: saw state %s, continue configuration" % self._world.gameStatus.gameState
+            self._eventmanager.register_once(self._onExpectingConfigureGameStateChange, EVENT_GAME_STATE_CHANGED)
+        else:
+            # ok, so the game is on foot. But since we are still unconfigured,
+            # we will just wait for the chest button
+            if self.verbose:
+                print "Player: configured through gamecontroller gamestate change"
+            self.onConfigured()
 
     def onConfigured(self):
+        """ we get here when done configuring """
+        self._configuring = False
+        if self.verbose:
+            self._actions.say('Configured')
+        settings = self._world.playerSettings
+        state = self._world.gameStatus.gameState
+        print "Team number %d, Team color %d, Player number %d, game state %s" % (
+            settings.teamNumber, settings.teamColor, settings.playerNumber,
+            gameStateToString(state))
+        # TODO - set the kickoff position for the robot according to current
+        for callback in [self._onLeftBumperPressed, self._onRightBumperPressed,
+            self._onChestButtonPressed, self._onExpectingConfigureGameStateChange,
+            self._waitForKnownGameState]:
+            self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
         self._enterGame()
 
     def _enterGame(self):
         self.enterGame()
+
+    def enterGame(self):
+        self._actions.say("Hello. I am a default player. I will now say the first million digits of pi. not")
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player
@@ -149,21 +222,19 @@ class Player(object):
 
     def _onLeftBumperPressed(self):
         self._world.playerSettings.toggleteamColor()
-        if debug:
-            print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
+        if self.verbose:
+            print "Team color: %d" % (self._world.playerSettings.teamColor)
 
     def _onRightBumperPressed(self):
-        self._world.playerSettings.togglePlayerNumber()
-        if debug:
-            print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
+        self._actions.say('hello. don\'t worry, be happy!')
 
     def _onChestButtonPressed(self):
-        if debug:
-            self._actions.say("Configured.")
-            print "Team number: %d. Player number: %d." % (self._world.playerSettings.teamColor, self._world.playerSettings.playerNumber)
-        for callback in [self._onLeftBumperPressed, self._onRightBumperPressed, self._onChestButtonPressed]:
-            self._eventmanager.unregister(callback)
-        self.onConfigured()
+        """ This callback is registered only after start - when
+        the chest button has been pressed we stop being in the configure
+        state, and call onConfigured
+        """
+        if self._configuring:
+            self.onConfigured()
 
     #############
     # Utilities #

@@ -6,9 +6,9 @@ class PlayerSettings(object):
     numOfTeamMembers = 3
     numOfTeams = 2
 
-    def __init__(self, world, playerNumber=0, teamColor=0, teamNumber=31): # TODO: Set this to the actual team number we get during the competition.
+    def __init__(self, world, teamColor=0, teamNumber=consts.BURST_TEAM_NUMBER):
         self.world = world
-        self.playerNumber = playerNumber
+        self.playerNumber = consts.ROBOT_NAME_TO_JERSEY_NUMBER[world.robot.hostname]
         self.teamColor = teamColor
         self.teamNumber = teamNumber
         self.setColors()
@@ -23,3 +23,4 @@ class PlayerSettings(object):
 
     def setColors(self):
         self.world.robot.leds.leftFootLED.turnOn(consts.TeamColors[self.teamColor])
+

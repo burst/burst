@@ -10,15 +10,93 @@ import os # for HOME
 import math
 from math import tan
 
+# Some stuff that is required first
+MESSI = 'memssi'
+GERRARD = 'gerrard'
+CECH = 'cech'
+RAUL = 'raul'
+MALDINI = 'maldini'
+HAGI = 'hagi'
+#
+WEBOTS = 'webots'
+################################################################################
+#                                                                              #
+#       >>>>         Must Configure Correctly Constants       <<<<<<<          #
+#                                                                              #
+################################################################################
+
+
+
+
+# Important!! This needs to be set to what we get during the competition
+BURST_TEAM_NUMBER = 17
+
 # Operating Environment constants
 ROBOT_IP_TO_NAME = {
-    '192.168.5.126'	: 'messi',
-    '192.168.5.170'	: 'gerrard',
-    '192.168.5.226'	: 'cech',
-    '192.168.5.168'	: 'hagi',
-    '192.168.5.224'	: 'raul',
-    '192.168.5.228'	: 'maldini',
+    '192.168.5.126'	: MESSI,
+    '192.168.5.170'	: GERRARD,
+    '192.168.5.226'	: CECH,
+    '192.168.5.168'	: HAGI,
+    '192.168.5.224'	: RAUL,
+    '192.168.5.228'	: MALDINI,
 }
+
+# Jersey numbers:
+# 1 == goalie
+ROBOT_NAME_TO_JERSEY_NUMBER = {
+    MESSI: 1,
+    CECH: 1,
+    HAGI: 2,
+    RAUL: 2,
+    MALDINI: 3,
+    GERRARD: 3,
+    WEBOTS: 1, # TODO - overriding command line for robot number, required for webots.
+}
+
+################################################################################
+# File locations, Shared memory
+################################################################################
+
+# Color tables filenames
+WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
+                'src/burst/data/tables/maverick/webots.mtb')
+
+DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
+                'src/burst/data/tables/maverick/default.mtb')
+
+# Shared memory constants
+
+# burstmem starts by writing variables for the sonars
+BURST_SHARED_MEMORY_VARIABLES_START_OFFSET = 8
+MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
+MMAP_LENGTH      = 4096
+
+
+################################################################################
+# Important other constants (parameters for various behaviors)
+################################################################################
+
+# Event Manager constants
+EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee)
+
+MISSING_FRAMES_MINIMUM = 5
+
+MIN_BEARING_CHANGE = 1e-3 # TODO - ?
+MIN_DIST_CHANGE = 1e-3
+
+# Robot constants
+MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
+
+SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
+SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.
+
+################################################################################
+################################################################################
+
+MIN_JERSEY_NUMBER, MAX_JERSEY_NUMBER = 1, 3
+GAME_CONTROLLER_BROADCAST_PORT = 3838
+GAME_CONTROLLER_NUM_PLAYERS = 11
+GAME_CONTROLLER_NUM_TEAMS = 2
 
 # Proxy names
 BURST_SHARED_MEMORY_PROXY_NAME = "burstmem"
@@ -112,22 +190,7 @@ IMAGE_CENTER_Y = (IMAGE_HEIGHT - 1) / 2.0
 PIX_TO_RAD_X = FOV_X / IMAGE_WIDTH
 PIX_TO_RAD_Y = FOV_Y / IMAGE_HEIGHT
 
-# Shared memory constants
-
-# burstmem starts by writing variables for the sonars
-BURST_SHARED_MEMORY_VARIABLES_START_OFFSET = 8
-MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
-MMAP_LENGTH      = 4096
-
-# Event Manager constants
-EVENT_MANAGER_DT = 0.05 # seconds
-
 # World constants
-
-MISSING_FRAMES_MINIMUM = 5
-
-MIN_BEARING_CHANGE = 1e-3 # TODO - ?
-MIN_DIST_CHANGE = 1e-3
 
 BALL_REAL_DIAMETER = 8.7 # cm
 ROBOT_DIAMETER = 58.0    # this is from Appendix A of Getting Started - also, doesn't hands raised into account
@@ -138,9 +201,6 @@ LEFT = 0
 RIGHT = 1
 DOWN = 2
 UP = 3
-
-# Robot constants
-MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
 
 #############################################################
 # Lists of variable names exported by us to ALMemory
@@ -313,13 +373,6 @@ joint_names, joint_limits = (['HeadYaw',
   'RShoulderRoll': [-1.6580627999999999, 0.0, 0.14381513000000001],
   'RWristYaw': [-1.8325956999999999, 2.6179937999999998, 0.14381513000000001]})
 
-# Color tables filenames
-WEBOTS_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/burst/data/tables/maverick/webots.mtb')
-
-DEFAULT_TABLE_FILENAME = os.path.join(os.environ['HOME'],
-                'src/burst/data/tables/maverick/default.mtb')
-
 # Debugging constants
 CONSOLE_LINE_LENGTH = 73
 
@@ -330,5 +383,4 @@ UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything oth
 RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
 TeamColors = {0: BLUE, 1: RED}
 
-SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
-SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.
+

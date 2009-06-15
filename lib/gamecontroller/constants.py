@@ -33,8 +33,13 @@ Manual = 10 # TODO: Is this correct?
 
 Penalties = [BallHoldingPenalty, GoaliePushingPenalty, PlayerPushingPenalty, IllegalDefenderPenalty, IllegalDefensePenalty, ObstructionPenalty]
 
-UNKNOWN_GAME_STATE = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
-UNKNOWN_PLAYER_STATUS = object() # Ensures uniqueness, and won't test as equal to anything other than itself.
+# Ensures uniqueness, and won't test as equal to anything other than itself.
+class UNKNOWN_GAME_STATE(object):
+    pass
+
+# Ensures uniqueness, and won't test as equal to anything other than itself.
+class UNKNOWN_PLAYER_STATUS(object):
+    pass
 
 #####################
 # Robot Game States #
@@ -55,4 +60,16 @@ robotStateToChestButtonColor = {
     PlayRobotState : burst_consts.GREEN,
     PenalizedRobotState : burst_consts.RED, }
 
+# Debugging helpers
+game_state_to_string_d = {
+    InitialGameState: 'Initial',
+    SetGameState: 'Set',
+    ReadyGameState: 'Ready',
+    PlayGameState: 'Play',
+    FinishGameState: 'Finish',
+    UNKNOWN_GAME_STATE: 'UNKNOWN'
+}
+
+def gameStateToString(state):
+    return game_state_to_string_d[state]
 

@@ -19,7 +19,7 @@ class GameEnter(Player):
         self.isWebots = True
 
     def enterGame(self):
-        self._actions.say("in play")
+        self._actions.say("game enter tester in play")
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
