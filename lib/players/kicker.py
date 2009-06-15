@@ -10,6 +10,7 @@ class Kicker(Player):
     def onStart(self):
         if burst.options.game_controller:
             print "Waiting for game controller Playing state"
+            self._actions.say('initial')
             super(Kicker, self).onStart()
         else:
             self._realStart()
@@ -18,7 +19,12 @@ class Kicker(Player):
         self._realStart()
 
     def _realStart(self):
-        self._actions.initPoseAndStiffness().onDone(self._actions.kickBall).onDone(self.onKickComplete)
+        self._actions.initPoseAndStiffness().onDone(self.kick).onDone(self.onKickComplete)
+
+    def kick(self):
+        #target_left_right_posts = [self._world.yglp, self._world.ygrp]
+        target_left_right_posts = [self._world.bglp, self._world.bgrp]
+        return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):
         print "kick complete"

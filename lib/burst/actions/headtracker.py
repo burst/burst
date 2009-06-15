@@ -159,13 +159,13 @@ class Tracker(object):
         self._start(target, lostCallback)
         self._on_centered_bd = None
         self._trackingStep()
-    
+
     def _onLost(self):
         on_lost_cb = self._on_lost_callback
         self.stop()
         if on_lost_cb:
             on_lost_cb()
-    
+
     def _trackingStep(self):
         # TODO - we check self._target.seen explicitly, not relying on the
         # self.stop() call in self.onLost (tied to the event_lost), because
@@ -242,7 +242,8 @@ class Tracker(object):
             #       deltaHeadYaw / DEG_TO_RAD, deltaHeadPitch / DEG_TO_RAD)
         if self.verbose:
             angles = (delta_angles and ', angles (%1.2f %1.2f)' % delta_angles) or ''
-            print "Tracker calculation: %s, center %3.1f, %3.1f, error (%1.2f, %1.2f)%s" % (
+            print "Tracker calculation: %s, %s, %s, center %3.1f, %3.1f, error (%1.2f, %1.2f)%s" % (
+                centered, centered_at_pitch_limit,
                 head_motion_in_progress and 'head moving' or 'head ready',
                 target.centerX, target.centerY, xNormalized, yNormalized, angles)
         return centered, centered_at_pitch_limit, delta_angles, (xNormalized, yNormalized)
@@ -329,15 +330,21 @@ class SwitchCameraCommand(object):
     def __call__(self):
         return self.actions.setCamera(self.whichCamera)
 
-def baseIter(searcher):
+def searchMovesIter(searcher):
     while True:
-#        if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
-#            yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
         for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
-#        yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
-#        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
-#            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield TurnCommand(searcher._actions, -pi/2)
+
+def searchMovesIterWithCameraSwitching(searcher):
+    while True:
+        if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
+            yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
 
 class SearchPlanner(object):
@@ -347,7 +354,7 @@ class SearchPlanner(object):
     pattern when we center on targets - then temporarily the tracker
     takes care of both actions and seen events """
 
-    def __init__(self, searcher, center=False, _baseIter=baseIter):
+    def __init__(self, searcher, center=False, _baseIter=searchMovesIter):
         self.verbose = burst.options.verbose_tracker
         self._searcher = searcher
         self._baseIter = _baseIter(searcher)

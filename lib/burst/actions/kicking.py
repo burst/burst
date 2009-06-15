@@ -14,7 +14,9 @@ import burst.moves as moves
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
-from burst_consts import LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y
+from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
+    PIX_TO_RAD_X, PIX_TO_RAD_Y, EVENT_MANAGER_DT)
+import burst_consts
 from burst.behavior import ContinuousBehavior, Behavior
 
 class TargetFinder(ContinuousBehavior):
@@ -114,7 +116,7 @@ class BallKicker(BurstDeferred):
     VERBOSE = True
     ENABLE_MOVEMENT = True
 
-    def __init__(self, eventmanager, actions, align_to_target=True):
+    def __init__(self, eventmanager, actions, target_left_right_posts, align_to_target=True):
         super(BallKicker, self).__init__(None)
         self._align_to_target = align_to_target
         self._eventmanager = eventmanager
@@ -123,7 +125,7 @@ class BallKicker(BurstDeferred):
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self.doNextAction)
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
-        self._goalFinder = TargetFinder(actions=actions, targets=[self._world.yglp, self._world.ygrp], start=False)
+        self._goalFinder = TargetFinder(actions=actions, targets=target_left_right_posts, start=False)
         self._goalFinder.setOnTargetFoundCB(self.onGoalFound)
 
         self._is_strafing = False
@@ -247,6 +249,11 @@ class BallKicker(BurstDeferred):
         from_finder, to_finder = self._goalFinder, self._ballFinder
         if to_goal_finder:
             from_finder, to_finder = self._ballFinder, self._goalFinder
+        else:
+            # switch to bottom camera when we look for the ball
+            # --- DONT DO THIS UNTIL IMOPS CODE DOES THE SWITCHING, or segfault for you ---
+            #self._actions.setCamera(burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
+            pass
         if not from_finder.stopped():
             print "STOPPING %s" % from_finder.name
             from_finder.stop()
@@ -266,8 +273,9 @@ class BallKicker(BurstDeferred):
             self.strafe()
 
     def strafe(self):
-        if not self.goalpost_to_track.recently_seen:
+        if not self.goalpost_to_track.seen:
             self.debugPrint("strafe: goal post not seen")
+            self._eventmanager.callLater(EVENT_MANAGER_DT, self.strafe)
             return
         self.debugPrint("strafe: goal location recently seen")
         # TODO: Add align-to-goal-center support

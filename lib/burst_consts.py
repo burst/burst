@@ -79,7 +79,7 @@ MMAP_LENGTH      = 4096
 # Event Manager constants
 EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee)
 
-MISSING_FRAMES_MINIMUM = 5
+MISSING_FRAMES_MINIMUM = 10
 
 MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
@@ -89,6 +89,11 @@ MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
 
 SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
 SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.
+
+# Acceptable Centering error - normalized values (in [-1, 1])
+DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*3
+DEFAULT_NORMALIZED_CENTERING_Y_ERROR = 0.05*3
+CENTERING_MINIMUM_PITCH = -0.5 #-0.637
 
 ################################################################################
 ################################################################################
@@ -158,11 +163,6 @@ ID_NOT_SURE, ID_MILDLY_SURE, ID_SURE = 0, 1, 2
 CAMERA_WHICH_PARAM = 18
 CAMERA_WHICH_BOTTOM_CAMERA = 1
 CAMERA_WHICH_TOP_CAMERA = 0
-
-# Acceptable Centering error - normalized values (in [-1, 1])
-DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*3
-DEFAULT_NORMALIZED_CENTERING_Y_ERROR = 0.05*3
-CENTERING_MINIMUM_PITCH = -0.6 #-0.637
 
 # Image Parameters
 FOV_X = 46.4 * DEG_TO_RAD

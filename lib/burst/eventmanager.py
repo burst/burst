@@ -430,7 +430,7 @@ class BasicMainLoop(object):
 
     def _printTraceTickerHeader(self):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
-        print "Time Objs-CL|IN|PO|YRt          |YLt          |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
+        print "Time Objs-CL|IN|PO|Right        |Left         |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
         print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def _printTraceTicker(self):
@@ -438,26 +438,31 @@ class BasicMainLoop(object):
         yglp = self._world.yglp.seen and 'L' or ' '
         ygrp = self._world.ygrp.seen and 'R' or ' '
         unknown_yellow = self._world.yellow_goal.unknown.seen and 'U' or ' '
+        bglp = self._world.bglp.seen and 'l' or ' '
+        bgrp = self._world.bgrp.seen and 'r' or ' '
+        unknown_blue = self._world.blue_goal.unknown.seen and 'u' or ' '
         targets = self._actions.searcher.targets
         def getjoints(obj):
-            if obj not in targets: return '-------------'
+            if obj not in targets: return False
             r = obj.centered_self
             if not r.sighted: return '             '
             return ('%0.2f %0.2f %s' % (r.head_yaw, r.head_pitch, r.sighted_centered and 'T' or 'F')).rjust(11)
-        yglp_joints = getjoints(self._world.yglp)
-        ygrp_joints = getjoints(self._world.ygrp)
+        left_joints = getjoints(self._world.yglp) or getjoints(self._world.bglp) or '-------------'
+        right_joints = getjoints(self._world.ygrp) or getjoints(self._world.bgrp) or '-------------'
         ball_joints = getjoints(self._world.ball)
         num_out = self._getNumberOutgoingMessages()
         num_in = self._getNumberIncomingMessages()
         total, deferreds, event_cbs, step_cbs, calllater_cbs = self._eventmanager.getPendingBreakdown()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%4.1f %s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (self.cur_time - self.main_start_time,
-            ball, yglp, ygrp, unknown_yellow,
+        print ("%4.1f %s%s%s%s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (self.cur_time - self.main_start_time,
+            ball,
+            yglp, ygrp, unknown_yellow,
+            bglp, bgrp, unknown_blue,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
             len(self._world._movecoordinator._posted),
-            ygrp_joints, yglp_joints, ball_joints,
+            left_joints, right_joints, ball_joints,
             num_out, num_out - num_in,
             deferreds, event_cbs, step_cbs, calllater_cbs,
             self.getCondensedState(),

@@ -60,7 +60,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
-    def kickBall(self, target_world_frame=None):
+    def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
         
@@ -77,7 +77,8 @@ class Actions(object):
         being able to detect the location.
         TODO: have several kick types, one for passing, one for kicking towards goal.
         """
-        ballkicker = BallKicker(self._eventmanager, self)
+        ballkicker = BallKicker(self._eventmanager, self,
+            target_left_right_posts=target_left_right_posts)
         ballkicker.start()
         return ballkicker
 
@@ -279,6 +280,7 @@ class Actions(object):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
         and burst_consts.CAMERA_WHICH_BOTTOM_CAMERA """
         bd = self._make(self)
+        print "_"*20 + ("SWITCHING TO %s CAMERA" % (CAMERA_WHICH_PARAM == CAMERA_WHICH_BOTTOM_CAMERA and 'bottom' or 'top')) + '_'*20
         self.currentCamera = whichCamera
         self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
             lambda _: bd.callOnDone())

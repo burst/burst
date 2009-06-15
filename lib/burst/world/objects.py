@@ -621,6 +621,9 @@ class GoalPost(Locatable):
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state
         
+        # TODO: REMOVE ME OR DIE
+        new_id_certainty = ID_SURE
+
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and new_id_certainty == ID_SURE)
 
         if new_seen:
@@ -657,10 +660,5 @@ class GoalPost(Locatable):
         """ get new values from proxy, return set of events """
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
-        (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
-                new_dist, new_elevation, new_focDist, new_height,
-                new_width, new_x, new_y, new_id_certainty
-                ) = new_state = self.get_new_state()
-
-        return self.update_from_new_state(new_state, events, deferreds)
+        return self.update_from_new_state(self.get_new_state(), events, deferreds)
 
