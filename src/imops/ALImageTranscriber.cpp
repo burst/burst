@@ -1,3 +1,5 @@
+// alvalue.h uses printf, but doesn't do the include, g++ 4.4.0 complains
+#include <cstdio>
 
 #include "alvisionimage.h"
 #include "alvisiondefinitions.h"
