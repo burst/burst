@@ -136,8 +136,10 @@ class BallKicker(BurstDeferred):
             self.strafe_cw = lambda: self._actions.turn(-0.2)
             self.strafe_ccw = lambda: self._actions.turn(0.2)
         else:
-            self.strafe_cw = self._actions.executeCircleStrafeClockwise
-            self.strafe_ccw = self._actions.executeCircleStrafeCounterClockwise
+            self.strafe_cw = lambda: self._actions.executeCircleStraferInitPose().onDone(
+                                        self._actions.executeCircleStrafeClockwise)
+            self.strafe_ccw = lambda: self._actions.executeCircleStraferInitPose().onDone(
+                                 self._actions.executeCircleStrafeCounterClockwise)
 
     ################################################################################
 
