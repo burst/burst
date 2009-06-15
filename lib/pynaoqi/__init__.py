@@ -486,6 +486,26 @@ class NaoQiMethod(object):
 ##################################################################
 # Implement a server - used for subscriptions, naoqi calls us
 
+# we'll need to handle the request and give the answer, like this:
+server_naoqi2_request = """POST / HTTP/1.1
+Host: 127.0.0.1:9999
+User-Agent: gSOAP/2.7
+Content-Type: text/xml; charset=utf-8
+Content-Length: 677
+Connection: keep-alive
+SOAPAction: ""
+
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:albroker="urn:albroker" xmlns:al="urn:aldebaran"><SOAP-ENV:Body><albroker:callNaoqi2><albroker:mod>markHandler</albroker:mod><albroker:meth>onMarkChange</albroker:meth><albroker:p><item xsi:type="Array"><item xsi:type="xsd:string">/Test</item><item xsi:type="xsd:string">hello</item><item xsi:type="xsd:string"></item></item></albroker:p></albroker:callNaoqi2></SOAP-ENV:Body></SOAP-ENV:Envelope>HTTP/1.1 200 OK
+Server: gSOAP/2.7
+Content-Type: text/xml; charset=utf-8
+Content-Length: 705
+Connection: keep-alive
+
+<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:albroker="urn:albroker" xmlns:al="urn:aldebaran"><SOAP-ENV:Body><albroker:callNaoqi2Response><albroker:return><item xsi:type="Array"><item xsi:type="xsd:int">2</item><item xsi:type="xsd:string">onMarkChange</item><item xsi:type="xsd:string">markHandler</item><item xsi:type="xsd:boolean">false</item><item xsi:type="xsd:int">0</item></item></albroker:return></albroker:callNaoqi2Response></SOAP-ENV:Body></SOAP-ENV:Envelope>
+"""
+
 # TODO - move to pynaoqi_twisted
 # TODO - IMPLEMENT
 if False:
