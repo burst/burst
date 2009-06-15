@@ -320,10 +320,24 @@ class TurnCommand(object):
     def __call__(self):
         return self._actions.turn(self.thetadelta)
 
+class SwitchCameraCommand(object):
+
+    def __init__(self, actions, whichCamera):
+        self.actions = actions
+        self.whichCamera = whichCamera
+
+    def __call__(self):
+        return self.actions.setCamera(self.whichCamera)
+
 def baseIter(searcher):
     while True:
+#        if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
+#            yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
         for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
+#        yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
+#        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+#            yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
 
 class SearchPlanner(object):
