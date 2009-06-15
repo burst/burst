@@ -326,11 +326,11 @@ class Actions(object):
     def getSpeedFromDistance(self,kick_dist):
         return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
-    def adjusted_straight_kick(self, kick_leg, cntr_param=1.0):
+    def adjusted_straight_kick(self, kick_leg, kick_side_offset=1.0):
         if kick_leg==LEFT:
-            return self.executeMove(burst.moves.getGreatKickLeft(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
+            return self.executeMove(burst.moves.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
         else :
-            return self.executeMove(burst.moves.getGreatKickRight(cntr_param), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, cntr_param))
+            return self.executeMove(burst.moves.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
     
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         duration = max(col[-1] for col in times)
