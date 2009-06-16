@@ -20,7 +20,7 @@ class Computed(object):
           2. LOG OF EVENTS LONG PAST: Nothing (was kick point, see calc_kicking_point)
         """
         # Blue goal:
-        if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
+        if events_module.EVENT_BGLP_IN_FRAME in events and events_module.EVENT_BGRP_IN_FRAME in events:
             events.add(events_module.EVENT_ALL_BLUE_GOAL_IN_FRAME)
             if not self._blueGoalSeen:
                 events.add(events_module.EVENT_ALL_BLUE_GOAL_SEEN)
@@ -28,9 +28,9 @@ class Computed(object):
         else:
             if self._blueGoalSeen:
                 events.add(events_module.EVENT_ALL_BLUE_GOAL_LOST)
-            self._blueGoalSeen = False
+                self._blueGoalSeen = False
         # Yellow goal:
-        if events_module.EVENT_BGLP_IN_FRAME in events and  events_module.EVENT_BGRP_IN_FRAME in events:
+        if events_module.EVENT_YGLP_IN_FRAME in events and events_module.EVENT_YGRP_IN_FRAME in events:
             events.add(events_module.EVENT_ALL_YELLOW_GOAL_IN_FRAME)
             if not self._yellowGoalSeen:
                 events.add(events_module.EVENT_ALL_YELLOW_GOAL_SEEN)
@@ -38,7 +38,7 @@ class Computed(object):
         else:
             if self._yellowGoalSeen:
                 events.add(events_module.EVENT_ALL_YELLOW_GOAL_LOST)
-            self._yellowGoalSeen = False
+                self._yellowGoalSeen = False
 
     def calc_kicking_point(self, events, deferreds):
         """
