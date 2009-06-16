@@ -32,7 +32,7 @@ walks.SIT_POS[2] = 10
 ## Walks
 
 import burst.moves.walks as walks
-walks.STRAIGHT_WALK.defaultSpeed = 100
+walks.STRAIGHT_WALK.defaultSpeed = 130
 
 ## Behavior params
 
