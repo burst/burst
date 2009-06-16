@@ -336,6 +336,11 @@ def searchMovesIter(searcher):
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
 
+def searchMoveIterWithoutAnythingButHeadMovements(searcher):
+    while True:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+
 def searchMovesIterWithCameraSwitching(searcher):
     while True:
         if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
@@ -354,10 +359,10 @@ class SearchPlanner(object):
     pattern when we center on targets - then temporarily the tracker
     takes care of both actions and seen events """
 
-    def __init__(self, searcher, center=False, _baseIter=searchMovesIter):
+    def __init__(self, searcher, center=False, baseIter=searchMovesIter):
         self.verbose = burst.options.verbose_tracker
         self._searcher = searcher
-        self._baseIter = _baseIter(searcher)
+        self._baseIter = baseIter(searcher)
         self._nextTargets = []
 #            self._lastPosition = searcher.self. # TODO: return to the last position after a chain of targets.
         if center:
@@ -432,15 +437,19 @@ class Searcher(object):
         self._stopped = True
         self._report("Searcher: STOPPED")
 
-    def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+    def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
+            searchPlannerMaker=SearchPlanner):
         self._seenTargets = self._seenOne
-        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback)
+        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback,
+            searchPlannerMaker=searchPlannerMaker)
 
-    def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None):
+    def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
+            searchPlannerMaker=SearchPlanner):
         self._seenTargets = self._seenAll
-        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback)
+        return self._searchHelper(targets, center_on_targets, timeout, timeoutCallback,
+            searchPlannerMaker=searchPlannerMaker)
 
-    def _searchHelper(self, targets, center_on_targets, timeout, timeoutCallback):
+    def _searchHelper(self, targets, center_on_targets, timeout, timeoutCallback, searchPlannerMaker):
         '''
         Search fo the objects in /targets/.
         If /center_on_targets/ is True, center on those objects.
@@ -476,7 +485,7 @@ class Searcher(object):
             self._eventToCallbackMapping[event] = callback
 
         # Launch the search, according to some search strategy.
-        self._searchPlanner = SearchPlanner(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
+        self._searchPlanner = searchPlannerMaker(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
         self._eventmanager.callLater(0, self._nextSearchMove) # The centered_selves have just been cleared. # TODO: Necessary.
 
         # shortcut if we already see some or all of the targets
