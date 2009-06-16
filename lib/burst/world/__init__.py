@@ -43,10 +43,6 @@ from gamecontroller import GameControllerMessage, GameController, EmptyGameContr
 from ..player_settings import PlayerSettings
 from gamestatus import GameStatus, EmptyGameStatus
 
-no_game_controller = False
-no_game_status = False
-
-
 def timeit(tmpl):
     def wrapper(f):
         def wrap(*args, **kw):
@@ -200,14 +196,14 @@ class World(object):
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.playerSettings = PlayerSettings(self) # Start with the default settings. You will be configured later to the right ones by the referees.
-        if no_game_status:
-            self.gameStatus = EmptyGameStatus()
-        else:
+        if burst.options.game_status:
             self.gameStatus = GameStatus(self, self.playerSettings)
-        if no_game_controller:
-            self._gameController = EmptyGameController()
         else:
+            self.gameStatus = EmptyGameStatus()
+        if burst.options.game_controller:
             self._gameController = GameController(self.gameStatus)
+        else:
+            self._gameController = EmptyGameController()
 
         self._movecoordinator = MoveCoordinator(self)
 

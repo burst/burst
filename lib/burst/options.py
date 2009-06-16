@@ -59,7 +59,9 @@ def parse_command_line_arguments():
     parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
     parser.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
     parser.add_option('', '--verbose-gamestatus', action='store_true', dest='verbose_gamestatus', default=False, help='Verbose game status class')
+    # PREGAME TODO: game_controller and game_status should default to TRUE!!
     parser.add_option('', '--use_game_controller', action='store_true', dest='game_controller', default=False, help='Use game controller (start in initial state)')
+    parser.add_option('', '--use_game_status', action='store_true', dest='game_status', default=False, help='Use game controller (start in initial state)')
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
