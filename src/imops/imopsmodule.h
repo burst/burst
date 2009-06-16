@@ -77,6 +77,8 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
   private:
 
+    std::vector<std::string>         m_varnames; // all float variables vision needs
+
     void initVisionThread( ALPtr<ALBroker> broker );
 
     AL::ALPtr < AL::ALBroker >       m_broker;        // needed for ConnectToVariables

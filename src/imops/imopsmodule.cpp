@@ -38,6 +38,7 @@
 
 #include "Profiler.h"
 #include "synchro.h"
+#include "Kinematics.h"
 #include "ALImageTranscriber.h"
 #include "Vision.h"
 #ifdef BURST_DO_LOCALIZATION_IN_MODULE
@@ -45,13 +46,20 @@
 #include "BallEKF.h"
 #endif //BURST_DO_LOCALIZATION_IN_MODULE
 
+#include "burstutil.h"
+
 #include "imopsmodule.h"
 #include "imops.h"
 
 using namespace AL;
 
+using Kinematics::NUM_JOINTS;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Globals
+
+// three acces, two gyros, two angles
+#define NUM_INERTIAL_VARS 7
 
 ALPtr<ImopsModule> g_limops;
 volatile bool g_run_vision_thread = true;
@@ -107,7 +115,8 @@ void *getImageLoop(void *arg)
 ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
     : ALModule (pBroker, pName),
     vision_frame_length_us(VISION_FRAME_LENGTH_uS),
-    vision_frame_length_print_thresh_us(VISION_FRAME_LENGTH_PRINT_THRESH_uS)
+    vision_frame_length_print_thresh_us(VISION_FRAME_LENGTH_PRINT_THRESH_uS),
+    m_broker(pBroker)
 {
 
     std::cout << "ImopsModule: Module starting" << std::endl;
@@ -138,6 +147,63 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
             std::endl;
     }
 
+    // create a list of the variables we are interested in
+    // - this is closely tied to the methods that get these
+    char* vars[] = {
+    "Device/SubDeviceList/HeadYaw/Position/Sensor/Value",
+    "Device/SubDeviceList/HeadPitch/Position/Sensor/Value",
+
+    "Device/SubDeviceList/LShoulderPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/LShoulderRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/LElbowYaw/Position/Sensor/Value",
+    "Device/SubDeviceList/LElbowRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/LWristYaw/Position/Sensor/Value",
+    "Device/SubDeviceList/LHand/Position/Sensor/Value",
+
+    "Device/SubDeviceList/LHipYawPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/LHipRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/LHipPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/LKneePitch/Position/Sensor/Value",
+    "Device/SubDeviceList/LAnklePitch/Position/Sensor/Value",
+    "Device/SubDeviceList/LAnkleRoll/Position/Sensor/Value",
+
+    // we don't get RHipYawPitch with fast since there *is* no such thing.
+    // we shall try to use LHipYawPitch twice.
+    "Device/SubDeviceList/LHipYawPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/RHipRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/RHipPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/RKneePitch/Position/Sensor/Value",
+    "Device/SubDeviceList/RAnklePitch/Position/Sensor/Value",
+    "Device/SubDeviceList/RAnkleRoll/Position/Sensor/Value",
+
+    "Device/SubDeviceList/RShoulderPitch/Position/Sensor/Value",
+    "Device/SubDeviceList/RShoulderRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/RElbowYaw/Position/Sensor/Value",
+    "Device/SubDeviceList/RElbowRoll/Position/Sensor/Value",
+    "Device/SubDeviceList/RWristYaw/Position/Sensor/Value",
+    "Device/SubDeviceList/RHand/Position/Sensor/Value",
+
+    "Device/SubDeviceList/InertialSensor/AccX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AccY/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AccZ/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/GyrX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/GyrY/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
+    "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value",
+    };
+    m_varnames = std::vector<std::string>(vars, vars + sizeof(vars)/sizeof(char*));
+    assert(m_varnames.size() == NUM_INERTIAL_VARS+NUM_JOINTS); // joints include hipyawpitch once.
+
+    // create fast memory access proxy
+    try {
+        m_memoryfastaccess =
+            AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
+        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+    } catch (AL::ALError e) {
+        std::cout << "ImopsModule: Failed to create the ALFastMemoryAccess proxy: " <<
+            e.toString() << std::endl;
+    }
+
     // init the vision parts (reads color table, does some allocs for threshold
     // data, object fragments)
     this->initVisionThread(pBroker);
@@ -159,26 +225,22 @@ void ImopsModule::notifyNextVisionImage() {
     // Synchronize noggin's information about joint angles with the motion
     // thread's information
 
-    static char* inertial_vars_init[] = {
-    "Device/SubDeviceList/InertialSensor/AccX/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/AccY/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/AccZ/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/GyrX/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/GyrY/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value",
-    "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
-    };
-    static std::vector<std::string> inertial_vars = std::vector<std::string>(inertial_vars_init,
-        inertial_vars_init + sizeof(inertial_vars_init)/sizeof(char*));
 
     static FSR null_fsr(0.0F, 0.0F, 0.0F, 0.0F);
     // x, y, z, gyrx, gyry, anglex, angley
     
-    // this is brain dead now, but good for testing - Alon
-    g_sensors->setBodyAngles(m_motion->getBodyAngles());
+    static std::vector<float> values(NUM_JOINTS + NUM_INERTIAL_VARS, 0.0F);
+    static std::vector<float> body_angles(NUM_JOINTS, 0.0F);
+    m_memoryfastaccess->GetValues(values);
+    // setBodyAngles just copies the vector, doesn't just take first NUM_JOINTS
+    memcpy(&values[0], &body_angles[0], NUM_JOINTS*sizeof(float)); // TODO - time vs std::copy, prefer the later for safety
+
+    g_sensors->setBodyAngles(body_angles);
     
-    std::vector<float> vals = m_memory->getListData(inertial_vars);
-    Inertial inertial(vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]);
+    Inertial inertial(values[NUM_JOINTS], values[NUM_JOINTS+1],
+        values[NUM_JOINTS+2], values[NUM_JOINTS+3],
+        values[NUM_JOINTS+4], values[NUM_JOINTS+5], values[NUM_JOINTS+6]);
+
 #ifdef WEBOTS
     inertial.angleX = inertial.angleY = 0.0F;
 #endif
@@ -195,7 +257,10 @@ void ImopsModule::notifyNextVisionImage() {
     // Process current frame
     g_vision->notifyImage(g_sensors->getImage());
 
+    static Counter writer("ImopsModule: Counter: time for writeToALMemory: ");
+    writer.one();
     this->writeToALMemory();
+    writer.two();
 
     //Release the camera image
     //if(camera_active)

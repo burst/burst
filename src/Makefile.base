@@ -1,0 +1,240 @@
+#
+# Base makefile for any module. Mostly based on the imops makefile,
+# so still mostly for it. But to create a module just for the robot (no
+# pynaoqi and webots target - i.e. they will be broken), just define
+# TARGET and SRC
+#
+
+# TODO: This explanation is imops specific in language, but not actually so.
+
+# Rules explanation:
+#
+# There are three build directories for the four targets:
+#  host 32bit <- webots 32 bit + pynaoqi
+#  host 64bit <- pynaoqi 64 bit
+#  robot      <- robot
+#
+# This works by calling my self from the main targets after chdir
+# to the build dir, and setting VPATH to contain the original directory.
+#
+# The main targets are:
+#  robot - cross compile and install for the robot (cross is the same as robot)
+#  pynaoqi - compile and install the pynaoqi module, regardless of word size
+#  webots - compile and install the webots module, will complain if in 64 bit environment.
+#
+# compilation results will always end up in the BUILD dir, which is
+#  build_host32, build_host64 or build_robot
+# 
+
+# Possible debug flags:
+# TODO - document function of each
+#-DBURST_DEBUG_VISION -DOFFLINE -DDEBUG_IMAGE
+
+# BURST_DEBUG_VISION - print vision related stuff
+# BURST_DEBUG_VISION_THREAD - prints time per loop, and frame count
+
+# Burst flags:
+# BURST_DO_LOCALIZATION_IN_MODULE - not working right now (or ever?)
+
+################################################################################
+
+
+ifdef ROOT
+include $(ROOT)/Makefile.local
+else
+# XXX we assume we are called from the Makefile directory if no ROOT is supplied
+ROOT=../../
+endif
+
+VPATH=$(srcdir)
+
+all: cross
+
+# we keep all interesting flags in one included file
+include $(ROOT)/src/Makefile.commondefs
+
+# Turn on any debug flags - same for all targets
+CFLAGS_DEBUG=
+
+ROBOT_BUILD_DIR=build_robot
+HOST_32_BUILD_DIR=build_host_32
+HOST_64_BUILD_DIR=build_host_64
+
+# Big Build Switch
+ifeq ($(BUILD),HOST32)
+# 32 host
+BUILD_DIR=$(HOST_32_BUILD_DIR)
+WEBOTS_TARGET=$(HOST_32_LIB)
+PYNAOQI_TARGET=$(PYNAOQI_32_LIB)
+
+BASE_CFLAGS=-DWEBOTS=1
+BUILD_CFLAGS=$(DEBUG_BUILD)
+CFLAGS_DEBUG_BUILD=-DOFFLINE -DDEBUG_IMAGE
+PY_INC=-I/usr/include/python2.5
+else
+ifeq ($(BUILD),HOST64)
+# 64 host
+BUILD_DIR=$(HOST_64_BUILD_DIR)
+WEBOTS_TARGET=$(HOST_64_LIB)
+PYNAOQI_TARGET=$(PYNAOQI_64_LIB)
+
+BASE_CFLAGS=
+BUILD_CFLAGS=$(DEBUG_BUILD)
+CFLAGS_DEBUG_BUILD=-DOFFLINE -DDEBUG_IMAGE
+PY_INC=-I/usr/include/python2.5
+else
+# robot
+$(info COMPILING FOR ROBOT)
+BUILD_DIR=$(ROBOT_BUILD_DIR)
+STAGING=$(AL_DIR)/crosstoolchain/staging
+CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
+CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
+# TODO - this cannot be the right way to do this.
+BASE_CFLAGS=--sysroot $(STAGING)/i486-linux/ -I$(STAGING)/i486-linux/usr/include/c++/i486-linux -I$(STAGING)/i486-linux/usr/include/c++/
+PY_INC=-I$(STAGING)/i486-linux/usr/include/python2.5/
+ifeq ($(DEBUG),1)
+BUILD_CFLAGS=$(DEBUG_BUILD)
+else
+BUILD_CFLAGS=$(RELEASE_BUILD)
+endif
+#AL_INC
+CFLAGS_DEBUG_BUILD=
+endif
+endif
+
+# ARCH is used for setting BUILD when calling ourselves.
+ARCH=$(shell uname -m)
+ifeq ($(ARCH),x86_64)
+IS64=1
+HOST_BUILD=HOST64
+HOST_BUILD_DIR=$(HOST_64_BUILD_DIR)
+else
+IS64=0
+HOST_BUILD=HOST32
+HOST_BUILD_DIR=$(HOST_32_BUILD_DIR)
+endif
+
+# Flags originally found in Northern Bites.
+# all are in manconfig.h anyway (at least USE_VISION is)
+# The following are from VERBOSE=1 when doing a make in nao-man:
+# NO_ZLIB - I guess affects the initTable?
+# WITH_NOIDREF - no idea
+# ROBOT_TYPE=NAO_RL - well, seems ok
+# -DTRUNK_REVISION="\"rr0\"" - ??
+# -pthread - TODO read help!
+# -Wno-write-strings - TODO
+NB_FLAGS=-DNO_ZLIB -DWITH_NOIDREF -DROBOT_TYPE=NAO_RL -pthread -Wno-write-strings -DTRUNK_REVISION="\"rr0\""
+AL_INC=-I$(AL_DIR)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR)/extern/c/aldebaran/alcommon/include -I$(AL_DIR)/modules/proxies
+CFLAGS=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC)
+CXXFLAGS=$(CFLAGS)
+
+# Libraries explanation
+# =====================
+#
+# alcommon required for ALFastMemoryAccess, found in $(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
+LDFLAGS=-lz -L$(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
+
+OBJ=$(SRC:.cpp=.o)
+
+OBJ_PYNAOQI=ConcreteCorner.o       ConcreteLine.o  Kinematics.o       objrec.o    Threshold.o  VisualBall.o      VisualDetection.o    VisualLine.o \
+ConcreteFieldObject.o  FieldLines.o    NaoPose.o          Profiler.o  Utility.o    VisualCorner.o    VisualFieldObject.o  VisualRobot.o \
+ConcreteLandmark.o     imops.o         ObjectFragments.o  Sensors.o   Vision.o     VisualCrossbar.o  VisualLandmark.o     Zlib.o
+
+# Localization - right now done in burst code (out in python land)
+LOC_SRC=BallEKF.cpp Observation.cpp
+LOC_OBJ=BallEKF.o Observation.h
+
+.PHONY: clean clean_robot clean_32 clean_64
+
+clean: clean_robot clean_32 clean_64
+
+clean_robot:
+	if [ -e $(ROBOT_BUILD_DIR) ]; then cd $(ROBOT_BUILD_DIR); rm -f $(OBJ) *.so; fi
+
+clean_32:
+	if [ -e $(HOST_32_BUILD_DIR) ]; then cd $(HOST_32_BUILD_DIR); rm -f $(OBJ) *.so; fi
+
+clean_64:
+	if [ -e $(HOST_64_BUILD_DIR) ]; then cd $(HOST_64_BUILD_DIR); rm -f $(OBJ) *.so; fi
+
+# This is not really used right now.
+precompiled.h.gch: precompiled.h
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
+%.cpp,%.o: %.cpp
+	$(CXX) $(CXXCLAGS) -o $@ $<
+
+# We have three targets, for three uses:
+# 64bit for pynaoqi
+# 32bits webots and pynaoqi on 32 bit systems
+# cross for robot (this is just standard 32bit but different flags maybe, and different toolchain)
+
+$(WEBOTS_TARGET): $(OBJ)
+	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS)
+
+$(TARGET_LIB): $(OBJ)
+	echo "----------------------- $(LDFLAGS) ----"
+	$(CXX) -shared $(CXXFLAGS) -o $(TARGET_LIB) $(OBJ) $(LDFLAGS)
+
+$(PYNAOQI_TARGET): $(OBJ_PYNAOQI)
+	$(CXX) -shared $(CXXFLAGS) -o $(PYNAOQI_TARGET) $(OBJ_PYNAOQI) $(LDFLAGS)
+
+$(HOST_BUILD_DIR):
+	mkdir -p $(HOST_BUILD_DIR)
+
+$(ROBOT_BUILD_DIR):
+	mkdir -p $(ROBOT_BUILD_DIR)
+
+################################################################################
+# Main Targets
+
+# TODO - cannot move this to the top, it breaks the makefile.
+
+.PHONY: webots cross robot pynaoqi
+
+# Compile and build for the robot.
+
+robot: cross
+
+cross: $(ROBOT_BUILD_DIR)
+	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=0 srcdir=../ ROOT=../../../
+
+crossinstall: $(ROBOT_BUILD_DIR)
+	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile crossinstall_helper BUILD=ROBOT DEBUG=0 srcdir=../ ROOT=../../../
+
+crossdebug: $(ROBOT_BUILD_DIR)
+	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=1
+
+# These are run from within the ROBOT_BUILD_DIR directory
+cross_helper: $(TARGET_LIB)
+
+crossinstall_helper: cross_helper
+	scp libimops.so root@$(ROBOT):/opt/naoqi/modules/lib/libimops.so
+#
+
+
+# pynaoqi
+
+pynaoqi: $(HOST_BUILD_DIR)
+	cd $(HOST_BUILD_DIR); $(MAKE) -f ../Makefile pynaoqi_helper BUILD=$(HOST_BUILD) srcdir=../ ROOT=../../../
+
+pynaoqi_helper: $(PYNAOQI_TARGET)
+	cp $(PYNAOQI_TARGET) ../../../lib
+
+# webots
+
+ifeq ($(IS64),1)
+webots:
+	@echo you cannot build the webots target in 64 bit - try a chroot
+else
+webots:
+	mkdir -p $(HOST_BUILD_DIR)
+	cd $(HOST_BUILD_DIR); $(MAKE) -f ../Makefile webots_helper BUILD=$(HOST_BUILD) srcdir=../ ROOT=../../../
+endif
+
+webots_helper: $(WEBOTS_TARGET)
+	cp $(WEBOTS_TARGET) $(AL_DIR)/modules/lib/libimops.so
+
+################################################################################
+
+

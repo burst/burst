@@ -5,6 +5,7 @@ include Makefile.local
 # color table to use, copied to the robot at /home/root/burst/lib/
 # from data/tables/
 TABLE=maverick/default.mtb
+MODULES=src/imops/build_robot/libimops.so src/burstmem/build_robot/libburstmem.so src/recordermodule/crossbuild/src/librecordermodule.so
 
 all: install
 
@@ -36,14 +37,13 @@ install: Makefile.local burstmem recordermodule colortable
 	rsync -avr --exclude "*.pyc" --exclude ".*.sw?" --exclude imops_pynaoqi*.so --exclude *.kcachegrind lib root@$(ROBOT):/home/root/burst/
 
 installall: install imops
-	# TODO - each copyto is an ssh initiation, many secundas.
-	cd src/burstmem; ./copyto
-	cd src/recordermodule; ./copyto
+	# TODO - we use two rsyncs, hence two connections - can this be done better (one ssh session, not two)?
+	rsync -v $(MODULES) root@$(ROBOT):/opt/naoqi/modules/lib
 
 # Subtargets
 
 burstmem:
-	cd src/burstmem; ./makelocal
+	cd src/burstmem; $(MAKE) cross
 
 recordermodule:
 	cd src/recordermodule; ./makelocal
