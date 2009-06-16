@@ -52,7 +52,7 @@ class TargetFinder(ContinuousBehavior):
         return self._targets
 
     def _start(self):
-        print "Starting TargetFinder, targets = %s" % (','.join(s.name for s in self._targets))
+        print "Starting TargetFinder, id(self) = %s, targets = %s" % (id(self), ','.join(s.name for s in self._targets))
         # if target location is not known, search for it
         
         # If a search has completed with our targets and they were found in this frame, go to tracking.
@@ -168,7 +168,7 @@ class BallKicker(BurstDeferred):
     def _approachBall(self):
         target = self._world.ball
         
-        print "\nApproahcing %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)" % (
+        print "\nApproaching %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)" % (
                   target.name, target.recently_seen, target.dist, target.distSmoothed, target.bearing)
         print "-"*100
 
@@ -259,12 +259,14 @@ class BallKicker(BurstDeferred):
             self.strafe()
 
     def strafe(self):
+        self._is_strafing = True
+        
         if not self.goalpost_to_track.seen:
             self.debugPrint("strafe: goal post not seen")
             # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
             self._eventmanager.callLater(EVENT_MANAGER_DT, self.strafe)
             return
-        self.debugPrint("strafe: goal location recently seen")
+        self.debugPrint("strafe: goal post seen")
         # TODO: Add align-to-goal-center support
         if self.goalpost_to_track.bearing < -DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
             strafeMove = self._actions.executeCircleStrafeClockwise
@@ -280,7 +282,6 @@ class BallKicker(BurstDeferred):
             return
         
         # do strafing move
-        self._is_strafing = True
         self._actions.setCameraFrameRate(10)
 
         if not self._is_strafing_init_done:
@@ -293,8 +294,7 @@ class BallKicker(BurstDeferred):
         self._nextMovement(bd).onDone(self.strafe)
 
     def refindBall(self):
+#            lambda: self._actions.tracker.center(self._world.ball).onDone(
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
-            lambda: self._actions.tracker.center(self._world.ball).onDone(
-                  lambda: self.switchToFinder(to_goal_finder=False)
-            )
+           lambda: self.switchToFinder(to_goal_finder=False)
         )

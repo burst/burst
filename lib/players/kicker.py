@@ -22,8 +22,8 @@ class Kicker(Player):
         self._actions.initPoseAndStiffness().onDone(self.kick).onDone(self.onKickComplete)
 
     def kick(self):
-        target_left_right_posts = [self._world.yglp, self._world.ygrp]
-#        target_left_right_posts = [self._world.bglp, self._world.bgrp]
+#        target_left_right_posts = [self._world.yglp, self._world.ygrp]
+        target_left_right_posts = [self._world.bglp, self._world.bgrp]
         return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):
