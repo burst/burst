@@ -23,7 +23,7 @@ class Donothing(Player):
 
     def startWaiting(self):
         print "doNothing: Starting to wait"
-        self._eventmanager.callLater(2.0, self.onTimeout)
+        self._eventmanager.callLater(20.0, self.onTimeout)
 
     def onStep(self):
         self._count += 1
