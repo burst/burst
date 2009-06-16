@@ -154,9 +154,12 @@ class Localization(object):
         #(x1,y1, theta1) = xyt_from_two_dist_one_angle(200, 250, 0,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
 
         (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )       
-
-        uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
-        ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5
-        uglp.bearing = asin(abs(-HALF_GOAL_SIZE + y1) / uglp.dist)
-        ugrp.bearing = asin(abs(HALF_GOAL_SIZE + y1) / ugrp.dist)
+        
+        if x1 and y1:
+            uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
+            ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5
+            uglp.bearing = asin(abs(-HALF_GOAL_SIZE + y1) / uglp.dist)
+            ugrp.bearing = asin(abs(HALF_GOAL_SIZE + y1) / ugrp.dist)
+        else:
+            print "NOTICE: localization->calc_goal_coord: x1/y1/theta1 is None"
 
