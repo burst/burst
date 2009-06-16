@@ -455,12 +455,13 @@ class Searcher(object):
         if not self.stopped():
             print "Searcher: WARNING: starting new search but not stopped"
             import pdb; pdb.set_trace()
+        print "Searcher: search started for %s %s %s." % (','.join([t.name for t in targets]),
+            center_on_targets and 'with centering' or 'no centering',
+            self._seenTargets == self._seenAll and 'for all' or 'for one')
+
         self._reset()
         self._stopped = False
         self._search_count[0] += 1
-        self._report("Searcher: search started for %s. %s, %s" % (','.join([t.name for t in targets]),
-            center_on_targets and 'with centering' or 'no centering',
-            self._seenTargets == self._seenAll and 'for all' or 'for one'))
         self.targets = targets[:]
         self._center_on_targets = center_on_targets
         self._timeoutCallback = timeoutCallback
@@ -560,6 +561,11 @@ class Searcher(object):
         if self.stopped():
             print "Searcher: WARNING! self.stopped() is TRUE"
             return
+        print "Searcher: search completed for %s %s %s. Seen: %s" % (','.join([t.name for t in self.targets]),
+            self._center_on_targets and 'with centering' or 'no centering',
+            self._seenTargets == self._seenAll and 'for all' or 'for one',
+            self.seen_objects)
+
         deferred = self._deferred
         self.stop()
         deferred.callOnDone()
