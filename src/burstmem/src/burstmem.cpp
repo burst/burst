@@ -42,6 +42,7 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     : ALModule (pBroker, pName), m_copying(false), m_memory_mapped(false)
     , m_mmap(NULL)
     , lastBatteryStatus(CHARGER_UNKNOWN)
+    , m_broker(pBroker)
 {
 
     std::cout << "burstmem: Module starting" << std::endl;
@@ -105,9 +106,11 @@ void burstmem::readBatteryChargerWarningConfig()
 {
     std::vector < std::string > charger_config;
     readVariablesFile(CHARGER_CONFIG_FILENAME, charger_config);
-    std::cout << "read " << charger_config.size() << " variables from "
+    std::cout << "burstmem: battery: read " << charger_config.size() << " variables from "
               << CHARGER_CONFIG_FILENAME << std::endl;
     numberOfTicksBeforeAnnouncement = atoi(charger_config[0].c_str());
+    std::cout << "burstmem: battery: number of ticks before annoncement = " <<
+        numberOfTicksBeforeAnnouncement << std::endl;
     ticksLastStatusHasHeld = 0;
 }
 
@@ -251,10 +254,20 @@ void burstmem::startMemoryMap ()
         ALValue paramUS;
         paramUS.arrayPush( 250 ); // every 250 ms
         us->callVoid( "subscribe", getName(), paramUS );
-    } 
+    }
     catch (AL::ALError e) {
         std::cout << "burstmem: Failed to subscribe to ALUltraSound: " << e.toString () <<
             std::endl;
+    }
+
+    // create fast memory access proxy
+    try {
+        m_memoryfastaccess =
+            AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
+        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+    } catch (AL::ALError e) {
+        std::cout << "burstmem: Failed to create the ALFastMemoryAccess proxy: " <<
+            e.toString() << std::endl;
     }
 
     // do memory mapping
@@ -330,10 +343,14 @@ void
 burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
                        const std::string & pMessage)
 {
+    static Counter c1("burstmem: dataChanged: ");
+    c1.one();
     if ( numberOfTicksBeforeAnnouncement != 0 )
         checkBatteryStatus();
     updateMemoryMappedVariables();
+    c1.two();
 }
+
 
 void
 burstmem::updateMemoryMappedVariables()
@@ -344,16 +361,33 @@ burstmem::updateMemoryMappedVariables()
         // special treatment to sonar vars - we get them as an array,
         // dump the third parameter (a string), and store the two
         // distances in floats
-        ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alultrasound/distances" ) );
-        m_mmap[0] = distanceUS[0];
-        m_mmap[1] = distanceUS[1];
+        try {
+            ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alultrasound/distances" ) );
+            m_mmap[0] = distanceUS[0];
+            m_mmap[1] = distanceUS[1];
+        } catch (AL::ALError e) {
+            std::cout << "burstmem: ultrasound getData: ALError: " << e.toString() << std::endl;
+        }
 
+#if 1
+        // get the normal m_varnames
+        m_memoryfastaccess->GetValues(m_values);
+#else
+#error THIS_IS_40_TIMES_SLOWER_TAKES_3MS_FOR_94_VARS
+        // using standard ALMemory
         m_values = m_memory->getListData(m_varnames);
+#endif
         // TODO: direct to the memory mapped file (or at least memcpy?)
+#if 1
+        // This takes about 1/3 of the time the copy loop takes (8us for 94 variables)
+        memcpy(&m_mmap[SONAR_MMAP_SLOTS], &m_values[0], sizeof(float)*(m_values.size()));
+#else
+#error THIS_IS_3_TIMES_SLOWER_THEN_THE_MEMCOPY
         for (int i = 0 ; i < m_values.size(); ++i) {
             m_mmap[i + SONAR_MMAP_SLOTS] = m_values[i];
             //std::cout << "value " << i << " = " << m_values[i] << std::endl;
         }
+#endif
     }
     catch (AL::ALError e) {
         std::cout << "burstmem: caught ALError: " << e.toString () << std::

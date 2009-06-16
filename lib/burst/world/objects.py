@@ -567,7 +567,7 @@ class Goal(Locatable):
             position_changed_event = right_pos_changed_event, world_x=right_world[0],
                 world_y=right_world[1])
         self.unknown = GoalPost(name='%s_UnknownPost' % name, world=world,
-            position_changed_event=-1, world_x=mid_x, world_y=mid_y, on_seen_event = -1)
+            position_changed_event=-1, world_x=mid_x, world_y=mid_y, real_post=False)
 
     def calc_events(self, events, deferreds):
         left = self.left.calc_events(events, deferreds)
@@ -582,7 +582,7 @@ class Goal(Locatable):
 
 class GoalPost(Locatable):
 
-    def __init__(self, name, world, position_changed_event, world_x, world_y, on_seen_event=None):
+    def __init__(self, name, world, position_changed_event, world_x, world_y, real_post=True):
         super(GoalPost, self).__init__(name, world,
             real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
         self._position_changed_event = position_changed_event
@@ -590,7 +590,8 @@ class GoalPost(Locatable):
         self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',
             'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
          'FocDist', 'Height', 'Width', 'X', 'Y', 'IDCertainty']]
-        self._world.addMemoryVars(self._vars)
+        if real_post: # if not, don't try to fetch variables for it, they ain't there.
+            self._world.addMemoryVars(self._vars)
 
         self.angleX = 0.0
         self.angleY = 0.0
@@ -603,8 +604,10 @@ class GoalPost(Locatable):
         self.y = 0.0
         self.id_certainty = ID_NOT_SURE
         self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
-        if not on_seen_event:
+        if real_post:
             on_seen_event = getattr(events_module, "EVENT_"+self.name+"_IN_FRAME")
+        else:
+            on_seen_event = -1
         self._on_seen_event = on_seen_event
 
     def get_new_state(self):

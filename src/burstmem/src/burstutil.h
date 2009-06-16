@@ -42,5 +42,36 @@ std::string get_date ()
     return std::string (time_str);
 }
 
+// --------------------------------------------------------------------------------
+// Small class for easy profiling - just put around whatever you want
+// static Counter mycounter
+// mycounter.one("mymodule: mymessage: "); // this will print every 100 times
+// ... do something ...
+// mycounter.two();
+struct Counter {
+    std::string msg;
+    timeval t1, t2;
+    float total;
+    int counter;
+    Counter(std::string _msg) : msg(_msg), counter(0), total(0.0) {
+    }
+    inline void one() {
+        if (counter >= 100) {
+            std::cout << msg << (total / counter) << std::endl;
+            counter = 0;
+            total = 0.0;
+        }
+        counter ++;
+        gettimeofday(&t1, NULL);
+    }
+    inline void two() {
+        gettimeofday(&t2, NULL);
+        total += (t2.tv_sec - t1.tv_sec)*1000000 + (t2.tv_usec - t1.tv_usec);
+    }
+};
+// --------------------------------------------------------------------------------
+
+
+
 #endif // __BURST_UTIL_H__
 

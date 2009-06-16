@@ -52,7 +52,7 @@ class TargetFinder(ContinuousBehavior):
         return self._targets
 
     def _start(self):
-        print "Starting TargetFinder, targets = %s" % (','.join(s.name for s in self._targets))
+        print "Starting TargetFinder, id(self) = %s, targets = %s" % (id(self), ','.join(s.name for s in self._targets))
         # if target location is not known, search for it
         
         # If a search has completed with our targets and they were found in this frame, go to tracking.
@@ -123,23 +123,13 @@ class BallKicker(BurstDeferred):
         self._actions = actions
         self._world = eventmanager._world
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
-        self._ballFinder.setOnTargetFoundCB(self.doNextAction)
+        self._ballFinder.setOnTargetFoundCB(self._approachBall)
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
         self._goalFinder = TargetFinder(actions=actions, targets=target_left_right_posts, start=False)
         self._goalFinder.setOnTargetFoundCB(self.onGoalFound)
 
         self._is_strafing = False
-
-        # Strafing differs between webots since webots cannot do the CW/CCW
-        # turns, so we emulate it with a turn in place.
-        if burst.connecting_to_webots():
-            self.strafe_cw = lambda: self._actions.turn(-0.2)
-            self.strafe_ccw = lambda: self._actions.turn(0.2)
-        else:
-            self.strafe_cw = lambda: self._actions.executeCircleStraferInitPose().onDone(
-                                        self._actions.executeCircleStrafeClockwise)
-            self.strafe_ccw = lambda: self._actions.executeCircleStraferInitPose().onDone(
-                                 self._actions.executeCircleStrafeCounterClockwise)
+        self._is_strafing_init_done = False
 
     ################################################################################
 
@@ -171,81 +161,75 @@ class BallKicker(BurstDeferred):
             self.movement_deferred.clear()
 
     ################################################################################
-    # doNextAction helpers (XXX - should they be submethods of doNextAction? would
+    # _approachBall helpers (XXX - should they be submethods of _approachBall? would
     # make it cleared to understand the relationship, not require this comment)
     ################################################################################
 
-    def doNextAction(self):
-        print "\nDeciding on next move: (ball recently seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (
-            self._world.ball.recently_seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+    def _approachBall(self):
+        target = self._world.ball
+        
+        print "\nApproaching %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)" % (
+                  target.name, target.recently_seen, target.dist, target.distSmoothed, target.bearing)
         print "-"*100
 
-        # for now, just directly approach ball and kick it wherever
-        ballBearing = self._world.ball.bearing
-        ballDist = self._world.ball.distSmoothed
-        (ball_x, ball_y) = polar2cart(ballDist, ballBearing)
-        print "ball_x: %3.3fcm, ball_y: %3.3fcm" % (ball_x, ball_y)
+        (target_x, target_y) = polar2cart(target.distSmoothed, target.bearing)
+        print "target_x: %3.3fcm, target_y: %3.3fcm" % (target_x, target_y)
 
         # determine kicking leg
-        side = ballBearing < 0 # 0 = LEFT, 1 = RIGHT
-        if (side == LEFT): self.debugPrint("Designated kick leg: Left")
-        else: self.debugPrint("Designated kick leg: Right")
-
+        side = target.bearing < 0 # 0 = LEFT, 1 = RIGHT
+        self.debugPrint("Designated kick leg: %s" % (side==LEFT and "LEFT" or "RIGHT"))
+        
         # calculate optimal kicking point
-        (kp_x, kp_y) = (ball_x - KICK_X_OPT[side], ball_y - KICK_Y_OPT[side])
+        (kp_x, kp_y) = (target_x - KICK_X_OPT[side], target_y - KICK_Y_OPT[side])
         (kp_dist, kp_bearing) = cart2polar(kp_x, kp_y)
         self.debugPrint("kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y))
         self.debugPrint("kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing))
 
         # ball location, as defined at behavior parameters (front, side, etc...)
-        ball_location = calcBallArea(ball_x, ball_y, side)
+        target_location = calcBallArea(target_x, target_y, side)
 
         # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course)
-        if side==LEFT:
-            cntr_param = 1.1-1.2*(ball_y-KICK_Y_MIN[LEFT])/7
-        else:
-            cntr_param = 1.1- 1.2*(abs(ball_y-KICK_Y_MIN[RIGHT])/7)
+        kick_side_offset = 1.1-1.2*(abs(target_y-KICK_Y_MIN[side])/7)
 
-        print ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')[ball_location]
+        print ('TARGET_IN_KICKING_AREA', 'TARGET_BETWEEN_LEGS', 'TARGET_FRONT', 'TARGET_SIDE_NEAR', 'TARGET_SIDE_FAR', 'TARGET_DIAGONAL')[target_location]
 
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
-        if ball_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._align_to_target:
-            self.debugPrint("Aligning to goal! (stopping ball tracker)")
+        if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._align_to_target:
+            self.debugPrint("Aligning to goal! (stopping target tracker)")
             self.switchToFinder(to_goal_finder=True)
         # Ball inside kicking area, kick it
-        elif ball_location == BALL_IN_KICKING_AREA:
+        elif target_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
             if self.ENABLE_MOVEMENT:
                 self._ballFinder.stop()
                 self._goalFinder.stop()
-                # by Vova - new kick
-                #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
-                self.debugPrint("cntr_param: %3.3f" % (cntr_param))
+                self.debugPrint("kick_side_offset: %3.3f" % (kick_side_offset))
                 self._actions.setCameraFrameRate(10)
-                self._actions.adjusted_straight_kick(side, cntr_param).onDone(self.callOnDone)
+                #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
+                self._actions.adjusted_straight_kick(side, kick_side_offset).onDone(self.callOnDone)
         else:
-            if ball_location == BALL_FRONT:
+            if target_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
                     self._nextMovement(self._actions.changeLocationRelative(
-                            kp_x*MOVEMENT_PERCENTAGE)).onDone(self.doNextAction)
-            elif ball_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
+                            kp_x*MOVEMENT_PERCENTAGE)).onDone(self._approachBall)
+            elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
                     self._nextMovement(self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)).onDone(self.doNextAction)
-            elif ball_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
+                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)).onDone(self._approachBall)
+            elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self._nextMovement(self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)).onDone(self.doNextAction)
+                    self._nextMovement(self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)).onDone(self._approachBall)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
 
         if not self.ENABLE_MOVEMENT:
-            self._actions.changeLocationRelative(0, 0, 0).onDone(self.doNextAction)
+            self._actions.changeLocationRelative(0, 0, 0).onDone(self._approachBall)
 
     def switchToFinder(self, to_goal_finder=False):
         from_finder, to_finder = self._goalFinder, self._ballFinder
@@ -271,30 +255,46 @@ class BallKicker(BurstDeferred):
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
             g = self.goalpost_to_track
             self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name,
-                g.centerX, g.centerY, g.seen)) 
+                g.centerX, g.centerY, g.seen))
             self.strafe()
 
     def strafe(self):
+        self._is_strafing = True
+        
         if not self.goalpost_to_track.seen:
             self.debugPrint("strafe: goal post not seen")
+            # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
             self._eventmanager.callLater(EVENT_MANAGER_DT, self.strafe)
             return
-        self.debugPrint("strafe: goal location recently seen")
+        self.debugPrint("strafe: goal post seen")
         # TODO: Add align-to-goal-center support
         if self.goalpost_to_track.bearing < -DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
-            strafe = self.strafe_cw
+            strafeMove = self._actions.executeCircleStrafeClockwise
         elif self.goalpost_to_track.bearing > DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
-            strafe = self.strafe_ccw
+            strafeMove = self._actions.executeCircleStrafeCounterClockwise
         else:
             self._is_strafing = False
             self.debugPrint("Aligned position reached! (starting ball search)")
             self.aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
             self._goalFinder.stop()
-            self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
-                lambda: self.switchToFinder(to_goal_finder=False))
+            self.refindBall()
             return
-        # start strafing
-        self._is_strafing = True
+        
+        # do strafing move
         self._actions.setCameraFrameRate(10)
-        self._nextMovement(strafe()).onDone(self.strafe)
+
+        if not self._is_strafing_init_done:
+            self._is_strafing_init_done = True
+            bd = self._actions.executeCircleStraferInitPose()
+            bd.onDone(lambda: self._nextMovement(strafeMove()))
+        else:
+            bd = strafeMove()
+        
+        self._nextMovement(bd).onDone(self.strafe)
+
+    def refindBall(self):
+#            lambda: self._actions.tracker.center(self._world.ball).onDone(
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
+           lambda: self.switchToFinder(to_goal_finder=False)
+        )

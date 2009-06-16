@@ -1,3 +1,29 @@
+"""
+This module takes care of tracking started moves, be they joint moves
+or walking (joint moves can be decomposed to head and body, but that's
+all the same).
+
+There are two strategies: The old and mostly working, the new and exciting.
+
+Old and mostly working:
+ * every postid we get from a started action is returned here. They are
+  all 'tokens' to be used via ALMotion to poll it 'isRunning(postid)'
+  repeatedly.
+ * the polling is done through calc_events, which is called by world, which
+  holds our instance and calls us at the beginning (relatively) of each frame.
+ * the mass of code is to do less polling - we have a SerialPostQueue dealing
+  with actions that are serial in nature, and so we don't poll for the second
+  while the first is still returning "True".
+ * otherwise we just poll for all.
+ * we use BurstDeferreds to carry the callback. We don't actually call it,
+  we return it via the list given in calc_events, EventManager does the calling
+
+Now for the exciting way:
+ * Soap is actually two way (gasp!)
+ * naoqi implements both parts. So we get to be a server.
+ * by calling 
+"""
+
 import burst
 from burst_util import (DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION

@@ -302,8 +302,6 @@ v.threshold()
 # display a single image (need to run with -pylab)
 a=frombuffer(v._thresholded,dtype=uint8).reshape((240,320))
 imshow(a)
-
-
 """
 
 STRANGE_ONES="""
@@ -318,6 +316,14 @@ loop(lambda: succeed((len(con.connection_manager._protocols), sum(p._packets for
 
 # Show number of packets per connection
 loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
+
+# test burstmem
+con.burstmem.getNumberOfVariables()
+# that says "120" after a sec (depends)
+r=[con.burstmem.getVarNameByIndex(i) for i in xrange(120)]
+# wait slightly
+r=[x.result for x in r]
+
 """
 
 def examples():

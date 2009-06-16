@@ -35,7 +35,7 @@ pynaoqi:
 install: Makefile.local burstmem recordermodule colortable
 	rsync -avr --exclude "*.pyc" --exclude ".*.sw?" --exclude imops_pynaoqi*.so --exclude *.kcachegrind lib root@$(ROBOT):/home/root/burst/
 
-installall: imops install
+installall: install imops
 	# TODO - each copyto is an ssh initiation, many secundas.
 	cd src/burstmem; ./copyto
 	cd src/recordermodule; ./copyto

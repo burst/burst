@@ -329,11 +329,11 @@ def makesym(x):
 def makeback(x):
     return (x[0][:4],x[1],x[2],x[3][:4],x[4][0])
 
-def getGreatKickLeft(cntr_param):
-    return map(makeback, (    ( array(map(makesym,GREAT_KICK_LEFT_EXTD))  +array(map(makesym,GREAT_KICK_LEFT_OFFSET))  )*(1-cntr_param)  +   array(map(makesym,GREAT_KICK_LEFT))*cntr_param    ).tolist()) 
+def getGreatKickLeft(kick_side_offset):
+    return map(makeback, (    ( array(map(makesym,GREAT_KICK_LEFT_EXTD))  +array(map(makesym,GREAT_KICK_LEFT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_LEFT))*kick_side_offset    ).tolist()) 
 
-def getGreatKickRight(cntr_param):
-    return map(makeback, (    ( array(map(makesym,GREAT_KICK_RIGHT_EXTD))  +array(map(makesym,GREAT_KICK_RIGHT_OFFSET))  )*(1-cntr_param)  +   array(map(makesym,GREAT_KICK_RIGHT))*cntr_param    ).tolist()) 
+def getGreatKickRight(kick_side_offset):
+    return map(makeback, (    ( array(map(makesym,GREAT_KICK_RIGHT_EXTD))  +array(map(makesym,GREAT_KICK_RIGHT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_RIGHT))*kick_side_offset    ).tolist()) 
 
 SHPAGAT = (
     #Stand up more fully
