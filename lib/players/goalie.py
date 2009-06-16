@@ -10,16 +10,24 @@ GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
 TIME_WAITING = 3 #time to wait when finishing the leap for getting up
 WAITING_FOR_HEAD = 5
+WAITING = 6
 
 class Goalie(Player):
 
     def onStart(self):
-        super(Goalie, self).onStart()
-        self.isPenalty = False # TODO: Use the gameStatus object.
-        self.isWebots = True
+#        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
+        self.isPenalty = True # TODO: Use the gameStatus object.
+        self.isWebots = False
+        self.debug = True
+        self.realLeap = False
+        self.enterGame() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
+
+    def _report(self, string):
+        if self.debug:
+            self._actions.say(string)
 
     def enterGame(self):
-        self._actions.say("in play")
+        self._report("in play")
         self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self.goalieInitPos)
 
     def goalieInitPos(self):
@@ -39,7 +47,7 @@ class Goalie(Player):
     def penaltyRegister(self):
         self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
 
-    def watchIncomingBall(self):            
+    def watchIncomingBall(self):
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.isTrackingBall = True
         self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
@@ -56,21 +64,37 @@ class Goalie(Player):
         self._eventmanager.unregister(self.trackBall)
         print self._world.ball.dy
         if self._world.ball.dy < 0:
-            self._actions.executeLeapRight().onDone(self.waitingOnRight)
+            if self.realLeap:
+                self._actions.executeLeapRight().onDone(self.waitingOnRight)
+            else:
+                self._actions.say("Leap right.")
+                self.waitingOnRight()
         else:
-            self._actions.executeLeapLeft().onDone(self.waitingOnLeft) 
+            if self.realLeap:
+                self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
+            else:
+                self._actions.say("Leap left.")
+                self.waitingOnLeft()
             
     def leap(self):
-        self._eventmanager.unregister(self.leap)
+        self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.isTrackingBall = False
         self._eventmanager.unregister(self.trackBall)
         if self.isWebots:
             self._eventmanager.unregister(self.returnHead)
         #print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+            if self.realLeap:
+                self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+            else:
+                self._actions.say("Leap right.")
+                self.waitingOnRight()
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
-            self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)   
+            if self.realLeap:
+                self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
+            else:
+                self._actions.say("Leap left.")
+                self.waitingOnLeft()
         else:
             self.watchIncomingBall()
             #assert(self._eventmanager.isregistered(self.returnHead))
@@ -83,10 +107,16 @@ class Goalie(Player):
 
 
     def gettingUpRight(self):
-        self._actions.executeToBellyFromLeapRight().onDone(self.getUpBelly)
+        if self.realLeap:
+            self._actions.executeToBellyFromLeapRight().onDone(self.getUpBelly)
+        else:
+            self.onLeapComplete()
 
     def gettingUpLeft(self):
-        self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
+        if self.realLeap:
+            self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
+        else:
+            self.onLeapComplete()
 
     def getUpBelly(self):
         self._actions.executeGettingUpBelly().onDone(self.onLeapComplete)
@@ -96,8 +126,12 @@ class Goalie(Player):
             self._actions.executeTracking(self._world.ball)
             
     def onLeapComplete(self):
-        print "Leap complete"
-        self._eventmanager.quit()
+        if self.realLeap:
+            self._report("Leap complete.")
+            self._eventmanager.quit()
+        else:
+            self.enterGame()
+
 
 if __name__ == '__main__':
     import burst
@@ -105,3 +139,10 @@ if __name__ == '__main__':
     MainLoop(Goalie).run()
 
 
+'''
+0. Make sure the current goalie and goalieTester work as expected.
+1. Merge goalie and goalieTester.
+2. Make sure one can turn off/on the calculation of the intersection, since not all players need this functionality, and for them, it results
+   in wasted CPU cycles.
+
+'''

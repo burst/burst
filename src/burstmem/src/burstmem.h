@@ -77,13 +77,18 @@ class burstmem:public
     int numberOfTicksBeforeAnnouncement;
     int ticksLastStatusHasHeld;
     int lastBatteryStatus;
+
     void readBatteryChargerWarningConfig();
     
     void checkBatteryStatus();
 
     void announceChargerChange( int status );
 
+    // Common to battery checking and memory mapping
+
     void subscribeToDataChange();
+
+    // memory mapping
 
     void updateMemoryMappedVariables();
 
