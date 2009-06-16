@@ -67,6 +67,8 @@ pthread_t g_vision_thread;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::vector<std::string> createWriteList(); // forward declaration
+
 template<typename T>
     inline T t_max(T a, T b) {
         if (a > b) return a;
@@ -122,7 +124,7 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
     std::cout << "ImopsModule: Module starting" << std::endl;
     // Describe the module here
     setModuleDescription
-        ("This is the imops module - does all the image processing");
+        ("This is the imops module - does all the image processing (aka nao-man, but minus the rest)");
 
     // Define callable methods with there description (left for easy copy/paste if required)
     functionName ("setFramesPerSecond", "imops", "change frames per second (doesn't change the grabs, just the processing)");
@@ -194,11 +196,24 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
     m_varnames = std::vector<std::string>(vars, vars + sizeof(vars)/sizeof(char*));
     assert(m_varnames.size() == NUM_INERTIAL_VARS+NUM_JOINTS); // joints include hipyawpitch once.
 
+    m_exported_vars = createWriteList(); // create list of exported variables
+    m_exported.resize(m_exported_vars.size(), 0.0F);
+
     // create fast memory access proxy
     try {
         m_memoryfastaccess =
             AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
         m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+    } catch (AL::ALError e) {
+        std::cout << "ImopsModule: Failed to create the ALFastMemoryAccess proxy: " <<
+            e.toString() << std::endl;
+    }
+
+    // create second proxy for writing
+    try {
+        m_memoryfastwrite =
+            AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
+        m_memoryfastwrite->ConnectToVariables(m_broker, m_exported_vars, true /* create if not already existing */);
     } catch (AL::ALError e) {
         std::cout << "ImopsModule: Failed to create the ALFastMemoryAccess proxy: " <<
             e.toString() << std::endl;
@@ -247,7 +262,7 @@ void ImopsModule::notifyNextVisionImage() {
 
 #ifdef DEBUG_IMAGE
     std::cout << "ImopsModule: angleX " << inertial.angleX
-              << ", angleY " << inertial.angleY << std::endl;
+              << ", angleY " << inertial.angleY << " head_pitch " << body_angles[1] << std::endl;
 #endif
 
     g_sensors->setMotionSensors(null_fsr, null_fsr, 0.0F /* ChestButton */, inertial, inertial);
@@ -273,6 +288,116 @@ void ImopsModule::notifyNextVisionImage() {
 // <Burst>
 // Export all variables to ALMemory for Burst integration (take 2)
 
+// Define the list of variables used to export information from vision to behavior (player)
+// code, or put otherwise from c++ to python code.
+std::vector<std::string> createWriteList()
+{ // 14
+#define GOAL_POST_VARS(which, vision_var) \
+    "/BURST/" which "/X", \
+    "/BURST/" which "/Y", \
+    "/BURST/" which "/CenterX", \
+    "/BURST/" which "/CenterY", \
+    "/BURST/" which "/AngleXDeg", \
+    "/BURST/" which "/AngleYDeg", \
+    "/BURST/" which "/Width", \
+    "/BURST/" which "/Height", \
+    "/BURST/" which "/FocDist", \
+    "/BURST/" which "/Distance", \
+    "/BURST/" which "/BearingDeg", \
+    "/BURST/" which "/IDCertainty", \
+    "/BURST/" which "/DistanceCertainty", \
+    "/BURST/" which "/ElevationDeg", \
+     
+    
+    char* vars[] = {
+    "/BURST/Ball/CenterX",
+    "/BURST/Ball/CenterY",
+    "/BURST/Ball/Width",
+    "/BURST/Ball/Height",
+    "/BURST/Ball/FocDist",
+    "/BURST/Ball/Distance",
+    "/BURST/Ball/BearingDeg",
+    "/BURST/Ball/ElevationDeg",
+    "/BURST/Ball/Confidence", // 9
+
+    "/BURST/YGCrossbar/X",
+    "/BURST/YGCrossbar/Y",
+    "/BURST/YGCrossbar/CenterX",
+    "/BURST/YGCrossbar/CenterY",
+    "/BURST/YGCrossbar/AngleXDeg",
+    "/BURST/YGCrossbar/AngleYDeg",
+    "/BURST/YGCrossbar/Width",
+    "/BURST/YGCrossbar/Height",
+    "/BURST/YGCrossbar/FocDist",
+    "/BURST/YGCrossbar/Distance",
+    "/BURST/YGCrossbar/BearingDeg",
+    "/BURST/YGCrossbar/ElevationDeg",
+    "/BURST/YGCrossbar/LeftOpening",
+    "/BURST/YGCrossbar/RightOpening",
+    "/BURST/YGCrossbar/shotAvailable", //15
+
+    "/BURST/BGCrossbar/X",
+    "/BURST/BGCrossbar/Y",
+    "/BURST/BGCrossbar/CenterX",
+    "/BURST/BGCrossbar/CenterY",
+    "/BURST/BGCrossbar/AngleXDeg",
+    "/BURST/BGCrossbar/AngleYDeg",
+    "/BURST/BGCrossbar/Width",
+    "/BURST/BGCrossbar/Height",
+    "/BURST/BGCrossbar/FocDist",
+    "/BURST/BGCrossbar/Distance",
+    "/BURST/BGCrossbar/BearingDeg",
+    "/BURST/BGCrossbar/ElevationDeg",
+    "/BURST/BGCrossbar/LeftOpening",
+    "/BURST/BGCrossbar/RightOpening",
+    "/BURST/BGCrossbar/shotAvailable", //15
+
+    // Blue Goal Right Post (BGRP)
+    GOAL_POST_VARS("BGRP", bgrp)
+    // Blue Goal Left Post (BGLP)
+    GOAL_POST_VARS("BGLP", bglp)
+    // Yellow Goal Right Post (YGRP)
+    GOAL_POST_VARS("YGRP", ygrp)
+    // Yellow Goal Left Post (YGRP)
+    GOAL_POST_VARS("YGLP", yglp)
+    }; // 95 total
+
+#undef GOAL_POST_VARS
+
+    int num_vars = sizeof(vars)/sizeof(char*);
+    std::cout << "ImopsModule: will write " << num_vars << " variables" << std::endl;
+    return std::vector<std::string>(vars, vars + num_vars);
+
+#ifdef BURST_DO_LOCALIZATION_IN_MODULE
+#error BURST_DO_LOCALIZATION_IN_MODULE is BROKEN
+    boost::shared_ptr<LocSystem> loc(noggin->loc);
+    boost::shared_ptr<BallEKF> ballEKF(noggin->ballEKF); // access to localization data
+
+    // Localization data
+    LOCALIZATION("Self", "XEst", loc->getXEst());
+    LOCALIZATION("Self", "YEst", loc->getYEst());
+    LOCALIZATION("Self", "HEstDeg", loc->getHEstDeg());
+    LOCALIZATION("Self", "HEst", loc->getHEst());
+    LOCALIZATION("Self", "XUncert", loc->getXUncert());
+    LOCALIZATION("Self", "YUncert", loc->getYUncert());
+    LOCALIZATION("Self", "HUncertDeg", loc->getHUncertDeg());
+    LOCALIZATION("Self", "HUncert", loc->getHUncert());
+    LOCALIZATION("Self", "LastOdoDeltaF", loc->getLastOdo().deltaF);
+    LOCALIZATION("Self", "LastOdoDeltaL", loc->getLastOdo().deltaL);
+    LOCALIZATION("Self", "LastOdoDeltaR", loc->getLastOdo().deltaR);
+
+    LOCALIZATION("Ball", "XEst", ballEKF->getXEst());
+    LOCALIZATION("Ball", "YEst", ballEKF->getYEst());
+    LOCALIZATION("Ball", "XVelocityEst", ballEKF->getXVelocityEst());
+    LOCALIZATION("Ball", "YVelocityEst", ballEKF->getYVelocityEst());
+    LOCALIZATION("Ball", "XUncert", ballEKF->getXUncert());
+    LOCALIZATION("Ball", "YUncert", ballEKF->getYUncert());
+    LOCALIZATION("Ball", "XVelocityUncert", ballEKF->getXVelocityUncert());
+    LOCALIZATION("Ball", "YVelocityUncert", ballEKF->getYVelocityUncert());
+#endif // BURST_DO_LOCALIZATION_IN_MODULE
+
+}
+
 void ImopsModule::writeToALMemory()
 {
     static bool memory_initialized = false;
@@ -285,9 +410,6 @@ void ImopsModule::writeToALMemory()
         memory = temp_memory;
         memory_initialized = true;
     }
-
-    // TODO MAJOR: use insertListData
-
     // BALL
     // from PyBall_update
     // XXX MAJOR UGLINESS
@@ -300,7 +422,7 @@ void ImopsModule::writeToALMemory()
     // possible ambiguous values? int->float can lose data? no, unless really large.
     // bool->float? neither (just wasted cycles, not really a problem)
 
-#define INSERT(base, obj, name, getter) \
+#define INSERT(obj, name, getter) \
     memory->insertData("/BURST/" base "/" obj "/" name, static_cast<float>(getter), 0)
 
     // Notice the parenthasis () on the getter in VISION
@@ -308,71 +430,73 @@ void ImopsModule::writeToALMemory()
 #define VISION(obj, name, getter) INSERT("Vision", obj, name, getter())
 #define LOCALIZATION(obj, name, getter) INSERT("Loc", obj, name, getter)
 
+    unsigned int i = 0;
+
     VisualBall* ball = g_vision->ball;
-    VISION("Ball", "CenterX", ball->getCenterX);
-    VISION("Ball", "CenterY", ball->getCenterY);
-    VISION("Ball", "Width", ball->getWidth);
-    VISION("Ball", "Height", ball->getHeight);
-    VISION("Ball", "FocDist", ball->getFocDist);
-    VISION("Ball", "Distance", ball->getDistance);
-    VISION("Ball", "BearingDeg", ball->getBearingDeg);
-    VISION("Ball", "ElevationDeg", ball->getElevationDeg);
-    VISION("Ball", "Confidence", ball->getConfidence);
+    m_exported[i++] = ball->getCenterX();
+    m_exported[i++] = ball->getCenterY();
+    m_exported[i++] = ball->getWidth();
+    m_exported[i++] = ball->getHeight();
+    m_exported[i++] = ball->getFocDist();
+    m_exported[i++] = ball->getDistance();
+    m_exported[i++] = ball->getBearingDeg();
+    m_exported[i++] = ball->getElevationDeg();
+    m_exported[i++] = ball->getConfidence();
 
     VisualCrossbar* crossbar = g_vision->ygCrossbar;
 
-    VISION("YGCrossbar", "X", crossbar->getX);
-    VISION("YGCrossbar", "Y", crossbar->getY);
-    VISION("YGCrossbar", "CenterX", crossbar->getCenterX);
-    VISION("YGCrossbar", "CenterY", crossbar->getCenterY);
-    VISION("YGCrossbar", "AngleXDeg", crossbar->getAngleXDeg);
-    VISION("YGCrossbar", "AngleYDeg", crossbar->getAngleYDeg);
-    VISION("YGCrossbar", "Width", crossbar->getWidth);
-    VISION("YGCrossbar", "Height", crossbar->getHeight);
-    VISION("YGCrossbar", "FocDist", crossbar->getFocDist);
-    VISION("YGCrossbar", "Distance", crossbar->getDistance);
-    VISION("YGCrossbar", "BearingDeg", crossbar->getBearingDeg);
-    VISION("YGCrossbar", "ElevationDeg", crossbar->getElevationDeg);
-    VISION("YGCrossbar", "LeftOpening", crossbar->getLeftOpening);
-    VISION("YGCrossbar", "RightOpening", crossbar->getRightOpening);
-    VISION("YGCrossbar", "shotAvailable", crossbar->shotAvailable);
+    m_exported[i++] = crossbar->getX();
+    m_exported[i++] = crossbar->getY();
+    m_exported[i++] = crossbar->getCenterX();
+    m_exported[i++] = crossbar->getCenterY();
+    m_exported[i++] = crossbar->getAngleXDeg();
+    m_exported[i++] = crossbar->getAngleYDeg();
+    m_exported[i++] = crossbar->getWidth();
+    m_exported[i++] = crossbar->getHeight();
+    m_exported[i++] = crossbar->getFocDist();
+    m_exported[i++] = crossbar->getDistance();
+    m_exported[i++] = crossbar->getBearingDeg();
+    m_exported[i++] = crossbar->getElevationDeg();
+    m_exported[i++] = crossbar->getLeftOpening();
+    m_exported[i++] = crossbar->getRightOpening();
+    m_exported[i++] = crossbar->shotAvailable();
 
     crossbar = g_vision->bgCrossbar;
 
-    VISION("BGCrossbar", "X", crossbar->getX);
-    VISION("BGCrossbar", "Y", crossbar->getY);
-    VISION("BGCrossbar", "CenterX", crossbar->getCenterX);
-    VISION("BGCrossbar", "CenterY", crossbar->getCenterY);
-    VISION("BGCrossbar", "AngleXDeg", crossbar->getAngleXDeg);
-    VISION("BGCrossbar", "AngleYDeg", crossbar->getAngleYDeg);
-    VISION("BGCrossbar", "Width", crossbar->getWidth);
-    VISION("BGCrossbar", "Height", crossbar->getHeight);
-    VISION("BGCrossbar", "FocDist", crossbar->getFocDist);
-    VISION("BGCrossbar", "Distance", crossbar->getDistance);
-    VISION("BGCrossbar", "BearingDeg", crossbar->getBearingDeg);
-    VISION("BGCrossbar", "ElevationDeg", crossbar->getElevationDeg);
-    VISION("BGCrossbar", "LeftOpening", crossbar->getLeftOpening);
-    VISION("BGCrossbar", "RightOpening", crossbar->getRightOpening);
-    VISION("BGCrossbar", "shotAvailable", crossbar->shotAvailable);
+    m_exported[i++] = crossbar->getX();
+    m_exported[i++] = crossbar->getY();
+    m_exported[i++] = crossbar->getCenterX();
+    m_exported[i++] = crossbar->getCenterY();
+    m_exported[i++] = crossbar->getAngleXDeg();
+    m_exported[i++] = crossbar->getAngleYDeg();
+    m_exported[i++] = crossbar->getWidth();
+    m_exported[i++] = crossbar->getHeight();
+    m_exported[i++] = crossbar->getFocDist();
+    m_exported[i++] = crossbar->getDistance();
+    m_exported[i++] = crossbar->getBearingDeg();
+    m_exported[i++] = crossbar->getElevationDeg();
+    m_exported[i++] = crossbar->getLeftOpening();
+    m_exported[i++] = crossbar->getRightOpening();
+    m_exported[i++] = crossbar->shotAvailable();
 
     // Blue Goal Right Post (BGRP)
     VisualFieldObject* post;
 #define DO_GOAL_POST(which, vision_var) \
     post = g_vision->vision_var; \
-    VISION(which, "X", post->getX); \
-    VISION(which, "Y", post->getY); \
-    VISION(which, "CenterX", post->getCenterX); \
-    VISION(which, "CenterY", post->getCenterY); \
-    VISION(which, "AngleXDeg", post->getAngleXDeg); \
-    VISION(which, "AngleYDeg", post->getAngleYDeg); \
-    VISION(which, "Width", post->getWidth); \
-    VISION(which, "Height", post->getHeight); \
-    VISION(which, "FocDist", post->getFocDist); \
-    VISION(which, "Distance", post->getDistance); \
-    VISION(which, "BearingDeg", post->getBearingDeg); \
-    VISION(which, "IDCertainty", post->getIDCertainty); \
-    VISION(which, "DistanceCertainty", post->getDistanceCertainty); \
-    VISION(which, "ElevationDeg", post->getElevationDeg); \
+    m_exported[i++] = post->getX(); \
+    m_exported[i++] = post->getY(); \
+    m_exported[i++] = post->getCenterX(); \
+    m_exported[i++] = post->getCenterY(); \
+    m_exported[i++] = post->getAngleXDeg(); \
+    m_exported[i++] = post->getAngleYDeg(); \
+    m_exported[i++] = post->getWidth(); \
+    m_exported[i++] = post->getHeight(); \
+    m_exported[i++] = post->getFocDist(); \
+    m_exported[i++] = post->getDistance(); \
+    m_exported[i++] = post->getBearingDeg(); \
+    m_exported[i++] = post->getIDCertainty(); \
+    m_exported[i++] = post->getDistanceCertainty(); \
+    m_exported[i++] = post->getElevationDeg(); \
 
     DO_GOAL_POST("BGRP", bgrp)
     // Blue Goal Left Post (BGLP)
@@ -381,6 +505,12 @@ void ImopsModule::writeToALMemory()
     DO_GOAL_POST("YGRP", ygrp)
     // Yellow Goal Left Post (YGRP)
     DO_GOAL_POST("YGLP", yglp)
+
+#undef DO_GOAL_POST
+
+    // fine, now actually write the values
+    m_memoryfastwrite->SetValues(m_exported);
+
 
 #ifdef BURST_DO_LOCALIZATION_IN_MODULE
     boost::shared_ptr<LocSystem> loc(noggin->loc);
@@ -408,6 +538,8 @@ void ImopsModule::writeToALMemory()
     LOCALIZATION("Ball", "XVelocityUncert", ballEKF->getXVelocityUncert());
     LOCALIZATION("Ball", "YVelocityUncert", ballEKF->getYVelocityUncert());
 #endif // BURST_DO_LOCALIZATION_IN_MODULE
+
+
 }
 // </Burst>
 

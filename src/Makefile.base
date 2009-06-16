@@ -173,7 +173,6 @@ $(WEBOTS_TARGET): $(OBJ)
 	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS)
 
 $(TARGET_LIB): $(OBJ)
-	echo "----------------------- $(LDFLAGS) ----"
 	$(CXX) -shared $(CXXFLAGS) -o $(TARGET_LIB) $(OBJ) $(LDFLAGS)
 
 $(PYNAOQI_TARGET): $(OBJ_PYNAOQI)

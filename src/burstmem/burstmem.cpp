@@ -345,12 +345,9 @@ void
 burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
                        const std::string & pMessage)
 {
-    static Counter c1("burstmem: dataChanged: ");
-    c1.one();
     if ( numberOfTicksBeforeAnnouncement != 0 )
         checkBatteryStatus();
     updateMemoryMappedVariables();
-    c1.two();
 }
 
 

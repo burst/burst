@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.556931 0.621025 0.551504 4.25894
-  position -0.148856 1.3874 0.0429401
+  orientation 0.16665 0.972488 0.162771 4.63125
+  position -1.11222 1.11091 0.0338173
 }
 Background {
   skyColor [
@@ -271,8 +271,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 0 0.330261 0
-  rotation 0 1 0 -1.56912
+  translation -0.949702 0.330261 -1.65287
+  rotation 0 1 0 1.66777
   color 1 0 0
   texture [
     "textures/red_logo.png"
