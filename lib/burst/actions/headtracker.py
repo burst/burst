@@ -12,7 +12,7 @@ from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
     IMAGE_CENTER_X, IMAGE_CENTER_Y)
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
-from math import pi
+from math import pi, sqrt
 
 ############################################################################
 
@@ -156,6 +156,7 @@ class Tracker(object):
             if lostCallback:
                 lostCallback()
             return
+        #self._stepsTillCentered = 0
         self._start(target, lostCallback)
         self._on_centered_bd = None
         self._trackingStep()
@@ -181,6 +182,10 @@ class Tracker(object):
             self._onLost()
             return # Lost target
         centered, maybe_bd = self.executeTracking(self._target)
+        #if not centered:
+        #    self._stepsTillCentered += 1
+        #print "self._stepsTillCentered: %f" % self._stepsTillCentered
+
         if self.verbose:
             print "centered = %s, maybe_bd %s" % (centered,
                 not maybe_bd and 'is None' or 'is a deferred')
@@ -226,10 +231,10 @@ class Tracker(object):
             normalized_error_x, normalized_error_y)
         head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
         if target.seen and not centered and not head_motion_in_progress:
-            CAM_X_TO_RAD_FACTOR = FOV_X / 4 # do half the error in a single step.
-            CAM_Y_TO_RAD_FACTOR = FOV_Y / 4 # TODO - do more then half, or at least set the speed.
-            deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR
-            deltaHeadPitch =  yNormalized * CAM_Y_TO_RAD_FACTOR
+            CAM_X_TO_RAD_FACTOR = (FOV_X / 2)/2 # do half the error in a single step
+            CAM_Y_TO_RAD_FACTOR = (FOV_Y / 2)/2
+            deltaHeadYaw   = -xNormalized * CAM_X_TO_RAD_FACTOR #* (0.5 + (1-sqrt(abs(xNormalized)))/2) # move less for far-away targets, wise?
+            deltaHeadPitch =  yNormalized * CAM_Y_TO_RAD_FACTOR #* (0.5 + (1-sqrt(abs(yNormalized)))/2) # move less for far-away targets, wise?
             #self._actions.changeHeadAnglesRelative(
             # deltaHeadYaw * DEG_TO_RAD + self._actions.getAngle("HeadYaw"),
             # deltaHeadPitch * DEG_TO_RAD + self._actions.getAngle("HeadPitch")
@@ -257,7 +262,7 @@ class Tracker(object):
         if delta_angles:
             if self.verbose:
                 print "Tracker: change angles by yaw=%1.2f, pitch=%1.2f" % delta_angles
-            bd = self._actions.changeHeadAnglesRelative(*delta_angles)
+            bd = self._actions.changeHeadAnglesRelativeChained(*delta_angles) #changeHeadAnglesRelative / changeHeadAnglesRelativeChained
         if return_exact_error:
             return centered, bd, error
         return centered, bd
