@@ -10,81 +10,18 @@ from burst_util import (BurstDeferred, Nameable, calculate_middle, calculate_rel
 import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
+from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
+import burst.moves.walks as walks
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
     PIX_TO_RAD_X, PIX_TO_RAD_Y, EVENT_MANAGER_DT)
 import burst_consts
-from burst.behavior import ContinuousBehavior, Behavior
-
-class TargetFinder(ContinuousBehavior):
-    ''' Continuous target finder & tracker '''
-
-    def __init__(self, actions, targets, start = True):
-        super(TargetFinder, self).__init__(actions=actions, name='%s Finder' % [
-                                    target.name for target in targets])
-        if len(targets) < 1:
-            raise RuntimeException("Cannot find null set")
-        self._targets = targets
-        self._onTargetFoundCB = None
-        self._onTargetLostCB = None
-        self.verbose = False
-        if start:
-            self.start()
-
-    def setOnTargetFoundCB(self, cb):
-        self._onTargetFoundCB = cb
-
-    def _callOnTargetFoundCB(self):
-        if self._onTargetFoundCB:
-            self._onTargetFoundCB()
-
-    def setOnTargetLostCB(self, cb):
-        self._onTargetLostCB = cb
-
-    def _callOnTargetLostCB(self):
-        if self._onTargetLostCB:
-            self._onTargetLostCB()
-
-    def getTargets(self):
-        return self._targets
-
-    def _start(self):
-        print "Starting TargetFinder, id(self) = %s, targets = %s" % (id(self), ','.join(s.name for s in self._targets))
-        # if target location is not known, search for it
-        
-        # If a search has completed with our targets and they were found in this frame, go to tracking.
-        seen_objects = [t for t in self._targets if t.seen]
-
-        if len(seen_objects) > 0:
-            # reset targets to the first seen object (could be arbitrary if we were just called)
-            self._targets =  [seen_objects[0]]
-            target = self._targets[0]
-            self.printDebug("will track %s" % target.name)
-            # NOTE: to make the behavior happy we need to always keep the deferred we are
-            # waiting on at self._bd ; because Tracker doesn't provide any bd we create
-            # one using self._actions._make
-            self._bd = self._actions._make(self)
-            self._bd.onDone(self._start)
-            self._actions.track(target, lostCallback=self._bd.callOnDone)
-            self._callOnTargetFoundCB()
-        else:
-            # none of our targets are currently seen, start a new search.
-            self.printDebug("targets not seen (%s), searching for it" % [t.name for t in self._targets])
-            self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
-            self._bd.onDone(self._start)
-            self._callOnTargetLostCB()
-
-    def stop(self):
-        super(TargetFinder, self).stop()
-        self._actions.tracker.stop()
-        self._actions.searcher.stop()
 
 class TargetApproacher(TargetFinder):
     pass
-    
 
 #===============================================================================
 #    Logic for Kicking behavior:
@@ -148,7 +85,7 @@ class BallKicker(BurstDeferred):
     def start(self):
         self.aligned_to_goal = False
         self.goalposts = [self._world.yglp, self._world.ygrp]
-        self.movement_deferred = None
+        self._movement_deferred = None
 
         self._actions.setCameraFrameRate(20)
         # kicker initial position
@@ -156,9 +93,11 @@ class BallKicker(BurstDeferred):
             lambda: self.switchToFinder(to_goal_finder=False))
 
     def _stopOngoingMovement(self):
-        if self.movement_deferred:
+        print "BALL LOST!"
+        if self._movement_deferred:
+            print "BALL LOST! STOPPING MOVEMENT"
             self._actions.clearFootsteps() # TODO - flag something? someone?
-            self.movement_deferred.clear()
+            self._movement_deferred.clear()
 
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
@@ -219,7 +158,7 @@ class BallKicker(BurstDeferred):
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
                     self._nextMovement(self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)).onDone(self._approachBall)
+                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=walks.SIDESTEP_WALK)).onDone(self._approachBall)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
@@ -274,6 +213,7 @@ class BallKicker(BurstDeferred):
             strafeMove = self._actions.executeCircleStrafeCounterClockwise
         else:
             self._is_strafing = False
+            self._is_strafing_init_done = False
             self.debugPrint("Aligned position reached! (starting ball search)")
             self.aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
@@ -285,16 +225,19 @@ class BallKicker(BurstDeferred):
         self._actions.setCameraFrameRate(10)
 
         if not self._is_strafing_init_done:
+            self.debugPrint("Aligning and strafing...")
             self._is_strafing_init_done = True
             bd = self._actions.executeCircleStraferInitPose()
             bd.onDone(lambda: self._nextMovement(strafeMove()))
         else:
+            self.debugPrint("Strafing...")
             bd = strafeMove()
         
         self._nextMovement(bd).onDone(self.strafe)
 
     def refindBall(self):
-#            lambda: self._actions.tracker.center(self._world.ball).onDone(
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
-           lambda: self.switchToFinder(to_goal_finder=False)
+            # TODO: Fix distSmooth after moving head - this is just a workaround
+            lambda: self._eventmanager.callLater(0.5,
+                 lambda: self.switchToFinder(to_goal_finder=False))
         )

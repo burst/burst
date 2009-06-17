@@ -10,8 +10,8 @@ WorldInfo {
   runRealTime TRUE
 }
 Viewpoint {
-  orientation 0.575299 0.586188 0.570451 4.20873
-  position -0.196963 5.03466 0.104208
+  orientation 0.261419 0.928612 0.263324 4.58667
+  position -4.02735 3.04555 -0.249432
 }
 Background {
   skyColor [
@@ -271,8 +271,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 0 0.330261 0
-  rotation 0 1 0 -1.57
+  translation -0.527014 0.330261 -1.4565
+  rotation 0 -1 0 4.69199
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -286,5 +286,4 @@ Supervisor {
       name "emitter"
     }
   ]
-  #controller "nao_burst_supervisor"
 }

@@ -19,7 +19,7 @@ class trackerTester(Player):
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.track)
     
     def track(self):
-        print "trackerTester: TRACKING %s" % (self.count)
+        #print "trackerTester: TRACKING %s" % (self.count)
         self.count += 1
         self._actions.tracker.track(self._world.ball, lostCallback=self.trackNextFrame)
 

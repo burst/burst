@@ -55,7 +55,10 @@ Vision Constants that span multiple classes and systems.
 #define VISION_FRAME_LENGTH_MS 50
 #define VISION_FRAME_LENGTH_uS 50000
 #define VISION_FRAME_LENGTH_PRINT_THRESH_uS 75000
-#define VISION_FPS 20
+#define VISION_FPS 30
+// XXX VISION_FPS is the commanded fps to the camera proxy, which according
+// to help can only take on the values: 5, 10, 15, 30 - so I'm not sure
+// what 20 would do -- Alon.
 
 //#define VISION_FRAME_LENGTH_MS 34
 //#define VISION_FRAME_LENGTH_uS 34000

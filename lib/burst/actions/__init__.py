@@ -6,6 +6,7 @@ from burst_util import (transpose, cumsum, succeed,
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
+import burst.moves.walks as walks
 from burst.world import World
 from burst.walkparameters import WalkParameters
 from burst.image import normalized2_image_width, normalized2_image_height
@@ -116,7 +117,7 @@ class Actions(object):
     #===============================================================================
 
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk=moves.STRAIGHT_WALK, steps_before_full_stop=0):
+        walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -138,7 +139,7 @@ class Actions(object):
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
         
-    def turn(self, deltaTheta, walk=moves.STRAIGHT_WALK):
+    def turn(self, deltaTheta, walk=walks.STRAIGHT_WALK):
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
@@ -152,7 +153,7 @@ class Actions(object):
             description=('turn', deltaTheta, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.STRAIGHT_WALK):
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -174,13 +175,15 @@ class Actions(object):
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            walk = moves.SIDESTEP_WALK
+            walk = walks.SIDESTEP_WALK
         
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
         defaultSpeed = walk.defaultSpeed
         stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
+        print "WARNING: changeLocationRelativeSideways isn't updated to check FIRST_TWO_SLOW_STEPS"
+
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
             
@@ -292,13 +295,20 @@ class Actions(object):
         return bd
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
-        #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
         cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
         yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
         if burst.options.debug:
             print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
                 cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
         return self.executeHeadMove( (((yaw, pitch),interp_time),) )
+
+    def changeHeadAnglesRelativeChained(self, delta_yaw, delta_pitch):
+        if burst.options.debug:
+            print "changeHeadAnglesRelativeChained: delta_yaw %1.2f, delta_pitch %1.2f" % (delta_yaw, delta_pitch)
+        d = self._motion.post.changeChainAngles("Head", [delta_yaw, delta_pitch])
+
+        return self._movecoordinator.waitOnPostid(d, description="change Head Angles",
+            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
@@ -451,7 +461,7 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
-        walk = moves.STRAIGHT_WALK
+        walk = walks.STRAIGHT_WALK
 
         self.setWalkConfig(walk.walkParameters).add
         self._motion.addWalkStraight( float(distance), 100 )

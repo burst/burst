@@ -39,10 +39,12 @@ const int burstmem::CHARGER_UNKNOWN = 0,
 // constructor
 //______________________________________________
 burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
-    : ALModule (pBroker, pName), m_copying(false), m_memory_mapped(false)
-    , m_mmap(NULL)
+    : ALModule (pBroker, pName)
     , lastBatteryStatus(CHARGER_UNKNOWN)
+    , m_copying(false)
+    , m_memory_mapped(false)
     , m_broker(pBroker)
+    , m_mmap(NULL)
 {
 
     std::cout << "burstmem: Module starting" << std::endl;
@@ -189,7 +191,7 @@ std::string burstmem::version ()
 //______________________________________________
 std::string burstmem::getVarNameByIndex (int i)
 {
-    if (this->m_varnames.size() > i && i >= 0)
+    if (this->m_varnames.size() > static_cast<unsigned int>(i) && i >= 0)
         return this->m_varnames[i];
     return std::string("ERROR");
 }
@@ -264,7 +266,7 @@ void burstmem::startMemoryMap ()
     try {
         m_memoryfastaccess =
             AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
-        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames, false /* create if don't exist */);
     } catch (AL::ALError e) {
         std::cout << "burstmem: Failed to create the ALFastMemoryAccess proxy: " <<
             e.toString() << std::endl;
@@ -343,12 +345,9 @@ void
 burstmem::dataChanged (const std::string & pDataName, const ALValue & pValue,
                        const std::string & pMessage)
 {
-    static Counter c1("burstmem: dataChanged: ");
-    c1.one();
     if ( numberOfTicksBeforeAnnouncement != 0 )
         checkBatteryStatus();
     updateMemoryMappedVariables();
-    c1.two();
 }
 
 
@@ -371,7 +370,11 @@ burstmem::updateMemoryMappedVariables()
 
 #if 1
         // get the normal m_varnames
-        m_memoryfastaccess->GetValues(m_values);
+        try {
+            m_memoryfastaccess->GetValues(m_values);
+        } catch (AL::ALError e) {
+            std::cout << "burstmem: GetValues: ALError: " << e.toString() << std::endl;
+        }
 #else
 #error THIS_IS_40_TIMES_SLOWER_TAKES_3MS_FOR_94_VARS
         // using standard ALMemory

@@ -150,6 +150,19 @@ void ALImageTranscriber::registerCamera(ALPtr<ALBroker> broker) {
 
 }
 
+// set frame rate to the smallest number within the allowed values that
+// is bigger or equal to given fps.
+bool ALImageTranscriber::setFrameRate(unsigned int fps) {
+    static unsigned int allowed_fps[] = {5, 10, 15, 30}; // see NaoCam module setFrameRate help
+    const unsigned int num_allowed = sizeof(allowed_fps) / sizeof(int);
+    unsigned int i = 0;
+    for (; allowed_fps[i] < fps && i < num_allowed ; ++i) {};
+    if (i >= num_allowed) i = num_allowed - 1;
+    std::cout << "ImopsModule: ALImageTranscriber: setFrameRate: given " << fps
+              << ", set to " << allowed_fps[i] << std::endl;
+    return camera->call<bool>( "setFrameRate", lem_name, static_cast<int>(allowed_fps[i])); // AL is brain dead about unsigned stuff.
+}
+
 void ALImageTranscriber::initCameraSettings(int whichCam){
 
     int currentCam =  camera->call<int>( "getParam", kCameraSelectID );

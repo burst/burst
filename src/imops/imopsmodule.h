@@ -77,10 +77,15 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
   private:
 
+    std::vector<std::string>         m_varnames; // all float variables vision needs
+    std::vector<std::string>         m_exported_vars; // variables exported to ALMemory for player.py
+    std::vector<float>               m_exported; // float values to be exported.
+
     void initVisionThread( ALPtr<ALBroker> broker );
 
     AL::ALPtr < AL::ALBroker >       m_broker;        // needed for ConnectToVariables
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;
+    AL::ALPtr < ALMemoryFastAccess > m_memoryfastwrite;
 
     ALPtr < AL::ALMemoryProxy >      m_memory;
     ALPtr < AL::ALMotionProxy >      m_motion;
