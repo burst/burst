@@ -30,9 +30,29 @@ walks.SIT_POS[2] = 10
 #            (55.,-7.,0.,30.),1.5)]
 
 ## Walks
-
+from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
-walks.STRAIGHT_WALK.defaultSpeed = 100
+#walks.STRAIGHT_WALK.defaultSpeed = 25
+
+walks.STRAIGHT_WALK = Walk(WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
+           20.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian 
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           5,                   # LHipRoll(degrees) 
+           -5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better
+           0.055,                  # StepLength
+           0.015,                  # StepHeight
+           0.02,                  # StepSide
+           0.3,                   # MaxTurn
+           0.013,                  # ZmpOffsetX
+           0.015]),                  # ZmpOffsetY
+           25          # 20ms count per step
+    )
+
+
 
 ## Behavior params
 
