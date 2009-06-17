@@ -65,26 +65,23 @@ class Sensors(object):
         self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleIntertialSensor]
 
     def isOnBack(self):
-        return False
         # If either foot is on the ground, the robot hasn't fallen down.
         if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
             return False
         # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor < -1.0
+        return self.yAngleIntertialSensor.read() < -1.0
 
     def isOnBelly(self):
-        return False
         # If either foot is on the ground, the robot hasn't fallen down.
         if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
             return False
         # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor > 1.0
+        return self.yAngleIntertialSensor.read() > 1.0
 
     def isFallenDown(self):
         return self.isOnBack() or self.isOnBelly()
 
     def calc_events(self, events, deferreds):
-        self.debug += 1 # TODO: Remove.
         # Another frame has passed. Time to poll again anything that requires smoothing:
         for sensor in self.sensors:
             sensor.update()
@@ -95,6 +92,6 @@ class Sensors(object):
         if self.isOnBelly():
             events.add(events_module.EVENT_FALLEN_DOWN)
             events.add(events_module.EVENT_ON_BELLY)
-        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed() # TODO: Remove.
-
+#        self.debug += 1
+#        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleIntertialSensor.read()
 #        print map(lambda x: x.read(), self.rightFootFSRs._fsrs), map(lambda x: x.read(), self.leftFootFSRs._fsrs)
