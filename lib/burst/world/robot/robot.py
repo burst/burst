@@ -4,11 +4,13 @@
 from sonars import *
 from buttons import *
 from leds import *
+from sensors import *
 
 import burst
 from ..objects import Movable
 from burst_consts import ROBOT_DIAMETER
 
+__all__ = ['Robot']
 
 class Robot(Movable):
 
@@ -21,6 +23,7 @@ class Robot(Movable):
         self.chestButton = ChestButton(self._world)
         self.leds = LEDs(world)
         self.leds.turnEverythingOff()
+        self.sensors = Sensors(world)
         self.sonars = Sonars(world)
         self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
 
@@ -40,7 +43,9 @@ class Robot(Movable):
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)
         self.chestButton.calc_events(events, deferreds)
+        self.sensors.calc_events(events, deferreds)
         self.sonars.calc_events(events, deferreds)
+        # TODO: Fall-down detection should probably be detected here, and not wherever it is now.
 
     def isHeadMotionInProgress(self):
         return self._world._movecoordinator.isHeadMotionInProgress()
