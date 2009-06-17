@@ -86,6 +86,6 @@ class Sensors(object):
         if self.isOnBelly():
             events.add(events_module.EVENT_FALLEN_DOWN)
             events.add(events_module.EVENT_ON_BELLY)
-        self.debug += 1
+#        self.debug += 1
 #        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleIntertialSensor.read()
 #        print map(lambda x: x.read(), self.rightFootFSRs._fsrs), map(lambda x: x.read(), self.leftFootFSRs._fsrs)
