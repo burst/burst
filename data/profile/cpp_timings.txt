@@ -1,0 +1,82 @@
+Some notes on timing calculations:
+I use gettimeofday. That means you should take minimum, not average, since
+the larger times are probably due to scheduler giving our precious cpu to
+someone else from under our noses.
+
+
+Both: 94 float values, averages over 100 times. (each line is the average of 100 consecutive calls)
+
+fast memory GetValues - average ~ 100 us = 0.1ms
+
+Jun 13 16:20:07 Maldini user.notice root: burstmem: getting vars time: 94.309998
+Jun 13 16:20:07 Maldini user.notice root: Time spent in ALImageTranscriber loop longer than frame length: 85199
+Jun 13 16:20:13 Maldini user.notice root: burstmem: getting vars time: 124.660004
+Jun 13 16:20:19 Maldini user.notice root: burstmem: getting vars time: 135.399994
+Jun 13 16:20:20 Maldini user.notice root: Time spent in ALImageTranscriber loop longer than frame length: 78313
+Jun 13 16:20:25 Maldini user.notice root: burstmem: getting vars time: 99.599998
+Jun 13 16:20:31 Maldini user.notice root: burstmem: getting vars time: 92.660004
+Jun 13 16:20:37 Maldini user.notice root: burstmem: getting vars time: 107.419998
+Jun 13 16:20:43 Maldini user.notice root: burstmem: getting vars time: 89.599998
+Jun 13 16:20:49 Maldini user.notice root: burstmem: getting vars time: 88.62999
+
+regular getListData - average ~ 4000us == 4ms
+
+Jun 13 16:24:19 Maldini user.notice root: burstmem: getting vars time: 3617.379883
+Jun 13 16:24:25 Maldini user.notice root: burstmem: getting vars time: 3536.689941
+Jun 13 16:24:31 Maldini user.notice root: burstmem: getting vars time: 3462.760010
+Jun 13 16:24:37 Maldini user.notice root: burstmem: getting vars time: 3277.479980
+Jun 13 16:24:43 Maldini user.notice root: burstmem: getting vars time: 4987.160156
+Jun 13 16:24:49 Maldini user.notice root: burstmem: getting vars time: 3490.840088
+Jun 13 16:24:55 Maldini user.notice root: burstmem: getting vars time: 3227.110107
+
+
+The copy:
+
+for loop: avg 22us
+
+Jun 13 17:12:28 Maldini user.notice root: burstmem: the copy: 22.969999
+Jun 13 17:12:34 Maldini user.notice root: burstmem: the copy: 33.070000
+Jun 13 17:12:40 Maldini user.notice root: burstmem: the copy: 22.110001
+Jun 13 17:12:46 Maldini user.notice root: burstmem: the copy: 39.889999
+Jun 13 17:12:52 Maldini user.notice root: burstmem: the copy: 24.190001
+Jun 13 17:12:58 Maldini user.notice root: burstmem: the copy: 23.250000
+Jun 13 17:13:04 Maldini user.notice root: burstmem: the copy: 22.490000
+Jun 13 17:13:10 Maldini user.notice root: burstmem: the copy: 21.280001
+Jun 13 17:13:16 Maldini user.notice root: burstmem: the copy: 21.430000
+Jun 13 17:13:22 Maldini user.notice root: burstmem: the copy: 27.760000
+Jun 13 17:13:28 Maldini user.notice root: burstmem: the copy: 30.450001
+Jun 13 17:13:34 Maldini user.notice root: burstmem: the copy: 25.480000
+Jun 13 17:13:40 Maldini user.notice root: burstmem: the copy: 24.309999
+Jun 13 17:13:46 Maldini user.notice root: burstmem: the copy: 23.170000
+Jun 13 17:13:52 Maldini user.notice root: burstmem: the copy: 21.510000
+Jun 13 17:13:58 Maldini user.notice root: burstmem: the copy: 31.709999
+Jun 13 17:14:04 Maldini user.notice root: burstmem: the copy: 23.219999
+Jun 13 17:14:10 Maldini user.notice root: burstmem: the copy: 22.680000
+Jun 13 17:14:16 Maldini user.notice root: burstmem: the copy: 21.299999
+
+memcpy: avg 8us
+
+
+al write to memory, before fast:
+ImopsModule: Counter: time for writeToALMemory: 4002.120117
+ImopsModule: Counter: time for writeToALMemory: 4065.469971
+ImopsModule: Counter: time for writeToALMemory: 3903.020020
+ImopsModule: Counter: time for writeToALMemory: 4552.149902
+ImopsModule: Counter: time for writeToALMemory: 4481.660156
+ImopsModule: Counter: time for writeToALMemory: 4627.810059
+ImopsModule: Counter: time for writeToALMemory: 4684.109863
+ImopsModule: Counter: time for writeToALMemory: 4670.850098
+ImopsModule: Counter: time for writeToALMemory: 4498.290039
+ImopsModule: Counter: time for writeToALMemory: 4601.000000
+
+al write with fast memory:
+ImopsModule: Counter: time for writeToALMemory: 287.399994
+ImopsModule: Counter: time for writeToALMemory: 327.679993
+ImopsModule: Counter: time for writeToALMemory: 274.239990
+ImopsModule: Counter: time for writeToALMemory: 301.230011
+ImopsModule: Counter: time for writeToALMemory: 216.130005
+ImopsModule: Counter: time for writeToALMemory: 215.279999
+ImopsModule: Counter: time for writeToALMemory: 210.059998
+ImopsModule: Counter: time for writeToALMemory: 212.600006
+ImopsModule: Counter: time for writeToALMemory: 359.570007
+
