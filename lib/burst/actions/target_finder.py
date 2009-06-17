@@ -42,7 +42,7 @@ class TargetFinder(ContinuousBehavior):
     def getTargets(self):
         return self._targets
 
-    def _start(self):
+    def _start(self, firstTime=False):
         print "TargetFinder looking for: %s" % (','.join(s.name for s in self._targets))
         # If a search has completed with our targets and they were found in this frame, go to tracking.
         # We give seen objects a priority over recently_seen objects
@@ -66,7 +66,8 @@ class TargetFinder(ContinuousBehavior):
             print "targets not seen (%s), searching for it" % [t.name for t in self._targets]
             self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
             self._bd.onDone(self._start)
-            self._callOnTargetLostCB()
+            if not firstTime:
+                self._callOnTargetLostCB()
 
     def stop(self):
         super(TargetFinder, self).stop()

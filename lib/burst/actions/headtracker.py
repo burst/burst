@@ -1,7 +1,7 @@
 import sys
 import linecache
 
-from burst_util import (traceme, nicefloat,
+from burst_util import (traceme, nicefloat, BurstDeferred,
     Deferred, chainDeferreds)
 from burst.events import *
 import burst
@@ -9,7 +9,7 @@ import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
     DEFAULT_NORMALIZED_CENTERING_X_ERROR,
     DEFAULT_NORMALIZED_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
-    IMAGE_CENTER_X, IMAGE_CENTER_Y)
+    IMAGE_CENTER_X, IMAGE_CENTER_Y, EVENT_MANAGER_DT)
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
 from math import pi, sqrt
@@ -274,22 +274,17 @@ class Tracker(object):
 # to concoct elequent 'just complex enough' behaviors
 
 class HeadMovementCommand(object):
-
     def __init__(self, actions, headYaw, headPitch):
         self._actions = actions
         self.headYaw = headYaw
         self.headPitch = headPitch
-
     def __call__(self):
         return self._actions.moveHead(self.headYaw, self.headPitch)
 
 class CenteringCommand(object):
-
     """ Turn towards an initial position, then execute centering
     a few times, each time using the most centered position currently
     known to bootstrap."""
-    
-
     def __init__(self, actions, headYaw, headPitch, target, repeats=2):
         """ repeats - number of times to run centering. First time the
         target is centered, or if repeats times pass, we call the bd returned
@@ -297,7 +292,6 @@ class CenteringCommand(object):
         self._actions = actions
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
         self._repeats = repeats
-
     def onCenteringDone(self):
         # called both on centering and on target lost
         if self._target.sighted_centered or self._repeats == 0:
@@ -308,7 +302,6 @@ class CenteringCommand(object):
         self._actions.moveHead(new_yaw, new_pitch).onDone(
             lambda: self._actions.tracker.center(self._target).onDone(self.centeringDone)
         )
-            
     def __call__(self):
         self._bd = bd = self._actions.moveHead(self._yaw, self._pitch)
         # TODO - testing. Does this actually call the right bd?
@@ -318,27 +311,36 @@ class CenteringCommand(object):
         return bd
 
 class TurnCommand(object):
-
     def __init__(self, actions, thetadelta):
         self._actions = actions
         self.thetadelta = thetadelta
-
     def __call__(self):
         return self._actions.turn(self.thetadelta)
 
 class SwitchCameraCommand(object):
-
     def __init__(self, actions, whichCamera):
         self.actions = actions
         self.whichCamera = whichCamera
-
     def __call__(self):
         return self.actions.setCamera(self.whichCamera)
 
+class WaitCommand(object):
+    def __init__(self, eventmanager, frames):
+        if frames < 0:
+            raise Exception("The number of frames to wait must be non-negative.") # TODO: Positive?
+        self._eventmanager = eventmanager
+        self._frames = frames
+    def __call__(self):
+        time_delta = self._frames * EVENT_MANAGER_DT
+        bd = BurstDeferred(None)
+        self._eventmanager.callLater(time_delta, bd.callOnDone)
+        return bd
+
 def searchMovesIter(searcher):
     while True:
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield WaitCommand(searcher._eventmanager, 3) # Give the robot time to see the ball before executing the costly turn command.
         yield TurnCommand(searcher._actions, -pi/2)
 
 def searchMoveIterWithoutAnythingButHeadMovements(searcher):
@@ -358,7 +360,6 @@ def searchMovesIterWithCameraSwitching(searcher):
         yield TurnCommand(searcher._actions, -pi/2)
 
 class SearchPlanner(object):
-
     """ The planner determines the next actions, but the searcher
     takes care of the seen events. There is a slight breaking in this
     pattern when we center on targets - then temporarily the tracker

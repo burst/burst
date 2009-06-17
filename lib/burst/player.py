@@ -226,7 +226,8 @@ class Player(object):
             print "Team color: %d" % (self._world.playerSettings.teamColor)
 
     def _onRightBumperPressed(self):
-        self._actions.say('hello. don\'t worry, be happy!')
+#        self._actions.say("hello. don't worry, be happy!")
+        print "hello. don't worry, be happy!"
 
     def _onChestButtonPressed(self):
         """ This callback is registered only after start - when
