@@ -42,27 +42,39 @@ def parse_command_line_arguments():
     parser.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
     parser.add_option('', '--pynaoqi', action='store_true', dest='use_pynaoqi', help='use pynaoqi and twisted (TESTING)')
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
+
     parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
     parser.add_option('', '--profile-player', action='store_true', dest='profile_player', default=False, help='profile player code')
-    parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
-    parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
-    parser.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
     parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
+
+    # TODO - unsafe isn't required anymore, and also isn't correct for the possible "don't left t.i.d.Deferred's catch our exceptions" scenario.
+    parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
+
     parser.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
     parser.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')
+    parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
+
+    parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
+    parser.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
+
     parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
     parser.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
     parser.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
     parser.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
-    parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
-    parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
     parser.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
     parser.add_option('', '--verbose-gamestatus', action='store_true', dest='verbose_gamestatus', default=False, help='Verbose game status class')
+
+    parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
+
     # PREGAME TODO: game_controller and game_status should default to TRUE!!
     parser.add_option('', '--use_game_controller', action='store_true', dest='game_controller', default=False, help='Use game controller (start in initial state)')
     parser.add_option('', '--use_game_status', action='store_true', dest='game_status', default=False, help='Use game controller (start in initial state)')
+
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
+
+    parser.add_option('', '--oldmovecoordinator', action='store_true', dest='old_move_coordinator', default=False, help='debug - use old code (no threads) for move coordinator')
+
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)

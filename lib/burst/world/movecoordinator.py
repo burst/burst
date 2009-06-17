@@ -18,10 +18,17 @@ Old and mostly working:
  * we use BurstDeferreds to carry the callback. We don't actually call it,
   we return it via the list given in calc_events, EventManager does the calling
 
-Now for the exciting way:
- * Soap is actually two way (gasp!)
- * naoqi implements both parts. So we get to be a server.
- * by calling 
+New and annoyingly thready:
+ * create a thread for every move request
+  * this is capped by the following two usage options:
+   * one thread for head, one thread for walk
+   * one thread for whole body move
+  * we basically do a normal call, no post, but in a thread.
+  * if someone wants to cancel, we will try:
+   * request cancel (in main thread), hope that remote naoqi finishes the call (writes and closes socket)
+   * request cancel, and cancel our thread (and the socket we hope won't be left dangling)
+  * TODO:
+   * keep track of which moves and threads.
 """
 
 import burst
@@ -123,9 +130,53 @@ class SerialPostQueue(object):
 
 ################################################################################
 
-class MoveCoordinator(object):
+class ThreadedMoveCoordinator(object):
 
-    """ All low level moves, where low level is defined by anything
+    def __init__(self, world):
+        self._world = world
+        self._motion = self._world._motion
+        self._make_bd = self._world.burst_deferred_maker.make
+        # TODO - used by EventManager._printTraceTicker, do I really want this?
+        self._initiated = []
+        self._posted = []
+
+    def calc_events(self, events, deferreds):
+        pass
+
+    def add_expected_walk_post(self, description, postid, event, duration):
+        pass
+
+    def isMotionInProgress(self):
+        return False
+    
+    def isHeadMotionInProgress(self):
+        return False
+
+    def waitOnPostid(self, d, description, kind, event, duration):
+        """ Wait on a postid given a Deferred. Records
+        the description of the intiated action, and returns a BurstDeferred.
+
+        description - this is kinda a 'command' but we use it just for logging. So a little
+            redundancy in calling, instead of adding "magic" to extract it.
+        d - deferred for the post, will return a postid
+        event - event to be fired
+        duration - expected duration of action
+        """
+        bd = self._make_bd(self)
+        return bd
+
+ 
+class IsRunningMoveCoordinator(object):
+
+    """ Note: Old coordinator - doesn't use threading, uses polling with
+    isRunning to know when a move has ended. Also does much more work
+    then required for enabling simultaneous moves (which we don't
+    really require this year).
+    
+    Orig docs
+    =========
+
+    All low level moves, where low level is defined by anything
     we talk to naoqi to do, so this includes:
     forward walk, sidestep walk, arc walk, turn
     joint moves (doMove)
@@ -289,4 +340,16 @@ class MoveCoordinator(object):
         initiate_time, kind, description, event, duration = self._initiated[initiated]
         self._add_posted(postid, initiated)
         self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)
+
+# if False is temp - for commit right now.
+if False:
+    if burst.options.old_move_coordinator:
+        print "MoveCoordinator: using IsRunningMoveCoordinator"
+        MoveCoordinator = IsRunningMoveCoordinator
+    else:
+        # Default (see burst.options for flag to change)
+        print "MoveCoordinator: using ThreadedMoveCoordinator"
+        MoveCoordinator = ThreadedMoveCoordinator
+
+MoveCoordinator = IsRunningMoveCoordinator
 
