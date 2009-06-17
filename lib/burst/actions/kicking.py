@@ -233,9 +233,8 @@ class BallKicker(BurstDeferred):
         self._nextMovement(bd).onDone(self.strafe)
 
     def refindBall(self):
-        # TODO: Restore centering behavior (either manually or via Finder) - 
-        #       needed for correct ball bearing/distance values when deciding on next move
-        # lambda: self._actions.tracker.center(self._world.ball).onDone(
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
-           lambda: self.switchToFinder(to_goal_finder=False)
+            # TODO: Fix distSmooth after moving head - this is just a workaround
+            lambda: self._eventmanager.callLater(0.5,
+                 lambda: self.switchToFinder(to_goal_finder=False))
         )
