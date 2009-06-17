@@ -2,6 +2,11 @@ from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import general_moves as moves
 
+# Parameter for "Vova Trick" - first two slow steps.
+# For the slow walk we need this, for the faster we turn this off (in
+# personalization).
+FIRST_TWO_SLOW_STEPS = True
+
 class Walk(object):
 
     SlowestSpeed, FastestSpeed, DefaultSpeed = object(), object(), object()

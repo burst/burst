@@ -34,6 +34,8 @@ from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
 from burst_consts import DEG_TO_RAD
 
+walks.FIRST_TWO_SLOW_STEPS = False
+
 #walks.STRAIGHT_WALK.defaultSpeed = 25
 
 walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
@@ -53,8 +55,6 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            0.015]),                  # ZmpOffsetY
            25          # 20ms count per step
     )
-
-
 
 ## Behavior params
 

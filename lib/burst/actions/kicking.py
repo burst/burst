@@ -12,6 +12,7 @@ from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT
 import burst.actions
 from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
+import burst.moves.walks as walks
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
@@ -155,7 +156,7 @@ class BallKicker(BurstDeferred):
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
                     self._nextMovement(self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=moves.SIDESTEP_WALK)).onDone(self._approachBall)
+                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=walks.SIDESTEP_WALK)).onDone(self._approachBall)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:

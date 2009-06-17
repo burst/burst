@@ -5,6 +5,7 @@ from burst.eventmanager import EVENT_MANAGER_DT
 from burst.events import EVENT_CHANGE_LOCATION_DONE
 from burst_consts import SUPPORT_MODE_DOUBLE_LEFT
 from burst.world import World
+import burst.moves.walks as walks
 
 class Journey(object):
 
@@ -143,14 +144,14 @@ class Journey(object):
         leg_distance = min(self._leg_distance, self._distance_left)
         
         # TODO: TEMP!!! True: 2 parts, False: 1 part
-        if World.connected_to_nao and True:
+        if walks.FIRST_TWO_SLOW_STEPS and World.connected_to_nao:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
             normal_walk_distance = leg_distance - slow_walk_distance
             self._addWalkStraight( "slow walk: %f", slow_walk_distance, DEFAULT_SLOW_WALK_STEPS )
             self._addWalkStraight( "normal walk: %f", normal_walk_distance, self._time_per_steps)
         else:
             self._addWalkStraight( "same speed: %f", leg_distance, self._time_per_steps )
-            
+
         self._distance_left -= leg_distance
         if self._distance_left < 0.0:
             print "ERROR: Journey distance left calculation incorrect"

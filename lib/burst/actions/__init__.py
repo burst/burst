@@ -6,6 +6,7 @@ from burst_util import (transpose, cumsum, succeed,
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves
+import burst.moves.walks as walks
 from burst.world import World
 from burst.walkparameters import WalkParameters
 from burst.image import normalized2_image_width, normalized2_image_height
@@ -116,7 +117,7 @@ class Actions(object):
     #===============================================================================
 
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
-        walk=moves.STRAIGHT_WALK, steps_before_full_stop=0):
+        walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -138,7 +139,7 @@ class Actions(object):
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
         
-    def turn(self, deltaTheta, walk=moves.STRAIGHT_WALK):
+    def turn(self, deltaTheta, walk=walks.STRAIGHT_WALK):
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
@@ -152,7 +153,7 @@ class Actions(object):
             description=('turn', deltaTheta, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=moves.STRAIGHT_WALK):
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -174,13 +175,15 @@ class Actions(object):
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            walk = moves.SIDESTEP_WALK
+            walk = walks.SIDESTEP_WALK
         
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
         defaultSpeed = walk.defaultSpeed
         stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
         
+        print "WARNING: changeLocationRelativeSideways isn't updated to check FIRST_TWO_SLOW_STEPS"
+
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
             
@@ -458,7 +461,7 @@ class Actions(object):
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
         self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT)
 
-        walk = moves.STRAIGHT_WALK
+        walk = walks.STRAIGHT_WALK
 
         self.setWalkConfig(walk.walkParameters).add
         self._motion.addWalkStraight( float(distance), 100 )
