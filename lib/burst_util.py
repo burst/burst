@@ -273,6 +273,11 @@ class BurstDeferred(object):
             return 'bd->%s' % self._ondone[0].im_self.toCondensedString()
         return func_name(self._ondone[0])
 
+def succeedBurstDeferred(data):
+    bd = BurstDeferred(data)
+    bd.callOnDone()
+    return bd
+
 def deferredToCondensedString(d):
     print "d-%s" % id(d)
 
