@@ -40,10 +40,10 @@ class Goalie(Player):
 
     def onFinishedGettingUp(self):
 #        self._report("gaga.")
-        if self._world.falldetector.isOnBack(): # TODO: Shouldn't this be in Robot?
+        if self._world.robot.sensors.isOnBack(): # TODO: Shouldn't this be in Robot?
             self._report("Back.")
             self.onFallDownOnBack()
-        elif self._world.falldetector.isOnBelly(): # TODO: Shouldn't this be in Robot?
+        elif self._world.robot.sensors.isOnBelly(): # TODO: Shouldn't this be in Robot?
             self._report("Belly.")
             self.onFallDownOnBelly()
         else:
