@@ -20,12 +20,15 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes
 
 clean:
 	cd src/burstmem; $(MAKE) clean
 	rm -R src/recordermodule/crossbuild
 	cd src/imops; $(MAKE) clean
+
+sizes:
+	ls -l $(MODULES)
 
 webots:
 	cd src/imops; $(MAKE) webots
