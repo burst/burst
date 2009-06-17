@@ -36,6 +36,10 @@ from burst_consts import DEG_TO_RAD
 
 walks.FIRST_TWO_SLOW_STEPS = False
 
+# How the fuck do I implement those?
+#CIRCLE_STRAFE_CLOCKWISE = -0.2
+#CIRCLE_STRAFE_COUNTER_CLOCKWISE = 0.165
+
 #walks.STRAIGHT_WALK.defaultSpeed = 25
 
 walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
