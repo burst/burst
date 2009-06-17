@@ -14,10 +14,10 @@ from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
 import burst.moves.walks as walks
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
-                                   calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT,
+                                   calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, BALL_FRONT_FAR,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
-    PIX_TO_RAD_X, PIX_TO_RAD_Y, EVENT_MANAGER_DT)
+    PIX_TO_RAD_X, PIX_TO_RAD_Y, EVENT_MANAGER_DT, DEG_TO_RAD)
 import burst_consts
 
 class TargetApproacher(TargetFinder):
@@ -37,7 +37,7 @@ class TargetApproacher(TargetFinder):
 # 3. If full scan doesn't find ball => notify caller
 #
 # *TODO*:
-# * RESET self.aligned_to_goal when needed
+# * RESET self._aligned_to_goal when needed
 # * Area for strafing different from kicking-area
 # * Handle "ball lost" only when ball isn't seen for several frames (use the "recently seen" variable)
 # * Notify caller when ball moves (yet doesn't disappear)? Since measurements are noisy, need to decide
@@ -77,7 +77,7 @@ class BallKicker(BurstDeferred):
     ################################################################################
 
     def start(self):
-        self.aligned_to_goal = False
+        self._aligned_to_goal = False
         self._movement_deferred = None
 
         self._actions.setCameraFrameRate(20)
@@ -106,14 +106,15 @@ class BallKicker(BurstDeferred):
 
     def _approachBall(self):
         target = self._world.ball
-        
-        print "\nApproaching %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)" % (
+        print ("\nApproaching %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)"+"\n"+"-"*100) % (
                   target.name, target.recently_seen, target.dist, target.distSmoothed, target.bearing)
-        print "-"*100
 
+        # TODO: we probably need a better solution? this can happen after we're aligned,
+        # when ball tracker finds the ball while a previous movement is still ON.
         if self._movement_deferred:
-            print "LAST MOVEMENT STILL ON???"
+            print "LAST MOVEMENT STILL ON!!!"
             #import pdb; pdb.set_trace()
+            return
 
         (target_x, target_y) = polar2cart(target.distSmoothed, target.bearing)
         print "target_x: %3.3fcm, target_y: %3.3fcm" % (target_x, target_y)
@@ -134,11 +135,11 @@ class BallKicker(BurstDeferred):
         # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course)
         kick_side_offset = 1.1-1.2*(abs(target_y-KICK_Y_MIN[side])/7)
 
-        print ('TARGET_IN_KICKING_AREA', 'TARGET_BETWEEN_LEGS', 'TARGET_FRONT', 'TARGET_SIDE_NEAR', 'TARGET_SIDE_FAR', 'TARGET_DIAGONAL')[target_location]
+        print ('TARGET_IN_KICKING_AREA', 'TARGET_BETWEEN_LEGS', 'TARGET_FRONT_NEAR', 'TARGET_FRONT_FAR','TARGET_SIDE_NEAR', 'TARGET_SIDE_FAR', 'TARGET_DIAGONAL')[target_location]
 
         ### DECIDE ON NEXT MOVEMENT ###
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
-        if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._align_to_target:
+        if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR) and not self._aligned_to_goal and self._align_to_target:
             self.debugPrint("Aligning to goal! (stopping target tracker)")
             self._actions.setCameraFrameRate(20)
             self.switchToFinder(to_goal_finder=True)
@@ -155,7 +156,7 @@ class BallKicker(BurstDeferred):
                 self._actions.adjusted_straight_kick(side, kick_side_offset).onDone(self.callOnDone)
                 return
         else:
-            if target_location == BALL_FRONT:
+            if target_location in (BALL_FRONT_NEAR, BALL_FRONT_FAR):
                 self.debugPrint("Walking straight!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
@@ -170,6 +171,10 @@ class BallKicker(BurstDeferred):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
+
+                    # if we do a significant turn, our goal-alignment isn't worth much anymore...
+                    if kp_bearing > 10*DEG_TO_RAD:
+                        self._aligned_to_goal = False
                     self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
@@ -226,12 +231,12 @@ class BallKicker(BurstDeferred):
             self._is_strafing = False
             self._is_strafing_init_done = False
             self.debugPrint("Aligned position reached! (starting ball search)")
-            self.aligned_to_goal = True
+            self._aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
             self._goalFinder.stop()
             self.refindBall()
             return
-        
+
         # TODO: FPS=10 removed for now (for accurate feedback), might be needed for stable circle-strafing!
         #self._actions.setCameraFrameRate(10)
 
@@ -242,7 +247,7 @@ class BallKicker(BurstDeferred):
         else:
             self.debugPrint("Strafing...")
             bd = strafeMove()
-        
+
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
         bd.onDone(lambda: self._eventmanager.callLater(0.2, self.strafe))
 
@@ -250,5 +255,4 @@ class BallKicker(BurstDeferred):
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
             # TODO: Fix distSmooth after moving head - this is just a workaround
             lambda: self._eventmanager.callLater(0.5,
-                 lambda: self.switchToFinder(to_goal_finder=False))
-        )
+                 lambda: self.switchToFinder(to_goal_finder=False)))

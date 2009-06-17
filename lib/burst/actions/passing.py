@@ -8,7 +8,7 @@ import burst.actions
 import burst.moves as moves
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT,
                                    KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
-                                   BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL)
+                                   BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL)
 from burst_consts import LEFT, RIGHT
 
 #===============================================================================
@@ -161,7 +161,7 @@ class passBall(BurstDeferred):
         # ball location, as defined at behavior params (front, side, etc...)
         ball_location = self.calcBallArea(ball_x, ball_y, side)
 
-        DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')
+        DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT_NEAR', 'BALL_FRONT_FAR', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')
         if self.verbose:
             print "AREA: %s" % DEBUG_AREA[ball_location]
 
@@ -188,10 +188,13 @@ class passBall(BurstDeferred):
     def calcBallArea(self, ball_x, ball_y, side):
         if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] <
             return BALL_IN_KICKING_AREA
-        elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT] and ball_x <= KICK_X_MAX[side]:
-            return BALL_BETWEEN_LEGS
         elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
-            return BALL_FRONT
+            if ball_x <= KICK_X_MAX[side]:
+                return BALL_BETWEEN_LEGS
+            elif ball_x <= KICK_X_MAX[side]*3/2:
+                return BALL_FRONT_NEAR
+            else:
+                return BALL_FRONT_FAR
         else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
             if ball_x <= KICK_X_MAX[side]:
                 return BALL_SIDE_NEAR
