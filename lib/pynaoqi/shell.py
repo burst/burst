@@ -245,6 +245,13 @@ EXAMPLES = """# Show current identified ball location
 ball = refilter('^/.*Ball.*(ear|ist|enter)', names) # More
 con.ALMemory.getListData(ball)
 
+# Log the distance and focdistance (you need to run with -pylab)
+# pynaoqi --ip raul -pylab
+logger = watch(ball)
+# wait a little
+t, dist, focdist = logger._times, array(logger._values)[:,3], array(logger._values)[:,4]
+plot(t, dist, t, focdist)
+
 # Vision Location of ball over time, in text, in plot
 watch(ball)
 plottime(ball)

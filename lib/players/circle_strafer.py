@@ -41,9 +41,13 @@ class circle_strafer(Player):
         print "\ndoNextAction)"
         print "------------------"
 
-        if self.counter < 25:
+        #if self.counter < 25 and (self.counter % 3) == 1:
+        if self.counter < 25:      
+            #self._actions.executeCircleStrafeClockwise().onDone(self.onTurnDone)
             self._actions.executeCircleStrafeCounterClockwise().onDone(self.onTurnDone)
             return
+#        self.onTurnDone()        
+#        return
 
 if __name__ == '__main__':
     import burst

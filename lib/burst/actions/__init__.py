@@ -139,7 +139,7 @@ class Actions(object):
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
         
-    def turn(self, deltaTheta, walk=walks.STRAIGHT_WALK):
+    def turn(self, deltaTheta, walk=walks.TURN_WALK):
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
