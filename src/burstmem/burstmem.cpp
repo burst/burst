@@ -266,7 +266,7 @@ void burstmem::startMemoryMap ()
     try {
         m_memoryfastaccess =
             AL::ALPtr<ALMemoryFastAccess >(new ALMemoryFastAccess());
-        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames);
+        m_memoryfastaccess->ConnectToVariables(m_broker, m_varnames, false /* create if don't exist */);
     } catch (AL::ALError e) {
         std::cout << "burstmem: Failed to create the ALFastMemoryAccess proxy: " <<
             e.toString() << std::endl;
@@ -370,7 +370,11 @@ burstmem::updateMemoryMappedVariables()
 
 #if 1
         // get the normal m_varnames
-        m_memoryfastaccess->GetValues(m_values);
+        try {
+            m_memoryfastaccess->GetValues(m_values);
+        } catch (AL::ALError e) {
+            std::cout << "burstmem: GetValues: ALError: " << e.toString() << std::endl;
+        }
 #else
 #error THIS_IS_40_TIMES_SLOWER_TAKES_3MS_FOR_94_VARS
         // using standard ALMemory

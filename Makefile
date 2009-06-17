@@ -23,7 +23,7 @@ Makefile.local:
 .PHONY: burstmem recordermodule imops colortable clean webots pynaoqi
 
 clean:
-	rm -R src/burstmem/crossbuild
+	cd src/burstmem; $(MAKE) clean
 	rm -R src/recordermodule/crossbuild
 	cd src/imops; $(MAKE) clean
 

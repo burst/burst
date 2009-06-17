@@ -236,6 +236,7 @@ void ImopsModule::setFramesPerSecond(double fps)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// called from Vision Thread
 void ImopsModule::notifyNextVisionImage() {
     // Synchronize noggin's information about joint angles with the motion
     // thread's information
@@ -271,15 +272,14 @@ void ImopsModule::notifyNextVisionImage() {
 
     // Process current frame
     g_vision->notifyImage(g_sensors->getImage());
+    //Release the camera image
+    //if(camera_active)
+    g_imageTranscriber->releaseImage();
 
     static Counter writer("ImopsModule: Counter: time for writeToALMemory: ");
     writer.one();
     this->writeToALMemory();
     writer.two();
-
-    //Release the camera image
-    //if(camera_active)
-    g_imageTranscriber->releaseImage();
 
     // Make sure messages are printed
     fflush(stdout);
@@ -293,64 +293,64 @@ void ImopsModule::notifyNextVisionImage() {
 std::vector<std::string> createWriteList()
 { // 14
 #define GOAL_POST_VARS(which, vision_var) \
-    "/BURST/" which "/X", \
-    "/BURST/" which "/Y", \
-    "/BURST/" which "/CenterX", \
-    "/BURST/" which "/CenterY", \
-    "/BURST/" which "/AngleXDeg", \
-    "/BURST/" which "/AngleYDeg", \
-    "/BURST/" which "/Width", \
-    "/BURST/" which "/Height", \
-    "/BURST/" which "/FocDist", \
-    "/BURST/" which "/Distance", \
-    "/BURST/" which "/BearingDeg", \
-    "/BURST/" which "/IDCertainty", \
-    "/BURST/" which "/DistanceCertainty", \
-    "/BURST/" which "/ElevationDeg", \
+    "/BURST/Vision/" which "/X", \
+    "/BURST/Vision/" which "/Y", \
+    "/BURST/Vision/" which "/CenterX", \
+    "/BURST/Vision/" which "/CenterY", \
+    "/BURST/Vision/" which "/AngleXDeg", \
+    "/BURST/Vision/" which "/AngleYDeg", \
+    "/BURST/Vision/" which "/Width", \
+    "/BURST/Vision/" which "/Height", \
+    "/BURST/Vision/" which "/FocDist", \
+    "/BURST/Vision/" which "/Distance", \
+    "/BURST/Vision/" which "/BearingDeg", \
+    "/BURST/Vision/" which "/IDCertainty", \
+    "/BURST/Vision/" which "/DistanceCertainty", \
+    "/BURST/Vision/" which "/ElevationDeg", \
      
     
     char* vars[] = {
-    "/BURST/Ball/CenterX",
-    "/BURST/Ball/CenterY",
-    "/BURST/Ball/Width",
-    "/BURST/Ball/Height",
-    "/BURST/Ball/FocDist",
-    "/BURST/Ball/Distance",
-    "/BURST/Ball/BearingDeg",
-    "/BURST/Ball/ElevationDeg",
-    "/BURST/Ball/Confidence", // 9
+    "/BURST/Vision/Ball/CenterX",
+    "/BURST/Vision/Ball/CenterY",
+    "/BURST/Vision/Ball/Width",
+    "/BURST/Vision/Ball/Height",
+    "/BURST/Vision/Ball/FocDist",
+    "/BURST/Vision/Ball/Distance",
+    "/BURST/Vision/Ball/BearingDeg",
+    "/BURST/Vision/Ball/ElevationDeg",
+    "/BURST/Vision/Ball/Confidence", // 9
 
-    "/BURST/YGCrossbar/X",
-    "/BURST/YGCrossbar/Y",
-    "/BURST/YGCrossbar/CenterX",
-    "/BURST/YGCrossbar/CenterY",
-    "/BURST/YGCrossbar/AngleXDeg",
-    "/BURST/YGCrossbar/AngleYDeg",
-    "/BURST/YGCrossbar/Width",
-    "/BURST/YGCrossbar/Height",
-    "/BURST/YGCrossbar/FocDist",
-    "/BURST/YGCrossbar/Distance",
-    "/BURST/YGCrossbar/BearingDeg",
-    "/BURST/YGCrossbar/ElevationDeg",
-    "/BURST/YGCrossbar/LeftOpening",
-    "/BURST/YGCrossbar/RightOpening",
-    "/BURST/YGCrossbar/shotAvailable", //15
+    "/BURST/Vision/YGCrossbar/X",
+    "/BURST/Vision/YGCrossbar/Y",
+    "/BURST/Vision/YGCrossbar/CenterX",
+    "/BURST/Vision/YGCrossbar/CenterY",
+    "/BURST/Vision/YGCrossbar/AngleXDeg",
+    "/BURST/Vision/YGCrossbar/AngleYDeg",
+    "/BURST/Vision/YGCrossbar/Width",
+    "/BURST/Vision/YGCrossbar/Height",
+    "/BURST/Vision/YGCrossbar/FocDist",
+    "/BURST/Vision/YGCrossbar/Distance",
+    "/BURST/Vision/YGCrossbar/BearingDeg",
+    "/BURST/Vision/YGCrossbar/ElevationDeg",
+    "/BURST/Vision/YGCrossbar/LeftOpening",
+    "/BURST/Vision/YGCrossbar/RightOpening",
+    "/BURST/Vision/YGCrossbar/shotAvailable", //15
 
-    "/BURST/BGCrossbar/X",
-    "/BURST/BGCrossbar/Y",
-    "/BURST/BGCrossbar/CenterX",
-    "/BURST/BGCrossbar/CenterY",
-    "/BURST/BGCrossbar/AngleXDeg",
-    "/BURST/BGCrossbar/AngleYDeg",
-    "/BURST/BGCrossbar/Width",
-    "/BURST/BGCrossbar/Height",
-    "/BURST/BGCrossbar/FocDist",
-    "/BURST/BGCrossbar/Distance",
-    "/BURST/BGCrossbar/BearingDeg",
-    "/BURST/BGCrossbar/ElevationDeg",
-    "/BURST/BGCrossbar/LeftOpening",
-    "/BURST/BGCrossbar/RightOpening",
-    "/BURST/BGCrossbar/shotAvailable", //15
+    "/BURST/Vision/BGCrossbar/X",
+    "/BURST/Vision/BGCrossbar/Y",
+    "/BURST/Vision/BGCrossbar/CenterX",
+    "/BURST/Vision/BGCrossbar/CenterY",
+    "/BURST/Vision/BGCrossbar/AngleXDeg",
+    "/BURST/Vision/BGCrossbar/AngleYDeg",
+    "/BURST/Vision/BGCrossbar/Width",
+    "/BURST/Vision/BGCrossbar/Height",
+    "/BURST/Vision/BGCrossbar/FocDist",
+    "/BURST/Vision/BGCrossbar/Distance",
+    "/BURST/Vision/BGCrossbar/BearingDeg",
+    "/BURST/Vision/BGCrossbar/ElevationDeg",
+    "/BURST/Vision/BGCrossbar/LeftOpening",
+    "/BURST/Vision/BGCrossbar/RightOpening",
+    "/BURST/Vision/BGCrossbar/shotAvailable", //15
 
     // Blue Goal Right Post (BGRP)
     GOAL_POST_VARS("BGRP", bgrp)
