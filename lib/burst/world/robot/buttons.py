@@ -3,6 +3,8 @@
 
 from burst import events as events_module
 
+__all__ = ['Bumpers', 'ChestButton']
+
 
 class Bumpers(object):
 

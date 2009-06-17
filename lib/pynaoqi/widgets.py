@@ -162,6 +162,16 @@ class GtkTextLogger(TaskBaseWindow):
         self._values.append(result)
         tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (t, str(result)))
 
+    def save(self, filename=None):
+        if filename is None:
+            filename = '/tmp/lastsave.csv'
+            print "no filename given, saving to %s" % filename
+        import csv
+        with open(filename, 'w+') as fd:
+            writer = csv.writer(fd)
+            for t, vals in zip(self._times, self._values):
+                writer.writerow([t] + list(vals))
+
     def plotme(self):
         from pylab import plot, array
         plot(array(self._times), array(self._values))
