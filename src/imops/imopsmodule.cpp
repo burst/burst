@@ -249,7 +249,7 @@ void ImopsModule::notifyNextVisionImage() {
     static std::vector<float> body_angles(NUM_JOINTS, 0.0F);
     m_memoryfastaccess->GetValues(values);
     // setBodyAngles just copies the vector, doesn't just take first NUM_JOINTS
-    memcpy(&values[0], &body_angles[0], NUM_JOINTS*sizeof(float)); // TODO - time vs std::copy, prefer the later for safety
+    memcpy(&body_angles[0], &values[0], NUM_JOINTS*sizeof(float)); // TODO - time vs std::copy, prefer the later for safety
 
     g_sensors->setBodyAngles(body_angles);
     
