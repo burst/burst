@@ -1,3 +1,19 @@
+CPU | FPS
+
+commit 41d1b4bdf4841e892643f1130614ac16a8e247ce (fps changed only for processing,
+not for camera)
+maldini
+
+mem / cpu / fps / when
+71,62,20,just turned it on. not even sure it is running latest. nothing running except naoqi
+77,16,1,restarted naoqi,connected with pynaoqi (probably mem increase from that), changed fps to 1 (imops.setFramesPerSecond(1.0))
+77,61,20,con.imops.setFramesPerSecond(20.0)
+77,38,10,con.imops.setFramesPerSecond()
+
+
+
+################################################################################
+
 Some notes on timing calculations:
 I use gettimeofday. That means you should take minimum, not average, since
 the larger times are probably due to scheduler giving our precious cpu to

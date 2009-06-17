@@ -30,6 +30,7 @@ public:
 public: // helper methods
     void registerCamera(AL::ALPtr<AL::ALBroker> broker);
     void initCameraSettings(int whichCam);
+    bool setFrameRate(unsigned int fps);
     void waitForImage();
 
 private: // member variables

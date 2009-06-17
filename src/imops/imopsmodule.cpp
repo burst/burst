@@ -232,6 +232,7 @@ void ImopsModule::setFramesPerSecond(double fps)
 #endif
     vision_frame_length_us = 1000000.0 / fps;
     vision_frame_length_print_thresh_us = vision_frame_length_us * 1.5; // TODO - set this to?
+    g_imageTranscriber->setFrameRate(fps);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
