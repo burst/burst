@@ -262,7 +262,7 @@ class Tracker(object):
         if delta_angles:
             if self.verbose:
                 print "Tracker: change angles by yaw=%1.2f, pitch=%1.2f" % delta_angles
-            bd = self._actions.changeHeadAnglesRelativeChained(*delta_angles) #changeHeadAnglesRelative / changeHeadAnglesRelativeChained
+            bd = self._actions.changeHeadAnglesRelative(*delta_angles) #changeHeadAnglesRelative / changeHeadAnglesRelativeChained
         if return_exact_error:
             return centered, bd, error
         return centered, bd
