@@ -4,13 +4,21 @@ commit 41d1b4bdf4841e892643f1130614ac16a8e247ce (fps changed only for processing
 not for camera)
 maldini
 
-mem / cpu / fps / when
-71,62,20,just turned it on. not even sure it is running latest. nothing running except naoqi
-77,16,1,restarted naoqi,connected with pynaoqi (probably mem increase from that), changed fps to 1 (imops.setFramesPerSecond(1.0))
-77,61,20,con.imops.setFramesPerSecond(20.0)
-77,38,10,con.imops.setFramesPerSecond()
+mem / cpu / fps(capture_fps) / when
+71,62,20(30 but 20 commanded..),just turned it on. not even sure it is running latest. nothing running except naoqi
+77,16,1("),restarted naoqi,connected with pynaoqi (probably mem increase from that), changed fps to 1 (imops.setFramesPerSecond(1.0))
+77,61,20("),con.imops.setFramesPerSecond(20.0)
+77,38,10("),con.imops.setFramesPerSecond()
 
-
+commit 768b70dd1c9997b1298d73390e661bb7c392581b (fps change applied to camera to)
+Note: 20 shouldn't help at all, since now it will actually do 30 capture_fps! - so for ref
+but 10 should be better. (since there is actually a camera_fps for it, allowed are 5,10,15,30)
+71,61,20(30), naoqi restart after installall.
+77,61,20(30), pynaoqi run, nothing else
+77,49,15(15), con.imops.setFramesPerSecond(15.0)
+77,37-38,10(10), con.imops.setFramesPerSecond(10.0)
+77,16,1(5), con.imops.setFramesPerSecond(1.0)
+77,25,5(5), con.imops.setFramesPerSecond(5.0)
 
 ################################################################################
 
