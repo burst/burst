@@ -383,7 +383,6 @@ class World(object):
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
-        pass
         if self.bglp.seen and self.bgrp.seen:
             events.add(EVENT_ALL_BLUE_GOAL_IN_FRAME)
         if self.yglp.seen and self.ygrp.seen:
