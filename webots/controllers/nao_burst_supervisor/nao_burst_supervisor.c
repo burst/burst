@@ -288,7 +288,7 @@ static void move_robot_3d(int robot, double tx, double ty, double tz, double alp
 
 // place robot in upright position, feet on the floor
 static void move_robot_2d(int robot, double tx, double tz, double alpha) {
-  move_robot_3d(robot, tx, 0.330261, tz, alpha);
+  move_robot_3d(robot, tx, 0.321953, tz, alpha);
 }
 
 // move ball to 3d position
@@ -326,8 +326,8 @@ static void check_keyboard() {
     break;
 
   case 'M': // Middle of field (initial position after goal)
-    move_robot_2d(0, 0.0, 0.0, -1.57);
-    move_ball_2d(-1.32302, 0.0);
+    move_robot_2d(0, 0.15, 0.0, -1.57);
+    move_ball_2d(0.0, 0.0);
     //move_ball_3d( -0.6, BALL_RADIUS*5, 0.016);
     // (double)rand() / (double)RAND_MAX * 0.5 - 0.25);
     break;

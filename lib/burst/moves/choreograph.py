@@ -528,7 +528,7 @@ def CIRCLE_STRAFE_CLOCKWISE():
     #angles.append([float(-0.00873), float(-0.19), float(-0.13962), float(0.00000), float(0.00000)]) # gerrard 
     #angles.append([float(-0.00873), float(-0.185), float(-0.13962), float(0.00000), float(0.00000)]) # messi - 20
     angles.append([float(-0.00873), float(-0.21642), float(-0.13962), float(0.00000), float(0.00000)]) # raul - 23
-#    angles.append([float(-0.00873), float(-0.25), float(-0.13962), float(0.00000)], float(0.00000)]) # webots
+#    angles.append([float(-0.00873), float(-0.25), float(-0.13962), float(0.00000), float(0.00000)]) # webots
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(1.20000)])
 
     jointCodes.append("RKneePitch")
