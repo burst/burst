@@ -45,7 +45,9 @@ class TargetFinder(ContinuousBehavior):
     def _start(self):
         print "TargetFinder looking for: %s" % (','.join(s.name for s in self._targets))
         # If a search has completed with our targets and they were found in this frame, go to tracking.
+        # We give seen objects a priority over recently_seen objects
         seen_objects = [t for t in self._targets if t.seen]
+        seen_objects.extend([t for t in self._targets if t.recently_seen and not t.seen])
 
         if len(seen_objects) > 0:
             # reset targets to the first seen object (could be arbitrary if we were just called)

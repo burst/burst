@@ -85,7 +85,7 @@ class BallKicker(BurstDeferred):
     def start(self):
         self.aligned_to_goal = False
         self.goalposts = [self._world.yglp, self._world.ygrp]
-        self.movement_deferred = None
+        self._movement_deferred = None
 
         self._actions.setCameraFrameRate(20)
         # kicker initial position
@@ -93,9 +93,11 @@ class BallKicker(BurstDeferred):
             lambda: self.switchToFinder(to_goal_finder=False))
 
     def _stopOngoingMovement(self):
-        if self.movement_deferred:
+        print "BALL LOST!"
+        if self._movement_deferred:
+            print "BALL LOST! STOPPING MOVEMENT"
             self._actions.clearFootsteps() # TODO - flag something? someone?
-            self.movement_deferred.clear()
+            self._movement_deferred.clear()
 
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
