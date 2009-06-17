@@ -292,13 +292,20 @@ class Actions(object):
         return bd
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
-        #self._motion.changeChainAngles("Head", [deltaHeadYaw/2, deltaHeadPitch/2])
         cur_yaw, cur_pitch = self._world.getAngle("HeadYaw"), self._world.getAngle("HeadPitch")
         yaw, pitch = cur_yaw + delta_yaw, cur_pitch + delta_pitch
         if burst.options.debug:
             print "changeHeadAnglesRelative: %1.2f+%1.2f=%1.2f, %1.2f+%1.2f=%1.2f" % (
                 cur_yaw, delta_yaw, yaw, cur_pitch, delta_pitch, pitch)
         return self.executeHeadMove( (((yaw, pitch),interp_time),) )
+
+    def changeHeadAnglesRelativeChained(self, delta_yaw, delta_pitch):
+        if burst.options.debug:
+            print "changeHeadAnglesRelativeChained: delta_yaw %1.2f, delta_pitch %1.2f" % (delta_yaw, delta_pitch)
+        d = self._motion.post.changeChainAngles("Head", [delta_yaw, delta_pitch])
+
+        return self._movecoordinator.waitOnPostid(d, description="change Head Angles",
+            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
