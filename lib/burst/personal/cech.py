@@ -32,9 +32,11 @@ walks.SIT_POS[2] = 10
 ## Walks
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
+from burst_consts import DEG_TO_RAD
+
 #walks.STRAIGHT_WALK.defaultSpeed = 25
 
-walks.STRAIGHT_WALK = Walk(WalkParameters([
+walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
