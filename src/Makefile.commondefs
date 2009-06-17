@@ -1,0 +1,8 @@
+# Definitions, build flags, used by all modules
+
+# Flags for debug and release builds. host builds are always debug.
+DEBUG_BUILD=-fPIC -ggdb
+# ok, there is a -march=geode but only in newer g++.
+RELEASE_BUILD=-O3 -DNDEBUG -Wall -Wno-unused -Wno-strict-aliasing -march=k6-2 -mtune=k6-2
+
+

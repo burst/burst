@@ -11,7 +11,7 @@ import math
 from math import tan
 
 # Some stuff that is required first
-MESSI = 'memssi'
+MESSI = 'messi'
 GERRARD = 'gerrard'
 CECH = 'cech'
 RAUL = 'raul'

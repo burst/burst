@@ -53,7 +53,7 @@ struct Counter {
     timeval t1, t2;
     float total;
     int counter;
-    Counter(std::string _msg) : msg(_msg), counter(0), total(0.0) {
+    Counter(std::string _msg) : msg(_msg), total(0.0), counter(0) {
     }
     inline void one() {
         if (counter >= 100) {

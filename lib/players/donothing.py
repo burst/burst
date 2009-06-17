@@ -17,7 +17,6 @@ class Donothing(Player):
         self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
-        self._actions.initPoseAndStiffness().onDone(self.startWaiting)
         self._max = 10
         self._count = 0
 

@@ -28,6 +28,8 @@ class SoapConnectionManager(object):
         def makeProtocol():
             return SoapProtocol(con=self.con)
         def sendPacket(protocol):
+            if protocol is None:
+                return # silently fail - log this? TODO
             protocol.sendPacket(tosend).addCallback(deferred.callback)
         conn_d = ClientCreator(reactor, makeProtocol).connectTCP(
                 host=self.con._message_maker._host, port=self.con._message_maker._port)

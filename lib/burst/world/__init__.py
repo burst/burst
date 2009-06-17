@@ -17,6 +17,8 @@ import linecache
 from burst_consts import ULTRASOUND_DISTANCES_VARNAME
 import burst
 from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
+    EVENT_ALL_BLUE_GOAL_IN_FRAME,
+    EVENT_ALL_YELLOW_GOAL_IN_FRAME,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
     EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
 from ..sensing import FalldownDetector
@@ -381,10 +383,11 @@ class World(object):
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
+        pass
         if self.bglp.seen and self.bgrp.seen:
-            events.add(EVENT_ALL_BLUE_GOAL_SEEN)
+            events.add(EVENT_ALL_BLUE_GOAL_IN_FRAME)
         if self.yglp.seen and self.ygrp.seen:
-            events.add(EVENT_ALL_YELLOW_GOAL_SEEN)
+            events.add(EVENT_ALL_YELLOW_GOAL_IN_FRAME)
 
     def addMemoryVars(self, vars):
         # slow? but retains the order of the registration

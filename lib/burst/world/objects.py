@@ -17,6 +17,7 @@ import burst
 import burst.events as events_module
 
 
+
 class CenteredLocatable(object):
     """ store data for a Locatable for a current search.
     Stored inside the Locatable itself for usage by Localization.
@@ -327,10 +328,14 @@ class Ball(Movable):
         self.dy = 0
         self.velocity = None
         self.time_intersection = None
+        self.shouldComputeIntersection = False
     
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
-        
+
+        if not self.shouldComputeIntersection:
+            return
+
         T = 0
         DIST = 1
         BEARING = 2
