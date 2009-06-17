@@ -340,6 +340,7 @@ def searchMovesIter(searcher):
     while True:
         for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        yield WaitCommand(searcher._eventmanager, 3) # Give the robot time to see the ball before executing the costly turn command.
         yield TurnCommand(searcher._actions, -pi/2)
 
 def searchMoveIterWithoutAnythingButHeadMovements(searcher):
