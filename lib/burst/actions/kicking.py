@@ -74,17 +74,10 @@ class BallKicker(BurstDeferred):
         if self.VERBOSE:
             print "Kicking:", message
 
-    def _nextMovement(self, bd):
-        """ store current movement deferred for clearing if we need to stop movement
-        """
-        self._movement_deferred = bd
-        return bd
-
     ################################################################################
 
     def start(self):
         self.aligned_to_goal = False
-        self.goalposts = [self._world.yglp, self._world.ygrp]
         self._movement_deferred = None
 
         self._actions.setCameraFrameRate(20)
@@ -92,12 +85,19 @@ class BallKicker(BurstDeferred):
         self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
 
+    def onMovementFinished(self, nextAction):
+        print "Movement DONE!"
+        self._movement_deferred.clear()
+        self._movement_deferred = None
+        nextAction()
+
     def _stopOngoingMovement(self):
         print "BALL LOST!"
         if self._movement_deferred:
             print "BALL LOST! STOPPING MOVEMENT"
             self._actions.clearFootsteps() # TODO - flag something? someone?
             self._movement_deferred.clear()
+            self._movement_deferred = None
 
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
@@ -110,6 +110,10 @@ class BallKicker(BurstDeferred):
         print "\nApproaching %s: (recently seen %s, dist: %3.3f, distSmoothed: %3.3f, bearing: %3.3f)" % (
                   target.name, target.recently_seen, target.dist, target.distSmoothed, target.bearing)
         print "-"*100
+
+        if self._movement_deferred:
+            print "LAST MOVEMENT STILL ON???"
+            #import pdb; pdb.set_trace()
 
         (target_x, target_y) = polar2cart(target.distSmoothed, target.bearing)
         print "target_x: %3.3fcm, target_y: %3.3fcm" % (target_x, target_y)
@@ -132,10 +136,13 @@ class BallKicker(BurstDeferred):
 
         print ('TARGET_IN_KICKING_AREA', 'TARGET_BETWEEN_LEGS', 'TARGET_FRONT', 'TARGET_SIDE_NEAR', 'TARGET_SIDE_FAR', 'TARGET_DIAGONAL')[target_location]
 
+        ### DECIDE ON NEXT MOVEMENT ###
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
         if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self.aligned_to_goal and self._align_to_target:
             self.debugPrint("Aligning to goal! (stopping target tracker)")
+            self._actions.setCameraFrameRate(20)
             self.switchToFinder(to_goal_finder=True)
+            return
         # Ball inside kicking area, kick it
         elif target_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
@@ -146,30 +153,34 @@ class BallKicker(BurstDeferred):
                 self._actions.setCameraFrameRate(10)
                 #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
                 self._actions.adjusted_straight_kick(side, kick_side_offset).onDone(self.callOnDone)
+                return
         else:
             if target_location == BALL_FRONT:
                 self.debugPrint("Walking straight!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self._nextMovement(self._actions.changeLocationRelative(
-                            kp_x*MOVEMENT_PERCENTAGE)).onDone(self._approachBall)
+                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE)
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self._nextMovement(self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=walks.SIDESTEP_WALK)).onDone(self._approachBall)
+                    self._movement_deferred = self._actions.changeLocationRelativeSideways(
+                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=walks.SIDESTEP_WALK)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
                     self._actions.setCameraFrameRate(10)
-                    self._nextMovement(self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)).onDone(self._approachBall)
+                    self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
+                #import pdb; pdb.set_trace()
 
         if not self.ENABLE_MOVEMENT:
-            self._actions.changeLocationRelative(0, 0, 0).onDone(self._approachBall)
-
+            self._movement_deferred = self._actions.changeLocationRelative(0, 0, 0)
+        
+        print "Movement STARTING!"
+        self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self.onMovementFinished(nextAction))
+        
     def switchToFinder(self, to_goal_finder=False):
         from_finder, to_finder = self._goalFinder, self._ballFinder
         if to_goal_finder:
@@ -221,19 +232,19 @@ class BallKicker(BurstDeferred):
             self.refindBall()
             return
         
-        # do strafing move
-        self._actions.setCameraFrameRate(10)
+        # TODO: FPS=10 removed for now (for accurate feedback), might be needed for stable circle-strafing!
+        #self._actions.setCameraFrameRate(10)
 
         if not self._is_strafing_init_done:
             self.debugPrint("Aligning and strafing...")
             self._is_strafing_init_done = True
-            bd = self._actions.executeCircleStraferInitPose()
-            bd.onDone(lambda: self._nextMovement(strafeMove()))
+            bd = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
         else:
             self.debugPrint("Strafing...")
             bd = strafeMove()
         
-        self._nextMovement(bd).onDone(self.strafe)
+        # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
+        bd.onDone(lambda: self._eventmanager.callLater(0.2, self.strafe))
 
     def refindBall(self):
         self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(

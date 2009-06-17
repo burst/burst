@@ -23,6 +23,7 @@ class Behavior(BurstDeferred, Nameable):
         if self._stopped: return 
         if self._bd:
             self._bd.clear()
+            self._bd = None
         self._stopped = True
 
     def stopped(self):
@@ -31,9 +32,9 @@ class Behavior(BurstDeferred, Nameable):
     def start(self):
         if not self._stopped: return
         self._stopped = False
-        self._start()
+        self._start(firstTime=True)
 
-    def _start(self):
+    def _start(self, firstTime=False):
         pass # defaults to empty behavior
 
 class ContinuousBehavior(Behavior):
