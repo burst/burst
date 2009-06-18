@@ -238,19 +238,24 @@ class World(object):
         if self._do_log_positions:
             self._openPositionLogs()
 
-        # Try using shared memory to access variables
-        if World.running_on_nao:
-            #self.updateMmapVariablesFile() # // TODO -remove the file! it is EVIL
-            SharedMemoryReader.tryToInitMMap()
-            if SharedMemoryReader.isMMapAvailable():
-                print "world: using SharedMemoryReader"
-                if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
-                    self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
-                self._shm = SharedMemoryReader(self._vars_to_get_list)
-                self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
-                self._shm.openDeferred.addCallback(self._switchToSharedMemory)
-        if self._shm is None:
-            print "world: using ALMemory"
+
+        if burst.options.no_memory_updates:
+            print "world: NO MEMORY UPDATES.. N-O   M-E-M-O-R-Y   U-P-D-A-T-E-S"
+            self._updateMemoryVariables = self._updateMemoryVariables_noop
+        else:
+            # Try using shared memory to access variables
+            if World.running_on_nao:
+                #self.updateMmapVariablesFile() # // TODO -remove the file! it is EVIL
+                SharedMemoryReader.tryToInitMMap()
+                if SharedMemoryReader.isMMapAvailable():
+                    print "world: using SharedMemoryReader"
+                    if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
+                        self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
+                    self._shm = SharedMemoryReader(self._vars_to_get_list)
+                    self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
+                    self._shm.openDeferred.addCallback(self._switchToSharedMemory)
+            if self._shm is None:
+                print "world: using ALMemory"
 
         self.checkManModule()
 
@@ -381,6 +386,7 @@ class World(object):
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
+        # TODO - move these to the Goal objects (which already exist)
         if self.bglp.seen and self.bgrp.seen:
             events.add(EVENT_ALL_BLUE_GOAL_IN_FRAME)
         if self.yglp.seen and self.ygrp.seen:

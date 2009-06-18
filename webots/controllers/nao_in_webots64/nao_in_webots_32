@@ -14,8 +14,8 @@ export LD_LIBRARY_PATH=$AL_DIR/extern/c/linux/lib:bin/
 #strace -f bin/nao_in_webots 2>&1 | cat > /tmp/nao_in_webots.strace
 
 # rich man's remote debugging
-gdbserver localhost:2333 bin/nao_in_webots
+#gdbserver localhost:2333 bin/nao_in_webots
 
 # just let it be
-#exec ./bin/nao_in_webots
+exec ./bin/nao_in_webots
 

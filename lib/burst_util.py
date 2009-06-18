@@ -716,7 +716,7 @@ def func_name(f_or_m):
         closure = f_or_m.func_closure
         closing_object = len(closure) > 0 and closure[0].cell_contents
         closing_object = ('(%s) ' % (hasattr(closing_object, '__class__') and closing_object.__class__.__name__)) or ''
-        return '<l> %s%s' % (closing_object, f_or_m.func_code.co_names[0])
+        return '<l> %s%s' % (closing_object, f_or_m.func_code.co_names and f_or_m.func_code.co_names[0])
     return f_or_m.func_name
 
 def pairit(n):

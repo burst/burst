@@ -57,6 +57,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     parser.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
+    parser.add_option('', '--nomemoryupdates', action='store_true', dest='no_memory_updates', default=False, help='trace proxy calls')
 
     parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
@@ -72,6 +73,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
 
     parser.add_option('', '--newmovecoordinator', action='store_true', dest='new_move_coordinator', default=False, help='debug - use new ThreadedMoveCoordinator')
+    parser.add_option('', '--usepostid', action='store_true', dest='use_postid', default=False, help='affects ThreadedMoveCoordinator only')
 
     # old unused
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')

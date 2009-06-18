@@ -32,7 +32,7 @@ New and annoyingly thready:
 """
 
 import burst
-from burst_util import (DeferredList, succeed, func_name)
+from burst_util import (DeferredList, succeed, Deferred, func_name)
 from burst_consts import MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT
 from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
@@ -101,9 +101,20 @@ class SerialPostQueue(object):
         if self._world.time >= self._start_time + duration:
             if not isinstance(postid, int):
                 import pdb; pdb.set_trace()
-            self._motion.isRunning(postid).addCallback(
+
+            self._isRunning(postid).addCallback(
                 lambda result, postid=postid, event=event, deferred=deferred:
                     self._onIsRunning(result, postid, event, deferred))
+
+    def _isRunning(self, postid):
+        return self._motion.isRunning(postid)
+
+    def _isRunningSimulated(self, postid):
+        print "--- SIMULATING ---"
+        d = Deferred()
+        from twisted.internet import reactor
+        reactor.callLater(1.0, d.callback, None)
+        return d
 
     def _onIsRunning(self, result, postid, event, deferred):
         # We could be called a second time with the same postid after actually having finished.
