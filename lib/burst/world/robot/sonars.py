@@ -2,12 +2,14 @@
 
 from burst_consts import LEFT, RIGHT
 from burst import events as events_module
-from burst.events import (EVENT_SONAR_OBSTACLE_CENTER, EVENT_SONAR_OBSTACLE_LEFT, EVENT_SONAR_OBSTACLE_RIGHT)
+from burst.events import (EVENT_SONAR_OBSTACLE_SEEN, EVENT_SONAR_OBSTACLE_LOST, EVENT_SONAR_OBSTACLE_IN_FRAME)
 from burst_util import RingBuffer
 import burst
 
-HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second) 
-NEAR_DISTANCE = 0.5 # distance in meters
+HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
+# TEMP  - USE LARGER DISTANCE FOR WEBOTS TESTSING!!!
+#NEAR_DISTANCE = 0.6
+NEAR_DISTANCE = 0.4 # distance in meters
 
 __all__ = ['Sonars']
 
@@ -25,7 +27,12 @@ class Sonars(object):
             world.addMemoryVars([Sonars._var])
         self._world = world
         self._sonarHistory = RingBuffer(HISTORY_SIZE)
-        self._lastEvent = None
+        self._obstacleSeen = False
+        self._lastReading = None
+
+    # valid only when obstacle seen/in_frame events occur, otherwise, returns None
+    def getLastReading(self):
+        return self._lastReading
 
     def readSonarDistances(self, data):
 #        print "SONAR: LEFT Got %f" % (data[LEFT])
@@ -36,31 +43,37 @@ class Sonars(object):
         if not burst.options.run_ultrasound:
             return
         
-        data = self._world.vars[Sonars._var]
+        new_data = self._world.vars[Sonars._var]
+        #print "new_data:", new_data
         # make sure sonar data is valid
-        if data and (len(data) >= 2):
-            self.readSonarDistances(data)
-            newEvent = None
+        if new_data and (len(new_data) >= 2):
+            self.readSonarDistances(new_data)
 
+            newEvent = None
             # if at least one reading shows an obstacle, do more complex analysis
-            if min(data[LEFT], data[RIGHT]) < NEAR_DISTANCE:
-                (obstacle_side, obstacle_distance) = self.calcObstacleFromSonar(self._sonarHistory)
-                
-                if obstacle_distance < NEAR_DISTANCE:
-                    if obstacle_side == 'center':
-                        newEvent = EVENT_SONAR_OBSTACLE_CENTER
-                    elif obstacle_side == 'left':
-                        newEvent = EVENT_SONAR_OBSTACLE_LEFT
-                    elif obstacle_side == 'right':
-                        newEvent = EVENT_SONAR_OBSTACLE_RIGHT
-                    
-                    # only report events that weren't reported before
-                    if newEvent != self._lastEvent:
-                        print "SONAR: Got distance of %f on the %s" % (obstacle_distance, obstacle_side)
-                        events.add(newEvent)
-            self._lastEvent = newEvent
+            if min(new_data[LEFT], new_data[RIGHT]) < NEAR_DISTANCE:
+                self._lastReading = self.calcObstacleFromSonar(self._sonarHistory)
+
+                if self._obstacleSeen:
+                    newEvent = EVENT_SONAR_OBSTACLE_IN_FRAME
+                    #print "SONAR: IN_FRAME obstacle (on %s, distance of %f)" % (self._lastReading)
+                else:
+                    # new obstacle found, report it
+                    newEvent = EVENT_SONAR_OBSTACLE_SEEN
+                    #print "SONAR: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
+                self._obstacleSeen = True
+            else:
+                if self._obstacleSeen:
+                    newEvent = EVENT_SONAR_OBSTACLE_LOST
+                    self._obstacleSeen = False
+                    #print "SONAR: LOST obstacle (last seen on %s, distance of %f)" % (self._lastReading)
+                self._lastReading = None
+
+            if (newEvent != None):
+                events.add(newEvent)
         else:
-            print "SONAR: No reading?!" 
+            print "SONAR: No reading?! ignoring..."
+            self._lastReading = None
 
     ##
     # Authors: Sonia Anshtein Shafran & Rony Fragin.
@@ -127,31 +140,31 @@ class Sonars(object):
         # If min of min is above upper threshold, 
         # the reading is invalid.
         if min_min>upper_thresh:
-            return ["nothing", 0]
+            return ("nothing", 0)
         else:
             # If minimal difference is below lower threshold,
             # the direction is center.
             if diff<lower_thresh:
-                return ["center", min_min]
+                return ("center", min_min)
             else:
                 # If more threshold votes were cast to the left,
                 # meaning left direction is dominent.
                 if vote_thresh_left>vote_thresh_right:
-                    return ["left", min_min]
+                    return ("left", min_min)
                 # If more threshold votes were cast to the right,
                 # meaning right direction is dominent.
                 elif vote_thresh_left<vote_thresh_right:
-                    return ["right", min_min]
+                    return ("right", min_min)
                 # Both sides got the same amount of threshold votes.
                 else:
                     # If more majority votes were cast to the left,
                     # meaning left direction is dominent.
                     if vote_majority_left>vote_majority_right:
-                        return ["left", min_min]
+                        return ("left", min_min)
                     # If more majority votes were cast to the right,
                     # meaning right direction is dominent.
                     elif vote_majority_left<vote_majority_right:
-                        return ["right", min_min]
+                        return ("right", min_min)
                     # No majority to any side, center is dominent.
                     else:
-                        return ["center", min_min]
+                        return ("center", min_min)
