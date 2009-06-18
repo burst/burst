@@ -86,7 +86,7 @@ MMAP_LENGTH      = 4096
 ################################################################################
 
 # Event Manager constants
-DEFAULT_EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
+DEFAULT_EVENT_MANAGER_DT = 0.1 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
 
 MISSING_FRAMES_MINIMUM = 10
 
