@@ -4,7 +4,7 @@ import player_init
 
 from burst.player import Player
 from burst.events import EVENT_BALL_IN_FRAME
-import burst.moves as moves
+import burst.moves.poses as poses
 from burst_util import polar2cart
 
 class trackerTester(Player):
@@ -16,7 +16,7 @@ class trackerTester(Player):
     
     def initHeadPosition(self):
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
-        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).onDone(self.track)
+        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).onDone(self.track)
     
     def track(self):
         #print "trackerTester: TRACKING %s" % (self.count)

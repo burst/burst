@@ -279,6 +279,15 @@ class BurstDeferred(object):
             return 'bd->%s' % self._ondone[0].im_self.toCondensedString()
         return func_name(self._ondone[0])
 
+    def pretty(self):
+        """ attempt a nice representation """
+        if self._data:
+            return pretty(self._data)
+        return pretty(self)
+
+    __str__ = toCondensedString
+    __repr__ = __str__
+
 def succeedBurstDeferred(data):
     bd = BurstDeferred(data)
     bd.callOnDone()
@@ -286,6 +295,14 @@ def succeedBurstDeferred(data):
 
 def deferredToCondensedString(d):
     print "d-%s" % id(d)
+
+def pretty(c):
+    """ pretty printing util - naturally subjective """
+    if hasattr(c, '__class__'):
+        return '%s: %s' % (c.__class__.__name__, id(c))
+    return str(c)
+
+
 
 if '--history' in sys.argv: # TODO - ugly, should be through burst.options
     D_CREATE, D_ON_DONE, D_CALL_ON_DONE = 'create', 'onDone', 'callOnDone'
@@ -321,17 +338,6 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
     def classname(cb):
         if hasattr(cb, 'im_self'):
             return cb.im_self.__class__.__name__
-
-    def pretty(c):
-        # this can be anything
-        if hasattr(c, '__class__'):
-            return '%s: %s' % (c.__class__.__name__, id(c))
-        return str(c)
-
-    def prettybd(bd):
-        if bd._data:
-            return pretty(bd._data)
-        return pretty(bd)
 
     def print_deferred_history(output_filename='deferred.dot',
             png_filename='deferred.png'):
