@@ -11,12 +11,12 @@ class HeadAndWalkTester(Player):
         self._actions.initPoseAndStiffness(None).onDone(self.start)
 
     def start(self):
-        self._actions.changeLocationRelative(50.0, 0.0, 0.0)
         # Down, Left, Up, Right - learn your directions!
         nods = [(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.5, 0.0),
             (0.0, 0.0), (0.0, -0.5), (0.0, 0.0), (-0.5, 0.0),
             (0.0, 0.0)]
         self._actions.chainHeads(nods).onDone(self._eventmanager.quit)
+        self._actions.changeLocationRelative(50.0, 0.0, 0.0)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

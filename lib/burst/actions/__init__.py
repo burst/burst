@@ -4,7 +4,6 @@ from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
     Deferred, DeferredList, chainDeferreds)
 from burst.events import *
-from burst.eventmanager import EVENT_MANAGER_DT
 import burst.moves as moves
 import burst.moves.poses as poses
 import burst.moves.walks as walks
@@ -207,7 +206,7 @@ class Actions(object):
             print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % distanceSideways
             
         duration = (defaultSpeed * distance / stepLength +
-                    (did_sideways and defaultSpeed or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
+                    (did_sideways and defaultSpeed or self._eventmanager.dt) ) * 0.02 # 20ms steps
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens)

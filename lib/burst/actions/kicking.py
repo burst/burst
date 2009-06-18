@@ -20,7 +20,7 @@ from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MA
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE,
                                    MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
-    PIX_TO_RAD_X, PIX_TO_RAD_Y, EVENT_MANAGER_DT, DEG_TO_RAD)
+    PIX_TO_RAD_X, PIX_TO_RAD_Y, DEG_TO_RAD)
 import burst_consts
 
 class TargetApproacher(TargetFinder):
@@ -225,7 +225,7 @@ class BallKicker(BurstDeferred):
         if not self.goalpost_to_track.seen:
             self.debugPrint("strafe: goal post not seen")
             # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
-            self._eventmanager.callLater(EVENT_MANAGER_DT, self.strafe)
+            self._eventmanager.callLater(self._eventmanager.dt, self.strafe)
             return
         self.debugPrint("strafe: goal post seen")
         # TODO: Add align-to-goal-center support

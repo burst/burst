@@ -6,10 +6,10 @@ from burst_util import (traceme, nicefloat, BurstDeferred,
 from burst.events import *
 import burst
 import burst_consts as consts
-from burst_consts import (FOV_X, FOV_Y, EVENT_MANAGER_DT,
+from burst_consts import (FOV_X, FOV_Y,
     DEFAULT_NORMALIZED_CENTERING_X_ERROR,
     DEFAULT_NORMALIZED_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
-    IMAGE_CENTER_X, IMAGE_CENTER_Y, EVENT_MANAGER_DT)
+    IMAGE_CENTER_X, IMAGE_CENTER_Y)
 import burst.events as events
 from burst.image import normalized2_image_width, normalized2_image_height
 from math import pi, sqrt
@@ -88,7 +88,7 @@ class Tracker(object):
         self._on_centered_bd = self._actions.burst_deferred_maker.make(self)
         self._start(target, lostCallback or self._on_centered_bd.callOnDone)
         # TODO MAJORLY: This fixes the bug, but real fix is in BurstDeferred
-        self._eventmanager.callLater(EVENT_MANAGER_DT, self._centeringStep)
+        self._eventmanager.callLater(self._eventmanager.dt, self._centeringStep)
         self._timeout = timeout
         self._user_on_timeout = timeoutCallback or self._on_centered_bd.callOnDone
         if timeout:
@@ -134,7 +134,7 @@ class Tracker(object):
             self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
         else: # target.recently_seen is True
             # Out path 2: wait a little, try again
-            self._eventmanager.callLater(consts.EVENT_MANAGER_DT, self._centeringStep)
+            self._eventmanager.callLater(self._eventmanager.dt, self._centeringStep)
 
     ############################################################################
 
@@ -204,7 +204,7 @@ class Tracker(object):
                     print "TrackingStep: %s not visible right now" % (self._target.name)
             # target is centered or we lost it for a short period (we thing), so just callLater
             #import pdb; pdb.set_trace()
-            self._eventmanager.callLater(EVENT_MANAGER_DT, self._trackingStep)
+            self._eventmanager.callLater(self._eventmanager.dt, self._trackingStep)
 
     ### Work horse for actually turning head towards target
     def calculateTracking(self, target,
@@ -331,7 +331,7 @@ class WaitCommand(object):
         self._eventmanager = eventmanager
         self._frames = frames
     def __call__(self):
-        time_delta = self._frames * EVENT_MANAGER_DT
+        time_delta = self._frames * self._eventmanager.dt
         bd = BurstDeferred(None)
         self._eventmanager.callLater(time_delta, bd.callOnDone)
         return bd

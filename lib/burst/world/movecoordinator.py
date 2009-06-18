@@ -36,7 +36,7 @@ from Queue import Queue
 
 import burst
 from burst_util import (DeferredList, succeed, func_name)
-from burst_consts import MOTION_FINISHED_MIN_DURATION
+from burst_consts import MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT
 from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
 
@@ -145,6 +145,8 @@ class BaseMoveCoordinator(object):
         self._initiated = []        # holds all initiated moves
         self._posted = []           # holds all posted moves - can be empty if ThreadedMoveCoordinator used
                         # TODO - not sure, maybe make identical to _initiated, look later.
+        self.verbose = burst.options.verbose_movecoordinator
+        self.debug = burst.options.debug
 
     def _add_initiated(self, time, kind, description, event, duration):
         initiated = len(self._initiated)
@@ -219,8 +221,6 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
         self._head_move_thread = None
         self._walk_thread = None
         self._body_move_thread = None
-
-        self.verbose = True # TODO - set with option
 
         # XXX First place where Deferred code isn't used - this will blocks..
         self._motion = burst.getMotionProxy(Deferred=False)
@@ -363,13 +363,16 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         self._motion_posts = {}
         self._head_posts   = SerialPostQueue('head', self._world)
         self._walk_posts   = SerialPostQueue('walk', self._world)
+
+        # TODO - should world have access to eventmanager? - ugly hack going to burst.options.dt
+        self._motion_finished_min_duration = MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT * burst.options.dt
+
         # helpers
         self._post_handler = {'motion': self._add_expected_motion_post,
             'head':self._add_expected_head_post,
             'walk':self._add_expected_walk_post}
+
         # debug
-        self.debug = burst.options.debug
-        self.verbose = True # TODO - options flag (right now for debugging I want this on, Alon)
         if self.debug:
             self._delete_times = []
 
@@ -408,7 +411,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
                 
         def isMotionFinished(postid, motion):
             m = motion
-            if ((m.duration > MOTION_FINISHED_MIN_DURATION and not m.has_started)
+            if ((m.duration > self._motion_finished_min_duration and not m.has_started)
                 or (self._world.time >= m.start_time + m.duration)):
                     if not isinstance(postid, int):
                         import pdb; pdb.set_trace()
@@ -418,7 +421,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         
         def onIsRunning(isrunning, m, postid):
             #print "DEBUG: motion <postid=%s> has started" % postid
-            if m.duration > MOTION_FINISHED_MIN_DURATION and not m.has_started and isrunning:
+            if m.duration > self._motion_finished_min_duration and not m.has_started and isrunning:
                 m.has_started = True
                 m.start_time = self._world.time
                 return False

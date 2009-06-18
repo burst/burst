@@ -86,7 +86,7 @@ MMAP_LENGTH      = 4096
 ################################################################################
 
 # Event Manager constants
-EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee)
+DEFAULT_EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
 
 MISSING_FRAMES_MINIMUM = 10
 
@@ -94,7 +94,7 @@ MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
 
 # Robot constants
-MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
+MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT = 3
 
 # Acceptable Centering error - normalized values (in [-1, 1])
 DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*4 #0.05*3
