@@ -5,7 +5,7 @@ from burst.player import Player
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
-from burst.actions.kicking import TargetFinder
+from burst.actions.target_finder import TargetFinder
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
@@ -35,7 +35,6 @@ class Goalie(Player):
     def onStart(self):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
         self.isPenalty = True # TODO: Use the gameStatus object.
-        self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
         self.enterGame() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
 
     def _report(self, string):
@@ -47,21 +46,20 @@ class Goalie(Player):
         self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self.whichBehavior)
 
     def whichBehavior(self):
-        self.targetFinder.start()
         if self.isPenalty:
-            self.isTrackingBall = True
-            self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
             self._eventmanager.callLater(WAITING_FOR_HEAD, self.penaltyRegister)
         else:
             self.watchIncomingBall()
 
     def penaltyRegister(self):
+        self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
+        self.targetFinder.start()
         self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
 
     def watchIncomingBall(self):
+        self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
+        self.targetFinder.start()
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.isTrackingBall = True
-        self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME)
         if isWebots:
             self._eventmanager.register(self.returnHead, EVENT_BALL_LOST)
 
@@ -71,8 +69,7 @@ class Goalie(Player):
         
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
-        self.isTrackingBall = False
-        self._eventmanager.unregister(self.trackBall)
+        self.targetFinder.stop()
         print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap:
@@ -89,8 +86,7 @@ class Goalie(Player):
             
     def leap(self):
         self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.isTrackingBall = False
-        self._eventmanager.unregister(self.trackBall)
+        self.targetFinder.stop()
         if isWebots:
             self._eventmanager.unregister(self.returnHead)
         #print self._world.ball.body_isect
@@ -132,10 +128,6 @@ class Goalie(Player):
     def getUpBelly(self):
         self._actions.executeGettingUpBelly().onDone(self.onLeapComplete)
         
-    def trackBall(self):
-        if self.isTrackingBall:
-            self._actions.executeTracking(self._world.ball)
-            
     def onLeapComplete(self):
         if realLeap:
             self._report("Leap complete.")
