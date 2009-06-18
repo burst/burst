@@ -7,8 +7,8 @@ from burst.events import *
 from burst_consts import *
 import burst.moves as moves
 
-DESIRED_DISTANCE_FROM_GOAL = 50 # In centimeters.
-SAFETY_MARGIN = 30
+DESIRED_DISTANCE_FROM_GOAL = 100 # In centimeters.
+SAFETY_MARGIN = 50
 BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL = 0.15 # In radians.
 
 class Goalie(Player):
@@ -72,13 +72,14 @@ class Goalie(Player):
     def alignTowardsOnePostOfOwnGoal(self, post_selected=True):
         # TODO: Am I still up?
         if not post_selected:
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             self.closest_goalpost = self.closestOwnGoalPost()
             self._eventmanager.register(self.printer, EVENT_STEP)
             self._actions.tracker.track(self.closest_goalpost)
+        print self.closest_goalpost.dist, self.closest_goalpost.bearing
         if self.closest_goalpost.dist <= DESIRED_DISTANCE_FROM_GOAL:
             self.onArrivedNextToOneGoalPostOfOwnGoal()
-        threshold = BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL
-        if abs(self.closest_goalpost.bearing) < threshold:
+        elif abs(self.closest_goalpost.bearing) < BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL:
             self.walkTowardsOnePostOfOwnGoal()
         else:
             self._actions.turn(self.closest_goalpost.bearing).onDone(self.alignTowardsOnePostOfOwnGoal)
@@ -92,6 +93,7 @@ class Goalie(Player):
             self.onArrivedNextToOneGoalPostOfOwnGoal()
         else:
             distanceToWalk = self.closest_goalpost.dist - SAFETY_MARGIN
+            print "Walking:", distanceToWalk
             self._actions.changeLocationRelative(distanceToWalk).onDone(self.alignTowardsOnePostOfOwnGoal)
 
     def onArrivedNextToOneGoalPostOfOwnGoal(self):
