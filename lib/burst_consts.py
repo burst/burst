@@ -28,8 +28,8 @@ WEBOTS = 'webots'
 
 
 
-# Important!! This needs to be set to what we get during the competition
-BURST_TEAM_NUMBER = 17
+# From teams.cfg, in GameStateVisualizer 2009
+BURST_TEAM_NUMBER = 4
 
 # Operating Environment constants
 ROBOT_IP_TO_NAME = {
@@ -37,7 +37,7 @@ ROBOT_IP_TO_NAME = {
     '192.168.5.170'	: GERRARD,
     '192.168.5.226'	: CECH,
     '192.168.5.168'	: HAGI,
-    '192.168.5.225'	: RAUL,
+    '192.168.5.224'	: RAUL,
     '192.168.5.228'	: MALDINI,
 }
 import linecache
@@ -86,7 +86,7 @@ MMAP_LENGTH      = 4096
 ################################################################################
 
 # Event Manager constants
-DEFAULT_EVENT_MANAGER_DT = 0.05 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
+DEFAULT_EVENT_MANAGER_DT = 0.1 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
 
 MISSING_FRAMES_MINIMUM = 10
 

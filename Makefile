@@ -20,7 +20,7 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload
 
 clean:
 	@echo "removing pyc files"
@@ -44,6 +44,10 @@ install: Makefile.local burstmem recordermodule colortable
 installall: imops install
 	# TODO - we use two rsyncs, hence two connections - can this be done better (one ssh session, not two)?
 	rsync -v $(MODULES) root@$(ROBOT):/opt/naoqi/modules/lib
+
+# Don't want this in installall - might accidentally erase some module?
+autoload:
+	scp etc/autoload.ini root@$(ROBOT):/opt/naoqi/modules/lib
 
 # Subtargets
 
