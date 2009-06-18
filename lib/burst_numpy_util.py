@@ -8,7 +8,6 @@ import numpy
 from numpy import (sin, cos, zeros,
     tan, array, dot)
 from numpy.linalg import norm
-from scipy.linalg import lu, lu_factor
 
 from burst_consts import X_AXIS, Y_AXIS, Z_AXIS, W_AXIS
 

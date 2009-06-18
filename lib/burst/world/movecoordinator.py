@@ -19,16 +19,17 @@ Old and mostly working:
   we return it via the list given in calc_events, EventManager does the calling
 
 New and annoyingly thready:
- * create a thread for every move request
-  * this is capped by the following two usage options:
-   * one thread for head, one thread for walk
-   * one thread for whole body move
-  * we basically do a normal call, no post, but in a thread.
+ * create a thread for every move queue with it's own ALProxy("ALMotion",ip,port)
+  * three queus (can use two actually):
+   * one queue for head
+   * one queue for walk
+   * one queue for body moves
+  * if body move includes head, head queue is marked blocked.
   * if someone wants to cancel, we will try:
    * request cancel (in main thread), hope that remote naoqi finishes the call (writes and closes socket)
    * request cancel, and cancel our thread (and the socket we hope won't be left dangling)
-  * TODO:
-   * keep track of which moves and threads.
+  * call backs done almost the same - we check for new results from the threads, which include
+   the bd's given to the user, and return it via calc_events called from world.
 """
 
 import burst
@@ -137,7 +138,7 @@ class SerialPostQueue(object):
         if len(self._posts) == 0:
             self._start_time = None
         else:
-            # DANGEROUS: We assume next head move starts immediately
+            # DANGEROUS: We assume next postted-action starts immediately
             # after the last.
             self._start_time = self._world.time
 
@@ -195,6 +196,18 @@ class BaseMoveCoordinator(object):
     def walk(self, d, duration, description):
         return self._make_succeed_bd(self)
 
+    # NOTE: the positive actions are modeled as the same ALMotion commands. The negative
+    #       ones don't have an equivalent (walk does, the others don't), and is modeled
+    #       after user intent.
+    def cancelHead(self):
+        pass
+
+    def cancelWalk(self):
+        pass
+
+    def cancelBody(self):
+        pass
+
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     """ Note: Old coordinator - doesn't use threading, uses polling with
@@ -224,7 +237,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         # HACK - Add ourselves to the list of updated objects,
         # so calc_events is called. Basically until now all such objects
         # were constructed in world, but world doesn't depend on actions.
-        self._motion_posts = {}
+        self._motion_posts = SerialPostQueue('motion', self._world)
         self._head_posts   = SerialPostQueue('head', self._world)
         self._walk_posts   = SerialPostQueue('walk', self._world)
 
@@ -242,80 +255,26 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     def calc_events(self, events, deferreds):
         """ check if any of the motions are complete, return corresponding events
-        from self._motion_posts and self._
-
-        Check if the robot has fallen down. If it has, fire the appropriate event.
-        
-        we check first that the actions have started, and then that they are done.
-        we use the duration - each move must be passed the duration, and not isRunning, to fire
-        
-        currently we treat the motion and head differently:
-         motion - assume parallel, doesn't work if we check isRunning before motion started. (missing isFinished..)
-         head   - only check the first event in the list 
+        from the appropriate queue. See SerialPostQueue.calc_events
         """
 
-        # TODO: Use profiling to see if the redefinition of this filter every frame is something that's worth avoiding.
-
-        def filter(dictionary, visitor):
-            def collectResults(results):
-                deleted_posts = [result for success, result in results]
-                for postid in deleted_posts:
-                    if postid:
-                        #print "DOUBLE YAY deleting motion postid=%s" % postid
-                        if postid in dictionary:
-                            del dictionary[postid]
-                            if self.debug:
-                                self._delete_times.append((self._world.time, postid))
-                        else:
-                            print "DEBUG ME: postid to be deleted but not in dictionary"
-                            import pdb; pdb.set_trace()
-            DeferredList([visitor(postid, motion).addCallback(
-                lambda result, postid=postid: result and postid)
-                    for postid, motion in dictionary.items()]).addCallback(collectResults)
-                
-        def isMotionFinished(postid, motion):
-            m = motion
-            if ((m.duration > self._motion_finished_min_duration and not m.has_started)
-                or (self._world.time >= m.start_time + m.duration)):
-                    if not isinstance(postid, int):
-                        import pdb; pdb.set_trace()
-                    return self._motion.isRunning(postid).addCallback(
-                        lambda result, m=m, postid=postid: onIsRunning(result, m, postid))
-            return succeed(False)
-        
-        def onIsRunning(isrunning, m, postid):
-            #print "DEBUG: motion <postid=%s> has started" % postid
-            if m.duration > self._motion_finished_min_duration and not m.has_started and isrunning:
-                m.has_started = True
-                m.start_time = self._world.time
-                return False
-            if self._world.time >= m.start_time + m.duration and not isrunning:
-                #print "DEBUG: Robot Head Motions: %s done!" % postid
-                self._events.add(m.event)
-                self._deferreds.append(m.deferred) # Note: order of deferred callbacks is determined here.. bugs expected
-                return True
-            return False
-
-        self._events, self._deferreds = events, deferreds
-
-        filter(self._motion_posts, isMotionFinished)
-        self._head_posts.calc_events(events, deferreds)
-        self._walk_posts.calc_events(events, deferreds)
+        # TODO - the order we give here determines the order the deferrds are called..
+        for serial_posts in (self._motion_posts, self._head_posts, self._walk_posts):
+            serial_posts.calc_events(events, deferreds)
 
     def _add_expected_motion_post(self, postid, event, duration):
-        bd = self._make_bd(data=postid)
-        self._motion_posts[postid] = Motion(event, bd, self._world.time, duration)
-        return bd
+        return self._motion_posts.add(postid, event, duration)
 
     def _add_expected_head_post(self, postid, event, duration):
         return self._head_posts.add(postid, event, duration)
 
     def _add_expected_walk_post(self, postid, event, duration):
-        print "DEBUG: adding walk %s, duration %s" % (postid, duration)
+        if self.verbose:
+            print "IsRunningMoveCoordinator: adding walk %s, duration %s" % (postid, duration)
         return self._walk_posts.add(postid, event, duration)
 
     def isMotionInProgress(self):
-        return len(self._motion_posts) > 0
+        return self._motion_posts.isNotEmpty()
     
     def isHeadMotionInProgress(self):
         return self._head_posts.isNotEmpty()
@@ -339,8 +298,8 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     def _onPostId(self, postid, initiated, bd):
         if not isinstance(postid, int):
-            print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
-            print "ERROR:  Did you forget to enable ALMotion perhaps?"
+            print "ERROR: IsRunningMoveCoordinator: onPostId with Bad PostId: %s" % repr(postid)
+            print "ERROR: IsRunningMoveCoordinator: Did you forget to enable ALMotion perhaps?"
             raise SystemExit
         initiate_time, kind, description, event, duration = self._initiated[initiated]
         self._add_posted(postid, initiated)
@@ -358,8 +317,8 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         else:
             event, kind = EVENT_BODY_MOVE_DONE, 'motion'
         if self.verbose:
-            print "IsRunningMoveCoordinator: doMove #j = %s, duration = %s, event = %s" % (
-                len(joints), duration, event)
+            print "IsRunningMoveCoordinator: %s: #j = %s, duration = %s, event = %s" % (
+                kind, len(joints), duration, event)
         return self._waitOnPostid(d,
             description=description, kind=kind, event=event, duration=duration)
 
@@ -373,6 +332,15 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         return self._waitOnPostid(d,
             description=description,
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+
+    def cancelHead(self):
+        pass
+
+    def cancelWalk(self):
+        pass
+
+    def cancelBody(self):
+        pass
 
 
 if burst.options.new_move_coordinator:

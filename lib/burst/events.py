@@ -25,9 +25,9 @@ EVENT_ON_BELLY = counter; counter+=1
 EVENT_ON_BACK = counter; counter+=1
 
 # Sonar Obstacle Detection
-EVENT_SONAR_OBSTACLE_CENTER = counter; counter += 1
-EVENT_SONAR_OBSTACLE_LEFT = counter; counter += 1
-EVENT_SONAR_OBSTACLE_RIGHT = counter; counter += 1
+EVENT_SONAR_OBSTACLE_SEEN = counter; counter += 1
+EVENT_SONAR_OBSTACLE_LOST = counter; counter += 1
+EVENT_SONAR_OBSTACLE_IN_FRAME = counter; counter += 1
 
 # Physical Events
 EVENT_CHEST_BUTTON_PRESSED = counter; counter += 1

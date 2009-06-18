@@ -14,7 +14,6 @@ from math import asin, hypot, atan, pi, atan2
 
 from burst_numpy_util import (sin, cos, zeros,
     tan, array, dot, norm,
-    lu, lu_factor,
     identity, translation4D, rotation4D,
     vector4D)
 
@@ -414,6 +413,7 @@ class Pose(object):
          the XYplane of the relevant coordinate frame. Could probably be made faster
          if dependency on matrix multiplication was removed.
         """
+        from scipy.linalg import lu, lu_factor # TODO - only place this is needed, and not really used, hence last minute import.
         l1, l2 = aLine[0], aLine[1]
 
         #points on the plane level with the ground in the horizon coord frame

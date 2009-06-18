@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# TODO - get the numbers from team.cfg, have two options - we blue, we red.
+blue=4
+red=3
+
+# b-human is 3, burst is 4 - from teams.cfg
+
+cd ~/src/burst/gamecontroller/GameController
+if [ ! -e GameController.jar ]; then
+ cd src
+ make
+ cp GameController.jar ../
+ cd ..
+fi
+java -jar GameController.jar -numplayers 3 ${blue} ${red}

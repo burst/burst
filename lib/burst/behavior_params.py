@@ -1,5 +1,6 @@
 from burst_consts import LEFT, RIGHT, DEG_TO_RAD
 from burst.world import World
+from burst_util import (polar2cart, cart2polar)
 
 #===============================================================================
 # This file contains the behavior parameters. The default values are for the
@@ -49,6 +50,29 @@ KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_M
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
+
+def calcTarget(distSmoothed, bearing):
+    (target_x, target_y) = polar2cart(distSmoothed, bearing)
+    print "target_x: %3.3fcm, target_y: %3.3fcm" % (target_x, target_y)
+
+    # determine kicking leg
+    side = bearing < 0 # 0 = LEFT, 1 = RIGHT
+    print "Designated kick leg: %s" % (side==LEFT and "LEFT" or "RIGHT")
+    
+    # calculate optimal kicking point
+    (kp_x, kp_y) = (target_x - KICK_X_OPT[side], target_y - KICK_Y_OPT[side])
+    (kp_dist, kp_bearing) = cart2polar(kp_x, kp_y)
+    print "kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y)
+    print "kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing)
+
+    # ball location, as defined at behavior parameters (front, side, etc...)
+    target_location = calcBallArea(target_x, target_y, side)
+    print ('TARGET_IN_KICKING_AREA', 'TARGET_BETWEEN_LEGS', 'TARGET_FRONT_NEAR', 'TARGET_FRONT_FAR','TARGET_SIDE_NEAR', 'TARGET_SIDE_FAR', 'TARGET_DIAGONAL')[target_location]
+
+    # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course)
+    kick_side_offset = 1.1-1.2*(abs(target_y-KICK_Y_MIN[side])/7)
+    return (side, kp_x, kp_y, kp_dist, kp_bearing, target_location, kick_side_offset)
+    
 
 def calcBallArea(ball_x, ball_y, side):
     if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
