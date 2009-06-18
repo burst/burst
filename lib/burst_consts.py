@@ -28,8 +28,8 @@ WEBOTS = 'webots'
 
 
 
-# Important!! This needs to be set to what we get during the competition
-BURST_TEAM_NUMBER = 17
+# From teams.cfg, in GameStateVisualizer 2009
+BURST_TEAM_NUMBER = 4
 
 # Operating Environment constants
 ROBOT_IP_TO_NAME = {

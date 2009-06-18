@@ -196,6 +196,18 @@ class BaseMoveCoordinator(object):
     def walk(self, d, duration, description):
         return self._make_succeed_bd(self)
 
+    # NOTE: the positive actions are modeled as the same ALMotion commands. The negative
+    #       ones don't have an equivalent (walk does, the others don't), and is modeled
+    #       after user intent.
+    def cancelHead(self):
+        pass
+
+    def cancelWalk(self):
+        pass
+
+    def cancelBody(self):
+        pass
+
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     """ Note: Old coordinator - doesn't use threading, uses polling with
@@ -320,6 +332,15 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         return self._waitOnPostid(d,
             description=description,
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+
+    def cancelHead(self):
+        pass
+
+    def cancelWalk(self):
+        pass
+
+    def cancelBody(self):
+        pass
 
 
 if burst.options.new_move_coordinator:

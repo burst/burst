@@ -1,1 +1,2 @@
 wget http://www.tzi.de/spl/pub/Website/Downloads/GameController2009.zip
+wget http://www.tzi.de/spl/pub/Website/Downloads/GameStateVisualizer2009.zip
