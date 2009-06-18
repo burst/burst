@@ -184,7 +184,7 @@ class BaseMoveCoordinator(object):
 class ActionThread(Thread):
 
     def __init__(self, action):
-        super(MoveThread, self).__init__()
+        super(ActionThread, self).__init__()
         self._action = action
         self.queue = Queue()
 
@@ -192,8 +192,8 @@ class ActionThread(Thread):
         try:
             self._action()
         except Exception, e:
-            self.queue.push((False, e))
-        self.queue.push((True, None))
+            self.queue.put((False, e))
+        self.queue.put((True, None))
 
 class ThreadedMoveCoordinator(BaseMoveCoordinator):
     """ A different strategy for handling moves:
@@ -212,6 +212,8 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
         self._head_move_thread = None
         self._walk_thread = None
         self._body_move_thread = None
+
+        self.verbose = True # TODO - set with option
 
         # XXX First place where Deferred code isn't used - this will blocks..
         self._motion = burst.getMotionProxy(Deferred=False)
@@ -244,6 +246,7 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
                 self._walk_thread):
             if threadtuple is None: continue
             thread, bd, cleaner = threadtuple
+            if thread is None: continue # TODO - ugly. bc
             if thread.queue.empty():
                 if not thread.is_alive():
                     print "*"*80
@@ -260,7 +263,7 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
     def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
         len_2 = len(joints) == 2
         has_head = 'HeadYaw' in joints or 'HeadPitch' in joints
-        bd = self._make(self)
+        bd = self._make_bd(self)
         if len_2 and has_head:
             # Moves head only - just check that no head moves in progress
             self._ensure_no_head_move()
@@ -275,7 +278,7 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
             thread = ActionThread(action =
                 lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type))
             attr = '_body_move_thread'
-            self._head_move_thread = (None, None) # XXX - indicates you can't use it
+            self._head_move_thread = (None, None, None) # XXX - indicates you can't use it
             self._body_move_thread = (thread, bd, self._completeWholeBodyMove)
         else:
             # a body move - check that walk and body are not in progress
@@ -284,15 +287,15 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
             thread = ActionThread(action =
                 lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type))
             self.__move_thread = (thread, bd, self._completeBodyMove)
-        thread = ActionThread(action)
+        thread.start()
         return bd
 
     def changeChainAngles(self, chain, angles):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return self._make_succeed_bd(self)
 
     def walk(self, d, duration, description):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         return self._make_succeed_bd(self)
         
 
