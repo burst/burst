@@ -132,7 +132,7 @@ class Actions(object):
         """
 
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
-        bearing  = atan2(delta_y, delta_x)
+        bearing  = atan2(delta_y, delta_x) # TODO: Shouldn't this be the other way around?
 
         return self._journey.start(walk=walk,
             steps_before_full_stop = steps_before_full_stop,
