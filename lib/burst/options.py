@@ -77,6 +77,7 @@ def parse_command_line_arguments():
     parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
 
     opts, args = parser.parse_args()
+    opts.dt = float(opts.dt)
     ip = opts.ip or get_default_ip()
     ip = host_to_ip(ip)
     port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)

@@ -640,6 +640,7 @@ extern "C"
     // Delete module instance
     // ALPtr - reference counted, right?
     //delete g_limops;
+    std::cout << "ImopsModule: stopping vision thread" << std::endl;
     g_run_vision_thread = false;
     pthread_join(g_vision_thread, NULL);
     std::cout << "ImopsModule: joined vision thread" << std::endl;
