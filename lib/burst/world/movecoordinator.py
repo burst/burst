@@ -178,6 +178,10 @@ class BaseMoveCoordinator(object):
     def isHeadMotionInProgress(self):
         return False
 
+    def shutdown(self):
+        """ called by world on quit """
+        pass
+
     # These are the actual movement methods, they are here now since we do different
     # calls depending on using posts and isRunning or threads and no posts.
     # The signatures should be exactly the ones naoqi uses, for easy back and forth.

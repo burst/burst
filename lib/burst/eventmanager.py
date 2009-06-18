@@ -550,6 +550,12 @@ class BasicMainLoop(object):
         if self._profiler:
             self._profiler.close()
 
+    def cleanupAfterNaoqi(self, _):
+        """  cleanup, mainly close all threads (like movement threads)
+        second arg for addCallback usage"""
+        self._world._movecoordinator.shutdown() # close movement threads
+
+
 ################################################################################
 
 class SimpleMainLoop(BasicMainLoop):
@@ -642,6 +648,7 @@ class SimpleMainLoop(BasicMainLoop):
                 self.cleanup() # TODO - merge with onNormalQuit? what's the difference?
                 d = self.onNormalQuit(naoqi_ok)
                 if d:
+                    d.addCallback(self.cleanupAfterNaoqi)
                     d.addCallback(self._exitApp)
             if sleep_time:
                 sleep(sleep_time)
@@ -761,6 +768,7 @@ class TwistedMainLoop(BasicMainLoop):
         # only if we are in charge of the reactor stop that too
         if not self._control_reactor: return
         from twisted.internet import reactor
+        self.cleanupAfterNaoqi()
         reactor.stop()
 
     def onTimeStep(self):

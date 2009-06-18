@@ -14,6 +14,8 @@ class ALProxyThread(Thread):
     joined until the very end of the program (which is better anyhow),
     and it will now have an incoming queue to be fed new moves.
     """
+    
+    QUIT = False
 
     def __init__(self, *args, **kw):
         super(ALProxyThread, self).__init__(*args, **kw)
@@ -30,6 +32,8 @@ class ALProxyThread(Thread):
     def run(self):
         while True:
             method_getter, args, bd, description = self.in_queue.get()
+            if method_getter == self.QUIT:
+                return
             meth = method_getter(self._motion)
             if self.verbose:
                 print "%s: starting  %s" % (self.getName(), description)
@@ -44,6 +48,9 @@ class ALProxyThread(Thread):
 
     def put(self, method_getter, args, bd, description):
         self.in_queue.put((method_getter, args, bd, description))
+
+    def quit(self):
+        self.in_queue.put((self.QUIT, None, None, None))
 
 class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
     """ A different strategy for handling moves:
@@ -153,10 +160,15 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
 
     # User API
 
+    def isMotionInProgress(self):
+        return self._body_move_holder.busy
+    
+    def isHeadMotionInProgress(self):
+        return self._head_move_holder.busy
+
     def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
         len_2 = len(joints) == 2
         has_head = 'HeadYaw' in joints or 'HeadPitch' in joints
-        bd = self._make_bd(self)
         if len_2 and has_head:
             if self.verbose:
                 print "ThreadedMoveCoordinator: doing head move"
@@ -170,6 +182,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
             self._ensure_no_head_move()
             self._ensure_no_body_move()
             self._ensure_no_walk_move()
+            self._head_move_holder.busy = True
             holder = self._body_move_holder.makeBusy(self._completeWholeBodyMove)
         else:
             if self.verbose:
@@ -177,7 +190,8 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
             # a body move - check that walk and body are not in progress
             self._ensure_no_body_move()
             self._ensure_no_walk_move()
-            holder = self._move_holder.makeBusy(self._completeBodyMove)
+            holder = self._body_move_holder.makeBusy(self._completeBodyMove)
+        bd = self._make_bd(self)
         self._startAction(method_attr='doMove',
             args=(joints, angles_matrix, durations_matrix, interp_type),
             holder=holder, bd=bd)
@@ -185,27 +199,32 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
 
     def changeChainAngles(self, chain, angles):
         # TODO - tester for this..
-        bd = self._make_bd(self)
         if chain is "Head":
             if self.verbose:
                 print "ThreadedMoveCoordinator: changeChainAngles: head"
             # Head move
             self._ensure_no_head_move()
-            holder = self._move_holder.makeBusy(self._completeHeadMove)
+            holder = self._head_move_holder.makeBusy(self._completeHeadMove)
         else:
             if self.verbose:
                 print "ThreadedMoveCoordinator: changeChainAngles: %s" % chain
             self._ensure_no_body_move()
-            holder = self._move_holder.makeBusy(self._completeBodyMove)
-        self._startAction('changeChainAngles', (chain, angles), data)
+            holder = self._body_move_holder.makeBusy(self._completeBodyMove)
+        bd = self._make_bd(self)
+        self._startAction(method_attr='changeChainAngles', args=(chain, angles),
+            holder=holder, bd=bd)
         return bd
 
     def walk(self, d, duration, description):
-        bd = self._make_bd(self)
         if self.verbose:
             print "ThreadedMoveCoordinator: walk"
-        holder= self._walk_holder.makeBusy(self._completeWalk)
+        holder = self._walk_holder.makeBusy(self._completeWalk)
+        bd = self._make_bd(self)
         d.addCallback(lambda _: self._startAction(method_attr='walk', args=tuple(), holder=holder, bd=bd))
         return bd
 
+    def shutdown(self):
+        print "ThreadedMoveCoordinator: closing all threads"
+        for holder in (self._head_move_holder, self._body_move_holder, self._walk_holder):
+            holder.thread.quit()
 
