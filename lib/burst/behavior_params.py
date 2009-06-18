@@ -26,6 +26,14 @@ from burst.world import World
  BALL_DIAGONAL
  ) = range(7)
 
+(MOVE_FORWARD,
+ MOVE_ARC,
+ MOVE_TURN,
+ MOVE_SIDEWAYS,
+ MOVE_CIRCLE_STRAFE,
+ MOVE_KICK
+ ) = range(6)
+
 MOVEMENT_PERCENTAGE = 0.9
 
 ## Kicks

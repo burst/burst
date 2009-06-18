@@ -1,20 +1,29 @@
 #!/usr/bin/python
 
-
 import player_init
 from burst.player import Player
-import burst.events as events
-import sys
-
+from burst.events import (EVENT_SONAR_OBSTACLE_CENTER, EVENT_SONAR_OBSTACLE_LEFT, EVENT_SONAR_OBSTACLE_RIGHT)
 
 class SonarTester(Player):
     
     def onStart(self):
-        super(SonarTester, self).onStart()
-        for attribute in dir(events):
-            if attribute[:5] == "EVENT" and attribute in ['EVENT_SONAR_OBSTACLE_IN_FRAME', 'EVENT_SONAR_OBSTACLE_SEEN', 'EVENT_SONAR_OBSTACLE_LOST']:
-                self._eventmanager.register(lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"), getattr(events, attribute[:]))
+        self._actions.initPoseAndStiffness()
+        
+        self._eventmanager.register(self.onObstacleCenter, EVENT_SONAR_OBSTACLE_CENTER)
+        self._eventmanager.register(self.onObstacleLeft, EVENT_SONAR_OBSTACLE_LEFT)
+        self._eventmanager.register(self.onObstacleRight, EVENT_SONAR_OBSTACLE_RIGHT) 
+        
+    def onObstacleCenter(self):
+        print 'Obstacle at center!'
+        self._actions.say('Obstacle at center!')
+        
+    def onObstacleLeft(self):
+        print 'Obstacle at left!'
+        self._actions.say('Obstacle at left!')
 
+    def onObstacleRight(self):
+        print 'Obstacle at right!'
+        self._actions.say('Obstacle at right!')
 
 
 if __name__ == '__main__':
