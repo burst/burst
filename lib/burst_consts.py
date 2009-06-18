@@ -96,9 +96,6 @@ MIN_DIST_CHANGE = 1e-3
 # Robot constants
 MOTION_FINISHED_MIN_DURATION = EVENT_MANAGER_DT * 3
 
-SONAR_OBSTACLE_THRESHOLD = 0.5 # TODO: Smoothing might be required.
-SONAR_OBSTACLE_HYSTERESIS = 0.1 * SONAR_OBSTACLE_THRESHOLD # Set to 0.0 for no hysteresis.
-
 # Acceptable Centering error - normalized values (in [-1, 1])
 DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*4 #0.05*3
 DEFAULT_NORMALIZED_CENTERING_Y_ERROR = 0.05*4 #0.05*3

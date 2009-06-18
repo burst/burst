@@ -7,7 +7,9 @@ from burst.events import *
 from burst_consts import *
 import burst.moves as moves
 
-
+DESIRED_DISTANCE_FROM_GOAL = 100 # In centimeters.
+SAFETY_MARGIN = 50
+BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL = 0.15 # In radians.
 
 class Goalie(Player):
 
@@ -18,7 +20,9 @@ class Goalie(Player):
     def onStart(self):
 #        super(Goalie, self).onStart()
         self._reset()
+        # TODO: ownGoal according to my own team color.
         self.ownGoal = [self._world.bgrp, self._world.bglp]
+        self.oppositeGoal = [self._world.ygrp, self._world.yglp]
         self._actions.setCameraFrameRate(10)
 
         # TODO: This will no longer be the case once we make sure that our own goal, regardless of the color, is at (0, 0).
@@ -39,7 +43,6 @@ class Goalie(Player):
 #        self._report("baba.")
 
     def onFinishedGettingUp(self):
-#        self._report("gaga.")
         if self._world.robot.sensors.isOnBack(): # TODO: Shouldn't this be in Robot?
             self._report("Back.")
             self.onFallDownOnBack()
@@ -64,13 +67,58 @@ class Goalie(Player):
 
     def findOutLocation(self):
         self._report("Finding location.")
-        self._actions.searcher.search(targets=self.ownGoal, center_on_targets=True).onDone(self.goToOwnGoal)
+        self._actions.searcher.search_one_of(targets=self.ownGoal, center_on_targets=True).onDone(lambda: self.alignTowardsOnePostOfOwnGoal(False))
 
+    def alignTowardsOnePostOfOwnGoal(self, post_selected=True):
+        # TODO: Am I still up?
+        if not post_selected:
+            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+            self.closest_goalpost = self.closestOwnGoalPost()
+            self._eventmanager.register(self.printer, EVENT_STEP)
+            self._actions.tracker.track(self.closest_goalpost)
+        print self.closest_goalpost.dist, self.closest_goalpost.bearing
+        if self.closest_goalpost.dist <= DESIRED_DISTANCE_FROM_GOAL:
+            self.onArrivedNextToOneGoalPostOfOwnGoal()
+        elif abs(self.closest_goalpost.bearing) < BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL:
+            self.walkTowardsOnePostOfOwnGoal()
+        else:
+            self._actions.turn(self.closest_goalpost.bearing).onDone(self.alignTowardsOnePostOfOwnGoal)
+
+    def printer(self):
+        return
+        print self.closest_goalpost.dist
+
+    def walkTowardsOnePostOfOwnGoal(self):
+        if self.closest_goalpost.dist <= DESIRED_DISTANCE_FROM_GOAL:
+            self.onArrivedNextToOneGoalPostOfOwnGoal()
+        else:
+            distanceToWalk = self.closest_goalpost.dist - SAFETY_MARGIN
+            print "Walking:", distanceToWalk
+            self._actions.changeLocationRelative(distanceToWalk).onDone(self.alignTowardsOnePostOfOwnGoal)
+
+    def onArrivedNextToOneGoalPostOfOwnGoal(self):
+        print 'Got there!'
+        self._eventmanager.quit()
+
+    def closestOwnGoalPost(self):
+        if not self.ownGoal[0].seen and not self.ownGoal[1].seen:
+            raise Exception("Trace me.")
+        if self.ownGoal[0].seen ^ self.ownGoal[1].seen:
+            for post in self.ownGoal:
+                if post.seen:
+                    return post
+        if self.ownGoal[0].dist < self.ownGoal[1].dist:
+            return self.ownGoal[0]
+        else:
+            return self.ownGoal[1]
+        
+    '''
     def goToOwnGoal(self):
         self._report("Going towards own goal.")
         relative_x, relative_y = self.ownGoalRelativeCoordinates()
         base_x, base_y = self.ownGoalGlobalCartesianCoordinates
         self._actions.changeLocationRelative(relative_x-base_x, relative_y-base_y).onDone(self.finishedWalkingTowardsOnGoal)
+    '''
 
     def finishedWalkingTowardsOnGoal(self):
         pass
