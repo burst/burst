@@ -31,6 +31,9 @@ New and annoyingly thready:
    * keep track of which moves and threads.
 """
 
+from threading import Thread
+from Queue import Queue
+
 import burst
 from burst_util import (DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
@@ -159,9 +162,6 @@ class BaseMoveCoordinator(object):
     def calc_events(self, events, deferreds):
         pass
 
-    def add_expected_walk_post(self, description, postid, event, duration):
-        pass
-
     def isMotionInProgress(self):
         return False
     
@@ -181,18 +181,111 @@ class BaseMoveCoordinator(object):
     def walk(self, d, duration, description):
         return self._make_succeed_bd(self)
 
+class ActionThread(Thread):
+
+    def __init__(self, action):
+        super(MoveThread, self).__init__()
+        self._action = action
+        self.queue = Queue()
+
+    def run(self):
+        try:
+            self._action()
+        except Exception, e:
+            self.queue.push((False, e))
+        self.queue.push((True, None))
+
 class ThreadedMoveCoordinator(BaseMoveCoordinator):
+    """ A different strategy for handling moves:
+     we have a thread open on any request, it will signal
+     to us when it is done via a queue.
+     We have a choice of allowing queuing of commands or not - we choose
+     to avoid it for now, higher level code can just hold on to those commands
+     and execute them on the callback, and it already does it (SearchPlanner,
+     Journey)
+    """
 
     def __init__(self, world):
         super(ThreadedMoveCoordinator, self).__init__(world)
+        # These are not None if there is a motion of that sort, and then
+        # a tuple (thread, burst_deferred)
+        self._head_move_thread = None
+        self._walk_thread = None
+        self._body_move_thread = None
 
-    def _makeThread(self, action):
-        import threading
-        return threading.Thread(target=action)
+        # XXX First place where Deferred code isn't used - this will blocks..
+        self._motion = burst.getMotionProxy(Deferred=False)
+
+    def _ensure_empty_thread(self, threadtuple, what):
+        if threadtuple and threadtuple[0].queue.empty():
+            raise RuntimeException("You tried a second %s while first is still in progress" % what)
+
+    def _ensure_no_head_move(self):
+        self._ensure_empty_thread(self._head_move_thread, 'HEAD MOVE')
+
+    def _ensure_no_body_move(self):
+        self._ensure_empty_thread(self._body_move_thread, 'BODY MOVE')
+
+    def _ensure_no_walk_move(self):
+        self._ensure_empty_thread(self._walk_thread, 'WALK')
+
+    def _completeHeadMove(self):
+        self._head_move_thread = None
+
+    def _completeWholeBodyMove(self):
+        self._head_move_thread = None
+        self._body_move_thread = None
+
+    def _completeBodyMove(self):
+        self._body_move_thread = None
+
+    def calc_events(self, events, deferreds):
+        for threadtuple in (self._head_move_thread, self._body_move_thread,
+                self._walk_thread):
+            if threadtuple is None: continue
+            thread, bd, cleaner = threadtuple
+            if thread.queue.empty():
+                if not thread.is_alive():
+                    print "*"*80
+                    print "* ERROR: thread died but didn't fill the queue."
+                    print "*"*80
+                    cleaner()
+                continue
+            # we have something.
+            if self.verbose:
+                print "ThreadedMoveCoordinator: motion complete. %s, %s, %s" % (thread, bd, cleaner)
+            deferreds.append(bd)
+            cleaner()
 
     def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
-        import pdb; pdb.set_trace()
-        return self._make_succeed_bd(self)
+        len_2 = len(joints) == 2
+        has_head = 'HeadYaw' in joints or 'HeadPitch' in joints
+        bd = self._make(self)
+        if len_2 and has_head:
+            # Moves head only - just check that no head moves in progress
+            self._ensure_no_head_move()
+            thread = ActionThread(action =
+                lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type))
+            self._head_move_thread = (thread, bd, self._completeHeadMove)
+        elif has_head:
+            # Moves whole body, so check no move at all nor walk is in progress
+            self._ensure_no_head_move()
+            self._ensure_no_body_move()
+            self._ensure_no_walk_move()
+            thread = ActionThread(action =
+                lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type))
+            attr = '_body_move_thread'
+            self._head_move_thread = (None, None) # XXX - indicates you can't use it
+            self._body_move_thread = (thread, bd, self._completeWholeBodyMove)
+        else:
+            # a body move - check that walk and body are not in progress
+            self._ensure_no_body_move()
+            self._ensure_no_walk_move()
+            thread = ActionThread(action =
+                lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type))
+            self.__move_thread = (thread, bd, self._completeBodyMove)
+        thread = ActionThread(action)
+        return bd
 
     def changeChainAngles(self, chain, angles):
         import pdb; pdb.set_trace()
@@ -318,18 +411,6 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
     def _add_expected_walk_post(self, postid, event, duration):
         print "DEBUG: adding walk %s, duration %s" % (postid, duration)
         return self._walk_posts.add(postid, event, duration)
-
-    def add_expected_walk_post(self, description, postid, event, duration):
-        """ HACK for Journey - Journey currently does the deferreds itself,
-        not using the BurstDeferred wrappers we provide, so to still log
-        anything it does we provide the old interface, with added description.
-        We use the initiate time as now (so it is actually the postid time,
-        almost the same)
-        """
-        initiated = self._add_initiated(time=self._world.time, kind='walk',
-            description=description, event=event, duration=duration)
-        self._add_posted(postid, initiated)
-        return self._add_expected_walk_post(postid=postid, event=event, duration=duration)
 
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
