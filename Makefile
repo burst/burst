@@ -23,6 +23,8 @@ Makefile.local:
 .PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes
 
 clean:
+	@echo "removing pyc files"
+	find . -iname "*.pyc" -exec rm \{\} \;
 	cd src/burstmem; $(MAKE) clean
 	rm -R src/recordermodule/crossbuild
 	cd src/imops; $(MAKE) clean
