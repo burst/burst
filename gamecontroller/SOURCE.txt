@@ -1,1 +1,1 @@
-wget http://www.cse.unsw.edu.au/%7Ewillu/GameController/GameController2006-14.tgz
+wget http://www.tzi.de/spl/pub/Website/Downloads/GameController2009.zip
