@@ -1,0 +1,84 @@
+Thu Jun 18 18:23:35 IDT 2009
+
+Trying various module combinations, starting naoqi, waiting a bit, recording steady state mem (apparent - maybe there is an increase over time,
+but not checking that right now).
+
+(commit dcff30e7424dde65e141e8567ed4f6ed2cf4622b)
+chosen: mem: 54%, cpu 61% (nominal, imops framerate 20 proc/30 capture)
+[core]
+albase
+launcher
+framemanager
+[extra]
+devicecommunicationmanager
+sensors
+motion
+leds
+sentinel
+videoinput
+burstmem
+imops
+[remote]
+
+-------------------------------------------------------------------------
+
+base: mem: 71%
+base = 
+root@cech [0] [~]# cat /opt/naoqi/modules/lib/autoload.ini | grep -v '#' | sort
+[core]
+[extra]
+[remote]
+albase
+audioin
+audioout
+burstmem
+devicecommunicationmanager
+framemanager
+imops
+launcher
+leds
+motion
+sensors
+sentinel
+videoinput
+
++albonjour: mem: 75%
++landmarkdetection: mem: 88%
++pythonbridge: mem: 90%
+
+back to base (71%)
+-sentinel: mem: 70%
+-audioin: mem: 67%
+-imops: mem: 57%
+-burstmem: 56%
+-videoinput: 55%
+-leds: 54%
+-audioout: 40%
+-motion: 38% (cpu drop from 13 to 7, -6%)
+-sensors: 37%
+-devicecommunicationmanager: 16% (cpu dropped to 0! -7%)
+-framemanager (base): 15%
+-launcher (base): 14%
+-albase (base): 13% (note: still says 'ohnagnook', since that's just a wav in /opt/naoqi/data/wav/start_jingle.wav)
+
+summary:
+
+to remove:
+landmarkdetection: 13%
+albonjour: 4%
+audioin: 3%
+pythonbridge: 2%
+
+can remove?:
+audioout: 14%
+
+can't remove:
+motion: 2%
+sentinel: 1%
+leds: 1%
+videoinput: 1%
+
+ours:
+imops: 10% (commit dcff30e7424dde65e141e8567ed4f6ed2cf4622b)
+burstmem: 1% (same commit)
+
