@@ -11,17 +11,20 @@ from burst.world import World
 ### Ball position relative to robot
 # BALL_IN_KICKING_AREA - ball is ready to be kicked
 # BALL_BETWEEN_LEGS - ball between legs
-# BALL_FRONT - ball in front (between minimum and maximum KICK_Y)
-# BALL_SIDE - ball on side (between minimum and maximum KICK_X)
+# BALL_FRONT_NERA - ball in front (between minimum and maximum KICK_Y)
+# BALL_FRONT_FAR - 
+# BALL_SIDE_NEAR - ball on side (between minimum and maximum KICK_X)
+# BALL_SIDE_FAR - 
 # BALL_DIAGONAL - ball diagonal (else...)
 ###
 (BALL_IN_KICKING_AREA,
  BALL_BETWEEN_LEGS,
- BALL_FRONT,
+ BALL_FRONT_NEAR,
+ BALL_FRONT_FAR,
  BALL_SIDE_NEAR,
  BALL_SIDE_FAR,
  BALL_DIAGONAL
- ) = range(6)
+ ) = range(7)
 
 MOVEMENT_PERCENTAGE = 0.9
 
@@ -42,10 +45,13 @@ KICK_SIDEWAYS_DISTANCE = 10.0
 def calcBallArea(ball_x, ball_y, side):
     if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
         return BALL_IN_KICKING_AREA
-    elif KICK_Y_MIN[RIGHT] < ball_y < KICK_Y_MIN[LEFT] and ball_x <= KICK_X_MAX[side]:
-        return BALL_BETWEEN_LEGS
-    elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT] or ((KICK_Y_MAX[RIGHT]*2 < ball_y < KICK_Y_MAX[LEFT]*2) and ball_x > KICK_X_MAX[side]*2):
-        return BALL_FRONT
+    elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
+        if ball_x <= KICK_X_MAX[side]:
+            return BALL_BETWEEN_LEGS
+        elif ball_x <= KICK_X_MAX[side]*3/2:
+            return BALL_FRONT_NEAR
+        else:
+            return BALL_FRONT_FAR
     else: #if (ball_y > KICK_Y_MAX[LEFT] or ball_y < KICK_Y_MAX[RIGHT]):
         if ball_x <= KICK_X_MAX[side]:
             if abs(ball_y) <= abs(KICK_Y_MAX[side])*10:

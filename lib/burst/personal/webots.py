@@ -27,10 +27,10 @@ walks.SIT_POS[2] = 10
 #walks.STRAIGHT_WALK.defaultSpeed = 100
 
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [18.0,18.0] #[30.0,30.0]
+params.KICK_X_MIN[:] = [17.5,17.5] #[30.0,30.0]
 params.KICK_X_MAX[:] = [21.0,21.0] #[33.0,33.0]
 params.KICK_Y_MIN[:] = [4.0,-4.0] #[6.0,-6.0]
-params.KICK_Y_MAX[:] = [7.5,-7.5] #[12.5,-12.5]
+params.KICK_Y_MAX[:] = [10.0,-10.0] #[12.5,-12.5]
 params.MOVEMENT_PERCENTAGE = 0.55
 
 import burst.actions.actionconsts as actionconsts
