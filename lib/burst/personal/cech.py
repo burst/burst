@@ -20,8 +20,6 @@ walks.SIT_POS[2] = 10
 ## General moves
 import burst.moves.poses as poses
 
-import pdb; pdb.set_trace()
-
 poses.STRAIGHT_WALK_INITIAL_POSE = [
 poses.HEAD_POS_FRONT_BOTTOM,
 ((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997), 
