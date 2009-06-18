@@ -14,12 +14,8 @@ from burst_consts import ROBOT_IP_TO_NAME
 from burst_util import set_robot_ip_from_argv
 
 def main():
-    try:
-        import pynaoqi.gui
-        pynaoqi.gui.main()
-    except Exception, e:
-        print "oops, %s" % e
-        import pdb; pdb.set_trace()
+    import pynaoqi.gui
+    pynaoqi.gui.main()
 
 if __name__ == '__main__':
     set_robot_ip_from_argv()

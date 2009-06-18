@@ -37,7 +37,7 @@ ROBOT_IP_TO_NAME = {
     '192.168.5.170'	: GERRARD,
     '192.168.5.226'	: CECH,
     '192.168.5.168'	: HAGI,
-    '192.168.5.225'	: RAUL,
+    '192.168.5.224'	: RAUL,
     '192.168.5.228'	: MALDINI,
 }
 import linecache

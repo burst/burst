@@ -371,9 +371,10 @@ class Joints(BaseWindow):
 
         # XXX - import burst here so it doesn't parse sys.argv
         import burst.moves as moves
+        import burst.moves.poses as poses
         import burst
 
-        moves_buttons_data = [(move_name, lambda _, move=getattr(moves, move_name):
+        moves_buttons_data = [(move_name, lambda _, move=getattr(poses, move_name):
             self.con.ALMotion.executeMove(move))
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
 
