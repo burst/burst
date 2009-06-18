@@ -5,7 +5,9 @@ import player_init
 
 from burst.player import Player
 from burst_consts import *
-import burst.moves as moves
+import burst.moves.walks as walks
+import burst.moves.poses as poses
+
 import time
 
 class WalkTester(Player):
@@ -13,18 +15,18 @@ class WalkTester(Player):
     def onStart(self):
         self.movesList = [
 #                     ('Walk straight - Asaf''s version (Stable walk)',
-#                      lambda: self._actions.executeMoveRadians(moves.STABLE_WALK_INITIAL_POSE).onDone(
-#                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=moves.STABLE_WALK))),
+#                      lambda: self._actions.executeMoveRadians(poses.STABLE_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STABLE_WALK))),
                       
                      ('Walk straight',
-                      lambda: self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(
-                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=moves.STRAIGHT_WALK))),
+                      lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
                       
 #                     ('Walk sideways',
-#                      lambda: self._actions.changeLocationRelativeSideways(0.0, 20.0, walk=moves.SIDESTEP_WALK)),
+#                      lambda: self._actions.changeLocationRelativeSideways(0.0, 20.0, walk=walks.SIDESTEP_WALK)),
 
 #                     ('Turn 90 degrees (Straight walk params)',
-#                      lambda: self._actions.turn(1.57, walk=moves.STRAIGHT_WALK)),
+#                      lambda: self._actions.turn(1.57, walk=walks.STRAIGHT_WALK)),
 
 #                     ('Sit',
 #                     lambda: self._actions.sitPoseAndRelax())
