@@ -85,7 +85,6 @@ class GoalAlignerTester(Player):
             else:
                 print "Aligned position reached!"
                 self._actions.tracker.stop()
-                #self.aligned_to_goal = True
                 #self.ballLocationKnown = False
                 #self._actions.setCameraFrameRate(20)
                 #self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
