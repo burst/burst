@@ -13,6 +13,8 @@ import burst.actions
 from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
 import burst.moves.walks as walks
+import burst.moves.poses as poses
+
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    calcBallArea, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, BALL_FRONT_FAR,
                                    BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE)
@@ -82,7 +84,7 @@ class BallKicker(BurstDeferred):
 
         self._actions.setCameraFrameRate(20)
         # kicker initial position
-        self._actions.executeMoveRadians(moves.STRAIGHT_WALK_INITIAL_POSE).onDone(
+        self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
 
     def onMovementFinished(self, nextAction):
@@ -252,7 +254,7 @@ class BallKicker(BurstDeferred):
         bd.onDone(lambda: self._eventmanager.callLater(0.2, self.strafe))
 
     def refindBall(self):
-        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
+        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
             # TODO: Fix distSmooth after moving head - this is just a workaround
             lambda: self._eventmanager.callLater(0.5,
                  lambda: self.switchToFinder(to_goal_finder=False)))

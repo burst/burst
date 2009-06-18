@@ -5,7 +5,8 @@ from burst_util import (transpose, cumsum, succeed,
     Deferred, DeferredList, chainDeferreds)
 from burst.events import *
 from burst.eventmanager import EVENT_MANAGER_DT
-import burst.moves
+import burst.moves as moves
+import burst.moves.poses as poses
 import burst.moves.walks as walks
 from burst.world import World
 from burst.walkparameters import WalkParameters
@@ -140,6 +141,7 @@ class Actions(object):
             distance=distance, bearing=bearing)
         
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
+        print walk
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
@@ -214,7 +216,7 @@ class Actions(object):
             description=('sideway', delta_x, delta_y, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-    def initPoseAndStiffness(self, pose=moves.INITIAL_POS):
+    def initPoseAndStiffness(self, pose=poses.INITIAL_POS):
         """ Sets stiffness, then sets initial position for body and head.
         Returns a BurstDeferred.
         """
@@ -243,8 +245,8 @@ class Actions(object):
                 print "sitPoseAndRelax: removing body stiffness"
             return self._motion.setBodyStiffness(0)
         dgens.append(lambda _: self._clearFootsteps_returnDeferred())
-        #dgens.append(lambda _: self.executeMove(moves.STAND).getDeferred())
-        dgens.append(lambda _: self.executeMove(moves.SIT_POS).getDeferred())
+        #dgens.append(lambda _: self.executeMove(poses.STAND).getDeferred())
+        dgens.append(lambda _: self.executeMove(poses.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
         return chainDeferreds(dgens)
      
@@ -338,9 +340,9 @@ class Actions(object):
 
     def adjusted_straight_kick(self, kick_leg, kick_side_offset=1.0):
         if kick_leg==LEFT:
-            return self.executeMove(burst.moves.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
+            return self.executeMove(poses.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
         else :
-            return self.executeMove(burst.moves.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
+            return self.executeMove(poses.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
     
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         return self._movecoordinator.doMove(jointCodes, angles, times, 1,

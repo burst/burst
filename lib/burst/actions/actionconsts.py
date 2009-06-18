@@ -2,7 +2,7 @@
 Actions constants (as opposed to burst_consts)
 """
 
-import burst.moves as moves
+import burst.moves.poses as poses
 from burst.world import World
 from burst_consts import LEFT, RIGHT, DOWN, UP
 
@@ -18,22 +18,22 @@ MINIMAL_CHANGELOCATION_X = 0.01
 
 (KICK_TYPE_STRAIGHT, INSIDE_KICK) = range(2)
 
-KICK_TYPES = {(KICK_TYPE_STRAIGHT, LEFT): moves.GREAT_KICK_LEFT,
-              (KICK_TYPE_STRAIGHT, RIGHT): moves.GREAT_KICK_RIGHT,
-              (INSIDE_KICK, LEFT): moves.INSIDE_KICK,
-              (INSIDE_KICK, RIGHT): moves.INSIDE_KICK
+KICK_TYPES = {(KICK_TYPE_STRAIGHT, LEFT): poses.GREAT_KICK_LEFT,
+              (KICK_TYPE_STRAIGHT, RIGHT): poses.GREAT_KICK_RIGHT,
+              (INSIDE_KICK, LEFT): poses.INSIDE_KICK,
+              (INSIDE_KICK, RIGHT): poses.INSIDE_KICK
               }
 
 #(KICK_TYPE_STRAIGHT_WITH_LEFT,
 # KICK_TYPE_STRAIGHT_WITH_RIGHT) = range(2)
 # 
-#KICK_TYPES = {KICK_TYPE_STRAIGHT_WITH_LEFT: moves.GREAT_KICK_LEFT,
-#              KICK_TYPE_STRAIGHT_WITH_RIGHT: moves.GREAT_KICK_RIGHT}
+#KICK_TYPES = {KICK_TYPE_STRAIGHT_WITH_LEFT: poses.GREAT_KICK_LEFT,
+#              KICK_TYPE_STRAIGHT_WITH_RIGHT: poses.GREAT_KICK_RIGHT}
 
 (LOOKAROUND_QUICK,
  LOOKAROUND_FRONT,
  LOOKAROUND_AROUND) = range(3) # must be zero based - some code depends on it!
-LOOKAROUND_TYPES = {LOOKAROUND_QUICK: moves.HEAD_SCAN_QUICK,
-                    LOOKAROUND_FRONT: moves.HEAD_SCAN_FRONT,
-                    LOOKAROUND_AROUND: moves.HEAD_SCAN_FRONT} # TODO: Add look around
+LOOKAROUND_TYPES = {LOOKAROUND_QUICK: poses.HEAD_SCAN_QUICK,
+                    LOOKAROUND_FRONT: poses.HEAD_SCAN_FRONT,
+                    LOOKAROUND_AROUND: poses.HEAD_SCAN_FRONT} # TODO: Add look around
 LOOKAROUND_MAX = max(LOOKAROUND_TYPES.keys())
