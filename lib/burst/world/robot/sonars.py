@@ -7,6 +7,10 @@ import burst
 
 FAR_FAR_AWAY = 1000.0
 
+
+__all__ = ['Sonars']
+
+
 # TODO: When several robots are next to each other, do their sonars collide?
 class Sonars(object):
 

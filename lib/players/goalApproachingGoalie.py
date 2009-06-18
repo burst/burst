@@ -40,10 +40,10 @@ class Goalie(Player):
 
     def onFinishedGettingUp(self):
 #        self._report("gaga.")
-        if self._world.falldetector.isOnBack(): # TODO: Shouldn't this be in Robot?
+        if self._world.robot.sensors.isOnBack(): # TODO: Shouldn't this be in Robot?
             self._report("Back.")
             self.onFallDownOnBack()
-        elif self._world.falldetector.isOnBelly(): # TODO: Shouldn't this be in Robot?
+        elif self._world.robot.sensors.isOnBelly(): # TODO: Shouldn't this be in Robot?
             self._report("Belly.")
             self.onFallDownOnBelly()
         else:
@@ -70,7 +70,7 @@ class Goalie(Player):
         self._report("Going towards own goal.")
         relative_x, relative_y = self.ownGoalRelativeCoordinates()
         base_x, base_y = self.ownGoalGlobalCartesianCoordinates
-        self._actions.changeLocationRelative(base_x-relative_x, base_y-relative_y).onDone(self.finishedWalkingTowardsOnGoal)
+        self._actions.changeLocationRelative(relative_x-base_x, relative_y-base_y).onDone(self.finishedWalkingTowardsOnGoal)
 
     def finishedWalkingTowardsOnGoal(self):
         pass
@@ -82,6 +82,7 @@ class Goalie(Player):
         leftPost  = self.toCartesian(self.ownGoal[1].bearing, self.ownGoal[1].dist)
         x = (rightPost[0]+leftPost[0])/2
         y = (rightPost[1]+leftPost[1])/2
+        print x,y
         return (x,y)
 
     def toCartesian(self, bearing, dist):

@@ -37,10 +37,19 @@ ROBOT_IP_TO_NAME = {
     '192.168.5.170'	: GERRARD,
     '192.168.5.226'	: CECH,
     '192.168.5.168'	: HAGI,
-    '192.168.5.224'	: RAUL,
+    '192.168.5.225'	: RAUL,
     '192.168.5.228'	: MALDINI,
 }
-
+import linecache
+hosts = linecache.getlines('/etc/hosts')
+__rev = dict([(h,i) for i,h in ROBOT_IP_TO_NAME.items()])
+for l in hosts:
+    parts = l.split()
+    if len(parts) != 2: continue
+    ip, host = parts
+    if host in ROBOT_IP_TO_NAME.values():
+        print "WARNING: overriding %s from hosts file, from %s to %s" % (host, __rev[host], ip)
+        ROBOT_IP_TO_NAME[ip] = host
 # Jersey numbers:
 # 1 == goalie
 ROBOT_NAME_TO_JERSEY_NUMBER = {

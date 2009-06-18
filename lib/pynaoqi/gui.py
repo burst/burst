@@ -264,7 +264,7 @@ def create_button_strip(data):
         if cb is None and not isinstance(label, str):
             b = label # masquarade as a place to put premade widgets, for battery meter
         else:
-            b = gtk.Button(label)
+            b = gtk.Button(label.replace('_', '__'))
         if cb:
             b.connect("clicked", cb)
         try:
@@ -378,6 +378,7 @@ class Joints(BaseWindow):
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
 
         self._walkconfig = burst.moves.walks.STRAIGHT_WALK.walkParameters
+        self._default_walk_speed = burst.moves.walks.STRAIGHT_WALK.defaultSpeed
 
         def updateWalkConfig(_):
             self.con.ALMotion.getWalkConfig().addCallback(self.setWalkConfig)
@@ -399,7 +400,7 @@ class Joints(BaseWindow):
             distance_per_step = self._walkconfig[WalkParameters.StepLength]
             return setWalkConfig(self.con, self._walkconfig).addCallback(
                 lambda result: self.con.ALMotion.addWalkStraight(
-                    steps * distance_per_step, 60).addCallback(startWalkTest)
+                    steps * distance_per_step, self._default_walk_speed).addCallback(startWalkTest)
                     )
 
         def doArc(angle, radius=0.5, cycles_per_step=60):

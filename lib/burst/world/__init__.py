@@ -21,7 +21,6 @@ from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_ALL_YELLOW_GOAL_IN_FRAME,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
     EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
-from ..sensing import FalldownDetector
 from burst_util import running_average, LogCalls
 
 from burst.deferreds import BurstDeferredMaker
@@ -184,7 +183,6 @@ class World(object):
         # TODO - other robots
         # Buttons, Leds (TODO: ultrasound,
         self.robot = Robot(self)
-        self.falldetector = FalldownDetector(self)
         # construct team after all the posts are constructed, it keeps a
         # reference to them.
         self.team = Team(self)
@@ -224,7 +222,7 @@ class World(object):
             # first list
             [self._movecoordinator,
              self.ball, self.blue_goal, self.yellow_goal,
-             self.robot, self.falldetector, self._gameController],
+             self.robot, self._gameController],
             [self.gameStatus],
             # anything that relies on basics but nothing else should go next
             [self],
@@ -383,7 +381,6 @@ class World(object):
         this is called after the basic objects and before the computed object (it
         may set some events / variables needed by the computed object)
         """
-        pass
         if self.bglp.seen and self.bgrp.seen:
             events.add(EVENT_ALL_BLUE_GOAL_IN_FRAME)
         if self.yglp.seen and self.ygrp.seen:

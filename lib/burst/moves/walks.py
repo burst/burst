@@ -69,15 +69,15 @@ TURN_WALK = Walk(WalkParameters([
            10.0 * DEG_TO_RAD,  # ElbowAmplitude 
            4.5,                   # LHipRoll(degrees) 
            -4.5,                  # RHipRoll(degrees)
-           0.2,                  # HipHeight(meters)
+           0.22,                  # HipHeight(meters)
            3.4,                   # TorsoYOrientation(degrees)
            0.070,                  # StepLength
-           0.03,                  # StepHeight
+           0.043,                  # StepHeight
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
            0.00]),                  # ZmpOffsetY
-           50          # 20ms count per step
+           80          # 20ms count per step
     )
 
 

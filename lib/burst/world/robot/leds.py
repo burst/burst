@@ -4,6 +4,9 @@
 from burst_consts import RED, GREEN, BLUE, OFF
 
 
+__all__ = ['LEDs']
+
+
 class LEDs(object):
 
     class BaseLED(object):

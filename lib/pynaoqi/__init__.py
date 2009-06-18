@@ -55,7 +55,7 @@ def has_imops():
         # make it (either it doesn't exist, is too old, or doesn't match the architecture)
         os.system('cd %s/src/burst/src/imops; make pynaoqi -j %s' % (HOME, get_num_cores() + 1))
     try:
-        imops = ctypes.CDLL(IMOPS_PYNAOQI_SO)
+        imops = ctypes.CDLL(imops_fname)
     except:
         print "missing imops (you might want to add burst/lib to LD_LIBRARY_PATH)"
         return None
@@ -1101,6 +1101,8 @@ def getDefaultOptions():
             help='use manhole shell instead of IPython')
     store_true('--nogtk', dest='nogtk',
             help='debug - turn off gtk integration (NOT WORKING)')
+    store_true('--video', dest='video',
+            help='open video window on start')
     parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
     options, rest = parser.parse_args()
     # TODO: UNBRAIN DEAD THIS
