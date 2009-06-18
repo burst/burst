@@ -73,7 +73,7 @@ def parse_command_line_arguments():
 
     parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
 
-    parser.add_option('', '--oldmovecoordinator', action='store_true', dest='old_move_coordinator', default=False, help='debug - use old code (no threads) for move coordinator')
+    parser.add_option('', '--newmovecoordinator', action='store_true', dest='new_move_coordinator', default=False, help='debug - use new ThreadedMoveCoordinator')
 
     opts, args = parser.parse_args()
     ip = opts.ip or get_default_ip()

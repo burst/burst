@@ -34,7 +34,8 @@ New and annoyingly thready:
 import burst
 from burst_util import (DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
-from burst.events import EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE
+from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
+    EVENT_CHANGE_LOCATION_DONE)
 
 ################################################################################
 
@@ -177,6 +178,8 @@ class BaseMoveCoordinator(object):
     def changeChainAngles(self, chain, angles):
         return self._make_succeed_bd(self)
 
+    def walk(self, d, duration, description):
+        return self._make_succeed_bd(self)
 
 class ThreadedMoveCoordinator(BaseMoveCoordinator):
 
@@ -194,6 +197,11 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
     def changeChainAngles(self, chain, angles):
         import pdb; pdb.set_trace()
         return self._make_succeed_bd(self)
+
+    def walk(self, d, duration, description):
+        import pdb; pdb.set_trace()
+        return self._make_succeed_bd(self)
+        
 
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
@@ -377,12 +385,18 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         return self._waitOnPostid(d, description="change Head Angles",
             kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
 
+    def walk(self, d, duration, description):
+        d.addCallback(lambda _: self._motion.post.walk())
+        return self._waitOnPostid(d,
+            description=description,
+            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
-if burst.options.old_move_coordinator:
-    print "MoveCoordinator: using IsRunningMoveCoordinator"
-    MoveCoordinator = IsRunningMoveCoordinator
-else:
-    # Default (see burst.options for flag to change)
+
+if burst.options.new_move_coordinator:
     print "MoveCoordinator: using ThreadedMoveCoordinator"
     MoveCoordinator = ThreadedMoveCoordinator
+else:
+    # Default (see burst.options for flag to change)
+    print "MoveCoordinator: using IsRunningMoveCoordinator"
+    MoveCoordinator = IsRunningMoveCoordinator
 

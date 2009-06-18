@@ -68,6 +68,12 @@ class WrapWithDeferreds(object):
             return WrapWithDeferreds(target)
         return returnSucceed(target)
 
+    def __str__(self):
+        return '<DeferWrapped %s>' % str(self._obj)
+
+    def __repr__(self):
+        return '<DeferWrapped %s>' % repr(self._obj)
+
 class MyDeferred(object):
     """ mimic in the most minimal way twisted.internet.defer.Deferred """
     def __init__(self):

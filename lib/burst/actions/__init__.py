@@ -150,10 +150,9 @@ class Actions(object):
         dgens.append(lambda _: self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN))
         
         duration = 1.0 # TODO - compute duration correctly
-        d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self._movecoordinator._waitOnPostid(d,
-            description=('turn', deltaTheta, walk),
-            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        d = chainDeferreds(dgens)
+        return self._movecoordinator.walk(d, duration=duration,
+                            description=('turn', deltaTheta, walk))
 
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
@@ -211,10 +210,9 @@ class Actions(object):
                     (did_sideways and defaultSpeed or EVENT_MANAGER_DT) ) * 0.02 # 20ms steps
         print "Estimated duration: %3.3f" % (duration)
         
-        d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self._movecoordinator._waitOnPostid(d,
-            description=('sideway', delta_x, delta_y, walk),
-            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
+        d = chainDeferreds(dgens)
+        return self._movecoordinator.walk(d, duration=duration,
+                    description=('sideway', delta_x, delta_y, walk))
 
     def initPoseAndStiffness(self, pose=poses.INITIAL_POS):
         """ Sets stiffness, then sets initial position for body and head.
@@ -249,7 +247,7 @@ class Actions(object):
         dgens.append(lambda _: self.executeMove(poses.SIT_POS).getDeferred())
         dgens.append(removeStiffness)
         return chainDeferreds(dgens)
-     
+
     def setWalkConfig(self, param):
         """ param should be one of the moves.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,

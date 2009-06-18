@@ -106,17 +106,12 @@ class Journey(object):
         if self._turn[1]:
             self._addCommand("addTurn %3.3f" % self._turn[1],
                 lambda _: self._motion.addTurn(self._turn[1], DEFAULT_STEPS_FOR_TURN))
-        self._executeAllCommands().addCallback(
-            lambda _: self._motion.post.walk().addCallback(self.onLastLegPosted))
-
-    def onLastLegPosted(self, postid):
-        # final leg will call the user's callbacks
         last_leg_duration = 1.0 # TODO - duration calculation for real
-        self._world._movecoordinator.add_expected_walk_post(
-            ('journey last leg', self._distance, self._bearing, self._delta_theta),
-            postid, EVENT_CHANGE_LOCATION_DONE, last_leg_duration
+        self._world._movecoordinator.walk(d=self._executeAllCommands(),
+            duration=last_leg_duration,
+            description=('journey last leg', self._distance, self._bearing, self._delta_theta)
                 ).onDone(self.callbackAndReset)
-    
+
     def callbackAndReset(self):
         # TODO: do I need to reset anything?
         self._deferred.callOnDone()
@@ -126,14 +121,11 @@ class Journey(object):
             self.lastLeg()
         else:
             self.addSingleLeg()
-            self._executeAllCommands().addCallback(
-                lambda _: self._motion.post.walk().addCallback(self._onLegCompletePosted))
+            leg_duration = 1.0 # TODO - compute duration correctly
+            self._world._movecoordinator.walk(d=self._executeAllCommands(),
+                duration=leg_duration,
+                description='journey mid leg').onDone(self.onLegComplete)
 
-    def _onLegCompletePosted(self, postid):
-        leg_duration = 1.0 # TODO - compute duration correctly
-        self._world._movecoordinator.add_expected_walk_post('journey mid leg', postid,
-            EVENT_CHANGE_LOCATION_DONE, leg_duration).onDone(self.onLegComplete)
-    
     def _addWalkStraight(self, desc_tmpl, dist, steps):
         self._addCommand(desc_tmpl % dist, lambda _: self._motion.addWalkStraight(dist, steps))
 
@@ -142,7 +134,7 @@ class Journey(object):
         for real robot do a slow walk for SLOW_START_STEPS and then a normal walk
         """
         leg_distance = min(self._leg_distance, self._distance_left)
-        
+
         # TODO: TEMP!!! True: 2 parts, False: 1 part
         if walks.FIRST_TWO_SLOW_STEPS and World.connected_to_nao:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
