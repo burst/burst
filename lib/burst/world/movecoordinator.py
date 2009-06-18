@@ -31,9 +31,6 @@ New and annoyingly thready:
    * keep track of which moves and threads.
 """
 
-from threading import Thread
-from Queue import Queue
-
 import burst
 from burst_util import (DeferredList, succeed, func_name)
 from burst_consts import MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT
@@ -182,154 +179,6 @@ class BaseMoveCoordinator(object):
 
     def walk(self, d, duration, description):
         return self._make_succeed_bd(self)
-
-class ActionThread(Thread):
-
-    def __init__(self, action):
-        super(ActionThread, self).__init__()
-        self._action = action
-        self.queue = Queue()
-        self.verbose = True
-
-    def start(self, _=None):
-        """ convenience for using with Deferred.addCallback """
-        return super(ActionThread, self).start()
-
-    def run(self):
-        if self.verbose:
-            print "ActionThread: starting %s, %s" % (self.getName(), func_name(self._action))
-        try:
-            self._action()
-        except Exception, e:
-            self.queue.put((False, e))
-        self.queue.put((True, None))
-
-class ThreadedMoveCoordinator(BaseMoveCoordinator):
-    """ A different strategy for handling moves:
-     we have a thread open on any request, it will signal
-     to us when it is done via a queue.
-     We have a choice of allowing queuing of commands or not - we choose
-     to avoid it for now, higher level code can just hold on to those commands
-     and execute them on the callback, and it already does it (SearchPlanner,
-     Journey)
-    """
-
-    def __init__(self, world):
-        super(ThreadedMoveCoordinator, self).__init__(world)
-        # These are not None if there is a motion of that sort, and then
-        # a tuple (thread, burst_deferred)
-        self._head_move_thread = None
-        self._walk_thread = None
-        self._body_move_thread = None
-
-        # XXX First place where Deferred code isn't used - this will blocks..
-        self._motion = burst.getMotionProxy(Deferred=False)
-
-    def _ensure_empty_thread(self, threadtuple, what):
-        if threadtuple and threadtuple[0] and threadtuple[0].queue.empty():
-            raise RuntimeException("You tried a second %s while first is still in progress" % what)
-
-    def _ensure_no_head_move(self):
-        self._ensure_empty_thread(self._head_move_thread, 'HEAD MOVE')
-
-    def _ensure_no_body_move(self):
-        self._ensure_empty_thread(self._body_move_thread, 'BODY MOVE')
-
-    def _ensure_no_walk_move(self):
-        self._ensure_empty_thread(self._walk_thread, 'WALK')
-
-    def _completeHeadMove(self):
-        self._head_move_thread = None
-
-    def _completeWholeBodyMove(self):
-        self._head_move_thread = None
-        self._body_move_thread = None
-
-    def _completeBodyMove(self):
-        self._body_move_thread = None
-
-    def _completeWalk(self):
-        self._walk_thread = None
-
-    def calc_events(self, events, deferreds):
-        for threadtuple in (self._head_move_thread, self._body_move_thread,
-                self._walk_thread):
-            if threadtuple is None: continue
-            thread, bd, cleaner = threadtuple
-            if thread is None: continue # TODO - ugly. bc
-            if thread.queue.empty():
-                if not thread.is_alive():
-                    print "*"*80
-                    print "* ERROR: thread died but didn't fill the queue."
-                    print "*"*80
-                    cleaner()
-                continue
-            # we have something.
-            if self.verbose:
-                print "ThreadedMoveCoordinator: motion complete. %s%s, %s, %s" % (thread.getName(),
-                    thread.isAlive() and ' alive?!' or '', bd, cleaner.im_func.func_name)
-            deferreds.append(bd)
-            cleaner()
-
-    def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
-        len_2 = len(joints) == 2
-        has_head = 'HeadYaw' in joints or 'HeadPitch' in joints
-        bd = self._make_bd(self)
-        action = lambda: self._motion.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        thread = ActionThread(action = action)
-        if len_2 and has_head:
-            if self.verbose:
-                print "ThreadedMoveCoordinator: doing head move"
-            # Moves head only - just check that no head moves in progress
-            self._ensure_no_head_move()
-            self._head_move_thread = (thread, bd, self._completeHeadMove)
-        elif has_head:
-            # Moves whole body, so check no move at all nor walk is in progress
-            if self.verbose:
-                print "ThreadedMoveCoordinator: doing complete body move"
-            self._ensure_no_head_move()
-            self._ensure_no_body_move()
-            self._ensure_no_walk_move()
-            self._head_move_thread = (None, None, None) # XXX - indicates you can't use it
-            self._body_move_thread = (thread, bd, self._completeWholeBodyMove)
-        else:
-            if self.verbose:
-                print "ThreadedMoveCoordinator: doing body move"
-            # a body move - check that walk and body are not in progress
-            self._ensure_no_body_move()
-            self._ensure_no_walk_move()
-            self._move_thread = (thread, bd, self._completeBodyMove)
-        thread.start()
-        return bd
-
-    def changeChainAngles(self, chain, angles):
-        # TODO - tester for this..
-        bd = self._make_bd(self)
-        thread = ActionThread(action =
-            lambda: self._motion.changeChainAngles(chain, angles))
-        if chain is "Head":
-            if self.verbose:
-                print "ThreadedMoveCoordinator: changeChainAngles: head"
-            # Head move
-            self._ensure_no_head_move()
-            self._move_thread = (thread, bd, self._completeHeadMove)
-        else:
-            if self.verbose:
-                print "ThreadedMoveCoordinator: changeChainAngles: %s" % chain
-            self._ensure_no_body_move()
-            self._move_thread = (thread, bd, self._completeBodyMove)
-        thread.start()
-        return bd
-
-    def walk(self, d, duration, description):
-        bd = self._make_bd(self)
-        if self.verbose:
-            print "ThreadedMoveCoordinator: walk"
-        thread = ActionThread(action =
-            lambda: self._motion.walk())
-        self._walk_thread = (thread, bd, self._completeWalk)
-        d.addCallback(thread.start)
-        return bd
 
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
@@ -513,6 +362,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
 if burst.options.new_move_coordinator:
     print "MoveCoordinator: using ThreadedMoveCoordinator"
+    from threadedmovecoordinator import ThreadedMoveCoordinator
     MoveCoordinator = ThreadedMoveCoordinator
 else:
     # Default (see burst.options for flag to change)

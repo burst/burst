@@ -705,14 +705,14 @@ class TwistedMainLoop(BasicMainLoop):
         print "TwistedMainLoop: created main objects"
         from twisted.internet import reactor, task
         self.preMainLoopInit()
+        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (self._dt*1000)
         self._main_task = task.LoopingCall(self.onTimeStep)
-        self._main_task.start(self.dt)
+        self._main_task.start(self._dt)
 
     def _run_loop(self):
         if not self._control_reactor:
             print "TwistedMainLoop: not in control of reactor"
             return
-        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (self.dt*1000)
         from twisted.internet import reactor
         reactor.run() #installSignalHandlers=0)
         print "TwistedMainLoop: event loop done"
