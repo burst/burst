@@ -248,7 +248,11 @@ void ImopsModule::notifyNextVisionImage() {
     
     static std::vector<float> values(NUM_JOINTS + NUM_INERTIAL_VARS, 0.0F);
     static std::vector<float> body_angles(NUM_JOINTS, 0.0F);
-    m_memoryfastaccess->GetValues(values);
+    try {
+        m_memoryfastaccess->GetValues(values);
+    } catch (AL::ALError e) {
+        std::cout << "ImopsModule: m_memoryfastaccess->GetValues exception (using last values): " << e.toString() << std::endl;
+    }
     // setBodyAngles just copies the vector, doesn't just take first NUM_JOINTS
     memcpy(&body_angles[0], &values[0], NUM_JOINTS*sizeof(float)); // TODO - time vs std::copy, prefer the later for safety
 
@@ -510,7 +514,12 @@ void ImopsModule::writeToALMemory()
 #undef DO_GOAL_POST
 
     // fine, now actually write the values
-    m_memoryfastwrite->SetValues(m_exported);
+    try {
+        m_memoryfastwrite->SetValues(m_exported);
+    } catch (AL::ALError e) {
+        std::cout << "ImopsModule: m_memoryfastwrite->SetValues exception caught (values not updated!): "
+                  << e.toString() << std::endl;
+    }
 
 
 #ifdef BURST_DO_LOCALIZATION_IN_MODULE
