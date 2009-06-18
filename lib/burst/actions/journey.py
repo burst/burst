@@ -131,7 +131,7 @@ class Journey(object):
 
     def _onLegCompletePosted(self, postid):
         leg_duration = 1.0 # TODO - compute duration correctly
-        self._world.robot.add_expected_walk_post(postid,
+        self._world._movecoordinator.add_expected_walk_post('journey mid leg', postid,
             EVENT_CHANGE_LOCATION_DONE, leg_duration).onDone(self.onLegComplete)
     
     def _addWalkStraight(self, desc_tmpl, dist, steps):

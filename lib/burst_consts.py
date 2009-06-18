@@ -47,7 +47,7 @@ for l in hosts:
     parts = l.split()
     if len(parts) != 2: continue
     ip, host = parts
-    if host in ROBOT_IP_TO_NAME.values():
+    if host in ROBOT_IP_TO_NAME.values() and __rev[host] != ip:
         print "WARNING: overriding %s from hosts file, from %s to %s" % (host, __rev[host], ip)
         ROBOT_IP_TO_NAME[ip] = host
 # Jersey numbers:

@@ -64,7 +64,7 @@ class Actions(object):
     def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
-        
+
         If target is None it kicks towards the enemy goal (currently the Yellow - TODO).
         Otherwise target should be a location which will be used to short circuit the
         scanning process. (caller needs to supply a valid target)
@@ -73,7 +73,7 @@ class Actions(object):
          * if target is default: scan for ball until found (using various strategies)
          * approach ball using different strategies (far, close)
          * kick
-        
+
         TODO: target can be a robot name, then the kick becomes a pass. This requires
         being able to detect the location.
         TODO: have several kick types, one for passing, one for kicking towards goal.
@@ -149,7 +149,7 @@ class Actions(object):
         
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self._movecoordinator.waitOnPostid(d,
+        return self._movecoordinator._waitOnPostid(d,
             description=('turn', deltaTheta, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
@@ -210,7 +210,7 @@ class Actions(object):
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens).addCallback(lambda _: self._motion.post.walk())
-        return self._movecoordinator.waitOnPostid(d,
+        return self._movecoordinator._waitOnPostid(d,
             description=('sideway', delta_x, delta_y, walk),
             kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
@@ -221,10 +221,13 @@ class Actions(object):
         # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
         bd = self._make(self)
         def doMove(_):
-            DeferredList([
-                #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
-                self.executeMove(pose).getDeferred()
-            ]).addCallback(lambda _: bd.callOnDone())
+            if pose:
+                DeferredList([
+                    #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
+                    self.executeMove(pose).getDeferred()
+                ]).addCallback(lambda _: bd.callOnDone())
+            else:
+                bd.callOnDone()
         self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
@@ -305,10 +308,7 @@ class Actions(object):
     def changeHeadAnglesRelativeChained(self, delta_yaw, delta_pitch):
         if burst.options.debug:
             print "changeHeadAnglesRelativeChained: delta_yaw %1.2f, delta_pitch %1.2f" % (delta_yaw, delta_pitch)
-        d = self._motion.post.changeChainAngles("Head", [delta_yaw, delta_pitch])
-
-        return self._movecoordinator.waitOnPostid(d, description="change Head Angles",
-            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
+        return self._movecoordinator.changeChainAngles("Head", [delta_yaw, delta_pitch])
 
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
@@ -343,10 +343,8 @@ class Actions(object):
             return self.executeMove(burst.moves.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
     
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
-        duration = max(col[-1] for col in times)
-        d = self._motion.post.doMove(jointCodes, angles, times, 1)
-        return self._movecoordinator.waitOnPostid(d, description=('choreograph', whatmove),
-            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.doMove(jointCodes, angles, times, 1,
+                                            description=('choreograph', whatmove))
 
     def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
             description=('moveradians',)):
@@ -372,11 +370,9 @@ class Actions(object):
         n_joints = len(joints)
         angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
-        duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self._movecoordinator.waitOnPostid(d, description = description,
-            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
+            interp_type, description = description)
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
@@ -404,11 +400,9 @@ class Actions(object):
         n_joints = len(joints)
         angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
-        duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
-        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
-        return self._movecoordinator.waitOnPostid(d, description=description,
-            kind='motion', event=EVENT_BODY_MOVE_DONE, duration=duration)
+        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
+            interp_type, description=description)
 
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
@@ -425,12 +419,9 @@ class Actions(object):
         angles_matrix = [[angles[i] for angles, interp_time in moves] for i in xrange(n_joints)]
         durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
-        duration = max(col[-1] for col in durations_matrix)
-        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         #print "executeHeadMove: duration = %s" % duration
-        return self._movecoordinator.waitOnPostid(d,
-            description=description,
-            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=duration)
+        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix, interp_type,
+            description=description)
 
     def executeSingleHeadMove(self, yaw_delta, pitch_delta, interpolation_time):
         return self.executeHeadMove( (((yaw_delta, pitch_delta), interpolation_time),) )

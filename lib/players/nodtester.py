@@ -4,16 +4,20 @@
 import player_init
 
 from burst.player import Player
+import burst.moves as moves
 
 class Nod(Player):
     
     def onStart(self):
         # Down, Left, Up, Right - learn your directions!
+        self._actions.initPoseAndStiffness(None).onDone(self.doNod)
+    
+    def doNod(self):
+        print "Will Nod"
         nods = [(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.5, 0.0),
             (0.0, 0.0), (0.0, -0.5), (0.0, 0.0), (-0.5, 0.0),
             (0.0, 0.0)]
-        self._actions.initPoseAndStiffness().onDone(lambda:
-            self._actions.chainHeads(nods)).onDone(self._eventmanager.quit)
+        self._actions.chainHeads(nods).onDone(self._eventmanager.quit)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

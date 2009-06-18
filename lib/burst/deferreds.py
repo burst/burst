@@ -5,7 +5,8 @@ This is used for the simple task of stopping all future deferreds, but
 is also possibly a debug aid.
 """
 
-from burst_util import BurstDeferred, func_name
+from burst_util import (BurstDeferred, succeedBurstDeferred,
+    func_name)
 import burst
 
 class BurstDeferredMaker(object):
@@ -23,6 +24,13 @@ class BurstDeferredMaker(object):
         self._bds.append(bd)
         return bd
     
+    def succeed(self, data):
+        if self.verbose:
+            print "BurstDeferredMaker: succeeding with data=%s" % data
+        bd = succeedBurstDeferred(data)
+        self._bds.append(bd)
+        return bd
+
     def wrap(self, deferred, data):
         """ return a BD that is called on the deferred """
         bd = self.make(data)

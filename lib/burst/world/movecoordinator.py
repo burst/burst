@@ -34,6 +34,7 @@ New and annoyingly thready:
 import burst
 from burst_util import (DeferredList, succeed)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
+from burst.events import EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE
 
 ################################################################################
 
@@ -130,15 +131,29 @@ class SerialPostQueue(object):
 
 ################################################################################
 
-class ThreadedMoveCoordinator(object):
+class BaseMoveCoordinator(object):
 
     def __init__(self, world):
         self._world = world
         self._motion = self._world._motion
         self._make_bd = self._world.burst_deferred_maker.make
-        # TODO - used by EventManager._printTraceTicker, do I really want this?
-        self._initiated = []
-        self._posted = []
+        self._make_succeed_bd = self._world.burst_deferred_maker.succeed
+        self._initiated = []        # holds all initiated moves
+        self._posted = []           # holds all posted moves - can be empty if ThreadedMoveCoordinator used
+                        # TODO - not sure, maybe make identical to _initiated, look later.
+
+    def _add_initiated(self, time, kind, description, event, duration):
+        initiated = len(self._initiated)
+        motion = (self._world.time, kind, description, event, duration)
+        self._initiated.append(motion)
+        if kind is 'walk':
+            self._world.odometry.onWalkInitiated(self._world.time, description, duration)
+        return initiated
+
+    def _add_posted(self, postid, initiated):
+        self._posted.append((postid, self._initiated[initiated]))
+
+    # Part that inheriting class should reimplement
 
     def calc_events(self, events, deferreds):
         pass
@@ -152,27 +167,41 @@ class ThreadedMoveCoordinator(object):
     def isHeadMotionInProgress(self):
         return False
 
-    def waitOnPostid(self, d, description, kind, event, duration):
-        """ Wait on a postid given a Deferred. Records
-        the description of the intiated action, and returns a BurstDeferred.
+    # These are the actual movement methods, they are here now since we do different
+    # calls depending on using posts and isRunning or threads and no posts.
+    # The signatures should be exactly the ones naoqi uses, for easy back and forth.
+    # NOTE: only signature difference is optional description parameter.
+    def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
+        return self._make_succeed_bd(self)
 
-        description - this is kinda a 'command' but we use it just for logging. So a little
-            redundancy in calling, instead of adding "magic" to extract it.
-        d - deferred for the post, will return a postid
-        event - event to be fired
-        duration - expected duration of action
-        """
-        bd = self._make_bd(self)
-        return bd
+    def changeChainAngles(self, chain, angles):
+        return self._make_succeed_bd(self)
 
- 
-class IsRunningMoveCoordinator(object):
+
+class ThreadedMoveCoordinator(BaseMoveCoordinator):
+
+    def __init__(self, world):
+        super(ThreadedMoveCoordinator, self).__init__(world)
+
+    def _makeThread(self, action):
+        import threading
+        return threading.Thread(target=action)
+
+    def doMove(self, joints, angles_matrix, durations_matrix, interp_type, description='doMove'):
+        import pdb; pdb.set_trace()
+        return self._make_succeed_bd(self)
+
+    def changeChainAngles(self, chain, angles):
+        import pdb; pdb.set_trace()
+        return self._make_succeed_bd(self)
+
+class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     """ Note: Old coordinator - doesn't use threading, uses polling with
     isRunning to know when a move has ended. Also does much more work
     then required for enabling simultaneous moves (which we don't
     really require this year).
-    
+
     Orig docs
     =========
 
@@ -180,7 +209,7 @@ class IsRunningMoveCoordinator(object):
     we talk to naoqi to do, so this includes:
     forward walk, sidestep walk, arc walk, turn
     joint moves (doMove)
-    
+
     They are recorded here, checked for completion here, and we call
     user callbacks from here.
 
@@ -190,25 +219,21 @@ class IsRunningMoveCoordinator(object):
      what action was it for? who created it?
     """
 
-    debug = burst.options.debug
-
     def __init__(self, world):
-        self._world = world
-        self._make_bd = self._world.burst_deferred_maker.make
+        super(IsRunningMoveCoordinator, self).__init__(world)
         # HACK - Add ourselves to the list of updated objects,
         # so calc_events is called. Basically until now all such objects
         # were constructed in world, but world doesn't depend on actions.
-        self._motion = self._world._motion
         self._motion_posts = {}
         self._head_posts   = SerialPostQueue('head', self._world)
         self._walk_posts   = SerialPostQueue('walk', self._world)
-        self._initiated = []
-        self._posted = []
         # helpers
         self._post_handler = {'motion': self._add_expected_motion_post,
             'head':self._add_expected_head_post,
             'walk':self._add_expected_walk_post}
         # debug
+        self.debug = burst.options.debug
+        self.verbose = True # TODO - options flag (right now for debugging I want this on, Alon)
         if self.debug:
             self._delete_times = []
 
@@ -298,21 +323,13 @@ class IsRunningMoveCoordinator(object):
         self._add_posted(postid, initiated)
         return self._add_expected_walk_post(postid=postid, event=event, duration=duration)
 
-    def _add_initiated(self, time, kind, description, event, duration):
-        initiated = len(self._initiated)
-        motion = (self._world.time, kind, description, event, duration)
-        self._initiated.append(motion)
-        if kind is 'walk':
-            self._world.odometry.onWalkInitiated(self._world.time, description, duration)
-        return initiated
-
     def isMotionInProgress(self):
         return len(self._motion_posts) > 0
     
     def isHeadMotionInProgress(self):
         return self._head_posts.isNotEmpty()
-  
-    def waitOnPostid(self, d, description, kind, event, duration):
+
+    def _waitOnPostid(self, d, description, kind, event, duration):
         """ Wait on a postid given a Deferred. Records
         the description of the intiated action, and returns a BurstDeferred.
 
@@ -329,9 +346,6 @@ class IsRunningMoveCoordinator(object):
             self._onPostId(postid, initiated, bd))
         return bd
 
-    def _add_posted(self, postid, initiated):
-        self._posted.append((postid, self._initiated[initiated]))
-
     def _onPostId(self, postid, initiated, bd):
         if not isinstance(postid, int):
             print "ERROR: onPostId with Bad PostId: %s" % repr(postid)
@@ -341,15 +355,34 @@ class IsRunningMoveCoordinator(object):
         self._add_posted(postid, initiated)
         self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)
 
-# if False is temp - for commit right now.
-if False:
-    if burst.options.old_move_coordinator:
-        print "MoveCoordinator: using IsRunningMoveCoordinator"
-        MoveCoordinator = IsRunningMoveCoordinator
-    else:
-        # Default (see burst.options for flag to change)
-        print "MoveCoordinator: using ThreadedMoveCoordinator"
-        MoveCoordinator = ThreadedMoveCoordinator
+    # Movement initiation api
 
-MoveCoordinator = IsRunningMoveCoordinator
+    def doMove(self, joints, angles_matrix, durations_matrix, interp_type,
+            description='doMove'):
+        duration = max(col[-1] for col in durations_matrix)
+        d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        # TODO - better calculation (not O(#joints))
+        if len(joints) == 2:
+            event, kind = EVENT_HEAD_MOVE_DONE, 'head'
+        else:
+            event, kind = EVENT_BODY_MOVE_DONE, 'motion'
+        if self.verbose:
+            print "IsRunningMoveCoordinator: doMove #j = %s, duration = %s, event = %s" % (
+                len(joints), duration, event)
+        return self._waitOnPostid(d,
+            description=description, kind=kind, event=event, duration=duration)
+
+    def changeChainAngles(self, chain, angles):
+        d = self._motion.post.changeChainAngles(chain, angles)
+        return self._waitOnPostid(d, description="change Head Angles",
+            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
+
+
+if burst.options.old_move_coordinator:
+    print "MoveCoordinator: using IsRunningMoveCoordinator"
+    MoveCoordinator = IsRunningMoveCoordinator
+else:
+    # Default (see burst.options for flag to change)
+    print "MoveCoordinator: using ThreadedMoveCoordinator"
+    MoveCoordinator = ThreadedMoveCoordinator
 

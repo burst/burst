@@ -9,7 +9,7 @@ from burst.player import Player
 from burst.events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
-import burst.moves as moves
+import burst.moves.walks as walks
 
 def pr(s):
     print s
@@ -38,7 +38,7 @@ class Rectangle(Player):
 
         side = 40
         clr = lambda x, y, t: self._actions.changeLocationRelative(
-                    x, y, t, walk=moves.STRAIGHT_WALK, steps_before_full_stop=2)
+                    x, y, t, walk=walks.STRAIGHT_WALK, steps_before_full_stop=2)
 
         self._actions.initPoseAndStiffness()
         
@@ -53,7 +53,6 @@ class Rectangle(Player):
         super(Rectangle, self).onStop()
 
 if __name__ == '__main__':
-    import burst
     from burst.eventmanager import MainLoop
     MainLoop(Rectangle).run()
 
