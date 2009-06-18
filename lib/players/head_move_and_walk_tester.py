@@ -5,13 +5,13 @@ import player_init
 
 from burst.player import Player
 
-class Nod(Player):
+class HeadAndWalkTester(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness(None).onDone(self.doNod)
-    
-    def doNod(self):
-        print "Will Nod"
+        self._actions.initPoseAndStiffness(None).onDone(self.start)
+
+    def start(self):
+        self._actions.changeLocationRelative(50.0, 0.0, 0.0)
         # Down, Left, Up, Right - learn your directions!
         nods = [(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.5, 0.0),
             (0.0, 0.0), (0.0, -0.5), (0.0, 0.0), (-0.5, 0.0),
@@ -20,5 +20,5 @@ class Nod(Player):
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(Nod).run()
+    MainLoop(HeadAndWalkTester).run()
 

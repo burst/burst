@@ -35,7 +35,7 @@ from threading import Thread
 from Queue import Queue
 
 import burst
-from burst_util import (DeferredList, succeed)
+from burst_util import (DeferredList, succeed, func_name)
 from burst_consts import MOTION_FINISHED_MIN_DURATION
 from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
@@ -187,12 +187,15 @@ class ActionThread(Thread):
         super(ActionThread, self).__init__()
         self._action = action
         self.queue = Queue()
+        self.verbose = True
 
     def start(self, _=None):
         """ convenience for using with Deferred.addCallback """
         return super(ActionThread, self).start()
 
     def run(self):
+        if self.verbose:
+            print "ActionThread: starting %s, %s" % (self.getName(), func_name(self._action))
         try:
             self._action()
         except Exception, e:
@@ -306,11 +309,13 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
             lambda: self._motion.changeChainAngles(chain, angles))
         if chain is "Head":
             if self.verbose:
-                print "ThreadedMoveCoordinator: doing body move"
+                print "ThreadedMoveCoordinator: changeChainAngles: head"
             # Head move
             self._ensure_no_head_move()
             self._move_thread = (thread, bd, self._completeHeadMove)
         else:
+            if self.verbose:
+                print "ThreadedMoveCoordinator: changeChainAngles: %s" % chain
             self._ensure_no_body_move()
             self._move_thread = (thread, bd, self._completeBodyMove)
         thread.start()
@@ -318,12 +323,13 @@ class ThreadedMoveCoordinator(BaseMoveCoordinator):
 
     def walk(self, d, duration, description):
         bd = self._make_bd(self)
+        if self.verbose:
+            print "ThreadedMoveCoordinator: walk"
         thread = ActionThread(action =
             lambda: self._motion.walk())
         self._walk_thread = (thread, bd, self._completeWalk)
         d.addCallback(thread.start)
         return bd
-        
 
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 

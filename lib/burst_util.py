@@ -701,6 +701,11 @@ def set_robot_ip_from_argv():
 
 # Python language util
 
+def getfunc(f_or_m):
+    if hasattr(f_or_m, 'im_func'):
+        return f.im_func
+    return f
+
 def func_name(f_or_m):
     if hasattr(f_or_m, 'im_func'):
         return f_or_m.im_func.func_name
