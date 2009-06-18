@@ -77,7 +77,6 @@ else:
 # That means anyone who imports burst gets a personalized version.
 
 print "Loading Personalization for %s.." % target.robotname,
-personal_filename = 'burst.personal.cech'
 if options.debug_personal:
     __import__(personal_filename) # any error will be thrown to the interpreter
 try:
