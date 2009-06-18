@@ -1,6 +1,6 @@
 from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
-import general_moves as moves
+import poses
 
 # Parameter for "Vova Trick" - first two slow steps.
 # For the slow walk we need this, for the faster we turn this off (in
@@ -120,7 +120,7 @@ SIDESTEP_WALK = Walk(WalkParameters([
 # The Pairs are the initial pose and the walk, to be used by
 # Actions.changeLocationRelative etc.
 
-STABLE_PAIR = (STABLE_WALK, moves.STABLE_WALK_INITIAL_POSE)
+STABLE_PAIR = (STABLE_WALK, poses.STABLE_WALK_INITIAL_POSE)
 
 
 '''
