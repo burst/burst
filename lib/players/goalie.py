@@ -4,7 +4,7 @@ import player_init
 from burst.player import Player
 from burst.events import *
 from burst_consts import *
-import burst.moves as moves
+import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
 
 GOAL_BORDER = 57
@@ -43,7 +43,7 @@ class Goalie(Player):
 
     def enterGame(self):
         self._report("in play")
-        self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self.whichBehavior)
+        self._actions.initPoseAndStiffness(poses.SIT_POS).onDone(self.whichBehavior)
 
     def whichBehavior(self):
         if self.isPenalty:
@@ -65,7 +65,7 @@ class Goalie(Player):
 
     def returnHead(self):
         self._eventmanager.unregister(self.returnHead)
-        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR)
+        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR)
         
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
