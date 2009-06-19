@@ -1,21 +1,4 @@
-""" Personal file for webots
-
-PLEASE PAY ATTENTION TO THE FOLLOWING:
-
-There is the good way to update stuff, and the bad way (asaf, I'm looking at you).
-
-# BAD
-import moves.walks as walks
-walks.SIT_POS = [2,3,4]
-
-# GOOD
-import moves.walks as walks
-walks.SIT_POS[:] = [2,3,4]
-
-# ALSO GOOD
-walks.SIT_POS[2] = 10
-
-"""
+""" Personal file for webots """
 
 # 
 #from .walks import STRAIGHT_WALK
@@ -27,32 +10,41 @@ walks.SIT_POS[2] = 10
 #walks.STRAIGHT_WALK.defaultSpeed = 100
 
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [17.5,17.5] #[30.0,30.0]
-params.KICK_X_MAX[:] = [21.0,21.0] #[33.0,33.0]
-params.KICK_Y_MIN[:] = [4.0,-4.0] #[6.0,-6.0]
-params.KICK_Y_MAX[:] = [10.0,-10.0] #[12.5,-12.5]
+params.KICK_X_MIN = [17.5,17.5] #[30.0,30.0]
+params.KICK_X_MAX = [21.0,21.0] #[33.0,33.0]
+params.KICK_Y_MIN = [4.0,-4.0] #[6.0,-6.0]
+params.KICK_Y_MAX = [10.0,-10.0] #[12.5,-12.5]
 params.MOVEMENT_PERCENTAGE = 0.55
 
 import burst.actions.actionconsts as actionconsts
 actionconsts.DEFAULT_STEPS_FOR_TURN = 60
 actionconsts.DEFAULT_SLOW_WALK_STEPS = 60
 
+import burst.moves.poses as poses
+poses.STRAIGHT_WALK_INITIAL_POSE = [
+    ((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997), 
+    (-0.010696038999999999, -0.088930041000000001, -0.65957807999999996, 1.5416281000000001, -0.76857597, 0.078275964000000003), 
+    (-0.010696038999999999, 0.0061779618000000003, -0.66272998000000005, 1.5432459999999999, -0.78229808999999995, -0.0030260384000000001), 
+    (1.747268, -0.27309397000000002, 1.5661721, 0.50626194000000002),
+    1.0)]
+
 from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
-walks.STRAIGHT_WALK[:] = walks.Walk(WalkParameters([
-           100.0 * DEG_TO_RAD, # 0 ShoulderMedian
-           10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
-           30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
-           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
-           2.5,                  # 4 LHipRoll(degrees) 
-           -2.5,                 # 5 RHipRoll(degrees)
-           0.23,                 # 6 HipHeight(meters)
-           3.0,                  # 7 TorsoYOrientation(degrees)
-           0.07,                 # 8 StepLength
-           0.042,                 # 9 StepHeight
-           0.06,                 # 10 StepSide (was 0.02)
-           0.3,                  # 11 MaxTurn
-           0.015,                # 12 ZmpOffsetX
-           0.018]),                # 13 ZmpOffsetY 
-           18)                  # 14 20ms count per step
+
+walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
+           20.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian 
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           5,                   # LHipRoll(degrees) 
+           -5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better
+           0.055,                  # StepLength
+           0.015,                  # StepHeight
+           0.02,                  # StepSide
+           0.3,                   # MaxTurn
+           0.013,                  # ZmpOffsetX
+           0.015]),                  # ZmpOffsetY
+           25)                  # 20ms count per step

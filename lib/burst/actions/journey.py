@@ -135,7 +135,6 @@ class Journey(object):
         """
         leg_distance = min(self._leg_distance, self._distance_left)
 
-        # TODO: TEMP!!! True: 2 parts, False: 1 part
         if walks.FIRST_TWO_SLOW_STEPS and World.connected_to_nao:
             slow_walk_distance = min(leg_distance, self._step_length * self.SLOW_START_STEPS)
             normal_walk_distance = leg_distance - slow_walk_distance

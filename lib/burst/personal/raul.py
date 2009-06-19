@@ -1,36 +1,16 @@
-""" Personal file for a robot by the name of this file.
-
-PLEASE PAY ATTENTION TO THE FOLLOWING:
-
-There is the good way to update stuff, and the bad way (asaf, I'm looking at you).
-
-# BAD
-import moves.walks as walks
-walks.SIT_POS = [2,3,4]
-
-# GOOD
-import moves.walks as walks
-walks.SIT_POS[:] = [2,3,4]
-
-# ALSO GOOD
-walks.SIT_POS[2] = 10
-
-"""
+""" Personal file for a robot by the name of this file. """
 
 import burst
-
 
 import burst.moves.walks as walks
 walks.STRAIGHT_WALK.defaultSpeed = 130
 walks.SIDESTEP_WALK.defaultSpeed = 27 # 20 seems just fine
 
-
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [14,14]
-params.KICK_X_MAX[:] = [19,19]
-params.KICK_Y_MIN[:] = [3.5,-2]
-params.KICK_Y_MAX[:] = [10.5,-9]
-
+params.KICK_X_MIN = [14,14]
+params.KICK_X_MAX = [19,19]
+params.KICK_Y_MIN = [3.5,-2]
+params.KICK_Y_MAX = [10.5,-9]
 
 import burst.moves.general_moves as moves
 #Probably no need when arm is OK.
@@ -81,9 +61,6 @@ moves.GREAT_KICK_LEFT_OFFSET = (
      (0.0,0.0,0.0,0.0,0.0,0.0),
      (0.0,0.0,0.0,0.0),0.0)
 )
-
-
-
 
 ####### UGLY CHANGE, RAUL ONLY, FAULTY JOINT #########
 # I have two different sets of proxies, and it is a pain
@@ -143,4 +120,3 @@ to not set stiffness on it.  If you really want to set it's
 stiffness, use setChainStiffness or setJointStiffness, they
 remain unpatched.
 """
-
