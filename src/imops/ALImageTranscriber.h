@@ -47,10 +47,12 @@ private: // member variables
     // from the kernel and thus very slow.
     unsigned char *image;
 
-private: // nBites Camera Constants
+public: // nBites Camera Constants
     // Camera identification
     static const int TOP_CAMERA = 0;
     static const int BOTTOM_CAMERA = 1;
+
+private: // nBites Camera Constants
 
     // Camera setup information
     static const int CAMERA_SLEEP_TIME = 200;

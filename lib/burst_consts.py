@@ -169,6 +169,8 @@ ID_NOT_SURE, ID_MILDLY_SURE, ID_SURE = 0, 1, 2
 CAMERA_WHICH_PARAM = 18
 CAMERA_WHICH_BOTTOM_CAMERA = 1
 CAMERA_WHICH_TOP_CAMERA = 0
+# NOTE: these are identicle to the ones in ALImageTranscriber::TOP_CAMERA/BOTTOM_CAMERA,
+#       and care should be taken to keep it that way.
 
 # Image Parameters
 FOV_X = 46.4 * DEG_TO_RAD

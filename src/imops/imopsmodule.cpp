@@ -84,6 +84,19 @@ void *getImageLoop(void *arg)
     int count = 0;
 #endif
     while(g_run_vision_thread) {
+        // check possible camera switch request, do before
+        // image is waited for, while image frame isn't involved, since
+        // camera switch invalidates it (see Aldebaran documentation)
+        if (g_limops->m_switchRequested) {
+            if (g_limops->m_requestedTopCamera) {
+                // switch to top camera (does a (hopefully) harmless init too)
+                g_imageTranscriber->initCameraSettings(ALImageTranscriber::TOP_CAMERA);
+            } else {
+                // switch to bottom camera (does a (hopefully) harmless init too)
+                g_imageTranscriber->initCameraSettings(ALImageTranscriber::BOTTOM_CAMERA);
+            }
+            g_limops->m_switchRequested = false;
+        }
         const useconds_t startTime = micro_time();
         g_imageTranscriber->waitForImage();
         g_limops->notifyNextVisionImage();
@@ -118,6 +131,8 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
     : ALModule (pBroker, pName),
     vision_frame_length_us(VISION_FRAME_LENGTH_uS),
     vision_frame_length_print_thresh_us(VISION_FRAME_LENGTH_PRINT_THRESH_uS),
+    m_switchRequested(false),
+    m_requestedTopCamera(false),
     m_broker(pBroker)
 {
 
@@ -129,6 +144,10 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
     // Define callable methods with there description (left for easy copy/paste if required)
     functionName ("setFramesPerSecond", "imops", "change frames per second (doesn't change the grabs, just the processing)");
     BIND_METHOD (ImopsModule::setFramesPerSecond);
+    functionName ("switchToTopCamera", "imops", "switch to top camera");
+    BIND_METHOD (ImopsModule::switchToTopCamera);
+    functionName ("switchToBottomCamera", "imops", "switch to bottom camera");
+    BIND_METHOD (ImopsModule::switchToBottomCamera);
 
     //Create a proxy on memory module
     try {
@@ -219,10 +238,6 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
             e.toString() << std::endl;
     }
 
-    // init the vision parts (reads color table, does some allocs for threshold
-    // data, object fragments)
-    this->initVisionThread(pBroker);
-    std::cout << "ImopsModule: Done creating vision thread" << std::endl;
 }
 
 void ImopsModule::setFramesPerSecond(double fps)
@@ -233,6 +248,18 @@ void ImopsModule::setFramesPerSecond(double fps)
     vision_frame_length_us = 1000000.0 / fps;
     vision_frame_length_print_thresh_us = vision_frame_length_us * 1.5; // TODO - set this to?
     g_imageTranscriber->setFrameRate(fps);
+}
+
+void ImopsModule::switchToTopCamera()
+{
+    m_switchRequested = true;
+    m_requestedTopCamera = true;
+}
+
+void ImopsModule::switchToBottomCamera()
+{
+    m_switchRequested = true;
+    m_requestedTopCamera = false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -553,7 +580,7 @@ void ImopsModule::writeToALMemory()
 }
 // </Burst>
 
-
+// Call this __after__ you are done creating the instance, and setting g_limops
 void ImopsModule::initVisionThread( ALPtr<ALBroker> broker )
 {
     // Now create the thread that will a) get new images and b) process them
@@ -589,6 +616,7 @@ void ImopsModule::initVisionThread( ALPtr<ALBroker> broker )
         pthread_create(&g_vision_thread, NULL, getImageLoop, NULL);
     }
     #endif
+    std::cout << "ImopsModule: Done creating vision thread" << std::endl;
 }
 
 //______________________________________________
@@ -631,6 +659,9 @@ extern "C"
 
     // create modules instance
     g_limops = ALModule::createModule<ImopsModule>(pBroker, "imops");
+    // init the vision parts (reads color table, does some allocs for threshold
+    // data, object fragments)
+    g_limops->initVisionThread(pBroker);
 
     return 0;
   }
