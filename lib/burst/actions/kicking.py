@@ -9,7 +9,7 @@ from burst_util import (BurstDeferred, Nameable, calculate_middle, calculate_rel
 # local imports
 import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
-                          EVENT_SONAR_OBSTACLE_SEEN, EVENT_SONAR_OBSTACLE_LOST, EVENT_SONAR_OBSTACLE_IN_FRAME)
+                          EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 import burst.actions
 from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
@@ -60,10 +60,10 @@ class BallKicker(BurstDeferred):
         self._actions = actions
         self._world = eventmanager._world
 
-        self._sonars = self._world.robot.sonars
-        self._eventmanager.register(self.onObstacleSeen, EVENT_SONAR_OBSTACLE_SEEN)
-        self._eventmanager.register(self.onObstacleLost, EVENT_SONAR_OBSTACLE_LOST)
-        self._eventmanager.register(self.onObstacleInFrame, EVENT_SONAR_OBSTACLE_IN_FRAME) 
+        self._ultrasound = self._world.robot.ultrasound
+        self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
+        self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
+        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME) 
         
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self._approachBall)
@@ -110,10 +110,10 @@ class BallKicker(BurstDeferred):
         self._clearMovement(forceStop = True)
 
     ################################################################################
-    # SONAR callbacks
+    # Ultrasound callbacks
     #
     def onObstacleSeen(self):
-        obstacle = self._sonars.getLastReading()
+        obstacle = self._ultrasound.getLastReading()
         print "Obstacle seen (on %s, distance of %f)!" % (obstacle)
 
         if self._movement_deferred:

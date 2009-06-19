@@ -2,7 +2,7 @@
 
 from burst_consts import LEFT, RIGHT
 from burst import events as events_module
-from burst.events import (EVENT_SONAR_OBSTACLE_SEEN, EVENT_SONAR_OBSTACLE_LOST, EVENT_SONAR_OBSTACLE_IN_FRAME)
+from burst.events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 from burst_util import RingBuffer
 import burst
 
@@ -11,22 +11,22 @@ HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
 #NEAR_DISTANCE = 0.6
 NEAR_DISTANCE = 0.4 # distance in meters
 
-__all__ = ['Sonars']
+__all__ = ['Ultrasound']
 
-# TODO: When several robots are next to each other, do their sonars collide?
+# TODO: When several robots are next to each other, do their ultrasounds collide?
 # TODO: What to do when events jump between left & right?
 # TODO: What to do when on the edge of distance (keeps getting same event)
 # TODO: Store distance somewhere?
-class Sonars(object):
+class Ultrasound(object):
 
     _var = "extractors/alultrasound/distances"
 
     def __init__(self, world):
         if burst.options.run_ultrasound:
             world._ultrasound.post.subscribe('', [500])
-            world.addMemoryVars([Sonars._var])
+            world.addMemoryVars([Ultrasound._var])
         self._world = world
-        self._sonarHistory = RingBuffer(HISTORY_SIZE)
+        self._ultrasoundHistory = RingBuffer(HISTORY_SIZE)
         self._obstacleSeen = False
         self._lastReading = None
 
@@ -34,54 +34,54 @@ class Sonars(object):
     def getLastReading(self):
         return self._lastReading
 
-    def readSonarDistances(self, data):
-#        print "SONAR: LEFT Got %f" % (data[LEFT])
-#        print "SONAR: RIGHT Got %f" % (data[RIGHT])
-        self._sonarHistory.ring_append([data[LEFT], data[RIGHT]])
+    def readUltrasoundDistances(self, data):
+#        print "Ultrasound: LEFT Got %f" % (data[LEFT])
+#        print "Ultrasound: RIGHT Got %f" % (data[RIGHT])
+        self._ultrasoundHistory.ring_append([data[LEFT], data[RIGHT]])
 
     def calc_events(self, events, deferreds):
         if not burst.options.run_ultrasound:
             return
         
-        new_data = self._world.vars[Sonars._var]
+        new_data = self._world.vars[Ultrasound._var]
         #print "new_data:", new_data
-        # make sure sonar data is valid
+        # make sure ultrasound data is valid
         if new_data and (len(new_data) >= 2):
-            self.readSonarDistances(new_data)
+            self.readUltrasoundDistances(new_data)
 
             newEvent = None
             # if at least one reading shows an obstacle, do more complex analysis
             if min(new_data[LEFT], new_data[RIGHT]) < NEAR_DISTANCE:
-                self._lastReading = self.calcObstacleFromSonar(self._sonarHistory)
+                self._lastReading = self.calcObstacleFromUltrasound(self._ultrasoundHistory)
 
                 if self._obstacleSeen:
-                    newEvent = EVENT_SONAR_OBSTACLE_IN_FRAME
-                    #print "SONAR: IN_FRAME obstacle (on %s, distance of %f)" % (self._lastReading)
+                    newEvent = EVENT_OBSTACLE_IN_FRAME
+                    #print "Ultrasound: IN_FRAME obstacle (on %s, distance of %f)" % (self._lastReading)
                 else:
                     # new obstacle found, report it
-                    newEvent = EVENT_SONAR_OBSTACLE_SEEN
-                    #print "SONAR: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
+                    newEvent = EVENT_OBSTACLE_SEEN
+                    #print "Ultrasound: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
                 self._obstacleSeen = True
             else:
                 if self._obstacleSeen:
-                    newEvent = EVENT_SONAR_OBSTACLE_LOST
+                    newEvent = EVENT_OBSTACLE_LOST
                     self._obstacleSeen = False
-                    #print "SONAR: LOST obstacle (last seen on %s, distance of %f)" % (self._lastReading)
+                    #print "Ultrasound: LOST obstacle (last seen on %s, distance of %f)" % (self._lastReading)
                 self._lastReading = None
 
             if (newEvent != None):
                 events.add(newEvent)
         else:
-            print "SONAR: No reading?! ignoring..."
+            print "Ultrasound: No reading?! ignoring..."
             self._lastReading = None
 
     ##
     # Authors: Sonia Anshtein Shafran & Rony Fragin.
-    # Input: Sonar history
+    # Input: Ultrasound history
     # Each sample is an array of 2 - left and right readings.
     # Output: Array of 2 - evaluation of both direction of object and its distance.
     
-    def calcObstacleFromSonar(self, history):
+    def calcObstacleFromUltrasound(self, history):
         # Initialize variables.
         vote_thresh_left= 0
         vote_thresh_right= 0
