@@ -1,14 +1,6 @@
 """ Personal file for webots """
 
-# 
-#from .walks import STRAIGHT_WALK
-#STRAIGHT_WALK.defaultSpeed = 100
-
-## Walks
-
-#import burst.moves.walks as walks
-#walks.STRAIGHT_WALK.defaultSpeed = 100
-
+## Behavior params
 import burst.behavior_params as params
 params.KICK_X_MIN = [17.5,17.5] #[30.0,30.0]
 params.KICK_X_MAX = [21.0,21.0] #[33.0,33.0]
@@ -16,10 +8,7 @@ params.KICK_Y_MIN = [4.0,-4.0] #[6.0,-6.0]
 params.KICK_Y_MAX = [10.0,-10.0] #[12.5,-12.5]
 params.MOVEMENT_PERCENTAGE = 0.55
 
-import burst.actions.actionconsts as actionconsts
-actionconsts.DEFAULT_STEPS_FOR_TURN = 60
-actionconsts.DEFAULT_SLOW_WALK_STEPS = 60
-
+## General moves
 import burst.moves.poses as poses
 poses.STRAIGHT_WALK_INITIAL_POSE = [
     ((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997), 
@@ -28,10 +17,12 @@ poses.STRAIGHT_WALK_INITIAL_POSE = [
     (1.747268, -0.27309397000000002, 1.5661721, 0.50626194000000002),
     1.0)]
 
-from burst_consts import DEG_TO_RAD
+## Walks
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
+from burst_consts import DEG_TO_RAD
 
+walks.FIRST_TWO_SLOW_STEPS = False
 walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
@@ -48,3 +39,7 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            0.013,                  # ZmpOffsetX
            0.015]),                  # ZmpOffsetY
            25)                  # 20ms count per step
+
+
+import burst.actions.actionconsts as actionconsts
+actionconsts.DEFAULT_STEPS_FOR_TURN = 60
