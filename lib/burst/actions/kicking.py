@@ -107,14 +107,13 @@ class BallKicker(BurstDeferred):
         nextAction()
 
     def _stopOngoingMovement(self, forceStop = False):
-        print "STOPPING CURRENT MOVEMENT! (forceStop = %s)" % forceStop
-        if forceStop:
+        # stop movement if we're forced or if it's a long walk-forward move
+        shouldStopMovement = forceStop or (self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR)
+        if shouldStopMovement:
             self._clearMovement(clearFootsteps = True)
-        else:
-            # if walking forward and ball is far, stop
-            if self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR:
-                self._clearMovement(clearFootsteps = True)
-
+        
+        print "Kicking: _stopOngoingMovement: current movement %s (forceStop = %s)" % (shouldStopMovement and "STOPPED" or "CONTINUES", forceStop)
+        
     ################################################################################
     # Ultrasound callbacks
     #
