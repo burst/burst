@@ -9,7 +9,7 @@ from burst_util import (BurstDeferred, Nameable, calculate_middle, calculate_rel
 # local imports
 import burst
 from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
-                          EVENT_SONAR_OBSTACLE_SEEN, EVENT_SONAR_OBSTACLE_LOST, EVENT_SONAR_OBSTACLE_IN_FRAME)
+                          EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 import burst.actions
 from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
@@ -17,7 +17,8 @@ import burst.moves.walks as walks
 import burst.moves.poses as poses
 
 from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, 
-                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, MOVEMENT_PERCENTAGE,
+                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, 
+                                   MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS, MOVEMENT_PERCENTAGE_TURN,
                                    MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
     PIX_TO_RAD_X, PIX_TO_RAD_Y, DEG_TO_RAD)
@@ -60,10 +61,10 @@ class BallKicker(BurstDeferred):
         self._actions = actions
         self._world = eventmanager._world
 
-        self._sonars = self._world.robot.sonars
-        self._eventmanager.register(self.onObstacleSeen, EVENT_SONAR_OBSTACLE_SEEN)
-        self._eventmanager.register(self.onObstacleLost, EVENT_SONAR_OBSTACLE_LOST)
-        self._eventmanager.register(self.onObstacleInFrame, EVENT_SONAR_OBSTACLE_IN_FRAME) 
+        self._ultrasound = self._world.robot.ultrasound
+        self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
+        self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
+        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME) 
         
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self._approachBall)
@@ -91,10 +92,11 @@ class BallKicker(BurstDeferred):
     ################################################################################
     # Handling movements
     #
-    def _clearMovement(self, forceStop = False):
+    def _clearMovement(self, clearFootsteps = False):
         if self._movement_deferred:
             self._movement_deferred.clear()
-            if forceStop and self._movement_type in (MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN, MOVE_ARC):
+            if clearFootsteps and self._movement_type in (MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN, MOVE_ARC):
+                print "CLEARING FOOTSTEPS!"
                 self._actions.clearFootsteps()
         self._movement_deferred = None
         self._movement_type = None
@@ -102,25 +104,29 @@ class BallKicker(BurstDeferred):
 
     def _onMovementFinished(self, nextAction):
         print "Movement DONE!"
-        self._clearMovement()
+        self._clearMovement(clearFootsteps = False)
         nextAction()
 
-    def _stopOngoingMovement(self):
-        print "STOPPING CURRENT MOVEMENT!"
-        self._clearMovement(forceStop = True)
-
+    def _stopOngoingMovement(self, forceStop = False):
+        # stop movement if we're forced or if it's a long walk-forward move
+        shouldStopMovement = forceStop or (self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR)
+        if shouldStopMovement:
+            self._clearMovement(clearFootsteps = True)
+        
+        print "Kicking: _stopOngoingMovement: current movement %s (forceStop = %s)" % (shouldStopMovement and "STOPPED" or "CONTINUES", forceStop)
+        
     ################################################################################
-    # SONAR callbacks
+    # Ultrasound callbacks
     #
     def onObstacleSeen(self):
-        obstacle = self._sonars.getLastReading()
+        obstacle = self._ultrasound.getLastReading()
         print "Obstacle seen (on %s, distance of %f)!" % (obstacle)
 
         if self._movement_deferred:
             print "NOTE: Obstacle in front while a movement is in progress"
-            # if walking forward and ball isn't near, stop
-            if self._movement_type == MOVE_FORWARD and (self._movement_location not in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR)):
-                self._stopOngoingMovement()
+            # if walking forward and ball is far, stop
+            if self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR:
+                self._stopOngoingMovement(forceStop = True)
                 self._eventmanager.callLater(0.5, self._approachBall)
 
     def onObstacleLost(self):
@@ -180,7 +186,7 @@ class BallKicker(BurstDeferred):
                     self._actions.setCameraFrameRate(10)
                     self._movement_type = MOVE_FORWARD
                     self._movement_location = target_location
-                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE)
+                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if self.ENABLE_MOVEMENT:
@@ -188,7 +194,7 @@ class BallKicker(BurstDeferred):
                     self._movement_type = MOVE_SIDEWAYS
                     self._movement_location = target_location
                     self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE, walk=walks.SIDESTEP_WALK)
+                        0.0, kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS, walk=walks.SIDESTEP_WALK)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 if self.ENABLE_MOVEMENT:
@@ -198,7 +204,7 @@ class BallKicker(BurstDeferred):
                         self._aligned_to_goal = False
                     self._movement_type = MOVE_TURN
                     self._movement_location = target_location
-                    self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE)
+                    self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
                 #import pdb; pdb.set_trace()

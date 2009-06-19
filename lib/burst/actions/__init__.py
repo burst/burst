@@ -185,17 +185,15 @@ class Actions(object):
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         
         defaultSpeed = walk.defaultSpeed
-        stepLength = walk[WalkParameters.StepLength] # TODO: encapsulate walk params
+        stepLength = walk[WalkParameters.StepLength]
         
-        print "WARNING: changeLocationRelativeSideways isn't updated to check FIRST_TWO_SLOW_STEPS"
-
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
             
             #dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, stepLength*2)
-            if World.connected_to_nao:
+            if walks.FIRST_TWO_SLOW_STEPS and World.connected_to_nao:
                 dgens.append(lambda _: self._motion.addWalkStraight( slow_walk_distance, DEFAULT_SLOW_WALK_STEPS ))
                 dgens.append(lambda _: self._motion.addWalkStraight( distance - slow_walk_distance, defaultSpeed ))
             else:
@@ -473,9 +471,8 @@ class Actions(object):
         self._motion.wait(postid, 0)
         return True
 
-    def say(self, message, shouldPrint=True):
-        if shouldPrint:
-            print "saying: %s" % message
+    def say(self, message):
+        print "saying: %s" % message
         if not self._speech is None:
             self._speech.post.say(message)
 

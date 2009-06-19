@@ -1,21 +1,4 @@
-""" Personal file for a robot by the name of this file.
-
-PLEASE PAY ATTENTION TO THE FOLLOWING:
-
-There is the good way to update stuff, and the bad way (asaf, I'm looking at you).
-
-# BAD
-import moves.walks as walks
-walks.SIT_POS = [2,3,4]
-
-# GOOD
-import moves.walks as walks
-walks.SIT_POS[:] = [2,3,4]
-
-# ALSO GOOD
-walks.SIT_POS[2] = 10
-
-"""
+""" Personal file for a robot by the name of this file. """
 
 import burst.moves.walks as walks
 #walks.STRAIGHT_WALK.slowestSpeed = 100
@@ -24,7 +7,6 @@ import burst.moves.walks as walks
 import burst.moves.poses as poses
 
 poses.STRAIGHT_WALK_INITIAL_POSE = [
-poses.HEAD_POS_FRONT_BOTTOM,
 ((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997), 
 (-0.010696038999999999, -0.088930041000000001, -0.65957807999999996, 1.5416281000000001, -0.76857597, 0.078275964000000003), 
 (-0.010696038999999999, 0.0061779618000000003, -0.66272998000000005, 1.5432459999999999, -0.78229808999999995, -0.0030260384000000001), 
@@ -39,7 +21,7 @@ from burst_consts import DEG_TO_RAD
 
 walks.FIRST_TWO_SLOW_STEPS = False
 
-# How the fuck do I implement those?
+# How do I implement those?
 #CIRCLE_STRAFE_CLOCKWISE = -0.2
 #CIRCLE_STRAFE_COUNTER_CLOCKWISE = 0.165
 
@@ -65,8 +47,8 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
 
 
 import burst.behavior_params as params
-params.KICK_X_MIN[:] = [14,14]
-params.KICK_X_MAX[:] = [18,18]
-params.KICK_Y_MIN[:] = [4.0,-2.5]
-params.KICK_Y_MAX[:] = [6.0,-4.5]
+params.KICK_X_MIN = [14,14]
+params.KICK_X_MAX = [18,18]
+params.KICK_Y_MIN = [4.0,-2.5]
+params.KICK_Y_MAX = [6.0,-4.5]
 
