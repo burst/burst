@@ -125,7 +125,8 @@ class Localization(object):
         p1 = bottom.xy
         # TODO - use all dists, compare
         if not hasattr(top, 'my_dist') or not hasattr(bottom, 'my_dist'):
-            print "BUG ALERT: we should have my_dist updated at this point."
+            if self.verbose:
+                print "BUG ALERT: we should have my_dist updated at this point."
             return
         r1, r2, a1 = (top.my_dist, bottom.my_dist, top.bearing)
         # compute distance using r_avg and angle - note that it is not correct
