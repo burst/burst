@@ -243,7 +243,7 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation 1.32869 0.0428038 0.00187238
+  translation 1.81789 0.0428038 0.236727
   rotation -0.000377075 1.51739e-05 -1 2.72067
   children [
     DEF BALL_SHAPE Shape {
@@ -270,8 +270,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 0.850806 0.321955 0.45951
-  rotation 0 -1 0 4.01683
+  translation 0.847809 0.321955 -0.0540914
+  rotation 0 -1 0 4.93455
   color 1 0 0
   texture [
     "textures/red_logo.png"
