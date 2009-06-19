@@ -39,6 +39,9 @@ from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
 
 ################################################################################
+KIND_MOTION = 'motion'
+KIND_HEAD = 'head'
+KIND_WALK = 'walk'
 
 class Motion(object):
     
@@ -161,7 +164,7 @@ class BaseMoveCoordinator(object):
         initiated = len(self._initiated)
         motion = (self._world.time, kind, description, event, duration)
         self._initiated.append(motion)
-        if kind is 'walk':
+        if kind is KIND_WALK:
             self._world.odometry.onWalkInitiated(self._world.time, description, duration)
         return initiated
 
@@ -196,18 +199,6 @@ class BaseMoveCoordinator(object):
     def walk(self, d, duration, description):
         return self._make_succeed_bd(self)
 
-    # NOTE: the positive actions are modeled as the same ALMotion commands. The negative
-    #       ones don't have an equivalent (walk does, the others don't), and is modeled
-    #       after user intent.
-    def cancelHead(self):
-        pass
-
-    def cancelWalk(self):
-        pass
-
-    def cancelBody(self):
-        pass
-
 class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     """ Note: Old coordinator - doesn't use threading, uses polling with
@@ -237,17 +228,17 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         # HACK - Add ourselves to the list of updated objects,
         # so calc_events is called. Basically until now all such objects
         # were constructed in world, but world doesn't depend on actions.
-        self._motion_posts = SerialPostQueue('motion', self._world)
-        self._head_posts   = SerialPostQueue('head', self._world)
-        self._walk_posts   = SerialPostQueue('walk', self._world)
+        self._motion_posts = SerialPostQueue(KIND_MOTION, self._world)
+        self._head_posts   = SerialPostQueue(KIND_HEAD, self._world)
+        self._walk_posts   = SerialPostQueue(KIND_WALK, self._world)
 
         # TODO - should world have access to eventmanager? - ugly hack going to burst.options.dt
         self._motion_finished_min_duration = MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT * burst.options.dt
 
         # helpers
-        self._post_handler = {'motion': self._add_expected_motion_post,
-            'head':self._add_expected_head_post,
-            'walk':self._add_expected_walk_post}
+        self._post_handler = {KIND_MOTION: self._add_expected_motion_post,
+            KIND_HEAD:self._add_expected_head_post,
+            KIND_WALK:self._add_expected_walk_post}
 
         # debug
         if self.debug:
@@ -313,9 +304,9 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         d = self._motion.post.doMove(joints, angles_matrix, durations_matrix, interp_type)
         # TODO - better calculation (not O(#joints))
         if len(joints) == 2:
-            event, kind = EVENT_HEAD_MOVE_DONE, 'head'
+            event, kind = EVENT_HEAD_MOVE_DONE, KIND_HEAD
         else:
-            event, kind = EVENT_BODY_MOVE_DONE, 'motion'
+            event, kind = EVENT_BODY_MOVE_DONE, KIND_MOTION
         if self.verbose:
             print "IsRunningMoveCoordinator: %s: #j = %s, duration = %s, event = %s" % (
                 kind, len(joints), duration, event)
@@ -325,22 +316,13 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
     def changeChainAngles(self, chain, angles):
         d = self._motion.post.changeChainAngles(chain, angles)
         return self._waitOnPostid(d, description="change Head Angles",
-            kind='head', event=EVENT_HEAD_MOVE_DONE, duration=0.1)
+            kind=KIND_HEAD, event=EVENT_HEAD_MOVE_DONE, duration=0.1)
 
     def walk(self, d, duration, description):
         d.addCallback(lambda _: self._motion.post.walk())
         return self._waitOnPostid(d,
             description=description,
-            kind='walk', event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
-
-    def cancelHead(self):
-        pass
-
-    def cancelWalk(self):
-        pass
-
-    def cancelBody(self):
-        pass
+            kind=KIND_WALK, event=EVENT_CHANGE_LOCATION_DONE, duration=duration)
 
 
 if burst.options.new_move_coordinator:

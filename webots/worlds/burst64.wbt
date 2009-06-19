@@ -245,7 +245,7 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation -0.448432 0.0428038 -0.213337
+  translation -0.0325174 0.0428038 -0.00635985
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {

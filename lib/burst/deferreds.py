@@ -47,8 +47,21 @@ class BurstDeferredMaker(object):
         if self.verbose:
             print "BurstDeferredMaker: clearing"
         for bd in self._bds:
-            if bd._ondone:
-                bd._ondone = ((lambda _, cb=bd._ondone[0]: self._printOnDone(cb)), bd._ondone[1])
-
+            bd._ondone = [((lambda _, cb=cb: self._printOnDone(cb)), chain_deferred)
+                for cb, chain_deferred in bd._ondone]
     def _printOnDone(self, cb):
         print "BurstDeferredMaker: short circuit of %s" % func_name(cb)
+
+# XXX Currently unused class
+class BDHolder(object):
+    """ strangely named, this is the current movement BD kept for
+    cleanly stopping - returned to stopper who can then wait for
+    calling of this bd. This bd is the current action if any, otherwise
+    will be a successfull bd. (an already called bd)
+    """
+    def __init__(self, success):
+        self.bd = success
+    def set(self, bd):
+        self.bd = bd
+        return bd
+

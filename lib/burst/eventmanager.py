@@ -11,7 +11,7 @@ from heapq import heappush, heappop, heapify
 from twisted.python import log
 
 import burst
-from burst_util import DeferredList, func_name, Profiler
+from burst_util import DeferredList, func_name, Profiler, succeed
 import burst_util
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
@@ -409,7 +409,7 @@ class BasicMainLoop(object):
     def _onNormalQuit_playerStopDone(self):
         naoqi_ok = self._on_normal_quit__naoqi_ok
         self._eventmanager._removeAllPendingCallbacks()
-        d = None
+        d = succeed(None)
         if self._actions:
             if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
                 print "BasicMainLoop: exiting"
@@ -550,7 +550,7 @@ class BasicMainLoop(object):
         if self._profiler:
             self._profiler.close()
 
-    def cleanupAfterNaoqi(self, _):
+    def cleanupAfterNaoqi(self, _=None):
         """  cleanup, mainly close all threads (like movement threads)
         second arg for addCallback usage"""
         self._world._movecoordinator.shutdown() # close movement threads
@@ -607,6 +607,12 @@ class SimpleMainLoop(BasicMainLoop):
             print "BasicMainLoop: naoqi exception caught:", e
             print "BasicMainLoop: quitting"
             naoqi_ok = False
+            if 'SOAP:Connection refused' in str(e):
+                print "Naoqi quit (SOAP:Connection refused), exiting."
+                self.cleanupAfterNaoqi()
+                import sys
+                sys.exit(-1)
+            raise
 
         return naoqi_ok, sleep_time
 

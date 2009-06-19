@@ -15,7 +15,6 @@ from burst.image import normalized2_image_width, normalized2_image_height
 from math import pi, sqrt
 
 ############################################################################
-
 class Tracker(object):
     
     """ track objects by moving the head """
@@ -54,11 +53,15 @@ class Tracker(object):
     def stop(self):
         """ stop tracker and centered. unregister any events, after
         this call be ready for a new track or center action.
+        Returns the last movement bd, or a already called bd if no movement.
+
+        caller should not ignore this bd, or take the risk of doing a new
+        head move while head is in motion.
         """
         # don't erase any deferreds here! stop is called
         # before issuing the callbacks, allowing deferred's callee to
         # correctly check that tracker is not operating.
-        if self.stopped(): return
+        if self.stopped(): return self._actions._succeed(self)
         if self.verbose:
             print "Tracker: Stopping current action - %s" % (
                 self._on_centered_bd and 'centering' or 'tracking')
@@ -67,6 +70,7 @@ class Tracker(object):
         self._user_on_lost = None
         self._user_on_timeout = None
         self._timeout = None
+        return self._actions.getCurrentHeadBD()
 
     ############################################################################
 
@@ -123,11 +127,9 @@ class Tracker(object):
                 print "CenteringStep: DONE"
             bd = self._on_centered_bd
             self.stop() # this sets self.on_centered_bd=None
-            if bd == None or not bd._ondone or not bd._ondone[0]:
+            if bd == None or len(bd._ondone) == 0:
                 print "CenteringStep: pdb - no callback set on bd"
                 import pdb; pdb.set_trace()
-            if self.debug and bd._ondone and bd._ondone[0]:
-                print "CenteringStep: %s" % bd._ondone[0].im_self.__dict__
             bd.callOnDone()
         elif delta_angles:
             # Out path 1: wait for change angles relative to complete
@@ -294,21 +296,19 @@ class CenteringCommand(object):
         self._repeats = repeats
     def onCenteringDone(self):
         # called both on centering and on target lost
-        if self._target.sighted_centered or self._repeats == 0:
+        if self._target.centered_self.sighted_centered or self._repeats <= 0:
             self._bd.callOnDone()
+            return
         print "CENTERING %s" % self._repeats
         self._repeats -= 1
         new_yaw, new_pitch = self._target.centered_self.estimated_yaw_and_pitch_to_center()
         self._actions.moveHead(new_yaw, new_pitch).onDone(
-            lambda: self._actions.tracker.center(self._target).onDone(self.centeringDone)
+            lambda: self._actions.tracker.center(self._target).onDone(self.onCenteringDone)
         )
     def __call__(self):
-        self._bd = bd = self._actions.moveHead(self._yaw, self._pitch)
-        # TODO - testing. Does this actually call the right bd?
-        # maybe switch to Deferreds here, since they are much
-        # simpler compared to the BurstDeferred chain thing?
-        bd.onDone(self.onCenteringDone)
-        return bd
+        self._actions.moveHead(self._yaw, self._pitch).onDone(self.onCenteringDone)
+        self._bd = self._actions._make(self)
+        return self._bd
 
 class TurnCommand(object):
     def __init__(self, actions, thetadelta):

@@ -7,6 +7,10 @@ import burst
 import movecoordinator
 import burst_target
 
+from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
+    EVENT_CHANGE_LOCATION_DONE)
+from movecoordinator import KIND_WALK
+
 class ALProxyThread(Thread):
     """ New input from aldebaran suggests that ALProxy is blocking,
     but using multiple ALProxys, one per thread, should work. So
@@ -23,7 +27,7 @@ class ALProxyThread(Thread):
         self._motion = burst.ALProxy('ALMotion', burst_target.ip, burst_target.port)
         self.in_queue = Queue()
         self.out_queue = Queue()
-        self.verbose = True
+        self.verbose = burst.options.verbose_movecoordinator
 
     def start(self, _=None):
         """ convenience for using with Deferred.addCallback """
@@ -33,6 +37,7 @@ class ALProxyThread(Thread):
         while True:
             method_getter, args, bd, description = self.in_queue.get()
             if method_getter == self.QUIT:
+                # TODO: need to close the ALProxy somehow
                 return
             meth = method_getter(self._motion)
             if self.verbose:
@@ -102,8 +107,14 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
 
     def _ensure_empty_thread(self, holder, what):
         if holder.busy:
-            print "You tried a second %s while first is still in progress" % what # RuntimeError
-            import pdb; pdb.set_trace()
+            print "ERROR: ThreadedMoveCoordinator: You tried a second %s while first is still in progress" % what # RuntimeError
+            if what == 'HEAD MOVE':
+                print "     : Allowing head move (queued after current move)"
+            elif what == 'WALK':
+                print "     : clearing footsteps"
+                self._actions.clearFootsteps()
+            else:
+                print "     : Allowing body move (queued after current move)"
 
     def _ensure_no_head_move(self):
         self._ensure_empty_thread(self._head_move_holder, 'HEAD MOVE')
@@ -128,8 +139,9 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
         self._walk_holder.busy = False
 
     def calc_events(self, events, deferreds):
-        for holder in (self._head_move_holder, self._body_move_holder,
-                self._walk_holder):
+        for holder, event in ((self._head_move_holder, EVENT_HEAD_MOVE_DONE),
+                (self._body_move_holder, EVENT_BODY_MOVE_DONE),
+                (self._walk_holder, EVENT_CHANGE_LOCATION_DONE)):
             thread, cleaner = holder.thread, holder.cleaner
             while not thread.out_queue.empty(): # TODO - limit this? (throttle results for easy debug? for cpu?)
                 # we have something.
@@ -141,6 +153,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
                         thread.getName(), bd, cleaner.im_func.func_name)
                     thread.join() # is this required?
                 deferreds.append(bd)
+                events.add(event)
                 cleaner()
 
     def _startAction(self, method_attr, args, holder, bd):
@@ -221,6 +234,9 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
         holder = self._walk_holder.makeBusy(self._completeWalk)
         bd = self._make_bd(self)
         d.addCallback(lambda _: self._startAction(method_attr='walk', args=tuple(), holder=holder, bd=bd))
+        self._add_initiated(time=self._world.time, kind=KIND_WALK, description=description,
+            event=EVENT_CHANGE_LOCATION_DONE, # TODO: This isn't actually used - why is it here?
+            duration=duration)
         return bd
 
     def shutdown(self):

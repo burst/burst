@@ -216,26 +216,33 @@ class BurstDeferred(object):
     and func is expected to return a BD3 which is then chained to the former BD2.
     """
 
+    verbose = True
+
     def __init__(self, data, parent=None):
         self._data = data
-        self._ondone = None
+        self._ondone = []
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
     
     def clear(self):
-        if self._ondone is not None:
+        for cb, chain_deferred in self._ondone:
             # recursively clear all child deferreds
-            self._ondone[1].clear()
-            self._ondone = None
+            chain_deferred.clear()
+        self._ondone = []
     
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
-        If it is already complete then it will be called right away. 
+        If it is already complete then it will be called right away, and
+        not stored.
+
+        Stored callbacks are removed once called.
+        Return value is another BurstDeferred that will be called when the
+        (wait for it) BurstDeferred returned by this call completes.
         """
         if cb is None:
             raise Exception("onDone called with cb == None")
         chain_deferred = BurstDeferred(data = None, parent=self)
-        self._ondone = (cb, chain_deferred)     # No chained callbacks like Deferred
+        self._ondone.append((cb, chain_deferred))
         if self._completed:
             chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
             self.callOnDone()
@@ -243,9 +250,10 @@ class BurstDeferred(object):
 
     def callOnDone(self):
         self._completed = True
-        if self._ondone:
-            cb, chain_deferred = self._ondone
-            self._ondone = None # zero the callback - don't call twice
+        if len(self._ondone) >= 2:
+            if self.verbose:
+                print "BurstDeferred: using multiple onDone on %s (may be ok)" % (self)
+        for cb, chain_deferred in self._ondone:
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:
@@ -254,6 +262,9 @@ class BurstDeferred(object):
             # we handed out once it is done.
             if isinstance(ret, BurstDeferred):
                 ret.onDone(chain_deferred.callOnDone)
+            elif isinstance(ret, Deferred):
+                ret.addCallback(lambda _: chain_deferred.callOnDone())
+        self._ondone = [] # zero the callback - don't call twice
 
     def onDoneCallDeferred(self, d):
         """ Helper for t.i.d.Deferred mingling - will call this deferred when
@@ -265,6 +276,8 @@ class BurstDeferred(object):
         writing another BurstDeferred version. Returns a Deferred that is called
         when callOnDone is called.
         """
+        if self.verbose:
+            print "BurstDeferred: getDeferred"
         self._d = Deferred()
         self.onDone(lambda: self._d.callback(None))
         return self._d
@@ -273,11 +286,15 @@ class BurstDeferred(object):
         """ try to give a short description of who is being called by this callback
         """
         if not self._ondone: return '_'
+        ret = []
         if hasattr(self, '_d'):
             return 'bd->%s' % (deferredToCondensedString(self._d))
-        if hasattr(self._ondone[0], 'im_func') and self._ondone[0].im_func.func_name == 'callOnDone':
-            return 'bd->%s' % self._ondone[0].im_self.toCondensedString()
-        return func_name(self._ondone[0])
+        for cb, chain_deferred in self._ondone:
+            if hasattr(cb, 'im_func') and cb.im_func.func_name == 'callOnDone':
+                ret.append(cb.im_self.toCondensedString())
+            else:
+                ret.append(func_name(cb))
+        return 'bd->(%s)' % (','.join(ret))
 
     def pretty(self):
         """ attempt a nice representation """

@@ -136,7 +136,7 @@ class World(object):
         self._shm = None
 
         self.time = 0.0
-        self.start_time = self.time     # construction time
+        self.start_time = time()     # construction time
 
         # Variables for body joint angles from dcm
         self._getAnglesMap = dict([(joint,
@@ -456,6 +456,7 @@ class World(object):
     def cleanup(self):
         if self._do_log_positions:
             self._closePositionLogs()
+        self.odometry.cleanup()
 
     # Logging Functions
 

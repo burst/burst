@@ -27,7 +27,7 @@ class Actions(object):
     vision and head moves: head tracking
     vision and head and body moves: ball kicking
     
-    We put high level operations in actions if:
+    We put high level operations in Actions if:
      * it is an easily specified operation (head scanning)
      * it is short timed (ball kicking)
     
@@ -43,6 +43,7 @@ class Actions(object):
         self.burst_deferred_maker = self._world.burst_deferred_maker
         self._make = self.burst_deferred_maker.make
         self._wrap = self.burst_deferred_maker.wrap
+        self._succeed = self.burst_deferred_maker.succeed
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
@@ -55,6 +56,10 @@ class Actions(object):
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
         self.tracker = Tracker(self)
         self.searcher = Searcher(self)
+
+        # we keep track of the last head bd
+        self._current_head_bd = self._succeed(self)
+
     #===============================================================================
     #    High Level - anything that uses vision
     #===============================================================================
@@ -281,6 +286,13 @@ class Actions(object):
     #    Low Level
     #===============================================================================
     
+    def getCurrentHeadBD(self):
+        """ return a succeed if no head move in progress, or the bd of the current
+        head move, for possible onDone calls. Note that we support multiple onDone,
+        just like Deferred.addCallback, so you can register additional ones here.
+        """
+        return self._current_head_bd
+
     def setCamera(self, whichCamera):
         """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
         and burst_consts.CAMERA_WHICH_BOTTOM_CAMERA """
@@ -419,8 +431,9 @@ class Actions(object):
         durations_matrix = [list(cumsum(interp_time for angles, interp_time in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
         #print "executeHeadMove: duration = %s" % duration
-        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix, interp_type,
-            description=description)
+        self._current_head_bd = self._movecoordinator.doMove(
+            joints, angles_matrix, durations_matrix, interp_type, description=description)
+        return self._current_head_bd
 
     def executeSingleHeadMove(self, yaw_delta, pitch_delta, interpolation_time):
         return self.executeHeadMove( (((yaw_delta, pitch_delta), interpolation_time),) )
