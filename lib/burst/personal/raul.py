@@ -12,9 +12,9 @@ params.KICK_X_MAX = [19,19]
 params.KICK_Y_MIN = [3.5,-2]
 params.KICK_Y_MAX = [10.5,-9]
 
-import burst.moves.general_moves as moves
+import burst.moves.poses as poses
 #Probably no need when arm is OK.
-moves.GREAT_KICK_LEFT_OFFSET = (
+poses.GREAT_KICK_LEFT_OFFSET = (
     #Stand up more fully
     ((0.0,0.0,0.0,0.0),
      (0.0,0.0,0.0,0.0,0.0,0.0),
