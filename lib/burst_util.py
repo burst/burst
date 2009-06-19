@@ -278,8 +278,11 @@ class BurstDeferred(object):
         """
         if self.verbose:
             print "BurstDeferred: getDeferred"
-        self._d = Deferred()
-        self.onDone(lambda: self._d.callback(None))
+        if self._completed:
+            self._d = succeed(None)
+        else:
+            self._d = Deferred()
+            self.onDone(lambda: self._d.callback(None))
         return self._d
 
     def toCondensedString(self):

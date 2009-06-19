@@ -18,17 +18,23 @@ class GameController(object):
             port=burst_consts.GAME_CONTROLLER_BROADCAST_PORT, bufsize=1024):
         self.gameStatus = gameStatus
         self.bufsize = bufsize
+        self._socket_bound = False
         try:
             self.dataGramSocket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
             self.dataGramSocket.setblocking(False)
+            self.dataGramSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.dataGramSocket.bind((host,port))
+            self._socket_bound = True
         except socket.error:
-            raise Exception("Could not bind the DataGramSocket.")
+            print "ERROR: GameController: Cannot bind to socket (%s)" % ((host, port),)
 
     def shutdown(self):
-        self.dataGramSocket.close()
+        if self._socket_bound:
+            self.dataGramSocket.close()
+            self._socket_bound = False
 
     def _receive(self):
+        if not self._socket_bound: return
         try:
             message = self.dataGramSocket.recv(self.bufsize)
             return message

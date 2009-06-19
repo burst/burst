@@ -437,11 +437,15 @@ class Searcher(object):
         return self._stopped
 
     def stop(self):
-        if self.stopped(): return
+        """ stops the searcher if active and returns a BD for user to act
+        on, BD will be called when stoppage is complete. This may be immediate
+        if already stopped, or based on the current head bd from actions """
+        if self.stopped(): return self._actions._succeed(self)
         self._unregisterAllEvents()
         self._search_count[1] += 1
         self._stopped = True
         self._report("Searcher: STOPPED")
+        return self._actions.getCurrentHeadBD()
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
             searchPlannerMaker=SearchPlanner):

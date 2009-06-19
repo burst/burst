@@ -20,7 +20,7 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload pyloc pylocatotal
 
 clean:
 	@echo "removing pyc files"
@@ -31,6 +31,12 @@ clean:
 
 sizes:
 	ls -l $(MODULES)
+
+pyloc:
+	find . -iname "*.py" | xargs cat | grep -v "^\s*#.*$$" | wc -l
+
+pyloctotal:
+	find . -iname "*.py" | xargs cat | wc -l
 
 webots:
 	cd src/imops; $(MAKE) webots

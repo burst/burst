@@ -45,6 +45,8 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
     // External module interface
 
     void setFramesPerSecond(double fps);
+    void switchToTopCamera();
+    void switchToBottomCamera();
 
     /**
      * version
@@ -72,16 +74,22 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
     void notifyNextVisionImage();
 
+    // used by the getImageLoop
+
     useconds_t                      vision_frame_length_us;
     useconds_t                      vision_frame_length_print_thresh_us;
+
+    bool                             m_switchRequested;
+    bool                             m_requestedTopCamera;
+
+    // needs to be called after the instance is created, since we use a global (err, TODO)
+    void initVisionThread( ALPtr<ALBroker> broker );
 
   private:
 
     std::vector<std::string>         m_varnames; // all float variables vision needs
     std::vector<std::string>         m_exported_vars; // variables exported to ALMemory for player.py
     std::vector<float>               m_exported; // float values to be exported.
-
-    void initVisionThread( ALPtr<ALBroker> broker );
 
     AL::ALPtr < AL::ALBroker >       m_broker;        // needed for ConnectToVariables
     AL::ALPtr < ALMemoryFastAccess > m_memoryfastaccess;

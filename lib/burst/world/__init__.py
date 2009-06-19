@@ -40,9 +40,9 @@ from odometry import Odometry
 # TODO: Shouldn't require adding something to the path at any point
 # after player_init
 #sys.path.append(os.path.join(os.path.dirname(burst.__file__), '..'))
-from gamecontroller import GameControllerMessage, GameController, EmptyGameController
+from gamecontroller import GameControllerMessage, GameController
 from ..player_settings import PlayerSettings
-from gamestatus import GameStatus, EmptyGameStatus
+from gamestatus import GameStatus
 
 def timeit(tmpl):
     def wrapper(f):
@@ -196,14 +196,8 @@ class World(object):
 
         # The Game-Status, Game-Controller and RobotData Trifecta # TODO: This is messy.
         self.playerSettings = PlayerSettings(self) # Start with the default settings. You will be configured later to the right ones by the referees.
-        if burst.options.game_status:
-            self.gameStatus = GameStatus(self, self.playerSettings)
-        else:
-            self.gameStatus = EmptyGameStatus()
-        if burst.options.game_controller:
-            self._gameController = GameController(self.gameStatus)
-        else:
-            self._gameController = EmptyGameController()
+        self.gameStatus = GameStatus(self, self.playerSettings)
+        self._gameController = GameController(self.gameStatus)
 
         self._movecoordinator = MoveCoordinator(self)
 

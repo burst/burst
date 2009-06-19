@@ -16,10 +16,18 @@ class TargetFinderTester(Player):
         self._ballFinder.setOnTargetLostCB(self.onTargetLost)
         
     def onTargetFound(self):
+        self.log('Found it')
         self._actions.say('Found it!')
+        self._ballFinder.stop().onDone(self.onStopped)
         
     def onTargetLost(self):
+        self.log('Lost it')
         self._actions.say('Lost it!')
+
+    def onStopped(self):
+        self.log('Stopped')
+        self._actions.say('Stopped')
+        self._eventmanager.callLater(1.0, self._eventmanager.quit)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

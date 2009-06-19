@@ -291,14 +291,24 @@ class Actions(object):
         """
         return self._current_head_bd
 
+    def switchToTopCamera(self):
+        print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
+        self.currentCamera = CAMERA_WHICH_TOP_CAMERA
+        return self._wrap(self._imops.switchToTopCamera(), self)
+
+    def switchToBottomCamera(self):
+        print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
+        self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
+        return self._wrap(self._imops.switchToBottomCamera(), self)
+
     def setCamera(self, whichCamera):
-        """ set camera. Valid values are burst_consts.CAMERA_WHICH_TOP_CAMERA
-        and burst_consts.CAMERA_WHICH_BOTTOM_CAMERA """
-        bd = self._make(self)
-        print "_"*20 + ("SWITCHING TO %s CAMERA" % (CAMERA_WHICH_PARAM == CAMERA_WHICH_BOTTOM_CAMERA and 'bottom' or 'top')) + '_'*20
-        self.currentCamera = whichCamera
-        self._naocam.setParam(CAMERA_WHICH_PARAM, whichCamera).addCallback(
-            lambda _: bd.callOnDone())
+        """ Set camera used, we have two: top and bottom.
+        whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
+        """
+        if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
+            bd = self.switchToBottomCamera()
+        else:
+            bd = self.switchToTopCamera()
         return bd
 
     def setCameraFrameRate(self, fps):
