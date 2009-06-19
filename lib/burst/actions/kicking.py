@@ -37,7 +37,8 @@ import random
 # When obstacle encountered DURING move:
 # * stop move only if it's a long walk (if it's a short walk to the ball, we prefer not to stop...)
 # When obstacle encountered BEFORE move:
-# * Kicking: change kick to inside-kick if obstacle is at center (Goalie->towards opposite side, Kicker->towards field center) 
+# * Kicking: change kick to inside-kick/angle-kick if obstacle is at center 
+#   (Goalie->inside kick towards opposite side, Kicker-> angle-kick towards field center) 
 # * Ball far: side-step to opposite side (or towards field center if at center)
 #
 # TODO's:
@@ -133,6 +134,18 @@ class BallKicker(BurstDeferred):
         self._obstacle_in_front = self._ultrasound.getLastReading()
         #print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
+    def getObstacleOppositeSide(self):
+        if self._obstacle_in_front == None:
+            print "NO OBSTACLE DATA?"
+            opposite_side_from_obstacle = 0
+        elif self._obstacle_in_front[0] == "center":
+            opposite_side_from_obstacle = random.choice((-1,1))
+        elif self._obstacle_in_front[0] == "left":
+            opposite_side_from_obstacle = -1
+        elif self._obstacle_in_front[0] == "right":
+            opposite_side_from_obstacle = 1
+        return opposite_side_from_obstacle
+
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
     # make it cleared to understand the relationship, not require this comment)
@@ -173,7 +186,12 @@ class BallKicker(BurstDeferred):
                 #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
                 self._movement_type = MOVE_KICK
                 self._movement_location = target_location
-                self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)
+                
+                if self._obstacle_in_front:
+                    self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
+                else:
+                    self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)
+
                 self._movement_deferred.onDone(self.callOnDone)
                 return
         else:
@@ -183,7 +201,23 @@ class BallKicker(BurstDeferred):
                     self._actions.setCameraFrameRate(10)
                     self._movement_type = MOVE_FORWARD
                     self._movement_location = target_location
-                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
+                    if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
+                        opposite_side_from_obstacle = self.getObstacleOppositeSide()
+                        print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
+                        
+                        self._movement_type = MOVE_SIDEWAYS
+                        self._movement_deferred = self._actions.changeLocationRelativeSideways(
+                            0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK)
+                        
+#                        self._movement_type = MOVE_CIRCLE_STRAFE
+#                        if opposite_side_from_obstacle == -1:
+#                            strafeMove = self._actions.executeCircleStrafeCounterClockwise
+#                        else:
+#                            strafeMove = self._actions.executeCircleStrafeClockwise
+#                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
+                        
+                    else:
+                        self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 if self.ENABLE_MOVEMENT:
