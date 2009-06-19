@@ -7,7 +7,8 @@ import mmap
 import burst
 from burst_util import Deferred, chainDeferreds
 from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
-    MMAP_FILENAME, MMAP_LENGTH, BURST_SHARED_MEMORY_VARIABLES_START_OFFSET)
+    MMAP_FILENAME, MMAP_LENGTH, BURST_SHARED_MEMORY_VARIABLES_START_OFFSET,
+    US_DISTANCES_VARNAME, US_ELEMENTS_NUM)
 
 class SharedMemoryReader(object):
     """ read from memory mapped file and not from ALMemory proxy, which
@@ -33,7 +34,12 @@ class SharedMemoryReader(object):
         start_offset = BURST_SHARED_MEMORY_VARIABLES_START_OFFSET
         self._unpack_start = start_offset
         self._unpack_end = start_offset + struct.calcsize(self._unpack)
+        self._ultrasound_unpack = 'f'*US_ELEMENTS_NUM
+        self._ultrasound_start = 0
+        self._ultrasound_end = struct.calcsize(self._ultrasound_unpack) + self._ultrasound_start
         self.vars = dict((k, 0.0) for k in self._var_names)
+        # TODO - ugly (next year)
+        self.vars[US_DISTANCES_VARNAME] = [0.0] * US_ELEMENTS_NUM
         print "SharedMemory: asked burstmem to map %s variables" % len(self._var_names)
         # set all the names of the variables we want mapped - we don't block
         # or anything since we expect the first few frames to be eventless,
@@ -84,6 +90,10 @@ class SharedMemoryReader(object):
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):
             self.vars[k] = v
+        # update ultrasound variables differently - they are stored at the beginning
+        # of the shared memory region
+        self.vars[US_DISTANCES_VARNAME] = struct.unpack(self._ultrasound_unpack,
+            self._buf[self._ultrasound_start:self._ultrasound_end])
         if self.verbose:
             print self.vars
 

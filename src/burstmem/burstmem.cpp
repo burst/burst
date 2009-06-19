@@ -254,7 +254,7 @@ void burstmem::startMemoryMap ()
     try {
         ALPtr<ALProxy> us = this->getParentBroker()->getProxy( "ALUltraSound" );
         ALValue paramUS;
-        paramUS.arrayPush( 250 ); // every 250 ms
+        paramUS.arrayPush( 500 ); // every 500 ms
         us->callVoid( "subscribe", getName(), paramUS );
     }
     catch (AL::ALError e) {

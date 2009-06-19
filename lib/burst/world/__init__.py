@@ -14,7 +14,7 @@ import mmap
 import struct
 import linecache
 
-from burst_consts import ULTRASOUND_DISTANCES_VARNAME
+from burst_consts import US_DISTANCES_VARNAME
 import burst
 from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_ALL_BLUE_GOAL_IN_FRAME,
@@ -243,8 +243,8 @@ class World(object):
                 SharedMemoryReader.tryToInitMMap()
                 if SharedMemoryReader.isMMapAvailable():
                     print "world: using SharedMemoryReader"
-                    if ULTRASOUND_DISTANCES_VARNAME in self._vars_to_get_list:
-                        self._vars_to_get_list.remove(ULTRASOUND_DISTANCES_VARNAME)
+                    if US_DISTANCES_VARNAME in self._vars_to_get_list:
+                        self._vars_to_get_list.remove(US_DISTANCES_VARNAME)
                     self._shm = SharedMemoryReader(self._vars_to_get_list)
                     self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
                     self._shm.openDeferred.addCallback(self._switchToSharedMemory)
@@ -254,6 +254,10 @@ class World(object):
         self.checkManModule()
 
     def _switchToSharedMemory(self, _):
+        if set(self.vars.keys()) != set(self._shm.vars.keys()):
+            num_world, num_shared = len(self.vars), len(self._shm.vars)
+            print "Notice: world requested %s vars, shared memory provides %s vars. This is ok if %s > %s" % (
+                num_world, num_shared, num_shared, num_world)
         self.vars = self._shm.vars
         self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
 

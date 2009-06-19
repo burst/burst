@@ -1,35 +1,28 @@
 #!/usr/bin/python
 
-from burst_consts import LEFT, RIGHT
+from burst_consts import (LEFT, RIGHT, US_HISTORY_SIZE, US_NEAR_DISTANCE, US_FRAMES_TILL_LOST, US_DISTANCES_VARNAME)
 from burst import events as events_module
 from burst.events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 from burst_util import RingBuffer
 import burst
 
-HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
-# TEMP  - USE LARGER DISTANCE FOR WEBOTS TESTSING!!!
-#NEAR_DISTANCE = 0.6
-NEAR_DISTANCE = 0.4 # distance in meters
-
 __all__ = ['Ultrasound']
 
 # TODO: When several robots are next to each other, do their ultrasounds collide?
-# TODO: What to do when events jump between left & right?
-# TODO: What to do when on the edge of distance (keeps getting same event)
-# TODO: Store distance somewhere?
 class Ultrasound(object):
 
-    _var = "extractors/alultrasound/distances"
-
     def __init__(self, world):
+        print "__init__"
         if burst.options.run_ultrasound:
             world._ultrasound.post.subscribe('', [500])
-            world.addMemoryVars([Ultrasound._var])
+            world.addMemoryVars([US_DISTANCES_VARNAME])
         self._world = world
-        self._ultrasoundHistory = RingBuffer(HISTORY_SIZE)
+        self._ultrasoundHistory = RingBuffer(US_HISTORY_SIZE)
         self._obstacleSeen = False
-        self._lastReading = None
-
+        self._lastData = None # last raw data (for deciding when data changed)
+        self._lastReading = None # last (side / distance)
+        self._obstacle_lost_frames_counter = 0
+        
     # valid only when obstacle seen/in_frame events occur, otherwise, returns None
     def getLastReading(self):
         return self._lastReading
@@ -43,15 +36,16 @@ class Ultrasound(object):
         if not burst.options.run_ultrasound:
             return
         
-        new_data = self._world.vars[Ultrasound._var]
-        #print "new_data:", new_data
+        new_data = self._world.vars[US_DISTANCES_VARNAME]
+        
         # make sure ultrasound data is valid
-        if new_data and (len(new_data) >= 2):
+        if self._lastData != new_data and new_data and (len(new_data) >= 2):
+            self._lastData = new_data
             self.readUltrasoundDistances(new_data)
 
             newEvent = None
             # if at least one reading shows an obstacle, do more complex analysis
-            if min(new_data[LEFT], new_data[RIGHT]) < NEAR_DISTANCE:
+            if min(new_data[LEFT], new_data[RIGHT]) < US_NEAR_DISTANCE:
                 self._lastReading = self.calcObstacleFromUltrasound(self._ultrasoundHistory)
 
                 if self._obstacleSeen:
@@ -62,17 +56,22 @@ class Ultrasound(object):
                     newEvent = EVENT_OBSTACLE_SEEN
                     #print "Ultrasound: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
                 self._obstacleSeen = True
+                self._obstacle_lost_frames_counter = 0
             else:
                 if self._obstacleSeen:
-                    newEvent = EVENT_OBSTACLE_LOST
-                    self._obstacleSeen = False
-                    #print "Ultrasound: LOST obstacle (last seen on %s, distance of %f)" % (self._lastReading)
-                self._lastReading = None
+                    self._obstacle_lost_frames_counter += 1
+                    
+                    if self._obstacle_lost_frames_counter >= US_FRAMES_TILL_LOST:
+                        newEvent = EVENT_OBSTACLE_LOST
+                        self._obstacleSeen = False
+                        self._obstacle_lost_frames_counter = 0
+                        self._lastReading = None
+                        #print "Ultrasound: LOST obstacle (last seen on %s, distance of %f)" % (self._lastReading)
 
             if (newEvent != None):
                 events.add(newEvent)
         else:
-            print "Ultrasound: No reading?! ignoring..."
+            #print "Ultrasound: either no reading or same as last reading - ignoring..."
             self._lastReading = None
 
     ##
@@ -80,7 +79,6 @@ class Ultrasound(object):
     # Input: Ultrasound history
     # Each sample is an array of 2 - left and right readings.
     # Output: Array of 2 - evaluation of both direction of object and its distance.
-    
     def calcObstacleFromUltrasound(self, history):
         # Initialize variables.
         vote_thresh_left= 0
@@ -90,7 +88,7 @@ class Ultrasound(object):
         diff= 9999
         min_left= 9999
         min_right= 9999
-        upper_thresh= 1.0
+        upper_thresh= US_NEAR_DISTANCE # TODO: get this number from personalization file (minimal noise left/right when no obstacle). Was 1.0.
         lower_thresh= 0.045
     
         # Run on data and get the needed parameters for evaluation.

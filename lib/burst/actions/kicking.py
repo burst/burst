@@ -25,9 +25,6 @@ from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMA
 import burst_consts
 import random
 
-class TargetApproacher(TargetFinder):
-    pass
-
 #===============================================================================
 #    Logic for Kicking behavior:
 #
@@ -36,17 +33,15 @@ class TargetApproacher(TargetFinder):
 # 3. When near ball, circle-strafe (to correct direction) till goal is seen and centered (goal is tracked)
 # 4. Search ball down, align against ball and kick
 #
-# Handling ball lost:
-# 1. While walking towards it => notify caller (kind of restart behavior)
-# 2. While aligning for kick => search front (if found - align and kick, if not -> notify caller)
-# 3. If full scan doesn't find ball => notify caller
+# Handling Ultrasound data (obstacles):
+# When obstacle encountered DURING move:
+# * stop move only if it's a long walk (if it's a short walk to the ball, we prefer not to stop...)
+# When obstacle encountered BEFORE move:
+# * Kicking: change kick to inside-kick if obstacle is at center (Goalie->towards opposite side, Kicker->towards field center) 
+# * Ball far: side-step to opposite side (or towards field center if at center)
 #
-# *TODO*:
+# TODO's:
 # * RESET self._aligned_to_goal when needed
-# * Handle "ball lost" only when ball isn't seen for several frames (use the "recently seen" variable)
-# * Notify caller when ball moves (yet doesn't disappear)? Since measurements are noisy, need to decide
-#   how to determine when ball moved.
-# * Obstacle avoidance
 #===============================================================================
 
 class BallKicker(BurstDeferred):
@@ -119,8 +114,8 @@ class BallKicker(BurstDeferred):
     # Ultrasound callbacks
     #
     def onObstacleSeen(self):
-        obstacle = self._ultrasound.getLastReading()
-        print "Obstacle seen (on %s, distance of %f)!" % (obstacle)
+        self._obstacle_in_front = self._ultrasound.getLastReading()
+        print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
         if self._movement_deferred:
             print "NOTE: Obstacle in front while a movement is in progress"
@@ -131,10 +126,12 @@ class BallKicker(BurstDeferred):
 
     def onObstacleLost(self):
         print "Obstacle lost!"
+        self._obstacle_in_front = None
 
     def onObstacleInFrame(self):
         #print "Obstacle in frame!"
-        pass
+        self._obstacle_in_front = self._ultrasound.getLastReading()
+        #print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would

@@ -313,7 +313,12 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
-ULTRASOUND_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+# Ultrasound constants
+US_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+US_ELEMENTS_NUM = 2
+US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
+US_NEAR_DISTANCE = 0.4 # distance in meters
+US_FRAMES_TILL_LOST = 2
 
 # Joint data
 joint_names, joint_limits = (['HeadYaw',
