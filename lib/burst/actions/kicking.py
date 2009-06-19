@@ -91,10 +91,11 @@ class BallKicker(BurstDeferred):
     ################################################################################
     # Handling movements
     #
-    def _clearMovement(self, forceStop = False):
+    def _clearMovement(self, clearFootsteps = False):
         if self._movement_deferred:
             self._movement_deferred.clear()
-            if forceStop and self._movement_type in (MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN, MOVE_ARC):
+            if clearFootsteps and self._movement_type in (MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN, MOVE_ARC):
+                print "CLEARING FOOTSTEPS!"
                 self._actions.clearFootsteps()
         self._movement_deferred = None
         self._movement_type = None
@@ -102,12 +103,17 @@ class BallKicker(BurstDeferred):
 
     def _onMovementFinished(self, nextAction):
         print "Movement DONE!"
-        self._clearMovement()
+        self._clearMovement(clearFootsteps = False)
         nextAction()
 
-    def _stopOngoingMovement(self):
-        print "STOPPING CURRENT MOVEMENT!"
-        self._clearMovement(forceStop = True)
+    def _stopOngoingMovement(self, forceStop = False):
+        print "STOPPING CURRENT MOVEMENT! (forceStop = %s)" % forceStop
+        if forceStop:
+            self._clearMovement(clearFootsteps = True)
+        else:
+            # if walking forward and ball is far, stop
+            if self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR:
+                self._clearMovement(clearFootsteps = True)
 
     ################################################################################
     # Ultrasound callbacks
@@ -118,9 +124,9 @@ class BallKicker(BurstDeferred):
 
         if self._movement_deferred:
             print "NOTE: Obstacle in front while a movement is in progress"
-            # if walking forward and ball isn't near, stop
-            if self._movement_type == MOVE_FORWARD and (self._movement_location not in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR)):
-                self._stopOngoingMovement()
+            # if walking forward and ball is far, stop
+            if self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR:
+                self._stopOngoingMovement(forceStop = True)
                 self._eventmanager.callLater(0.5, self._approachBall)
 
     def onObstacleLost(self):
