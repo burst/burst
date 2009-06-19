@@ -276,7 +276,11 @@ class BallKicker(BurstDeferred):
             self._movement_deferred = strafeMove()
 
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
-        self._movement_deferred.onDone(lambda: self._eventmanager.callLater(0.2, self.strafe))
+        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.2, self.strafe))
+        
+        print "Movement STARTING! (strafing)"
+        self._movement_deferred.onDone(nextAction)
+        
 
     def refindBall(self):
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
