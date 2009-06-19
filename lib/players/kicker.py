@@ -19,7 +19,7 @@ class Kicker(Player):
         self._realStart()
 
     def _realStart(self):
-        self._actions.initPoseAndStiffness().onDone(self.kick).onDone(self.onKickComplete)
+        self.kick().onDone(self.onKickComplete)
 
     def kick(self):
 #        target_left_right_posts = [self._world.yglp, self._world.ygrp]

@@ -10,7 +10,7 @@ from burst import events as events_consts
 from burst.events import EVENT_GAME_STATE_CHANGED
 import gamecontroller
 from gamecontroller import constants as constants
-from gamecontroller.constants import *
+from gamecontroller_consts import *
 from burst.world.robot import LEDs
 import burst_consts
 
@@ -49,7 +49,7 @@ class GameStatus(object):
             for playerNumber in xrange(GAME_CONTROLLER_NUM_PLAYERS)]
                             for teamColor in xrange(GAME_CONTROLLER_NUM_TEAMS)]
         self.newEvents = set()
-        self.gameState = InitialGameState
+        self.gameState = UNKNOWN_GAME_STATE
         self.reset()
         self.setColors()
 

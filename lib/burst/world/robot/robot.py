@@ -31,7 +31,7 @@ class Robot(Movable):
         """ return the RobotState - one of gamecontroller.constants.{Initial,Ready,Set,Penalized,Play}RobotState
         """
         # TODO - the interface is fine, the implementation is very cumbersome
-        return self.status.status
+        return self._world.gameStatus.myRobotState()
 
     state = property(get_state)
 

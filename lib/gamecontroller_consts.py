@@ -50,15 +50,16 @@ SetRobotState = 2;
 PlayRobotState = 3;
 PenalizedRobotState = 4;
 
-GameStateToRobotStateMap = {}
-for i in xrange(5): GameStateToRobotStateMap[i] = i;
+GameStateToRobotStateMap = dict([(i, i) for i in xrange(5)])
+GameStateToRobotStateMap[UNKNOWN_GAME_STATE] = UNKNOWN_PLAYER_STATUS
 
 robotStateToChestButtonColor = {
     InitialRobotState : burst_consts.OFF,
     ReadyRobotState : burst_consts.BLUE,
     SetRobotState : burst_consts.YELLOW,
     PlayRobotState : burst_consts.GREEN,
-    PenalizedRobotState : burst_consts.RED, }
+    PenalizedRobotState : burst_consts.RED,
+    UNKNOWN_PLAYER_STATUS : burst_consts.RED}
 
 # Debugging helpers
 game_state_to_string_d = {

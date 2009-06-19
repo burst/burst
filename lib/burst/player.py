@@ -27,8 +27,9 @@ Other callbacks that are more like implementation details but might be important
 
 from events import *
 import burst
+import burst.moves.poses as poses
 import burst_consts
-from gamecontroller.constants import (InitialRobotState,
+from burst_consts import (InitialRobotState,
     PenalizedRobotState, PlayRobotState, SetRobotState,
     ReadyRobotState,
     InitialGameState, ReadyGameState, FinishGameState,
@@ -37,7 +38,10 @@ from gamecontroller.constants import (InitialRobotState,
 
 class Player(object):
 
-    def __init__(self, world, eventmanager, actions):
+    def __init__(self, world, eventmanager, actions, initial_pose=poses.INITIAL_POS):
+        """ You may want to override this to set your own
+        initial_pose.
+        """
         self._world = world
         self._eventmanager = eventmanager
         self._actions = actions
@@ -62,6 +66,7 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
+        self._initial_pose = initial_pose
 
     def _register(self, callback, event):
         self._eventsToCallbacksMapping[event] = callback

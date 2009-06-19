@@ -168,6 +168,12 @@ class EventManager(object):
         abstime = self._world.time + max(self.dt, dt)
         heappush(self._call_later, (abstime, callback, args, kw))
 
+    def callLaterBD(self, dt):
+        """ returns a BurstDeferred which is called in dt seconds """
+        bd = self.burst_deferred_maker.make(self)
+        self.callLater(dt, bd.callOnDone)
+        return bd
+
     def cancelCallLater(self, callback):
         if callback in self._call_later:
             self._call_later.remove(callback)
@@ -499,8 +505,8 @@ class BasicMainLoop(object):
             self._printTraceTickerHeader()
         # First do a single world update - get values for all variables, etc.
         self.doSingleStep()
-        # Second, queue player.
-        self._player.onStart()
+        # Second, set stiffness, move to initial position, and queue player entrace.
+        self._actions._initPoseAndStiffness(self._player._initial_pose).onDone(self._player.onStart)
 
     def doSingleStep(self):
         """ call once for every loop iteration

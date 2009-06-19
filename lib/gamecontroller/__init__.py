@@ -3,7 +3,7 @@
 
 import socket
 
-import constants
+import gamecontroller_consts as constants
 import burst_consts # sorry, should not be here - but I find a single consts file easier.
 from message import GameControllerMessage
 

@@ -18,7 +18,44 @@ from kicking import BallKicker
 from headtracker import Tracker, Searcher
 from passing import passBall
 
+from burst_consts import (InitialRobotState,
+    ReadyRobotState, SetRobotState, PlayRobotState,
+    FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS)
+
 #######
+
+any_move_allowed = set([ReadyRobotState, PlayRobotState, UNKNOWN_PLAYER_STATUS])
+head_moves_allowed = any_move_allowed.union([InitialRobotState, FinishGameState])
+
+def legal(f, group):
+    """ disallow movement according to state, according to the SPL 2009 rules.
+    They basically say:
+     Initial - cannot move anything except head (recheck)
+     Ready - do whatever you want (you have 45 seconds, but this is not enforced here - or maybe it will be, we'll see)
+     Set - only head moves allowed.
+     Play - anything goes
+     Finished - who cares?
+     Penalized - nothing at all, not even winking.
+    """
+    def wrapper(self, *args, **kw):
+        state = self._world.robot.state
+        if state in group:
+            return f(self, *args, **kw)
+        else: # buddy, stop right here!
+            print "Actions: ILLEGAL MOVE: %s" % f.func_name
+            import pdb; pdb.set_trace()
+            return self._eventmanager.callLaterBD(self._eventmanager.dt)
+    wrapper.func_doc = f.func_doc
+    wrapper.func_name = f.func_name
+    return wrapper
+
+def legal_head(f):
+    return legal(f, head_moves_allowed)
+
+def legal_any(f):
+    return legal(f, any_move_allowed)
+
+# NOTE: I'm applying legal_head/legal_any only to the lower level. maybe also to higher? (i.e. kickBall)
 
 class Actions(object):
     """ High level class used by Player to initiate any action that the robot does,
@@ -121,6 +158,7 @@ class Actions(object):
     #    Mid Level - any motion that uses callbacks
     #===============================================================================
 
+    @legal_any
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
         """
@@ -143,7 +181,8 @@ class Actions(object):
             steps_before_full_stop = steps_before_full_stop,
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
-        
+
+    @legal_any
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
         print walk
         self.setWalkConfig(walk.walkParameters)
@@ -158,6 +197,7 @@ class Actions(object):
         return self._movecoordinator.walk(d, duration=duration,
                             description=('turn', deltaTheta, walk))
 
+    @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
@@ -216,25 +256,7 @@ class Actions(object):
         return self._movecoordinator.walk(d, duration=duration,
                     description=('sideway', delta_x, delta_y, walk))
 
-    def initPoseAndStiffness(self, pose=poses.INITIAL_POS):
-        """ Sets stiffness, then sets initial position for body and head.
-        Returns a BurstDeferred.
-        """
-        # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
-        bd = self._make(self)
-        def doMove(_):
-            if pose:
-                DeferredList([
-                    #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
-                    self.executeMove(pose).getDeferred()
-                ]).addCallback(lambda _: bd.callOnDone())
-            else:
-                bd.callOnDone()
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
-        #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
-        # we ignore this deferred because the STAND move takes longer
-        return bd
-    
+   
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         return self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
 
@@ -329,9 +351,6 @@ class Actions(object):
             print "changeHeadAnglesRelativeChained: delta_yaw %1.2f, delta_pitch %1.2f" % (delta_yaw, delta_pitch)
         return self._movecoordinator.changeChainAngles("Head", [delta_yaw, delta_pitch])
 
-    def getAngle(self, joint_name):
-        return self._world.getAngle(joint_name)
-
     # Kick type - one of the kick types defined in actionconsts KICK_TYPE_STRAIGHT/KICK_TYPE_PASSING/etc...
     # Kick leg - the leg used to kick
     # Kick strength - strength of the kick (between 0..1)
@@ -361,10 +380,12 @@ class Actions(object):
         else :
             return self.executeMove(poses.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
     
+    @legal_any
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         return self._movecoordinator.doMove(jointCodes, angles, times, 1,
                                             description=('choreograph', whatmove))
 
+    @legal_any
     def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
             description=('moveradians',)):
         """ Go through a list of body angles, works like northern bites code:
@@ -395,6 +416,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
+    @legal_any
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
@@ -423,6 +445,7 @@ class Actions(object):
         return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
             interp_type, description=description)
 
+    @legal_head
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
         moves is a list, each item contains:
@@ -535,7 +558,38 @@ class Actions(object):
         return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT, "to belly from leap left")
 
     #================================================================================
+    # Private or part of the implementation - not to be called by Player
+    #================================================================================
+
+    def _initPoseAndStiffness(self, pose):
+        """ Not to be called by the player, it is called during
+        BasicMainLoop.preMainLoopInit, and on completion player.onStart
+        is called.
+        
+        Sets stiffness, then sets initial position for body and head.
+        Returns a BurstDeferred.
+        """
+        # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
+        bd = self._make(self)
+        def doMove(_):
+            if pose:
+                DeferredList([
+                    #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
+                    self.executeMove(pose).getDeferred()
+                ]).addCallback(lambda _: bd.callOnDone())
+            else:
+                bd.callOnDone()
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
+        #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
+        # we ignore this deferred because the STAND move takes longer
+        return bd
+ 
+
+    #================================================================================
     # Utilities 
     #================================================================================
+
+    def getAngle(self, joint_name):
+        return self._world.getAngle(joint_name)
 
 

@@ -391,4 +391,6 @@ UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything oth
 RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
 TeamColors = {0: BLUE, 1: RED}
 
+# add all the gamecontroller constants
+from gamecontroller_consts import *
 
