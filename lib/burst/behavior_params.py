@@ -35,7 +35,9 @@ from burst_util import (polar2cart, cart2polar)
  MOVE_KICK
  ) = range(6)
 
-MOVEMENT_PERCENTAGE = 0.9
+MOVEMENT_PERCENTAGE_FORWARD = 0.9
+MOVEMENT_PERCENTAGE_SIDEWAYS = 0.9
+MOVEMENT_PERCENTAGE_TURN = 0.9
 
 ## Kicks
 # Kick consts (Measurements acquired via headTrackingTester)
