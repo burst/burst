@@ -374,6 +374,9 @@ class Actions(object):
     def getSpeedFromDistance(self,kick_dist):
         return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
+    def inside_kick(self, kick_type, kick_leg):
+        return self.executeMove(KICK_TYPES[(kick_type, kick_leg)])
+
     def adjusted_straight_kick(self, kick_leg, kick_side_offset=1.0):
         if kick_leg==LEFT:
             return self.executeMove(poses.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
