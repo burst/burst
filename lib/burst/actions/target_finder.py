@@ -43,7 +43,7 @@ class TargetFinder(ContinuousBehavior):
         return self._targets
 
     def _start(self, firstTime=False):
-        print "TargetFinder looking for: %s" % (','.join(s.name for s in self._targets))
+        print "TargetFinder looking for: %s (first time: %s)" % (','.join(s.name for s in self._targets), firstTime)
         # If a search has completed with our targets and they were found in this frame, go to tracking.
         # We give seen objects a priority over recently_seen objects
         seen_objects = [t for t in self._targets if t.seen]
@@ -58,14 +58,14 @@ class TargetFinder(ContinuousBehavior):
             # waiting on at self._bd ; because Tracker doesn't provide any bd we create
             # one using self._actions._make
             self._bd = self._actions._make(self)
-            self._bd.onDone(self._start)
+            self._bd.onDone(lambda _, self=self: self._start())
             self._actions.track(target, lostCallback=self._bd.callOnDone)
             self._callOnTargetFoundCB()
         else:
             # none of our targets are currently seen, start a new search.
             print "targets not seen (%s), searching for it" % [t.name for t in self._targets]
             self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
-            self._bd.onDone(self._start)
+            self._bd.onDone(lambda _, self=self: self._start())
             if not firstTime:
                 self._callOnTargetLostCB()
 
