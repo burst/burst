@@ -9,6 +9,7 @@ Created on Jun 16, 2009
 # local imports
 #import burst
 from burst.behavior import ContinuousBehavior
+from burst_util import DeferredList
 
 class TargetFinder(ContinuousBehavior):
     ''' Continuous target finder & tracker '''
@@ -70,6 +71,13 @@ class TargetFinder(ContinuousBehavior):
                 self._callOnTargetLostCB()
 
     def stop(self):
+        """ stops the finder (and internal tracker/searcher).
+        returns a burst deferred on the completion of the stop (based on a possible
+        current head movement """
         super(TargetFinder, self).stop()
-        self._actions.tracker.stop()
-        self._actions.searcher.stop()
+        bd1 = self._actions.tracker.stop()
+        bd2 = self._actions.searcher.stop()
+        # TODO: I could/should return the self._actions.getCurrentHeadBD(), but that is buggy - it calls
+        # Stopped twice. So for now this works.
+        return self._actions._wrap(DeferredList([bd1.getDeferred(), bd2.getDeferred()]), data=self)
+
