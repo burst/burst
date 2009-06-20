@@ -863,6 +863,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._brokername = "soaptest"
         self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
+        self._camera_param = (320, 240, 320*240*2) # these are updated later, but should not be changed, at least not this robocup..
         self._registered_to_camera = False
         # raw string (length/meaning depends on colorspace, resolution), width, height
         self._camera_raw_frame = (None, 0, 0)
@@ -919,6 +920,9 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._camera_param_length_factor_d = {vd.kYUV422InterlacedColorSpace: 2}
         width, height = self._camera_param_dimensions_d[self._camera_resolution]
         length = self._camera_param_length_factor_d[self._camera_colorspace] * width * height
+        if (width, height, length) != self._camera_param:
+            print "WARNING: new param different from old: new = %s, old = %s" % (self._camera_param,
+                str((width, height, length)))
         self._camera_param = (width, height, length)
         self._registered_to_camera = True
         return self._camera_name
@@ -929,8 +933,6 @@ class NaoQiConnection(BaseNaoQiConnection):
     def get_imops(self):
         if hasattr(self, '_image_convertion'):
             return self._image_convertion
-            self._image_convertion = (None, None)
-            return
         width, height, length = self._camera_param
         imops = self.has_imops()
         if not imops:

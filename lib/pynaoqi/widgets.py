@@ -353,6 +353,13 @@ class GtkTimeTicker(TaskBaseWindow):
     def setYLimits(self, lim_min, lim_max):
         self._axis.set_ylim(lim_min, lim_max)
 
+# Image processing stuff
+
+def updateImFromRGB(im, rgb, size):
+    width, height = size
+    pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
+    im.set_from_pixbuf(pixbuf)
+
 def wrap_ctypes_array_returner(f, size):
     """ for some reason just saying "restype=c_void_p" doesn't
     work, and this seems to work """
@@ -372,15 +379,15 @@ class ImopsHelp(object):
         self._get_thresholded = wrap_ctypes_array_returner(self._imops.get_thresholded, 320*240)
         self._get_big_table = wrap_ctypes_array_returner(self._imops.get_big_table, 128*128*128)
 
-    def on_frame(self):
+    def on_frame(self, yuv):
         """Actually do object recognition - take the yuv from video and
         pass it to the Thresholded instance"""
-        self._imops.on_frame(self._video._yuv)
-        self.get_threshold()
+        self._imops.on_frame(yuv)
+        return self.get_thresholded()
 
-    def get_threshold(self):
+    def get_thresholded(self):
         self._video._thresholded = self._get_thresholded()
-        self._video.showThresholded()
+        return self._video._thresholded
 
     def get_big_table(self):
         return self._get_big_table()
@@ -396,68 +403,26 @@ class ImopsHelp(object):
         """
         return set(self.get_big_table())
 
-class Calibrator(BaseWindow):
+class ImopsMixin(object):
 
-    def __init__(self):
-        BaseWindow.__init__(self, builder_file='calibrator.glade',
-            top_level_widget_name='calibrator')
-        self._w.show_all()
-
-    def on_file_selection_changed(self, fs):
-        # fs = fileselector
-        gfile, filename = fs.get_file(),fs.get_filename()
-        if filename is None: return
-        if os.path.splitext(filename)[1].lower() != '.nbfrm': return
-        yuv, version, joints, sensors = burst_util.read_nbfrm(filename)
-        print version,'\r'
-
-class VideoWindow(TaskBaseWindow):
-
-    """ Display the RGB of the received YUV image from NaoCam module directly
-    or after thresholding, allow changing of angle to a specific point (comands
-    head pitch and yaw only). Access to pixmaps and thresholded image in
-    self._yuv, self._rgb, self._thresholded
-    """
-
-    def __init__(self, con):
-        super(VideoWindow, self).__init__(tick_cb=self.getNew, dt=0.5)
+    def init_imops_mixin(self, con):
+        """ call this in __init__ or wherever, but don't use anything before you do """
         if con.has_imops() is None:
             print "Video window not opened, imops isn't working, please fix"
-            return
-        self._update_display = True
-        self._reading_nbfrm = False
-        self._threshold = False # to threshold or not to threshold
-        self._con = con
-        self._tables = {}
-        self._con.registerToCamera().addCallback(self._finishInit)
-        self._im = gtkim = gtk.Image()
-        # you don't get button press on gtk.Image(), setting add_events on window
-        # and gtkim doesn't cause propogation, don't know what does.
-        self._dmove = succeed(None)
-        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-        self._w.connect("button-press-event", self._onButtonClick)
-        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
-        self._w.connect("motion-notify-event", self._onMouseMotion)
-        c = gtk.VBox()
-        bottom = gtk.HBox()
-        self._status = gtk.Label('        ')
-        c.add(self._im)
-        c.pack_start(bottom, False, False, 0)
-        bottom.add(self._status)
-        buttons = []
-        for attr, label, callback in [
-            ('_threshold_button', 'threshold', self.threshold),
-            ('_display_update_button', 'update', self.toggleDisplayUpdate)]:
-            b = gtk.Button(label)
-            b.connect('clicked', callback)
-            buttons.append(b)
-            setattr(self, attr, b)
-            bottom.pack_start(b)
-        self._w.add(c)
-        self._w.show_all()
-
-    def toggleDisplayUpdate(self, *args):
-        self._update_display = not self._update_display
+            return False
+        # get the library, initialize the arrays
+        self._imops, self._rgb = con.get_imops()
+        self._thresholded = ' '*(consts.IMAGE_WIDTH_INT*consts.IMAGE_HEIGHT_INT)
+        # store some of the required functions (or bust if something is wrong)
+        self.yuv422_to_rgb888 = self._imops.yuv422_to_rgb888
+        self.yuv422_to_thresholded = self._imops.yuv422_to_thresholded
+        self.thresholded_to_rgb = self._imops.thresholded_to_rgb
+        self.write_index_to_rgb = self._imops.write_index_to_rgb
+        self.imops = ImopsHelp(self)
+        self.default_table()
+        self.webots_table()
+        self._table = self._installed_table = image.get_nao_mtb()
+        return True
 
     # Color table support
 
@@ -493,6 +458,79 @@ class VideoWindow(TaskBaseWindow):
 
     def installed_table(self):
         self._table = self._installed_table
+
+class Calibrator(BaseWindow, ImopsMixin):
+    """ Helper for color table calibration, doesn't actually calibrate,
+    but anyway; you can check the performance of a colortable on a bunch of nbfrm's with
+    this, first part is hand tagging each photo, and the second checks a color
+    table against it. Should show you a table for the results.
+    """
+
+    def __init__(self, con):
+        BaseWindow.__init__(self, builder_file='calibrator.glade',
+            top_level_widget_name='calibrator')
+        self._w.show_all()
+        self._im = self._builder.get_object('image')
+        self.init_imops_mixin(con)
+        self._yuv_size = (IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT) # yeah, hard coded
+
+    def on_file_selection_changed(self, fs):
+        # fs = fileselector
+        filename = fs.get_filename()
+        if filename is None: return
+        if os.path.splitext(filename)[1].lower() != '.nbfrm': return
+        yuv, version, joints, sensors = burst_util.read_nbfrm(filename)
+        self.yuv422_to_rgb888(yuv, self._rgb, len(yuv), len(self._rgb))
+        updateImFromRGB(self._im, self._rgb, self._yuv_size)
+
+
+class VideoWindow(TaskBaseWindow, ImopsMixin):
+
+    """ Display the RGB of the received YUV image from NaoCam module directly
+    or after thresholding, allow changing of angle to a specific point (comands
+    head pitch and yaw only). Access to pixmaps and thresholded image in
+    self._yuv, self._rgb, self._thresholded
+    """
+
+    def __init__(self, con):
+        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=0.5)
+        if not self.init_imops_mixin(con):
+            return
+
+        self._update_display = True
+        self._reading_nbfrm = False
+        self._threshold = False # to threshold or not to threshold
+        self._con = con
+        self._tables = {}
+        self._con.registerToCamera().addCallback(self._finishInit)
+        self._im = gtkim = gtk.Image()
+        # you don't get button press on gtk.Image(), setting add_events on window
+        # and gtkim doesn't cause propogation, don't know what does.
+        self._dmove = succeed(None)
+        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self._w.connect("button-press-event", self._onButtonClick)
+        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
+        self._w.connect("motion-notify-event", self._onMouseMotion)
+        c = gtk.VBox()
+        bottom = gtk.HBox()
+        self._status = gtk.Label('        ')
+        c.add(self._im)
+        c.pack_start(bottom, False, False, 0)
+        bottom.add(self._status)
+        buttons = []
+        for attr, label, callback in [
+            ('_threshold_button', 'threshold', self.threshold),
+            ('_display_update_button', 'update', self.toggleDisplayUpdate)]:
+            b = gtk.Button(label)
+            b.connect('clicked', callback)
+            buttons.append(b)
+            setattr(self, attr, b)
+            bottom.pack_start(b)
+        self._w.add(c)
+        self._w.show_all()
+
+    def toggleDisplayUpdate(self, *args):
+        self._update_display = not self._update_display
 
     # Reading external images support
 
@@ -547,18 +585,6 @@ class VideoWindow(TaskBaseWindow):
         images. Does all initialization that can be postponed (read the imops
         library, read the color tables), and actually starts the task to retrieve
         images (which consumes loads of bandwidth) """
-        # get the library, initialize the arrays
-        self._imops, self._rgb = self._con.get_imops()
-        self._thresholded = ' '*(consts.IMAGE_WIDTH_INT*consts.IMAGE_HEIGHT_INT)
-        # store some of the required functions (or bust if something is wrong)
-        self.yuv422_to_rgb888 = self._imops.yuv422_to_rgb888
-        self.yuv422_to_thresholded = self._imops.yuv422_to_thresholded
-        self.thresholded_to_rgb = self._imops.thresholded_to_rgb
-        self.write_index_to_rgb = self._imops.write_index_to_rgb
-        self.imops = ImopsHelp(self)
-        self.default_table()
-        self.webots_table()
-        self._table = self._installed_table = image.get_nao_mtb()
         #actually, let's set the correct table here:
         if burst.connecting_to_webots():
             self.webots_table()
@@ -621,12 +647,6 @@ class VideoWindow(TaskBaseWindow):
 
     # Getting the Image
 
-    def showThresholded(self):
-        """ lets you do an external set to _threadholded and see
-        the results, unsynchronized with the yuv getting task """
-        self.thresholded_to_rgb(self._thresholded, self._rgb)
-        self.updateDisplayedFromRgb()
-
     # this is the registered task
     def getNew(self):
         if self._reading_nbfrm: # short circuit if we aren't really listening.
@@ -646,15 +666,12 @@ class VideoWindow(TaskBaseWindow):
             thresholded = self._thresholded
             #self.yuv422_to_thresholded(self._table, yuv, thresholded)
             #self.thresholded_to_rgb(thresholded, rgb)
-            self.imops.on_frame()
+            self.imops.on_frame(self._yuv)
+            self.thresholded_to_rgb(self._thresholded, self._rgb)
+            updateImFromRGB(self._im, self._rgb, self._yuv_size)
         else:
             self.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
-            self.updateDisplayedFromRgb()
-
-    def updateDisplayedFromRgb(self):
-        width, height = self._yuv_size
-        pixbuf = gtk.gdk.pixbuf_new_from_data(self._rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
-        self._im.set_from_pixbuf(pixbuf)
+            updateImFromRGB(self._im, self._rgb, self._yuv_size)
         
     def _update(self, result):
         self.onYUV(result)

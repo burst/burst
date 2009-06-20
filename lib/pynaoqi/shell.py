@@ -103,7 +103,7 @@ def one_window(name, ctor):
     return glob[name]
 
 video = lambda: one_window('video_window', lambda: VideoWindow(con))
-calibrator = lambda: one_window('calibrator_window', Calibrator)
+calibrator = lambda: one_window('calibrator_window', lambda: Calibrator(con))
 
 #########################################################
 
