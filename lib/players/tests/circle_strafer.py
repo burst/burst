@@ -43,8 +43,8 @@ class circle_strafer(Player):
 
         #if self.counter < 25 and (self.counter % 3) == 1:
         if self.counter < 10:      
-            #self._actions.executeCircleStrafeClockwise().onDone(self.onTurnDone)
-            self._actions.executeCircleStrafeCounterClockwise().onDone(self.onTurnDone)
+            self._actions.executeCircleStrafeClockwise().onDone(self.onTurnDone)
+            #self._actions.executeCircleStrafeCounterClockwise().onDone(self.onTurnDone)
             return
 #        self.onTurnDone()        
 #        return
