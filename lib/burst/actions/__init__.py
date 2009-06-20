@@ -4,7 +4,7 @@ from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
     Deferred, DeferredList, chainDeferreds)
 from burst.events import *
-import burst.moves as moves
+import burst.moves.choreograph as choreograph
 import burst.moves.poses as poses
 import burst.moves.walks as walks
 from burst.world import World
@@ -273,7 +273,7 @@ class Actions(object):
         return chainDeferreds(dgens)
 
     def setWalkConfig(self, param):
-        """ param should be one of the moves.WALK_X """
+        """ param should be one of the walks.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
@@ -522,43 +522,43 @@ class Actions(object):
     # TODO? - generate these from moves.choreograph
 
     def executeGettingUpBelly(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BELLY, "get up belly")
+        return self.executeMoveChoreograph(choreograph.GET_UP_BELLY, "get up belly")
 
     def executeGettingUpBack(self):
-        return self.executeMoveChoreograph(moves.GET_UP_BACK, "get up back")
+        return self.executeMoveChoreograph(choreograph.GET_UP_BACK, "get up back")
 
     def executeLeapLeft(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT, "goalie leap left")
+        return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_LEFT, "goalie leap left")
     
     def executeLeapLeftSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_LEFT_SAFE, "goalie leap left safe")
+        return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_LEFT_SAFE, "goalie leap left safe")
 
     def executeLeapRight(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT, "goalie leap right")
+        return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_RIGHT, "goalie leap right")
     
     def executeLeapRightSafe(self):
-        return self.executeMoveChoreograph(moves.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
+        return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
 
     def executeCircleStrafeClockwise(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFE_CLOCKWISE, "circle strafe clockwise")
+        return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFE_CLOCKWISE, "circle strafe clockwise")
 
     def executeCircleStrafeCounterClockwise(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFE_COUNTER_CLOCKWISE, "circle strafe clockwise")
+        return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFE_COUNTER_CLOCKWISE, "circle strafe clockwise")
 
     def executeCircleStraferInitPose(self):
-        return self.executeMoveChoreograph(moves.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 
+        return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 
 
     def executeTurnCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CW, "turn cw") 
+        return self.executeMoveChoreograph(choreograph.TURN_CW, "turn cw") 
 
     def executeTurnCCW(self):
-        return self.executeMoveChoreograph(moves.TURN_CCW, "turn ccw")
+        return self.executeMoveChoreograph(choreograph.TURN_CCW, "turn ccw")
     
     def executeToBellyFromLeapRight(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_RIGHT, "to belly from leap right")
+        return self.executeMoveChoreograph(choreograph.TO_BELLY_FROM_LEAP_RIGHT, "to belly from leap right")
 
     def executeToBellyFromLeapLeft(self):
-        return self.executeMoveChoreograph(moves.TO_BELLY_FROM_LEAP_LEFT, "to belly from leap left")
+        return self.executeMoveChoreograph(choreograph.TO_BELLY_FROM_LEAP_LEFT, "to belly from leap left")
 
     #================================================================================
     # Private or part of the implementation - not to be called by Player
@@ -577,7 +577,7 @@ class Actions(object):
         def doMove(_):
             if pose:
                 DeferredList([
-                    #self.executeHeadMove(moves.HEAD_MOVE_FRONT_FAR).getDeferred(),
+                    #self.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).getDeferred(),
                     self.executeMove(pose).getDeferred()
                 ]).addCallback(lambda _: bd.callOnDone())
             else:

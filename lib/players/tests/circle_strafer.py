@@ -23,7 +23,6 @@ class circle_strafer(Player):
     def onStart(self):
         self.counter = 0
         #self._eventanager.register(EVENT_KP_CHANGED, self.onKickingPointChanged)
-        self._actions.initPoseAndStiffness()
         self._actions.executeCircleStraferInitPose().onDone(self.doNextAction)
 
         # do a quick search for kicking point

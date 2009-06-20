@@ -6,6 +6,4 @@ NAOJOINTS_EXECUTE_MOVE_MOVES = "INITIAL_POS SIT_POS ZERO_POS STAND STAND_UP_FRON
 
 #from walks import * # users should start using moves.walks instead
 # allows for easier personalization.
-from choreograph import *
-
 
