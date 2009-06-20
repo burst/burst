@@ -884,3 +884,14 @@ def write_nbfrm(filename, yuv, version, joints, sensors):
         fd.write(str(version) + ' ')
         fd.write(' '.join('%f' % f for f in list(joints) + list(sensors)))
 
+# Database
+def ensure_table(cur, tablename, tablecontents):
+    from sqlite3 import OperationalError
+    try:
+        cur.execute('select * from %s' % tablename) # TODO - you know this is bad, right?
+        return
+    except OperationalError:
+        pass
+
+    cur.execute('create table %s (%s)' % (tablename, tablecontents))
+

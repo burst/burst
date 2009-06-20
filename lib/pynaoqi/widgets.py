@@ -22,6 +22,7 @@ except:
     pass
 
 import burst_util
+from burst_util import ensure_table
 import burst
 from burst_consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
 import burst_consts as consts
@@ -466,23 +467,63 @@ class Calibrator(BaseWindow, ImopsMixin):
     table against it. Should show you a table for the results.
     """
 
+    db_fullname = os.path.join(os.environ['HOME'], 'src/burst/data/calibration/human_classification.sqlite3')
+
     def __init__(self, con):
         BaseWindow.__init__(self, builder_file='calibrator.glade',
             top_level_widget_name='calibrator')
         self._w.show_all()
         self._im = self._builder.get_object('image')
+        self._filechooser = self._builder.get_object('filechooser')
+        filefilter = gtk.FileFilter()
+        filefilter.add_pattern('*.nbfrm')
+        filefilter.add_pattern('*.NBFRM')
+        self._filechooser.set_filter(filefilter)
         self.init_imops_mixin(con)
         self._yuv_size = (IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT) # yeah, hard coded
+        self._init_database()
+
+    def _init_database(self):
+        import sqlite3
+        if not os.path.exists(self.db_fullname):
+            print "creating a new database for human classification in %s" % self.db_fullname
+        self._database = sqlite3.connect(self.db_fullname)
+        self._cursor = self._database.cursor()
+        ensure_table(self._database, 'config', 'param string, value string')
+        self._config = {'lastfilename': ''}
+        self._config.update(dict(self._cursor.execute('select * from config').fetchall()))
+        lastfilename = self._config['lastfilename']
+        if os.path.exists(lastfilename):
+            self._filechooser.set_filename(lastfilename)
+        elif os.path.exists(os.path.dirname(lastfilename)):
+            self._filechooser.set_current_folder(os.path.dirname(lastfilename))
+        ensure_table(self._cursor, 'human_ball', 'has_ball boolean, ball_x int, ball_y int')
+
+    def _store_config(self):
+        self._cursor.execute('delete from config')
+        for k, v in self._config.items():
+            print "storing %s: %s" % (k, v)
+            self._cursor.execute('insert into config values (\'%s\', \'%s\')' % (str(k), str(v)))
+        self._cursor.connection.commit()
+
+    def _onDestroy(self, target, event):
+        self._store_config()
+        super(Calibrator, self)._onDestroy(target, event)
+
+    # Callbacks - edit the calibrator.glade file to change / add
 
     def on_file_selection_changed(self, fs):
         # fs = fileselector
         filename = fs.get_filename()
         if filename is None: return
         if os.path.splitext(filename)[1].lower() != '.nbfrm': return
+        self._config['lastfilename'] = filename
         yuv, version, joints, sensors = burst_util.read_nbfrm(filename)
         self.yuv422_to_rgb888(yuv, self._rgb, len(yuv), len(self._rgb))
         updateImFromRGB(self._im, self._rgb, self._yuv_size)
 
+    def on_image_button_press_event(self, *args):
+        print args
 
 class VideoWindow(TaskBaseWindow, ImopsMixin):
 
