@@ -4,6 +4,13 @@
 import os
 import sys
 
+from twisted.internet import gtk2reactor
+# gtk2reactor must happen before importing burst - FIXME
+try:
+    gtk2reactor.install()
+except:
+    pass
+
 if not 'AL_DIR' in os.environ:
     os.environ['AL_DIR'] = '/usr/local/nao'
     print "warning: $AL_DIR not defined, defining to %s" % os.environ['AL_DIR']

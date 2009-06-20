@@ -21,7 +21,7 @@ class KickTest(Player):
         #self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
-        self._actions.initPoseAndStiffness().onDone(self.startWaiting)
+        self.startWaiting()
         #self.searchBall()
         #self._actions.kick(kick_type=burst.actions.KICK_TYPE_STRAIGHT,kick_leg=LEFT)
         self._actions.adjusted_straight_kick(LEFT, 0.0)
