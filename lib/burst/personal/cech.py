@@ -20,6 +20,7 @@ poses.STRAIGHT_WALK_INITIAL_POSE = [
 ## Walks
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import burst.moves.walks as walks
+import burst.moves.choreograph as choreograph
 from burst_consts import DEG_TO_RAD
 
 walks.FIRST_TWO_SLOW_STEPS = False
@@ -44,7 +45,6 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
 #walks.STRAIGHT_WALK.defaultSpeed = 25
 
 def asafwrap(f):
-    import moves.choreograph as choreograph
     setattr(choreograph, f.func_name, f())
 
 @asafwrap
@@ -238,5 +238,4 @@ def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
     return jointCodes, angles, times
-"""
 

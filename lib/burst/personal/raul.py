@@ -120,9 +120,12 @@ to not set stiffness on it.  If you really want to set it's
 stiffness, use setChainStiffness or setJointStiffness, they
 remain unpatched.
 """
+import burst.moves.choreograph as choreograph
 
-"""
-@chorwrap
+def asafwrap(f):
+    setattr(choreograph, f.func_name, f())
+
+@asafwrap
 def CIRCLE_STRAFE_CLOCKWISE():
     jointCodes = list()
     angles = list()
@@ -219,7 +222,7 @@ def CIRCLE_STRAFE_CLOCKWISE():
 
 #CIRCLE_STRAFE_COUNTER_CLOCKWISE = mirrorChoreographMove(*CIRCLE_STRAFE_CLOCKWISE)
 
-@chorwrap
+@asafwrap
 def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     jointCodes = list()
     angles = list()
@@ -315,4 +318,3 @@ def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
     return jointCodes, angles, times
 
-"""
