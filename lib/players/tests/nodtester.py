@@ -8,10 +8,8 @@ from burst.player import Player
 class Nod(Player):
     
     def onStart(self):
-        init_bd = self._actions.initPoseAndStiffness(None)
-        init_bd.onDone(self.doNod)
-        init_bd.onDone(lambda:
-            self._eventmanager.callLater(2.5, self.registerSomethingOnHeadMove))
+        self._eventmanager.callLater(2.5, self.registerSomethingOnHeadMove)
+        self.doNod()
     
     def doNod(self):
         self.log("Will Nod")

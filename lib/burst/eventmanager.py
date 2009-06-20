@@ -13,6 +13,7 @@ from twisted.python import log
 import burst
 from burst_util import DeferredList, func_name, Profiler, succeed
 import burst_util
+import burst.actions
 
 from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -407,6 +408,11 @@ class BasicMainLoop(object):
         stop_deferred = None
         if self._player:
             stop_deferred = self._player.onStop()
+
+        # From this point onwards illegal moves (i.e. anything) are allowed.
+        print "MainLoop: ILLEGAL moves ALLOWED from now on"
+        burst.actions._use_legal = False
+
         if stop_deferred:
             return stop_deferred.onDone(self._onNormalQuit_playerStopDone).getDeferred()
         else:
@@ -506,7 +512,11 @@ class BasicMainLoop(object):
         # First do a single world update - get values for all variables, etc.
         self.doSingleStep()
         # Second, set stiffness, move to initial position, and queue player entrace.
-        self._actions._initPoseAndStiffness(self._player._initial_pose).onDone(self._player.onStart)
+        def setLegalAndCallPlayerOnStart():
+            burst.actions._use_legal = True
+            print "MainLoop: only LEGAL moves allowed from now on"
+            self._player.onStart()
+        self._actions._initPoseAndStiffness(self._player._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):
         """ call once for every loop iteration

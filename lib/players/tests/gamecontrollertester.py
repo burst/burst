@@ -23,8 +23,8 @@ class GameControllerTester(Player):
             if attribute.startswith("EVENT") and attribute not in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME',
                 'EVENT_BALL_BODY_INTERSECT_UPDATE', 'EVENT_LEFT_BUMPER_PRESSED', 'EVENT_RIGHT_BUMPER_PRESSED', 'EVENT_CHEST_BUTTON_PRESSED']:
                 self._eventmanager.register(
-                    lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"),
-                    getattr(events, attribute[:]))
+                    lambda attribute=attribute: sys.stdout.write(attribute+"\n"),
+                    getattr(events, attribute))
 
 
 if __name__ == '__main__':

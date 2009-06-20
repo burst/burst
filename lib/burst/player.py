@@ -36,6 +36,9 @@ from burst_consts import (InitialRobotState,
     SetGameState, PlayGameState, FinishGameState,
     UNKNOWN_GAME_STATE, gameStateToString)
 
+def overrideme(f):
+    return f
+
 class Player(object):
 
     def __init__(self, world, eventmanager, actions, initial_pose=poses.INITIAL_POS):
@@ -92,6 +95,7 @@ class Player(object):
 
     # Start game callbacks
 
+    @overrideme
     def onStart(self):
         """ this is called by event manager. does all initial registrations:
         handle all gamecontroller events
@@ -101,13 +105,19 @@ class Player(object):
         self._world._sentinel.enableDefaultActionSimpleClick(False)
         Player._announceNotSeeingBall(self)
         Player._announceSeeingNoGoal(self)
-        Player.onInitial(self)
+        Player._onYetUnknownGameState(self)
 
-    def onInitial(self):
-        """ This is the Initial Robot State - the actual game state not withstanding, we
-        allow configuration from buttons in this state, and we exit this state either by
+    #####
+
+    def _onYetUnknownGameState(self):
+        """ This is called when we want to configure the robot. We have just been turned
+        on, but the game can be in any of several states:
+         * no game controller running (tests)
+         * Initial state
+         * any other state
+        we allow configuration from buttons in this state, and we exit this state either by
         a chest button click (then we move to penalized), or by a gamecontroller state
-        change
+        change.
         """
         self._configuring = True
         # Buttons:
@@ -117,7 +127,7 @@ class Player(object):
         # Game Controller:
         self._eventmanager.register_oneshot(self._waitForKnownGameState, EVENT_GAME_STATE_CHANGED)
         if self.verbose:
-            self._actions.say("Initial")
+            self._actions.say("Unconfigured")
 
     def _waitForKnownGameState(self):
         game_state = self._world.gameStatus.gameState
@@ -143,13 +153,15 @@ class Player(object):
                 print "Player: saw state %s, continue configuration" % self._world.gameStatus.gameState
             self._eventmanager.register_once(self._onExpectingConfigureGameStateChange, EVENT_GAME_STATE_CHANGED)
         else:
-            # ok, so the game is on foot. But since we are still unconfigured,
+            # ok, so either no gamecontroller (UNKNOWN state), or the game is a-foot. But since we are still unconfigured,
             # we will just wait for the chest button
             if self.verbose:
                 print "Player: configured through gamecontroller gamestate change"
-            self.onConfigured()
+            self._onConfigured()
 
-    def onConfigured(self):
+    #####
+
+    def _onConfigured(self):
         """ we get here when done configuring """
         self._configuring = False
         if self.verbose:
@@ -171,7 +183,7 @@ class Player(object):
         self.enterGame()
 
     def enterGame(self):
-        self._actions.say("Hello. I am a default player. I will now say the first million digits of pi. not")
+        self._actions.say("This is the default Player dot enterGame, please override me")
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player
@@ -239,8 +251,12 @@ class Player(object):
         the chest button has been pressed we stop being in the configure
         state, and call onConfigured
         """
+        print "Player: onChestButtonPressed"
         if self._configuring:
-            self.onConfigured()
+            self._onConfigured()
+        # TODO - penalize me, also make sure that if I am penalized from chest
+        # then I remain so until either I am unpenalized from chest, OR the game
+        # state changes to Penalized (for me), and THEN Unpenalized from game state.
 
     #############
     # Utilities #

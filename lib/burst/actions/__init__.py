@@ -27,6 +27,9 @@ from burst_consts import (InitialRobotState,
 any_move_allowed = set([ReadyRobotState, PlayRobotState, UNKNOWN_PLAYER_STATUS])
 head_moves_allowed = any_move_allowed.union([InitialRobotState, FinishGameState])
 
+_use_legal = False # Global (module) flag, set by MainLoop before calling onStart of robot,o
+                   # and after quit initated, for initPose and for sit pose at start and end respectively.
+
 def legal(f, group):
     """ disallow movement according to state, according to the SPL 2009 rules.
     They basically say:
@@ -39,7 +42,7 @@ def legal(f, group):
     """
     def wrapper(self, *args, **kw):
         state = self._world.robot.state
-        if state in group:
+        if not _use_legal or state in group:
             return f(self, *args, **kw)
         else: # buddy, stop right here!
             print "Actions: ILLEGAL MOVE: %s" % f.func_name
