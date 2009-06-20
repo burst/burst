@@ -31,13 +31,33 @@ import burst.image as image
 
 class BaseWindow(object):
 
-    """ Any window we shall open, any widget """
+    """ Contains a window, either as a gtk.Window() or from a supplied builder file
+    and name for toplevel widget in that file.
+    """
 
     counter = 1
 
-    def __init__(self):
+    def __init__(self, builder_file=None, top_level_widget_name=None):
         self._title = 'base'
-        self._w = w = gtk.Window()
+        if builder_file:
+            # assume builder_file is a relative path to our module's location
+            builder_file = os.path.join(os.path.dirname(__file__), builder_file)
+            if not os.path.exists(builder_file):
+                print "WARNING: BaseWindow: no such file %s (cwd = %s)" % (builder_file, os.getcwd())
+                builder_file = None
+        self._w = None
+        if builder_file:
+            self._builder_file = builder_file
+            self._top_level_widget_name = top_level_widget_name
+            self._builder = gtk.Builder()
+            self._builder.add_from_file(builder_file)
+            self._builder.connect_signals(dict([(x, getattr(self, x)) for x in dir(self)]))
+            self._w = w = self._builder.get_object(top_level_widget_name)
+        if self._w is None:
+            if builder_file:
+                print "WARNING: no widget named %s in %s" % (top_level_widget_name,
+                    builder_file)
+            self._w = w = gtk.Window()
         w.connect("delete-event", self._onDestroy)
         self.counter += 1
         self.onClose = Deferred()
@@ -376,6 +396,21 @@ class ImopsHelp(object):
         """
         return set(self.get_big_table())
 
+class Calibrator(BaseWindow):
+
+    def __init__(self):
+        BaseWindow.__init__(self, builder_file='calibrator.glade',
+            top_level_widget_name='calibrator')
+        self._w.show_all()
+
+    def on_file_selection_changed(self, fs):
+        # fs = fileselector
+        gfile, filename = fs.get_file(),fs.get_filename()
+        if filename is None: return
+        if os.path.splitext(filename)[1].lower() != '.nbfrm': return
+        yuv, version, joints, sensors = burst_util.read_nbfrm(filename)
+        print version,'\r'
+
 class VideoWindow(TaskBaseWindow):
 
     """ Display the RGB of the received YUV image from NaoCam module directly
@@ -491,7 +526,6 @@ class VideoWindow(TaskBaseWindow):
         if location:
             self._frames_location = location
         self._frame_count = 0
-
 
     def capture(self):
         if not hasattr(self, '_frames_location'):

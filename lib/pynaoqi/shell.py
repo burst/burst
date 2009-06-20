@@ -67,7 +67,7 @@ from burst import field
 
 if using_gtk:
     from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
-        CanvasTicker, VideoWindow, PlottingWindow)
+        CanvasTicker, VideoWindow, PlottingWindow, Calibrator)
 
     from pynaoqi.gui import Joints
 
@@ -93,12 +93,18 @@ def _onVideoClose(window):
     global video_window
     video_window = None
 
-def video():
-    global video_window
-    if video_window is None:
-        video_window = VideoWindow(con)
-        video_window.onClose.addCallback(_onVideoClose)
-    return video_window
+def one_window(name, ctor):
+    glob = globals()
+    def onClose(window):
+        globals()[name] = None
+    if not name in glob or glob[name] is None:
+        obj = glob[name] = ctor()
+        obj.onClose.addCallback(onClose)
+    return glob[name]
+
+video = lambda: one_window('video_window', lambda: VideoWindow(con))
+calibrator = lambda: one_window('calibrator_window', Calibrator)
+
 #########################################################
 
 def canvaspairs(l, limits=[0,320,0,320], statics=None):
@@ -406,6 +412,7 @@ def make_shell_namespace(use_pylab):
             fieldpairs = fieldpairs,
             fieldshow = fieldshow,
             video = video,
+            calibrator = calibrator,
             CanvasTicker = CanvasTicker,
             gtk = gtk,
         ))

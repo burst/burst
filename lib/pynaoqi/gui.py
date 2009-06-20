@@ -2,12 +2,6 @@
 from time import time
 from math import pi
 
-from twisted.internet import gtk2reactor
-try:
-    gtk2reactor.install()
-except:
-    pass
-
 from twisted.internet import reactor, task
 from twisted.internet.defer import succeed
 from twisted.internet.threads import deferToThread
@@ -585,6 +579,11 @@ class JointsMain(Joints):
         reactor.stop()
 
 def main():
+    from twisted.internet import gtk2reactor
+    try:
+        gtk2reactor.install()
+    except:
+        pass
     joints = JointsMain()
     reactor.run()
 

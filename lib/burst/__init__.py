@@ -85,7 +85,7 @@ try:
     __import__(personal_filename)
 except ImportError, e:
     print "\nERROR: Personalization missing: %s" % e
-    raise SystemExit
+    print "       using no personalization"
 except Exception, e:
     # TODO - this swallowes the actual error - the traceback is useless, at
     # least for syntax errors.

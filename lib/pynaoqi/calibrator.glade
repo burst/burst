@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<interface>
+  <!-- interface-requires gtk+ 2.8 -->
+  <!-- interface-naming-policy project-wide -->
+  <object class="GtkWindow" id="calibrator">
+    <child>
+      <object class="GtkHBox" id="hbox1">
+        <property name="visible">True</property>
+        <child>
+          <object class="GtkFileChooserWidget" id="filechooser">
+            <property name="visible">True</property>
+            <property name="orientation">vertical</property>
+            <signal name="selection_changed" handler="on_file_selection_changed"/>
+          </object>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkImage" id="image">
+            <property name="visible">True</property>
+            <property name="stock">gtk-missing-image</property>
+          </object>
+          <packing>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkTreeStore" id="icons"/>
+</interface>
