@@ -7,9 +7,7 @@ from burst.player import Player
 class centerTester(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness().onDone(
-            lambda: self._actions.tracker.center(self._world.ball, self.onLost)).onDone(
-            self.wrapUp)
+        lambda: self._actions.tracker.center(self._world.ball, self.onLost).onDone(self.wrapUp)
 
     def onLost(self):
         print "lost ball"
