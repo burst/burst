@@ -43,10 +43,11 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
 
 #walks.STRAIGHT_WALK.defaultSpeed = 25
 
+def asafwrap(f):
+    import moves.choreograph as choreograph
+    setattr(choreograph, f.func_name, f())
 
-
-"""
-@chorwrap
+@asafwrap
 def CIRCLE_STRAFE_CLOCKWISE():
     jointCodes = list()
     angles = list()
@@ -142,7 +143,7 @@ def CIRCLE_STRAFE_CLOCKWISE():
     return jointCodes, angles, times
 
 
-@chorwrap
+@asafwrap
 def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     jointCodes = list()
     angles = list()
