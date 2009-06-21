@@ -41,12 +41,12 @@ def overrideme(f):
 
 class Player(object):
 
-    def __init__(self, world, eventmanager, actions, initial_pose=poses.INITIAL_POS):
+    def __init__(self, actions, main_behavior_class, initial_pose=poses.INITIAL_POS):
         """ You may want to override this to set your own
         initial_pose.
         """
-        self._world = world
-        self._eventmanager = eventmanager
+        self._world = actions._world
+        self._eventmanager = actions._eventmanager
         self._actions = actions
         self._eventsToCallbacksMapping = {}
         self.verbose = burst.options.verbose_player
@@ -70,6 +70,7 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
         self._initial_pose = initial_pose
+        self._main_behavior = main_behavior_class(actions) # doesn't start here
 
     def _register(self, callback, event):
         self._eventsToCallbacksMapping[event] = callback
@@ -125,24 +126,14 @@ class Player(object):
         self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
         self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
         # Game Controller:
-        self._eventmanager.register_oneshot(self._waitForKnownGameState, EVENT_GAME_STATE_CHANGED)
+        self._waitForKnownGameState()
         if self.verbose:
             self._actions.say("Unconfigured")
 
     def _waitForKnownGameState(self):
         game_state = self._world.gameStatus.gameState
-        if game_state is UNKNOWN_GAME_STATE:
-            self._eventmanager.register_oneshot(self._waitForKnownGameState,
-                    EVENT_GAME_STATE_CHANGED)
-        elif self._configuring:
-            if game_state is InitialGameState:
-                if self.verbose:
-                    print "Player: saw Initial game state, unconfigured"
-                self._eventmanager.register_oneshot(self._onExpectingConfigureGameStateChange,
-                    EVENT_GAME_STATE_CHANGED) # TODO - use SWITCHED_FROM?
-            else:
-                if self.verbose:
-                    print "Player: Game already in progress, wait for chest button to be configured"
+        print "Player: Game state = %s" % game_state
+        self._onConfigured()
 
     def _onExpectingConfigureGameStateChange(self):
         """ handle any generic change to game state - should probably use
@@ -183,7 +174,7 @@ class Player(object):
         self.enterGame()
 
     def enterGame(self):
-        self._actions.say("This is the default Player dot enterGame, please override me")
+        self._main_behavior.start() # onDone?
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player

@@ -15,6 +15,8 @@ class Behavior(BurstDeferred, Nameable):
         BurstDeferred.__init__(self, self)
         Nameable.__init__(self, name)
         self._actions = actions
+        self._world = actions._world
+        self._eventmanager = actions._eventmanager
         self._bd = None # if we are waiting on a single bd, this should be it. If we are waiting on more - split behavior?
         self._stopped = True
 

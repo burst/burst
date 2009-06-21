@@ -2,28 +2,20 @@
 
 # import player_init MUST BE THE FIRST LINE
 import player_init
-from burst.player import Player
+from burst.behavior import Behavior
 import burst
 
-class Kicker(Player):
+class Kicker(Behavior):
     
-    def onStart(self):
-        if burst.options.game_controller:
-            print "Waiting for game controller Playing state"
-            self._actions.say('initial')
-            super(Kicker, self).onStart()
-        else:
-            self._realStart()
-    
-    def enterGame(self):
-        self._realStart()
+    def __init__(self, actions):
+        Behavior.__init__(self, actions=actions, name='Kicker')
 
-    def _realStart(self):
+    def _start(self, firstTime=False):
         self.kick().onDone(self.onKickComplete)
 
     def kick(self):
-#        target_left_right_posts = [self._world.yglp, self._world.ygrp]
-        target_left_right_posts = [self._world.bglp, self._world.bgrp]
+        target_left_right_posts = [self._world.yglp, self._world.ygrp]
+#        target_left_right_posts = [self._world.bglp, self._world.bgrp]
         return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):

@@ -14,6 +14,7 @@ import burst
 from burst_util import DeferredList, func_name, Profiler, succeed
 import burst_util
 import burst.actions
+from burst.player import Player
 
 from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
@@ -337,7 +338,7 @@ class BasicMainLoop(object):
     __running_instance = None
 
     def __init__(self, playerclass):
-        self._playerclass = playerclass
+        self._main_behavior_class = playerclass
         self._ctrl_c_cb = None
         self._actions = None
         if self.__running_instance:
@@ -380,8 +381,7 @@ class BasicMainLoop(object):
         self._eventmanager = EventManager(world = self._world)
         self._dt = self._eventmanager.dt
         self._actions = actions.Actions(eventmanager = self._eventmanager)
-        self._player = self._playerclass(world = self._world, eventmanager = self._eventmanager,
-            actions = self._actions)
+        self._player = Player(actions = self._actions, main_behavior_class=self._main_behavior_class)
 
     def cleanup(self):
         """ Should not do anything that does work on the robot (nothing
