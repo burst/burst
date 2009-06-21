@@ -9,13 +9,11 @@ Player implements all the common behavior, including gamecontroller handling and
 handling, with suitable places for higher level behavior to take over.
 
 Callbacks that Inheritor needs to reimplement:
- enterGame - called when PLAYING state is achieved.
+ onPlay - called when PLAYING state is achieved.
  onStop  - called right before shutdown of process, to let Player clean things up.
            implemented in Player and can be overridden (again, remember to super).
 
 Other callbacks that are more like implementation details but might be important:
-
- onPlaying will call enterGame. This is the real main for users.
 
  onStart - when the player has been constructed. Not meant to be used
            during the game except by the Player class itself.
@@ -37,6 +35,9 @@ from burst_consts import (InitialRobotState,
     UNKNOWN_GAME_STATE, gameStateToString)
 
 def overrideme(f):
+    return f
+
+def override_with_super(f):
     return f
 
 class Player(object):
@@ -73,6 +74,7 @@ class Player(object):
         self._main_behavior = main_behavior_class(actions) # doesn't start here
 
     def _register(self, callback, event):
+        # TODO - not clear why this is here, should __init__ use it as well.
         self._eventsToCallbacksMapping[event] = callback
         self._eventmanager.register(callback, event)
 
@@ -96,7 +98,6 @@ class Player(object):
 
     # Start game callbacks
 
-    @overrideme
     def onStart(self):
         """ this is called by event manager. does all initial registrations:
         handle all gamecontroller events
@@ -106,11 +107,11 @@ class Player(object):
         self._world._sentinel.enableDefaultActionSimpleClick(False)
         Player._announceNotSeeingBall(self)
         Player._announceSeeingNoGoal(self)
-        Player._onYetUnknownGameState(self)
+        Player._onUnknownGameState(self)
 
     #####
 
-    def _onYetUnknownGameState(self):
+    def _onUnknownGameState(self):
         """ This is called when we want to configure the robot. We have just been turned
         on, but the game can be in any of several states:
          * no game controller running (tests)
@@ -137,7 +138,7 @@ class Player(object):
 
     def _onExpectingConfigureGameStateChange(self):
         """ handle any generic change to game state - should probably use
-        specific functions for onPlaying, onReady, onPlay, onPenalized, onFininshed
+        specific functions for onPlay, onReady, onPlay, onPenalized, onFininshed
         """
         if self._world.gameStatus.gameState is InitialGameState:
             if self.verbose:
@@ -168,13 +169,57 @@ class Player(object):
             self._waitForKnownGameState]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
-        self._enterGame()
+        self._onNewGameState()
 
-    def _enterGame(self):
-        self.enterGame()
+    def _onNewGameState(self):
+        state = self._world.gameStatus.gameState
+        if state is UNKNOWN_GAME_STATE:
+            print "NOTICE: No game controller - going straight to Playing"
+        if self.verbose:
+            print "Player: entered %s Game State" % gameStateToString(state)
+        {InitialGameState   :self._onInitial,
+         SetGameState       :self._onSet,
+         ReadyGameState     :self._onReady,
+         PlayGameState      :self._onPlay,
+         FinishGameState    :self._onFinish,
+         UNKNOWN_GAME_STATE :self._onPlay}[state]()
 
-    def enterGame(self):
+    def _onFinish(self):
+        self.onFinish()
+
+    def _onPlay(self):
+        self.onPlay()
+
+    def _onSet(self):
+        self.onSet()
+
+    def _onReady(self):
+        self.onReady()
+
+    def _onInitial(self):
+        self.onInitial()
+
+    def _onFinish(self):
+        self.onFinish()
+
+    def onInitial(self):
+        # TODO - restart main_behavior
+        pass
+
+    @override_with_super
+    def onReady(self):
+        print "Yes I am"
+        
+    def onSet(self):
+        # TODO - what do we do on set? localize?
+        pass
+
+    def onPlay(self):
         self._main_behavior.start() # onDone?
+
+    @override_with_super
+    def onFinish(self):
+        self.onStop() # TODO - can this be called twice right now, from a ctrl-c / eventmanager.quit and from FinishGameState?
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player
@@ -184,12 +229,13 @@ class Player(object):
         Needs to take care of cleaning up: stop any action you were in the middle of,
         i.e. clearFootsteps.
         """
-        self._actions.clearFootsteps()
-        self._world._sentinel.enableDefaultActionSimpleClick(True)
-        self._world.robot.leds.turnEverythingOff()
-        self._world.robot.leds.rightEarLED.turnOn()
-        self._world.robot.leds.leftEarLED.turnOn()
-        # TODO: initPoseAndRelax?
+        def afterBehaviorStopped():
+            self._actions.clearFootsteps()
+            self._world._sentinel.enableDefaultActionSimpleClick(True)
+            self._world.robot.leds.turnEverythingOff()
+            self._world.robot.leds.rightEarLED.turnOn()
+            self._world.robot.leds.leftEarLED.turnOn()
+        self._main_behavior.stop().onDone(afterBehaviorStopped)
 
     def onFallenDown(self):
         print "I'm down!"
