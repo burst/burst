@@ -133,6 +133,11 @@ DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*4 #0.05*3
 DEFAULT_NORMALIZED_CENTERING_Y_ERROR = 0.05*4 #0.05*3
 CENTERING_MINIMUM_PITCH = -0.5 #-0.637
 
+# Sensor constants
+# Threshold for differing between leg with/without weight (x>0.00225 means leg DOES carry weight)
+# This value is the SUM of the 4 leg sensors (we use 1/x, where x is 1 FSR sensor reading)
+FSR_LEG_PRESSED_THRESHOLD = 0.00225
+
 ################################################################################
 ################################################################################
 

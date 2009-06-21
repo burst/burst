@@ -7,7 +7,7 @@ import burst
 import movecoordinator
 import burst_target
 
-from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
+from burst_events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
 from movecoordinator import KIND_WALK
 

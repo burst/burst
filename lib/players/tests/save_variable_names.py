@@ -14,7 +14,7 @@ if os.getcwd() == in_tree_dir:
     sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 import burst.moves as moves

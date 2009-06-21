@@ -4,7 +4,7 @@
 import player_init
 
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst_consts import *
 import burst.moves as moves
 from math import cos, sin

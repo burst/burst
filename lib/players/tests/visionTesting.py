@@ -9,7 +9,7 @@ if os.getcwd() == in_tree_dir:
     sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
 from burst.behavior import InitialBehavior
-from burst.events import EVENT_BALL_IN_FRAME
+from burst_events import EVENT_BALL_IN_FRAME
 import burst.moves as moves
 from burst_util import polar2cart
 

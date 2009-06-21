@@ -188,7 +188,8 @@ class BallKicker(Behavior):
                 self._movement_type = MOVE_KICK
                 self._movement_location = target_location
 
-                if self._obstacle_in_front:
+                # TODO: Change to angle-kick towards left/right side of goal (except for Goalie)
+                if self._obstacle_in_front and self._obstacle_in_front[0] == "center":
                     self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
                 else:
                     self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)

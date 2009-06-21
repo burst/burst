@@ -4,9 +4,10 @@
 import player_init
 
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
+import burst.moves.poses as poses
 
 def pr(s):
     print s
@@ -14,7 +15,7 @@ def pr(s):
 class Donothing(InitialBehavior):
     
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
 
     def _start(self, firstTime=False):
         self._eventmanager.register(self.onStep, EVENT_STEP)

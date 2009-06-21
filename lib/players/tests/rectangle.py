@@ -6,7 +6,7 @@ from math import pi, sqrt
 import os
 
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 import burst.moves.walks as walks
