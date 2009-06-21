@@ -8,7 +8,7 @@ from math import cos, sin
 import player_init
 
 from burst_util import DeferredList
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst_events import *
 from burst_consts import *
 import burst_events
@@ -16,9 +16,12 @@ import burst.moves as moves
 from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
 
-class GameControllerTester(Player):
+class GameControllerTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         super(GameControllerTester, self).onStart()
         for attribute in dir(burst_events):
             if attribute.startswith("EVENT") and attribute not in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME',

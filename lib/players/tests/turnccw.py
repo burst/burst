@@ -5,7 +5,7 @@ import player_init
 
 from burst.events import EVENT_BALL_IN_FRAME, EVENT_BALL_SEEN, EVENT_BALL_LOST
 from burst_consts import DEG_TO_RAD
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.actions as actions
@@ -18,12 +18,14 @@ Circle Strafing tester. Test the choreograph moves for circle tracing,
 later the actions calls for same.
 """
 
-class turnccw(Player):
+class turnccw(InitialBehavior):
 
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.counter = 0
         #self._eventanager.register(self.onKickingPointChanged, EVENT_KP_CHANGED)
-        self._actions.initPoseAndStiffness()
         self._actions.executeCircleStraferInitPose().onDone(self.doNextAction)
 
         # do a quick search for kicking point

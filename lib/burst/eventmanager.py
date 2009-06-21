@@ -516,7 +516,7 @@ class BasicMainLoop(object):
             burst.actions._use_legal = True
             print "MainLoop: only LEGAL moves allowed from now on"
             self._player.onStart()
-        self._actions._initPoseAndStiffness(self._player._initial_pose).onDone(setLegalAndCallPlayerOnStart)
+        self._actions._initPoseAndStiffness(self._player._main_behavior._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):
         """ call once for every loop iteration

@@ -1,14 +1,15 @@
 #!/usr/bin/python
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 
-class UltrasoundTester(Player):
+class UltrasoundTester(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness()
-        
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
         self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
         self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME) 

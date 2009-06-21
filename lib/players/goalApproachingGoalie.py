@@ -2,7 +2,7 @@
 
 import player_init
 import math
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
@@ -11,13 +11,13 @@ DESIRED_DISTANCE_FROM_GOAL = 100 # In centimeters.
 SAFETY_MARGIN = 50
 BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL = 0.15 # In radians.
 
-class Goalie(Player):
+class Goalie(InitialBehavior):
 
-    def __init__(self, *args, **kw):
-        super(Goalie, self).__init__(*args, **kw)
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
         self.debug = True
 
-    def onStart(self):
+    def _start(self, firstTime=False):
 #        super(Goalie, self).onStart()
         self._reset()
         # TODO: ownGoal according to my own team color.
@@ -28,7 +28,7 @@ class Goalie(Player):
         # TODO: This will no longer be the case once we make sure that our own goal, regardless of the color, is at (0, 0).
         self.ownGoalGlobalCartesianCoordinates = (0.0, 0.0)
 
-        self.enterGame()
+        self._restart()
 
     def _reset(self):
         pass
@@ -37,9 +37,9 @@ class Goalie(Player):
         if self.debug:
             self._actions.say(string)
 
-    def enterGame(self):
+    def _restart(self):
         self._report("In play.")
-        self._actions.initPoseAndStiffness().onDone(self.onFinishedGettingUp)
+        self.onFinishedGettingUp()
 #        self._report("baba.")
 
     def onFinishedGettingUp(self):

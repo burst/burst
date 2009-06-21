@@ -2,11 +2,14 @@
 
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class centerTester(Player):
+class centerTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         lambda: self._actions.tracker.center(self._world.ball, self.onLost).onDone(self.wrapUp)
 
     def onLost(self):

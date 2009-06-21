@@ -42,7 +42,7 @@ def override_with_super(f):
 
 class Player(object):
 
-    def __init__(self, actions, main_behavior_class, initial_pose=poses.INITIAL_POS):
+    def __init__(self, actions, main_behavior_class):
         """ You may want to override this to set your own
         initial_pose.
         """
@@ -70,7 +70,6 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
-        self._initial_pose = initial_pose
         self._main_behavior = main_behavior_class(actions) # doesn't start here
 
     def _register(self, callback, event):

@@ -9,7 +9,7 @@ import sys
 # DONT IMPORT BURST BEFORE import player_init
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
@@ -21,15 +21,17 @@ def pr(s):
 def debugme():
     import pdb; pdb.set_trace()
 
-class WalkRecorder(Player):
+class WalkRecorder(InitialBehavior):
     """ Use recorder module to record a walk
     """
 
     WALK_DISTANCE = 40.0
     WALK_PARAMETERS = moves.STRAIGHT_WALK
 
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
+    def _start(self, firstTime=False):
         # hack to avoid moving arms with raul's broken RShoulderPitch joint
         if self._world.hostname == 'raul':
             print "on raul - arms will not be moved during walk"
@@ -37,7 +39,6 @@ class WalkRecorder(Player):
 
         now = datetime.now()
         self.startRecord()
-        self._actions.initPoseAndStiffness()
         self._actions.changeLocationRelative(
                     self.WALK_DISTANCE, 0.0, 0.0, walk=self.WALK_PARAMETERS).onDone(
                       self.stopRecord)

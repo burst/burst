@@ -8,15 +8,18 @@ if os.getcwd() == in_tree_dir:
     import sys
     sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import EVENT_BALL_IN_FRAME
 import burst.moves as moves
 from burst_util import polar2cart
 
-class visionTesting(Player):
+class visionTesting(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness().onDone(self.initPos)
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
+        self.initPos()
 
     def initPos(self):
         self._actions.executeMove(moves.SIT_POS)

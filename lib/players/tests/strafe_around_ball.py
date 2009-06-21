@@ -2,15 +2,17 @@
 
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 import burst_events
 
 THRESHOLD = 0.15
 
-class Kicker(Player):
+class StrafeAroundBall(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness()
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.obj = self._world.ball
         self.tracker = self._actions.tracker
         self.searcher = self._actions.searcher
@@ -46,6 +48,6 @@ class Kicker(Player):
 
 
 if __name__ == '__main__':
-    import burst
     from burst.eventmanager import MainLoop
-    MainLoop(Kicker).run()
+    MainLoop(StrafeAroundBall).run()
+

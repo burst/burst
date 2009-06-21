@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.moves.poses as poses
@@ -26,24 +26,24 @@ realLeap = False
 '''
 
 
-class Goalie(Player):
+class Goalie(InitialBehavior):
 
-    def __init__(self, *args, **kw):
-        super(Goalie, self).__init__(*args, **kw)
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
 
-    def onStart(self):
+    def _start(self, firstTime=False):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
         self.isPenalty = True # TODO: Use the gameStatus object.
-        self.enterGame() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
+        self._restart()
+    
+    def _restart(self):
+        self._report("in play")
+        self.whichBehavior() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
 
     def _report(self, string):
         if debug:
             self._actions.say(string)
-
-    def enterGame(self):
-        self._report("in play")
-        self._actions.initPoseAndStiffness(poses.SIT_POS).onDone(self.whichBehavior)
 
     def whichBehavior(self):
         if self.isPenalty:
@@ -133,7 +133,7 @@ class Goalie(Player):
             self._report("Leap complete.")
             self._eventmanager.quit()
         else:
-            self.enterGame()
+            self._restart()
 
 
 if __name__ == '__main__':

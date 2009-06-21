@@ -4,11 +4,14 @@
 import player_init
 
 from burst.events import *
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class WorldJointsTester(Player):
+class WorldJointsTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         # Down, Left, Up, Right - learn your directions!
         self._eventmanager.register(self.onStep, EVENT_STEP)
 

@@ -2,13 +2,13 @@
 
 # import player_init MUST BE THE FIRST LINE
 import player_init
-from burst.behavior import Behavior
+from burst.behavior import InitialBehavior
 import burst
 
-class Kicker(Behavior):
+class Kicker(InitialBehavior):
     
     def __init__(self, actions):
-        Behavior.__init__(self, actions=actions, name='Kicker')
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
         self.kick().onDone(self.onKickComplete)

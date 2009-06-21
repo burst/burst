@@ -3,16 +3,19 @@
 # DON'T PUT ANYTHING BEFORE THIS LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst_consts import *
 import burst.moves.walks as walks
 import burst.moves.poses as poses
 
 import time
 
-class WalkTester(Player):
+class WalkTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.movesList = [
 #                     ('Walk straight - Asaf''s version (Stable walk)',
 #                      lambda: self._actions.executeMoveRadians(poses.STABLE_WALK_INITIAL_POSE).onDone(
@@ -32,7 +35,7 @@ class WalkTester(Player):
 #                     lambda: self._actions.sitPoseAndRelax())
                      ]
         
-        self._actions.initPoseAndStiffness().onDone(self.doNextMove)
+        self.doNextMove()
         
     def doNextMove(self):
         if len(self.movesList) > 0:

@@ -4,14 +4,17 @@
 import player_init
 
 from burst.events import *
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
 dt1 = 10.0
 dt2 = 20.0
 
-class FrameRateTester(Player):
-    
-    def onStart(self):
+class FrameRateTester(InitialBehavior):
+
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         # Down, Left, Up, Right - learn your directions!
         print "wait %s" % dt1
         self._eventmanager.callLater(dt1, self.lowFramerate)

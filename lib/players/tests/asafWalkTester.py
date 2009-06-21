@@ -3,7 +3,7 @@
 # DON'T PUT ANYTHING BEFORE THIS LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
@@ -13,16 +13,16 @@ import time
 # aldebaran motion constants - need to import player_init and burst first
 import motion
 
-class walkTester(Player):
+class walkTester(InitialBehavior):
     
-#    def onStop(self):
-#        super(Kicker, self).onStop()
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
-    def onStart(self):
+    def _start(self, firstTime=False):
         self.kp = None
         self._eventmanager.register(self.onChangeLocationDone, EVENT_CHANGE_LOCATION_DONE)        
         self.walkStartTime = time.time()
-        self._actions.initPoseAndStiffness().onDone(self.doWalk)
+        self.doWalk()
 
     def doWalk(self):
         readyStand = [0.065920039999999999,

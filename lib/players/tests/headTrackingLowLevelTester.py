@@ -2,16 +2,18 @@
 
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import EVENT_BALL_IN_FRAME
 import burst.moves as moves
 from burst_util import polar2cart
 
-class headTrackingTester(Player):
+class headTrackingTester(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness().onDone(
-            lambda: self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM)).onDone(
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
+        self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(
             lambda: self._eventmanager.register(self.trackBall, EVENT_BALL_IN_FRAME))
         self._last_ball_loc = (0.0, 0.0)
     

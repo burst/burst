@@ -1,13 +1,15 @@
 #!/usr/bin/python
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.actions.headtracker import Searcher
 
-class SearchTester(Player):
+class SearchTester(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness()
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.targets=[self._world.yglp, self._world.ygrp]
         self._actions.searcher.search(self.targets).onDone(self.onFound)
 

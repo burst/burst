@@ -3,12 +3,15 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import EVENT_STEP
 
-class RegisterOneShotTester(Player):
+class RegisterOneShotTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.count = 0
         self._eventmanager.register_oneshot(self.onStep, EVENT_STEP)
         self._eventmanager.register_oneshot(self.onStep10, EVENT_STEP)

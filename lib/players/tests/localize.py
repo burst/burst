@@ -5,12 +5,12 @@ import player_init
 
 from burst_util import nicefloats
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import EVENT_WORLD_LOCATION_UPDATED
 from burst_consts import *
 from burst import moves
 
-class Localize(Player):
+class Localize(InitialBehavior):
     
     """ To be converted into an action:
     Search for both yellow gate posts, centering on each.
@@ -20,10 +20,12 @@ class Localize(Player):
     TODO: To Be Called: LocalizeByFindingGate
     """
 
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True
-        #self._actions.initPoseAndStiffness(moves.SIT_POS).onDone(self._ook)
         self._ook()
 
     def _ook(self):

@@ -2,11 +2,14 @@
 
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class TimeoutTester(Player):
+class TimeoutTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         print "Hey!"
         self.searcher = self._actions.searcher
         self.searcher.search([self._world.ball], True, 10, self.onTimeout).onDone(self.onFound)

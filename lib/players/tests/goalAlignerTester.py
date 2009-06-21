@@ -1,16 +1,19 @@
 #!/usr/bin/python
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.actions.headtracker import Searcher
 import burst
 import burst.moves as moves
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
     IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
 
-class GoalAlignerTester(Player):
+class GoalAlignerTester(InitialBehavior):
 
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.goalposts = [self._world.yglp, self._world.ygrp]
         self.movement_deferred = None
         self.searchGoalPosts()

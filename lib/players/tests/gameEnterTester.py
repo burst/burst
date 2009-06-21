@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import player_init
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
@@ -11,9 +11,12 @@ ERROR_IN_LENGTH = 0
 TIME_WAITING = 3 #time to wait when finishing the leap for getting up
 WAITING_FOR_HEAD = 5
 
-class GameEnter(Player):
+class GameEnter(InitialBehavior):
 
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         super(GameEnter, self).onStart()
         self.isPenalty = False # TODO: Use the gameStatus object.
         self.isWebots = True

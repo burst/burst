@@ -2,11 +2,14 @@
 
 import player_init
 
-from burst.player import Player
+from burst.behevior import InitialBehavior
 
-class Template(Player):
+class Template(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         pass
 
 if __name__ == '__main__':

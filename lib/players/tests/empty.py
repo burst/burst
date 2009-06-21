@@ -2,13 +2,11 @@
 
 import player_init
 import burst
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
 
-class Empty(Player):
+class Empty(InitialBehavior):
     pass
-
-
 
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
@@ -11,9 +11,12 @@ from burst.eventmanager import AndEvent, SerialEvent
 def pr(s):
     print s
 
-class Donothing(Player):
+class Donothing(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True

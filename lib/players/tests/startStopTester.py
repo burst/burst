@@ -3,12 +3,15 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class StartStopTester(Player):
+class StartStopTester(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness().onDone(self._eventmanager.quit)
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
+        self._eventmanager.quit()
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

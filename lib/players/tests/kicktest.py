@@ -3,7 +3,7 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos, polar2cart, cart2polar)
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst.moves import *
 from burst_consts import *
@@ -16,8 +16,12 @@ from burst_consts import LEFT, RIGHT
 def pr(s):
     print s
 
-class KickTest(Player):
-    def onStart(self):
+class KickTest(InitialBehavior):
+    
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         #self._eventmanager.register(self.onStep, EVENT_STEP)
         #    print "setting shared memory to verbose mode"
         #    self._world._shm.verbose = True

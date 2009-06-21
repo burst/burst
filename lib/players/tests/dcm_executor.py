@@ -13,7 +13,7 @@ if os.getcwd() == in_tree_dir:
     sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
 import domove_constants
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
@@ -29,17 +29,15 @@ CLEAR_AFTER = "ClearAfter"
 CLEAR_BEFORE = "ClearBefore"
 INTERPOLATION_STEP = 0.025
 
-class DCMExecutor(Player):
+class DCMExecutor(InitialBehavior):
     
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
-        
-
-    def onStart(self):
+    def _start(self, firstTime=False):
         self.dcmProxy = burst.getDCMProxy(True)
         self.f = open('interpolated.txt','w')
         self.test()
-        
-
 
     def test(self):
         #debug behaviors

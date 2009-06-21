@@ -3,19 +3,18 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class Nod(Player):
+class SitPoseTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         # Down, Left, Up, Right - learn your directions!
-        nods = [(0.0, 0.0), (0.0, 0.5), (0.0, 0.0), (0.5, 0.0),
-            (0.0, 0.0), (0.0, -0.5), (0.0, 0.0), (-0.5, 0.0),
-            (0.0, 0.0)]
-        self._actions.initPoseAndStiffness().onDone(
-            self._actions.sitPoseAndRelax).onDone(self._eventmanager.quit)
+        self._actions.sitPoseAndRelax().onDone(self._eventmanager.quit)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(Nod).run()
+    MainLoop(SitPoseTester).run()
 

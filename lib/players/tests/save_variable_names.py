@@ -13,7 +13,7 @@ if os.getcwd() == in_tree_dir:
     import sys
     sys.path.insert(0, os.path.join(os.environ['HOME'], 'src/burst/lib'))
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
@@ -25,10 +25,12 @@ def pr(s):
 def debugme():
     import pdb; pdb.set_trace()
 
-class Rectangle(Player):
+class Rectangle(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
+    def _start(self, firstTime=False):
         open('varnames.txt', 'w+').write('\n'.join(self._world.getRecorderVariableNames()))
         self._eventmanager.quit()
 

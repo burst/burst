@@ -3,7 +3,7 @@
 
 import player_init
 from burst_util import DeferredList
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import *
 from burst_consts import *
 import burst.moves as moves
@@ -14,10 +14,12 @@ from burst.moves.walks import Walk
 import os
 
 
-class PersonalWalkManualTweaker(Player):
+class PersonalWalkManualTweaker(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness()
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
         self._eventmanager.register(EVENT_FALLEN_DOWN, self.onFallenDown)
         self.walkStartTime = time.time()

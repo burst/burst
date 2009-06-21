@@ -2,16 +2,18 @@
 
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class GetCurrentHeadBD(Player):
+class GetCurrentHeadBD(InitialBehavior):
 
     # TODO - or use nodtester
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
-    def onStart(self):
-        self._actions.initPoseAndStiffness().onDone(self.start)
+    def _start(self, firstTime=False):
+        self.moveit()
 
-    def start(self):
+    def moveit(self):
         self._actions.changeLocationRelative(500.0, 0.0, 0.0)
         self._eventmanager.callLater(2.0, self.cancelWalk)
 

@@ -3,11 +3,14 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class CallLaterTester(Player):
+class CallLaterTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self._eventmanager.callLater(self._eventmanager.dt, self.onQuit)
 
     def onQuit(self):

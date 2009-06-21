@@ -3,14 +3,17 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 
-class HeadAndWalkTester(Player):
+class HeadAndWalkTester(InitialBehavior):
     
-    def onStart(self):
-        self._actions.initPoseAndStiffness(None).onDone(lambda: self._actions.moveHead(-0.5,0.0)).onDone(self.start)
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=None)
 
-    def start(self):
+    def _start(self, firstTime=False):
+        self._actions.moveHead(-0.5,0.0).onDone(self.doTest)
+
+    def doTest(self):
         # Down, Left, Up, Right - learn your directions!
         self._eventmanager.callLater(3.5, self.moveHead)
         self._actions.changeLocationRelative(50.0, 0.0, 0.0)

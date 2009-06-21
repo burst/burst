@@ -2,14 +2,17 @@
 
 import player_init
 
-from burst.player import Player
+from burst.behavior import InitialBehavior
 from burst.events import EVENT_BALL_IN_FRAME
 import burst.moves.poses as poses
 from burst_util import polar2cart
 
-class trackerTester(Player):
+class trackerTester(InitialBehavior):
     
-    def onStart(self):
+    def __init__(self, actions):
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+
+    def _start(self, firstTime=False):
         self.count = 1
         self._actions.setCameraFrameRate(20)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)

@@ -5,6 +5,7 @@ Created on Jun 14, 2009
 '''
 
 from burst_util import BurstDeferred, Nameable, succeedBurstDeferred
+import burst.moves.poses as poses
 
 class Behavior(BurstDeferred, Nameable):
     
@@ -50,4 +51,9 @@ class ContinuousBehavior(Behavior):
     
     def onDone(self, cb):
         raise RuntimeException("You cannot register an onDone callback on a continuous behavior.")
+
+class InitialBehavior(Behavior):
     
+    def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
+        super(InitialBehavior, self).__init__(actions=actions, name=name)
+        self._initial_pose = initial_pose
