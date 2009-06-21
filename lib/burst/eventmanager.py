@@ -141,7 +141,7 @@ class EventManager(object):
         self._should_quit = False
         self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
 
-        self.dt = burst.options.dt # THA time step. defaults to 50ms, but we are trying other values.
+        self.dt = burst.options.dt # THA time step. defaults to 100ms, but we are trying other values.
 
         self.unregister_all()
 
@@ -351,8 +351,6 @@ class BasicMainLoop(object):
         self._eventmanager = None
         self._player = None
 
-        self._dt = None # we get this from constructing eventmanager - kinda crooked
-
         # flags for external use
         self.finished = False       # True when quit has been called
         self._on_normal_quit_called = False
@@ -380,7 +378,6 @@ class BasicMainLoop(object):
         # main objects: world, eventmanager, actions and player
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
-        self._dt = self._eventmanager.dt
         self._actions = actions.Actions(eventmanager = self._eventmanager)
         self._player = Player(actions = self._actions, main_behavior_class=self._main_behavior_class)
 
@@ -538,7 +535,7 @@ class BasicMainLoop(object):
         else:
             self._eventmanager.handlePendingCallbacks()
         self._world.collectNewUpdates(self.cur_time)
-        self.next_loop += self._dt
+        self.next_loop += self._eventmanager.dt
         self.cur_time = time()
         if self.cur_time > self.next_loop:
 #            print "WARNING: loop took %0.3f ms" % (
@@ -657,7 +654,7 @@ class SimpleMainLoop(BasicMainLoop):
 
     def _run_loop_helper(self):
         import burst
-        print "running custom event loop with sleep time of %s milliseconds" % (self._dt*1000)
+        print "running custom event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000)
         from time import sleep, time
         quitting = False
         # we need the eventmanager until the total end, to sit down and stuff,
@@ -734,9 +731,9 @@ class TwistedMainLoop(BasicMainLoop):
         print "TwistedMainLoop: created main objects"
         from twisted.internet import reactor, task
         self.preMainLoopInit()
-        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (self._dt*1000)
+        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000)
         self._main_task = task.LoopingCall(self.onTimeStep)
-        self._main_task.start(self._dt)
+        self._main_task.start(self._eventmanager.dt)
 
     def _run_loop(self):
         if not self._control_reactor:

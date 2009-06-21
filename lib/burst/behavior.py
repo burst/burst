@@ -133,6 +133,9 @@ class Behavior(BurstDeferred, Nameable):
         self._stopped = False
         self._start(firstTime=True)
 
+    def log(self, msg):
+        print "%s: %s" % (self.__class__.__name__, msg)
+
     #####  Override by Inheritance  #####
 
     def _start(self, firstTime=False):

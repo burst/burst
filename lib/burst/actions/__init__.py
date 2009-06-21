@@ -334,6 +334,7 @@ class Actions(object):
 
     def setCameraFrameRate(self, fps):
         bd = self._make(self)
+        self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
         self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
         return bd
 
