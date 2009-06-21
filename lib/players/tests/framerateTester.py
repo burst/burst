@@ -3,7 +3,7 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 
-from burst.events import *
+from burst_events import *
 from burst.behavior import InitialBehavior
 
 dt1 = 10.0

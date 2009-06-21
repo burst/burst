@@ -5,12 +5,10 @@ import player_init
 
 from burst_consts import DEG_TO_RAD
 from burst.behavior import InitialBehavior
-from burst.events import *
 from burst_consts import *
 import burst.actions as actions
 import burst.moves as moves
 from burst.world import World
-from math import cos, sin
 
 """
 Circle Strafing tester. Test the choreograph moves for circle tracing,

@@ -4,7 +4,7 @@
 import player_init
 
 from burst.behavior import InitialBehavior
-from burst.events import EVENT_STEP
+from burst_events import EVENT_STEP
 
 class RegisterOneShotTester(InitialBehavior):
     

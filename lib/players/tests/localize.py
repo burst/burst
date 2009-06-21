@@ -6,7 +6,7 @@ import player_init
 from burst_util import nicefloats
 
 from burst.behavior import InitialBehavior
-from burst.events import EVENT_WORLD_LOCATION_UPDATED
+from burst_events import EVENT_WORLD_LOCATION_UPDATED
 from burst_consts import *
 from burst import moves
 

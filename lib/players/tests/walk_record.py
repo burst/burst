@@ -10,7 +10,7 @@ import sys
 import player_init
 
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
 import burst.moves as moves

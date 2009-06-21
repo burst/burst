@@ -120,7 +120,7 @@ class SerialEvent(SuperEvent):
 
 class EventManager(object):
     """ Class to handle all event routing. Mainly we have:
-    anything in burst.events can be called with EventManager.register
+    anything in burst_events can be called with EventManager.register
 
     due to lack of time time events are the same, so you only have one
     and no support right now for multiple requestors (do that in your code

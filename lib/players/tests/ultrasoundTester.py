@@ -2,7 +2,7 @@
 
 import player_init
 from burst.behavior import InitialBehavior
-from burst.events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
+from burst_events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 
 class UltrasoundTester(InitialBehavior):
     

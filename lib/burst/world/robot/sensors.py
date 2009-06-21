@@ -2,7 +2,7 @@
 
 import burst_events
 import burst
-
+from burst_consts import FSR_LEG_PRESSED_THRESHOLD
 
 __all__ = ['Sensors']
 
@@ -19,73 +19,55 @@ class Sensors(object):
         def update(self):
             pass
 
-    class FSR(Sensor):
-        def __init__(self, world, foot, location):
-            var = 'Device/SubDeviceList/%sFoot/FSR/%s/Sensor/Value' % (foot, location)
-            super(Sensors.FSR, self).__init__(world, var)
-
     class FootFsrCluster(Sensor):
         def __init__(self, world, foot):
             self._fsrs = []
             for location in [x+y for x in ['Front', 'Rear'] for y in ['Left', 'Right']]:
-                self._fsrs.append( Sensors.FSR(world, foot, location) )
+                var = 'Device/SubDeviceList/%sFoot/FSR/%s/Sensor/Value' % (foot, location)
+                self._fsrs.append( Sensors.Sensor(world, var) )
         def read(self):
-            return min(map(lambda x: x.read(), self._fsrs)) 
+            return sum(map(lambda x: self.transformFSR(x.read()), self._fsrs))
+        def transformFSR(self, x):
+            if x == 0:
+                return 0
+            else:
+                return 1/x
         def isPressed(self):
-            return self.read() < 1000
+            return self.read() > FSR_LEG_PRESSED_THRESHOLD
 
-    class RightFootFSRs(FootFsrCluster):
-        def __init__(self, world):
-            super(Sensors.RightFootFSRs, self).__init__(world, 'R')
-
-    class LeftFootFSRs(FootFsrCluster):
-        def __init__(self, world):
-            super(Sensors.LeftFootFSRs, self).__init__(world, 'L')
-
-    class IntertialSensor(Sensor): # Note: GyrRef, GyrX, AccX...
+    class InertialSensor(Sensor): # Note: GyrRef, GyrX, AccX...
         def __init__(self, world, var):
-            super(Sensors.IntertialSensor, self).__init__(world, var)
+            super(Sensors.InertialSensor, self).__init__(world, var)
 
-    class YAngleIntertialSensor(IntertialSensor):
+    class YAngleInertialSensor(InertialSensor):
         def __init__(self, world):
             var = "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
-            super(Sensors.YAngleIntertialSensor, self).__init__(world, var)
+            super(Sensors.YAngleInertialSensor, self).__init__(world, var)
 
     def __init__(self, world):
 #        self.debug = 0
-        self.rightFootFSRs = Sensors.RightFootFSRs(world)
-        self.leftFootFSRs = Sensors.LeftFootFSRs(world)
-        self.yAngleIntertialSensor = Sensors.YAngleIntertialSensor(world)
-        self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleIntertialSensor]
-
-    def isOnBack(self):
-        # If either foot is on the ground, the robot hasn't fallen down.
-        if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
-            return False
-        # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor.read() < -1.0
-
-    def isOnBelly(self):
-        # If either foot is on the ground, the robot hasn't fallen down.
-        if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
-            return False
-        # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor.read() > 1.0
+        self.rightFootFSRs = Sensors.FootFsrCluster(world, 'R')
+        self.leftFootFSRs = Sensors.FootFsrCluster(world, 'L')
+        self.yAngleInertialSensor = Sensors.YAngleInertialSensor(world)
+        self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleInertialSensor]
 
     def isFallenDown(self):
-        return self.isOnBack() or self.isOnBelly()
+        # If neither foot is on the ground and the inertial sensor says we're down:
+        return (not self.rightFootFSRs.isPressed()) and (not self.leftFootFSRs.isPressed()) and \
+                abs(self.yAngleInertialSensor.read()) > 1.0
 
     def calc_events(self, events, deferreds):
         # Another frame has passed. Time to poll again anything that requires smoothing:
         for sensor in self.sensors:
             sensor.update()
         # Calculate events:
-        if self.isOnBack():
+        if self.isFallenDown():
             events.add(burst_events.EVENT_FALLEN_DOWN)
-            events.add(burst_events.EVENT_ON_BACK)
-        if self.isOnBelly():
-            events.add(burst_events.EVENT_FALLEN_DOWN)
-            events.add(burst_events.EVENT_ON_BELLY)
+            if self.yAngleInertialSensor.read() > 1.0:
+                events.add(burst_events.EVENT_ON_BELLY)
+            else: #if self.yAngleInertialSensor.read() < -1.0:
+                events.add(burst_events.EVENT_ON_BACK)
+        
 #        self.debug += 1
-#        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleIntertialSensor.read()
+#        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleInertialSensor.read()
 #        print map(lambda x: x.read(), self.rightFootFSRs._fsrs), map(lambda x: x.read(), self.leftFootFSRs._fsrs)
