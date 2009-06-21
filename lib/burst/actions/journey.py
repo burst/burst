@@ -1,3 +1,4 @@
+import burst
 from burst_util import chainDeferreds
 from burst.walkparameters import WalkParameters
 from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
@@ -58,7 +59,7 @@ class Journey(object):
             turn[1] = final_turn
         # TODO - compute duration correctly for the multiple legs
         self._duration = duration = (self._time_per_steps * distance / step_length +
-                    (turn[0] and DEFAULT_STEPS_FOR_TURN or self._eventmanager.dt) ) * 0.02 # 20ms steps
+                    (turn[0] and DEFAULT_STEPS_FOR_TURN or self._actions._eventmanager.dt) ) * 0.02 # 20ms steps
 
         self._addCommand("walkconfig", lambda _: self._actions.setWalkConfig(walk.walkParameters))
         self._addCommand("support mode", lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
