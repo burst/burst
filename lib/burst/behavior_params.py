@@ -54,16 +54,19 @@ KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
 
 def calcTarget(distSmoothed, bearing):
-    (target_x, target_y) = polar2cart(distSmoothed, bearing)
+    target_x, target_y = polar2cart(distSmoothed, bearing)
+    return calcTargetXY(target_x, target_y)
+
+def calcTargetXY(target_x, target_y):
     print "target_x: %3.3fcm, target_y: %3.3fcm" % (target_x, target_y)
 
     # determine kicking leg
-    side = bearing < 0 # 0 = LEFT, 1 = RIGHT
+    side = target_y < 0 # 0 = LEFT, 1 = RIGHT
     print "Designated kick leg: %s" % (side==LEFT and "LEFT" or "RIGHT")
     
     # calculate optimal kicking point
-    (kp_x, kp_y) = (target_x - KICK_X_OPT[side], target_y - KICK_Y_OPT[side])
-    (kp_dist, kp_bearing) = cart2polar(kp_x, kp_y)
+    kp_x, kp_y = target_x - KICK_X_OPT[side], target_y - KICK_Y_OPT[side]
+    kp_dist, kp_bearing = cart2polar(kp_x, kp_y)
     print "kp_x: %3.3fcm   kp_y: %3.3fcm" % (kp_x, kp_y)
     print "kp_dist: %3.3fcm   kp_bearing: %3.3f" % (kp_dist, kp_bearing)
 

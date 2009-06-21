@@ -21,6 +21,10 @@ HALF_GOAL_SIZE = (GOAL_SIZE/2)
 
 
 class Localization(object):
+    """ Names. This is the Localization object. It is responsible for computing the
+    world position of the robot and anything else. It doesn't actually go and
+    look for information. That is a Behavior thing, which the Localizer takes
+    care of. """
     
     def __init__(self, world):
         self._world = world
@@ -34,9 +38,11 @@ class Localization(object):
         # read verboseness flag at construction time
         self.verbose = burst.options.verbose_localization
 
+        self._history = [] # (t, x, y, heading)
+
     def calc_events(self, events, deferreds):
         """
-        Update position of unseen goal.
+        Update position of robot based on newly centered goal posts.
         """
         # First, check for each of the goal posts, if it is visibile dead center, then
         # update it's location.
@@ -89,10 +95,10 @@ class Localization(object):
                 t_start - world.start_time, t_end - t_start,
                 other_obj.name, obj.name)
         if not moved:
-            if self.verbose:
-                print "Localization: UPDATE SELF POSITION"
-            self.updateRobotPosition()
-            events.add(EVENT_WORLD_LOCATION_UPDATED)
+            if self.updateRobotPosition():
+                if self.verbose:
+                    print "Localization: UPDATE SELF POSITION"
+                events.add(EVENT_WORLD_LOCATION_UPDATED)
         
         #seeing blue goal - yellow is unseen
         if self._world.bglp.seen and self._world.bgrp.seen:
@@ -119,6 +125,7 @@ class Localization(object):
         return self._pose.pixHeightToDistance(post.height, GOAL_POST_CM_HEIGHT)
 
     def updateRobotPosition(self):
+        """ tries to update robot position from current landmarks. return value is success """
         d = CROSSBAR_CM_WIDTH / 2.0
         bottom, top = self._bottom, self._top
         p0 = top.xy
@@ -136,13 +143,16 @@ class Localization(object):
             # This is fun: which value do I throw away? I could start
             # collecting a bunch first, and only if it is well localized (looks
             # like a nice normal distribution) I use it..
-        else:
-            x, y, theta = xyt_from_two_dist_one_angle(
-                    r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
-            if self.verbose:
-                print "Localization: GOT %3.2f %3.2f heading %3.2f deg" % (x, y, theta*RAD_TO_DEG)
-            r = self._world.robot
-            r.world_x, r.world_y, r.world_heading = x, y, theta
+            return False
+        x, y, theta = xyt_from_two_dist_one_angle(
+                r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
+        if self.verbose:
+            print "Localization: GOT %3.2f %3.2f heading %3.2f deg" % (x, y, theta*RAD_TO_DEG)
+        r = self._world.robot
+        r.world_x, r.world_y, r.world_heading = x, y, theta
+        r.world_position_update_time = self._world.time
+        self._history.append((r.world_position_update_time, r.world_x, r.world_y, r.world_heading))
+        return True
 
     def calc_goal_coord(self, sglp, sgrp, uglp, ugrp):
         """

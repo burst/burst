@@ -49,7 +49,6 @@ import random
 class BallKicker(Behavior):
 
     VERBOSE = True
-    ENABLE_MOVEMENT = True
 
     def __init__(self, actions, target_left_right_posts, align_to_target=True):
         super(BallKicker, self).__init__(actions = actions, name = 'BallKicker')
@@ -179,36 +178,34 @@ class BallKicker(Behavior):
         # Ball inside kicking area, kick it
         elif target_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
-            if self.ENABLE_MOVEMENT:
-                self._ballFinder.stop()
-                self._goalFinder.stop()
-                self.debugPrint("kick_side_offset: %3.3f" % (kick_side_offset))
-                self._actions.setCameraFrameRate(10)
-                #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
-                self._movement_type = MOVE_KICK
-                self._movement_location = target_location
+            self._ballFinder.stop()
+            self._goalFinder.stop()
+            self.debugPrint("kick_side_offset: %3.3f" % (kick_side_offset))
+            self._actions.setCameraFrameRate(10)
+            #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
+            self._movement_type = MOVE_KICK
+            self._movement_location = target_location
 
-                if self._obstacle_in_front:
-                    self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
-                else:
-                    self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)
+            if self._obstacle_in_front:
+                self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
+            else:
+                self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)
 
-                self._movement_deferred.onDone(self.callOnDone)
-                return
+            self._movement_deferred.onDone(self.callOnDone)
+            return
         else:
             if target_location in (BALL_FRONT_NEAR, BALL_FRONT_FAR):
                 self.debugPrint("Walking straight!")
-                if self.ENABLE_MOVEMENT:
-                    self._actions.setCameraFrameRate(10)
-                    self._movement_type = MOVE_FORWARD
-                    self._movement_location = target_location
-                    if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
-                        opposite_side_from_obstacle = self.getObstacleOppositeSide()
-                        print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
+                self._actions.setCameraFrameRate(10)
+                self._movement_type = MOVE_FORWARD
+                self._movement_location = target_location
+                if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
+                    opposite_side_from_obstacle = self.getObstacleOppositeSide()
+                    print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
 
-                        self._movement_type = MOVE_SIDEWAYS
-                        self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                            0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK)
+                    self._movement_type = MOVE_SIDEWAYS
+                    self._movement_deferred = self._actions.changeLocationRelativeSideways(
+                        0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK)
 
 #                        self._movement_type = MOVE_CIRCLE_STRAFE
 #                        if opposite_side_from_obstacle == -1:
@@ -217,34 +214,27 @@ class BallKicker(Behavior):
 #                            strafeMove = self._actions.executeCircleStrafeClockwise
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
-                    else:
-                        self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
+                else:
+                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
-                if self.ENABLE_MOVEMENT:
-                    self._actions.setCameraFrameRate(10)
-                    self._movement_type = MOVE_SIDEWAYS
-                    self._movement_location = target_location
-                    self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                        0.0, kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS, walk=walks.SIDESTEP_WALK)
+                self._actions.setCameraFrameRate(10)
+                self._movement_type = MOVE_SIDEWAYS
+                self._movement_location = target_location
+                self._movement_deferred = self._actions.changeLocationRelativeSideways(
+                    0.0, kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS, walk=walks.SIDESTEP_WALK)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
-                if self.ENABLE_MOVEMENT:
-                    self._actions.setCameraFrameRate(10)
-                    # if we do a significant turn, our goal-alignment isn't worth much anymore...
-                    if kp_bearing > 10*DEG_TO_RAD:
-                        self._aligned_to_goal = False
-                    self._movement_type = MOVE_TURN
-                    self._movement_location = target_location
-                    self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN)
+                self._actions.setCameraFrameRate(10)
+                # if we do a significant turn, our goal-alignment isn't worth much anymore...
+                if kp_bearing > 10*DEG_TO_RAD:
+                    self._aligned_to_goal = False
+                self._movement_type = MOVE_TURN
+                self._movement_location = target_location
+                self._movement_deferred = self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN)
             else:
                 self.debugPrint("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
                 #import pdb; pdb.set_trace()
-
-        if not self.ENABLE_MOVEMENT:
-            self._movement_type = MOVE_FORWARD
-            self._movement_location = target_location
-            self._movement_deferred = self._actions.changeLocationRelative(0, 0, 0)
 
         print "Movement STARTING!"
         self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))

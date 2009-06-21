@@ -16,6 +16,7 @@ from burst_events import *
 import burst
 import burst.moves.poses as poses
 import burst_consts
+from burst_util import DeferredList
 from burst_consts import (InitialRobotState,
     PenalizedRobotState, PlayRobotState, SetRobotState,
     ReadyRobotState,
@@ -115,33 +116,37 @@ class Player(object):
         self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
         self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
         # Game Controller:
-        self._waitForKnownGameState()
-        if self.verbose:
-            self._actions.say("Unconfigured")
+        self._onUnconfigured()
 
-    def _waitForKnownGameState(self):
+    def _onUnconfigured(self):
         game_state = self._world.gameStatus.gameState
-        print "Player: Game state = %s" % game_state
-        self._onConfigured()
+        if self.verbose:
+            self._actions.say("Player: Unconfigured: Game state = %s" % game_state)
+        # Explanation:
+        #  if unknown state:
+        #   then just start playing (shortcut to _onConfigured)
+        #  else:
+        #   wait for either chest button or game state change
+        #    when that happens call self._onConfigured
+        if game_state is UNKNOWN_GAME_STATE:
+            if game_state is UNKNOWN_GAME_STATE:
+                print "NOTICE: No game controller - going straight to Playing"
+            self._onConfigured()
+        else:
+            if self.verbose:
+                print "Player: waiting for configuration event (change in game state, or chest button)"
+            DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
+                self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
+                    fireOnOneCallback=True).addCallback(self._onConfigured)
 
     def _onExpectingConfigureGameStateChange(self):
         """ handle any generic change to game state - should probably use
         specific functions for onPlay, onReady, onPlay, onPenalized, onFininshed
         """
-        if self._world.gameStatus.gameState is InitialGameState:
-            if self.verbose:
-                print "Player: saw state %s, continue configuration" % self._world.gameStatus.gameState
-            self._eventmanager.register_once(self._onExpectingConfigureGameStateChange, EVENT_GAME_STATE_CHANGED)
-        else:
-            # ok, so either no gamecontroller (UNKNOWN state), or the game is a-foot. But since we are still unconfigured,
-            # we will just wait for the chest button
-            if self.verbose:
-                print "Player: configured through gamecontroller gamestate change"
-            self._onConfigured()
-
+        # T
     #####
 
-    def _onConfigured(self):
+    def _onConfigured(self, result=None):
         """ we get here when done configuring """
         self._configuring = False
         if self.verbose:
@@ -151,10 +156,8 @@ class Player(object):
         print "Team number %d, Team color %d, Player number %d, game state %s" % (
             settings.teamNumber, settings.teamColor, settings.playerNumber,
             gameStateToString(state))
-        # TODO - set the kickoff position for the robot according to current
         for callback in [self._onLeftBumperPressed, self._onRightBumperPressed,
-            self._onChestButtonPressed, self._onExpectingConfigureGameStateChange,
-            self._waitForKnownGameState]:
+            self._onChestButtonPressed, self._onExpectingConfigureGameStateChange]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
         self._onNewGameState()
@@ -163,8 +166,6 @@ class Player(object):
 
     def _onNewGameState(self):
         state = self._world.gameStatus.gameState
-        if state is UNKNOWN_GAME_STATE:
-            print "NOTICE: No game controller - going straight to Playing"
         if self.verbose:
             print "Player: entered %s Game State" % gameStateToString(state)
         {InitialGameState   :self._onInitial,
@@ -175,41 +176,29 @@ class Player(object):
          UNKNOWN_GAME_STATE :self._onPlay}[state]()
 
     def _onFinish(self):
-        self.onFinish()
+        self.onStop() # TODO - can this be called twice right now, from a ctrl-c / eventmanager.quit and from FinishGameState?
 
     def _onPlay(self):
-        self.onPlay()
-
-    def _onSet(self):
-        self.onSet()
-
-    def _onReady(self):
-        self.onReady()
-
-    def _onInitial(self):
-        self.onInitial()
-
-    def _onFinish(self):
-        self.onFinish()
-
-    def onInitial(self):
-        # TODO - restart main_behavior
-        pass
-
-    @override_with_super
-    def onReady(self):
-        print "Yes I am"
-        
-    def onSet(self):
-        # TODO - what do we do on set? localize?
-        pass
-
-    def onPlay(self):
+        print "Player: OnPlay"
         self._main_behavior.start() # onDone?
 
-    @override_with_super
-    def onFinish(self):
-        self.onStop() # TODO - can this be called twice right now, from a ctrl-c / eventmanager.quit and from FinishGameState?
+    def _onSet(self):
+        print "On Set: TODO"
+
+    def _onReady(self):
+        gameStatus = self._world.gameStatus
+        weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
+        jersey = self._world.robot.jersey
+        ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
+        self._approacher = Approacher(ready_location)
+        self._approacher.start()
+        self._approacher.onDone(self._onReadyDone)
+
+    def _onReadyDone(self):
+        print "INFO: #%s Reached Ready Position!" % (self._world.robot.jersey)
+
+    def _onInitial(self):
+        print "On Initial - TODO"
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player

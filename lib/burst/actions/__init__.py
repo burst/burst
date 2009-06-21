@@ -17,6 +17,7 @@ from journey import Journey
 from kicking import BallKicker
 from headtracker import Tracker, Searcher
 from passing import passBall
+from localizer import Localizer
 
 from burst_consts import (InitialRobotState,
     ReadyRobotState, SetRobotState, PlayRobotState,
@@ -94,8 +95,9 @@ class Actions(object):
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        self.tracker = Tracker(self)
-        self.searcher = Searcher(self)
+        self.tracker = Tracker(self)        # Please remember to stop
+        self.searcher = Searcher(self)      # all of these behaviors
+        self.localizer = Localizer(self)    # when you stop the InitialBehavior. Thank you.
 
         # we keep track of the last head bd
         self._current_head_bd = self._succeed(self)
@@ -107,6 +109,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
+    @returnsbd
     def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
@@ -128,6 +131,7 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
+    @returnsbd
     def passBall(self, target_world_frame=None):
         passingChallange = passBall(self._eventmanager, self)
         passingChallange.start()
@@ -140,6 +144,7 @@ class Actions(object):
             raise Exception("Can't start tracking while searching")
         self.tracker.track(target, lostCallback=lostCallback)
 
+    @returnsbd
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
@@ -148,14 +153,18 @@ class Actions(object):
         else:
             return self.searcher.search(targets, center_on_targets)
 
+    # TODO: returns centered, maybe_bd - I should wrap this too, but returnsbd
+    # is too inflexible.
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
         return self.tracker.executeTracking(target,
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
 
+    @returnsbd
     def localize(self):
-        return self.search([self._world.yglp, self._world.ygrp])
+        self._localizer.start()
+        return self._localizer # a Behavior, hence a BurstDeferred
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks

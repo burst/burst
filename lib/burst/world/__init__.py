@@ -416,6 +416,9 @@ class World(object):
     # Callbacks
 
     def collectNewUpdates(self, cur_time):
+        if self.time == cur_time - self.start_time:
+            print "TIME ERROR: World.collectNewUpdates called with the same time twice. Ignoring"
+            return
         self.time = cur_time - self.start_time
         self._updateMemoryVariables() # must be first in update
         self._doRecord()

@@ -208,6 +208,11 @@ class EventManager(object):
         on_one_event.func_name = 'on_one_event__%s' % (func_name(callback))
         self.register(on_one_event, event)
 
+    def registerOneShotBD(self, event):
+        bd = self.burst_deferred_maker.make(self)
+        self.register_oneshot(bd.callOnDone, event)
+        return bd
+
     def unregister(self, callback, event=None):
         """Unregister the callback function callback, if event is given then from that
         event only, otherwise from all events it is registered for. If it isn't registered

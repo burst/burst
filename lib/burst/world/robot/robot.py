@@ -27,6 +27,9 @@ class Robot(Movable):
         self.ultrasound = Ultrasound(world)
         self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
 
+        # These are updated out of object, by Localization.
+        self.world_x = self.world_y = self.world_heading = self.world_update_time = None
+
     def get_state(self):
         """ return the RobotState - one of gamecontroller.constants.{Initial,Ready,Set,Penalized,Play}RobotState
         """
@@ -39,6 +42,11 @@ class Robot(Movable):
         return self._world.gameStatus.getMyPlayerStatus()
 
     status = property(get_status)
+
+    def get_jersey(self):
+        return self._world.gameStatus.mySettings.playerNumber
+
+    jersey = property(get_jersey)
 
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)

@@ -136,6 +136,7 @@ class MyDeferred(object):
             # but an exception has been raised.
             print "Unhandled Exception on deferred: %s" % str(e)
             import pdb; pdb.set_trace()
+        del self._callbacks[:]
 
 def succeed(result):
     d = Deferred()
@@ -150,10 +151,10 @@ class MyDeferredList(MyDeferred):
     doesn't handle errback (nor does my Deferred implementation)
     """
 
-    def __init__(self, deferreds):
+    def __init__(self, deferreds, fireOnOneCallback=False):
         super(MyDeferredList, self).__init__()
         self._deferreds = deferreds
-        self._count = len(deferreds)
+        self._count = fireOnOneCallback and 1 or len(deferreds)
         # like twisted.internet.defer, collect pairs of (success, result),
         # only here it is always (True, result)
         self._results = [None for i in xrange(len(deferreds))]
@@ -768,7 +769,7 @@ def func_name(f_or_m):
         # and if it possibly shortcircuits to a function (that requires disassembling the
         # lambda)
         closure = f_or_m.func_closure
-        closing_object = len(closure) > 0 and closure[0].cell_contents
+        closing_object = closure is not None and len(closure) > 0 and closure[0].cell_contents
         closing_object = ('(%s) ' % (hasattr(closing_object, '__class__') and closing_object.__class__.__name__)) or ''
         return '<l> %s%s' % (closing_object, f_or_m.func_code.co_names and f_or_m.func_code.co_names[0])
     return f_or_m.func_name
