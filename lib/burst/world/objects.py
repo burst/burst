@@ -8,13 +8,13 @@ from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     DEFAULT_NORMALIZED_CENTERING_X_ERROR, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
     CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE,
     IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
-from ..events import (EVENT_BALL_IN_FRAME,
+from burst_events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
 from burst_util import running_median, RingBuffer, Nameable
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
-import burst.events as events_module
+import burst_events
 
 
 
@@ -515,7 +515,7 @@ class Ball(Movable):
                 self.avrYplace = None
                 self.avrYplace_index = 0
                 self.sumY = 0
-                events.add(BALL_MOVING_PENALTY)
+                events.add(BALL_MOVING_PENALTY) # TODO - WTF is this name? does it mean the ball moved and caused a penalty?
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
             
@@ -610,7 +610,7 @@ class GoalPost(Locatable):
         self.id_certainty = ID_NOT_SURE
         self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
         if real_post:
-            on_seen_event = getattr(events_module, "EVENT_"+self.name+"_IN_FRAME")
+            on_seen_event = getattr(burst_events, "EVENT_"+self.name+"_IN_FRAME")
         else:
             on_seen_event = -1
         self._on_seen_event = on_seen_event

@@ -169,22 +169,32 @@ def onevision(d=None):
 ################################################################################
 # Support for Debugging Players from within pynaoqi
 
+def get_submodules(basemod):
+    return [x for x in [os.path.splitext(os.path.basename(x))[0]
+        for x in glob.glob(os.path.dirname(basemod.__file__) + '/*.py')] if x[0] != '_']
+
 def get_list_of_players():
     import players
-    return [x for x in [os.path.splitext(os.path.basename(x))[0]
-        for x in glob.glob(os.path.dirname(players.__file__) + '/*.py')] if x[0] != '_']
+    return get_submodules(players)
+
+def get_list_of_tests():
+    import players.tests
+    return get_submodules(players.tests)
 
 class PlayerRunner(object):
 
     def __init__(self, players, name):
         self.name = name
         self._players = players
+        self._player = None
 
     def make(self):
+        global user_ns
         self.loop = makeplayerloop(self.name)
         self._players.last = self.loop
         if hasattr(self.loop, '_player'): # why? network problems?
             self._players.player = self.loop._player
+            user_ns['player'] = self.loop._player
 
     def start(self):
         self.make()
@@ -196,12 +206,13 @@ class PlayerRunner(object):
 class Players(object):
     """ Used by pynaoqi shell to let completion work it's magic
     """
-    def __init__(self):
-        self.players_list = get_list_of_players()
+    def __init__(self, thelist):
+        self.players_list = thelist
         for player in self.players_list:
             self.__dict__[player] = PlayerRunner(self, player)
 
-players = Players()
+players = Players(get_list_of_players())
+tests = Players(get_list_of_tests())
 
 def makeplayerloop(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
@@ -330,6 +341,10 @@ r=[con.burstmem.getVarNameByIndex(i) for i in xrange(120)]
 # wait slightly
 r=[x.result for x in r]
 
+# show all events
+players.template_player.start()
+loop(lambda: succeed(player._world._events), dt=0.1)
+
 """
 
 def examples():
@@ -382,6 +397,8 @@ def make_shell_namespace(use_pylab):
         onevision = onevision,
         makeplayerloop = makeplayerloop,
         players = players,
+        tests = tests,
+        player = None, # set by players.bla.start()
         # burst
         burst = burst,
         burst_util = burst_util,
@@ -452,6 +469,8 @@ def main_twisted(con, my_ns):
 
     tshell = IPShellTwisted(argv=[], user_ns=my_ns)
     shell = tshell.IP
+    globals()['shell'] = shell # for later updating variables in user table
+    globals()['user_ns'] = my_ns
     pimp_my_shell(shell, con)
 
     twisted_banner(print_own_deferred_help = True)

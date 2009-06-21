@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 from burst_consts import (LEFT, RIGHT, US_HISTORY_SIZE, US_NEAR_DISTANCE, US_FRAMES_TILL_LOST, US_DISTANCES_VARNAME)
-from burst import events as events_module
-from burst.events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
+import burst_events
+from burst_events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST,
+            EVENT_OBSTACLE_IN_FRAME)
 from burst_util import RingBuffer
 import burst
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 
-from burst import events as events_module
+import burst_events
 
 __all__ = ['Bumpers', 'ChestButton']
 
@@ -20,9 +20,9 @@ class Bumpers(object):
         left, right = ((self.leftBumperRightSensor+self.leftBumperLeftSensor)/2.0 > 0.5, 
             (self.rightBumperLeftSensor+self.rightBumperRightSensor)/2.0 > 0.5)
         if not self.leftBumperPressed and left:
-            events.add(events_module.EVENT_LEFT_BUMPER_PRESSED)
+            events.add(burst_events.EVENT_LEFT_BUMPER_PRESSED)
         if not self.rightBumperPressed and right:
-            events.add(events_module.EVENT_RIGHT_BUMPER_PRESSED)
+            events.add(burst_events.EVENT_RIGHT_BUMPER_PRESSED)
         self.leftBumperPressed, self.rightBumperPressed = left, right
 
 
@@ -39,7 +39,7 @@ class ChestButton(object):
     def calc_events(self, events, deferreds):
         newVal, = self._world.getVars(self._vars)
         if newVal > 0.5 and self.oldVal < 0.5:
-            events.add(events_module.EVENT_CHEST_BUTTON_PRESSED)
+            events.add(burst_events.EVENT_CHEST_BUTTON_PRESSED)
         if newVal < 0.5 and self.oldVal > 0.5:
-            events.add(events_module.EVENT_CHEST_BUTTON_RELEASED)
+            events.add(burst_events.EVENT_CHEST_BUTTON_RELEASED)
         self.oldVal = newVal

@@ -3,7 +3,7 @@
 import player_init
 
 from burst.player import Player
-import burst.events as events
+import burst_events
 import burst.moves as moves
 from burst_util import polar2cart
 
@@ -11,7 +11,7 @@ class kickTuner(Player):
     
     def onStart(self):
         self.count = 1
-        self._eventmanager.register(self.onBallInFrame, events.EVENT_BALL_IN_FRAME)
+        self._eventmanager.register(self.onBallInFrame, burst_events.EVENT_BALL_IN_FRAME)
         self.track()
     
     def track(self):

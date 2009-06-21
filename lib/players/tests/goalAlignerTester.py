@@ -2,7 +2,6 @@
 
 import player_init
 from burst.player import Player
-import burst.events as events
 from burst.actions.headtracker import Searcher
 import burst
 import burst.moves as moves
@@ -12,7 +11,6 @@ from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
 class GoalAlignerTester(Player):
 
     def onStart(self):
-        self._actions.initPoseAndStiffness()
         self.goalposts = [self._world.yglp, self._world.ygrp]
         self.movement_deferred = None
         self.searchGoalPosts()

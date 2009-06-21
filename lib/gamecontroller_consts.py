@@ -1,4 +1,5 @@
 import burst_consts
+import burst_events
 
 ###############
 # Game States #
@@ -60,6 +61,13 @@ robotStateToChestButtonColor = {
     PlayRobotState : burst_consts.GREEN,
     PenalizedRobotState : burst_consts.RED,
     UNKNOWN_PLAYER_STATUS : burst_consts.RED}
+
+state_names = ['Initial', 'Ready', 'Set', 'Play', 'Finish']
+gamestates = [globals()[x+'GameState'] for x in state_names]
+gamestate_to_to_event = dict([(gamestate, getattr(burst_events, 'EVENT_SWITCHED_TO_' + state.upper() + '_GAME_STATE'))
+        for state, gamestate in zip(state_names, gamestates)])
+gamestate_to_from_event = dict([(gamestate, getattr(burst_events, 'EVENT_SWITCHED_FROM_' + state.upper() + '_GAME_STATE'))
+        for state, gamestate in zip(state_names, gamestates)])
 
 # Debugging helpers
 game_state_to_string_d = {

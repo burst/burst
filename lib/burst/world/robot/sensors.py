@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from burst import events as events_module
+import burst_events
 import burst
 
 
@@ -81,11 +81,11 @@ class Sensors(object):
             sensor.update()
         # Calculate events:
         if self.isOnBack():
-            events.add(events_module.EVENT_FALLEN_DOWN)
-            events.add(events_module.EVENT_ON_BACK)
+            events.add(burst_events.EVENT_FALLEN_DOWN)
+            events.add(burst_events.EVENT_ON_BACK)
         if self.isOnBelly():
-            events.add(events_module.EVENT_FALLEN_DOWN)
-            events.add(events_module.EVENT_ON_BELLY)
+            events.add(burst_events.EVENT_FALLEN_DOWN)
+            events.add(burst_events.EVENT_ON_BELLY)
 #        self.debug += 1
 #        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleIntertialSensor.read()
 #        print map(lambda x: x.read(), self.rightFootFSRs._fsrs), map(lambda x: x.read(), self.leftFootFSRs._fsrs)

@@ -7,7 +7,7 @@ from burst.player import Player
 class Template(Player):
     
     def onStart(self):
-        self._actions.initPoseAndStiffness()
+        pass
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

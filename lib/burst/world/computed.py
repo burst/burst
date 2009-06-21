@@ -1,6 +1,6 @@
 from math import cos, sin, sqrt, atan2
-from ..events import EVENT_BALL_IN_FRAME #EVENT_KP_CHANGED
-import burst.events as events_module
+from burst_events import EVENT_BALL_IN_FRAME #EVENT_KP_CHANGED
+import burst_events
 
 class Computed(object):
     """ place holder for any computed value, currently just the kicking point, that
@@ -20,24 +20,24 @@ class Computed(object):
           2. LOG OF EVENTS LONG PAST: Nothing (was kick point, see calc_kicking_point)
         """
         # Blue goal:
-        if events_module.EVENT_BGLP_IN_FRAME in events and events_module.EVENT_BGRP_IN_FRAME in events:
-            events.add(events_module.EVENT_ALL_BLUE_GOAL_IN_FRAME)
+        if burst_events.EVENT_BGLP_IN_FRAME in events and burst_events.EVENT_BGRP_IN_FRAME in events:
+            events.add(burst_events.EVENT_ALL_BLUE_GOAL_IN_FRAME)
             if not self._blueGoalSeen:
-                events.add(events_module.EVENT_ALL_BLUE_GOAL_SEEN)
+                events.add(burst_events.EVENT_ALL_BLUE_GOAL_SEEN)
                 self._blueGoalSeen = True
         else:
             if self._blueGoalSeen:
-                events.add(events_module.EVENT_ALL_BLUE_GOAL_LOST)
+                events.add(burst_events.EVENT_ALL_BLUE_GOAL_LOST)
                 self._blueGoalSeen = False
         # Yellow goal:
-        if events_module.EVENT_YGLP_IN_FRAME in events and events_module.EVENT_YGRP_IN_FRAME in events:
-            events.add(events_module.EVENT_ALL_YELLOW_GOAL_IN_FRAME)
+        if burst_events.EVENT_YGLP_IN_FRAME in events and burst_events.EVENT_YGRP_IN_FRAME in events:
+            events.add(burst_events.EVENT_ALL_YELLOW_GOAL_IN_FRAME)
             if not self._yellowGoalSeen:
-                events.add(events_module.EVENT_ALL_YELLOW_GOAL_SEEN)
+                events.add(burst_events.EVENT_ALL_YELLOW_GOAL_SEEN)
                 self._yellowGoalSeen = True
         else:
             if self._yellowGoalSeen:
-                events.add(events_module.EVENT_ALL_YELLOW_GOAL_LOST)
+                events.add(burst_events.EVENT_ALL_YELLOW_GOAL_LOST)
                 self._yellowGoalSeen = False
 
     def calc_kicking_point(self, events, deferreds):
@@ -51,8 +51,8 @@ class Computed(object):
         self.kp_valid = False
         self.kp_k = 30.0
         """
-        if (self._team.target_goal_seen_event in self._world._events
-            and EVENT_BALL_IN_FRAME in self._world._events):
+        if (self._team.target_goal_seen_event in events
+                    and EVENT_BALL_IN_FRAME in events):
             new_kp = self.calculate_kp()
             
             if not self.kp_valid or (new_kp[0] - self.kp[0] > 1e-5 or new_kp[1] - self.kp[1] > 1e-5):

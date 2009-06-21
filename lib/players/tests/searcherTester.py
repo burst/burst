@@ -2,7 +2,6 @@
 
 import player_init
 from burst.player import Player
-import burst.events as events
 from burst.actions.headtracker import Searcher
 
 class SearchTester(Player):

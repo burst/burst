@@ -3,7 +3,7 @@
 
 import player_init
 from burst.player import Player
-import burst.events as events
+import burst_events
 
 THRESHOLD = 0.15
 
@@ -15,7 +15,7 @@ class Kicker(Player):
         self.tracker = self._actions.tracker
         self.searcher = self._actions.searcher
         self.searcher.search([self.obj], True).onDone(self.onObjectFound)
-        self._eventmanager.register(self.printtt, events.EVENT_STEP)
+        self._eventmanager.register(self.printtt, burst_events.EVENT_STEP)
 
     def printtt(self):
         return

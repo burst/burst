@@ -6,8 +6,8 @@ __all__ = ['GameStatus', 'EmptyGameStatus']
 
 import burst
 from burst_consts import GAME_CONTROLLER_NUM_PLAYERS, GAME_CONTROLLER_NUM_TEAMS
-from burst import events as events_consts
-from burst.events import EVENT_GAME_STATE_CHANGED
+import burst_events
+from burst_events import EVENT_GAME_STATE_CHANGED
 import gamecontroller
 from gamecontroller import constants as constants
 from gamecontroller_consts import *
@@ -104,23 +104,20 @@ class GameStatus(object):
         Calculates events that are related to goals: either team having perhaps scored a goal.
         '''
         if self.myTeamScore < message.getTeamScore(self.mySettings.teamColor):
-            self.newEvents.add(events_consts.EVENT_GOAL_SCORED_BY_MY_TEAM)
-            self.newEvents.add(events_consts.EVENT_GOAL_SCORED)
+            self.newEvents.add(burst_events.EVENT_GOAL_SCORED_BY_MY_TEAM)
+            self.newEvents.add(burst_events.EVENT_GOAL_SCORED)
         if self.opposingTeamScore < message.getTeamScore(1 - self.mySettings.teamColor):
-            self.newEvents.add(events_consts.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM)
-            self.newEvents.add(events_consts.EVENT_GOAL_SCORED)
+            self.newEvents.add(burst_events.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM)
+            self.newEvents.add(burst_events.EVENT_GOAL_SCORED)
 
     def _calcGameStateRelatedEvents(self, message):
         '''
         Calculates events that are related to the game state changing: the leaving of one game state, and the transition to a new one.
         '''
-        # TODO - refactor
-        for state in ['Initial', 'Ready', 'Set', 'Play', 'Finish']:
-            if self.gameState == getattr(constants, state+'GameState') and message.getGameState() != getattr(constants, state+'GameState'):
-                self.newEvents.add(getattr(events_consts, 'EVENT_SWITCHED_FROM_'+state.upper()+'_GAME_STATE'))
-                self.newEvents.add(EVENT_GAME_STATE_CHANGED)
-            if self.gameState != getattr(constants, state+'GameState') and message.getGameState() == getattr(constants, state+'GameState'):
-                self.newEvents.add(getattr(events_consts, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
+        if self.gameState != message.getGameState():
+            self.newEvents.add(gamestate_to_from_event[self.gameState])
+            self.newEvents.add(gamestate_to_to_event[message.getGameState()])
+            self.newEvents.add(EVENT_GAME_STATE_CHANGED)
 
     def _calcPenaltyRelatedEvents(self, message): # TODO: Rename.
         '''
@@ -135,29 +132,29 @@ class GameStatus(object):
                     if message.getPenaltyStatus(teamColor, playerNumber) in constants.Penalties and not player.status in constants.Penalties:
                         if player.teamColor == self.mySettings.teamColor:
                             if player.playerNumber == self.mySettings.playerNumber:
-                                self.newEvents.add(events_consts.EVENT_I_GOT_PENALIZED)
+                                self.newEvents.add(burst_events.EVENT_I_GOT_PENALIZED)
                             else:
-                                self.newEvents.add(events_consts.EVENT_TEAMMATE_PENALIZED)
+                                self.newEvents.add(burst_events.EVENT_TEAMMATE_PENALIZED)
                         else:
-                            self.newEvents.add(events_consts.EVENT_OPPONENT_PENALIZED)
+                            self.newEvents.add(burst_events.EVENT_OPPONENT_PENALIZED)
                     # If returning from a penalty status:
                     if player.status in constants.Penalties and not message.getPenaltyStatus(teamColor, playerNumber) in constants.Penalties:
                         if player.teamColor == self.mySettings.teamColor:
                             if player.playerNumber == self.mySettings.playerNumber:
-                                self.newEvents.add(events_consts.EVENT_I_GOT_UNPENALIZED)
+                                self.newEvents.add(burst_events.EVENT_I_GOT_UNPENALIZED)
                             else:
-                                self.newEvents.add(events_consts.EVENT_TEAMMATE_UNPENALIZED)
+                                self.newEvents.add(burst_events.EVENT_TEAMMATE_UNPENALIZED)
                         else:
-                            self.newEvents.add(events_consts.EVENT_OPPONENT_UNPENALIZED)
+                            self.newEvents.add(burst_events.EVENT_OPPONENT_UNPENALIZED)
 
     def _fireInitialEvents(self): # TODO: We'd might like to have the events fired in some predetermined order.
         for state in ['Initial', 'Ready', 'Set', 'Play', 'Finish']:
             if self.gameState == getattr(constants, state+'GameState'):
-                self.newEvents.add(getattr(events_consts, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
+                self.newEvents.add(getattr(burst_events, 'EVENT_SWITCHED_TO_'+state.upper()+'_GAME_STATE'))
                 self.newEvents.add(EVENT_GAME_STATE_CHANGED)
                 break
         if self.players[self.mySettings.teamColor][self.mySettings.playerNumber].isPenalized():
-            self.newEvents.add(events_consts.EVENT_I_GOT_PENALIZED)
+            self.newEvents.add(burst_events.EVENT_I_GOT_PENALIZED)
 
     def calc_events(self, events, deferreds):
 #        print self.mySettings.playerNumber

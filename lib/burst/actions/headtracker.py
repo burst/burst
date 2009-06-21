@@ -1,18 +1,18 @@
 import sys
 import linecache
+from math import pi, sqrt
 
 from burst_util import (traceme, nicefloat, BurstDeferred,
     Deferred, chainDeferreds)
-from burst.events import *
+from burst_events import *
 import burst
 import burst_consts as consts
 from burst_consts import (FOV_X, FOV_Y,
     DEFAULT_NORMALIZED_CENTERING_X_ERROR,
     DEFAULT_NORMALIZED_CENTERING_Y_ERROR, PIX_TO_RAD_X, PIX_TO_RAD_Y,
     IMAGE_CENTER_X, IMAGE_CENTER_Y)
-import burst.events as events
+import burst_events
 from burst.image import normalized2_image_width, normalized2_image_height
-from math import pi, sqrt
 
 ############################################################################
 class Tracker(object):
@@ -532,7 +532,7 @@ class Searcher(object):
             self._report("Searcher: first time seen %s" % obj.name)
             #self._eventmanager.unregister(self._onSeen, event)
             if event in self._eventToCallbackMapping:
-                self._report("Searcher: unregistering %s (%s)" % (event, events.event_name(event)))
+                self._report("Searcher: unregistering %s (%s)" % (event, burst_events.event_name(event)))
                 cb = self._eventToCallbackMapping[event]
                 self._eventmanager.unregister(cb, event)
                 del self._eventToCallbackMapping[event]
