@@ -34,7 +34,6 @@ New and annoyingly thready:
 
 import burst
 from burst_util import (DeferredList, succeed, Deferred, func_name)
-from burst_consts import MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT
 from burst_events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
 from burst.odometry import Motion # TODO - different place
@@ -224,9 +223,6 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         self._motion_posts = SerialPostQueue(KIND_MOTION, self._world)
         self._head_posts   = SerialPostQueue(KIND_HEAD, self._world)
         self._walk_posts   = SerialPostQueue(KIND_WALK, self._world)
-
-        # TODO - should world have access to eventmanager? - ugly hack going to burst.options.dt
-        self._motion_finished_min_duration = MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT * burst.options.dt
 
         # helpers
         self._post_handler = {KIND_MOTION: self._add_expected_motion_post,

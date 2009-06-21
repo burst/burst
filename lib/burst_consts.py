@@ -127,7 +127,6 @@ MIN_BEARING_CHANGE = 1e-3 # TODO - ?
 MIN_DIST_CHANGE = 1e-3
 
 # Robot constants
-MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT = 3
 
 # Acceptable Centering error - normalized values (in [-1, 1])
 DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*4 #0.05*3

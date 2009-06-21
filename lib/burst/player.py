@@ -300,9 +300,6 @@ class Player(object):
     # Utilities #
     #############
 
-    def log(self, msg):
-        print "%s: %s" % (self.__class__.__name__, msg)
-
     def registerDecoratedEventHandlers(self):
         """
         Intended usage: if you have a clear method -> event in your player, you can

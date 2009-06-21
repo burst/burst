@@ -21,7 +21,6 @@ class Journey(object):
     def __init__(self, actions):
         self._printQueueBeforeExecution = True
         self._actions = actions
-        self._dt = actions._eventmanager.dt
         self._world = self._actions._world
         self._motion = self._actions._motion
         self._deferred = None
@@ -59,7 +58,7 @@ class Journey(object):
             turn[1] = final_turn
         # TODO - compute duration correctly for the multiple legs
         self._duration = duration = (self._time_per_steps * distance / step_length +
-                    (turn[0] and DEFAULT_STEPS_FOR_TURN or self._dt) ) * 0.02 # 20ms steps
+                    (turn[0] and DEFAULT_STEPS_FOR_TURN or self._eventmanager.dt) ) * 0.02 # 20ms steps
 
         self._addCommand("walkconfig", lambda _: self._actions.setWalkConfig(walk.walkParameters))
         self._addCommand("support mode", lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
