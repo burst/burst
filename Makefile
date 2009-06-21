@@ -20,11 +20,13 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload pyloc pylocatotal
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload pyloc pylocatotal cleanpyc
 
-clean:
+cleanpyc:
 	@echo "removing pyc files"
 	find . -iname "*.pyc" -exec rm \{\} \;
+
+clean: clean_pyc
 	cd src/burstmem; $(MAKE) clean
 	rm -fR src/recordermodule/crossbuild
 	cd src/imops; $(MAKE) clean

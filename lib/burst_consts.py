@@ -52,14 +52,18 @@ for l in hosts:
         ROBOT_IP_TO_NAME[ip] = host
 # Jersey numbers:
 # 1 == goalie
+GOALIE_JERSEY = 1
+KICKER_JERSEY = 2
+SECONDARY_JERSEY = 3
+
 ROBOT_NAME_TO_JERSEY_NUMBER = {
-    MESSI: 1,
-    CECH: 1,
-    HAGI: 2,
-    RAUL: 2,
-    MALDINI: 3,
-    GERRARD: 3,
-    WEBOTS: 1, # TODO - overriding command line for robot number, required for webots.
+    MESSI: GOALIE_JERSEY,
+    CECH: GOALIE_JERSEY,
+    HAGI: KICKER_JERSEY,
+    RAUL: KICKER_JERSEY,
+    MALDINI: SECONDARY_JERSEY,
+    GERRARD: SECONDARY_JERSEY,
+    WEBOTS: GOALIE_JERSEY, # TODO - overriding command line for robot number, required for webots.
 }
 
 ################################################################################
@@ -84,6 +88,35 @@ MMAP_LENGTH      = 4096
 ################################################################################
 # Important other constants (parameters for various behaviors)
 ################################################################################
+
+# WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
+# 'initial_position' - world coordinates
+INITIAL_POSITION = 'initial_position'
+READY_INITIAL_LOCATIONS = {
+    # We are the Kick off team - Attacking positions
+    True: {
+        GOALIE_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0), # TODO - lambda that determines? would be pretty cool
+        },
+        KICKER_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0),
+        },
+        SECONDARY_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0),
+        },
+    },
+    False: {
+        GOALIE_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0),
+        },
+        KICKER_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0),
+        },
+        SECONDARY_JERSEY: {
+            INITIAL_POSITION: (0.0, 0.0),
+        },
+    }
+}
 
 # Event Manager constants
 DEFAULT_EVENT_MANAGER_DT = 0.1 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
