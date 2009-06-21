@@ -74,9 +74,11 @@ class BehaviorEventManager(object):
         #del self._cb_to_wrapper[cb]
 
     def callLater(self, dt, callback, *args, **kw):
-        wrapper = lambda *args, **kw: self._behavior._applyIfNotStopped(callback, args, kw)
+        def wrapper(*args, **kw):
+            #print "BEM %s wrapper" % (self._behavior.name)
+            return self._behavior._applyIfNotStopped(callback, args, kw)
         self._cb_to_wrapper[callback] = wrapper 
-        self._eventmanager.callLater(dt, callback, args, kw)
+        self._eventmanager.callLater(dt, callback, *args, **kw)
 
     def callLaterBD(self, dt):
         """ returns a BurstDeferred which is called in dt seconds """
