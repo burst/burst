@@ -8,7 +8,7 @@ from burst_util import nicefloat
 from burst_consts import RAD_TO_DEG
 
 import burst
-from burst.events import EVENT_WORLD_LOCATION_UPDATED
+from burst_events import EVENT_WORLD_LOCATION_UPDATED
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
     CROSSBAR_CM_WIDTH)
 from burst.position import xyt_from_two_dist_one_angle

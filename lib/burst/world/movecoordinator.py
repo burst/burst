@@ -35,22 +35,14 @@ New and annoyingly thready:
 import burst
 from burst_util import (DeferredList, succeed, Deferred, func_name)
 from burst_consts import MOTION_FINISHED_MIN_DURATION_IN_MULTIPLES_OF_DT
-from burst.events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
+from burst_events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
+from burst.odometry import Motion # TODO - different place
 
 ################################################################################
 KIND_MOTION = 'motion'
 KIND_HEAD = 'head'
 KIND_WALK = 'walk'
-
-class Motion(object):
-    
-    def __init__(self, event, deferred, start_time, duration):
-        self.event = event
-        self.deferred = deferred
-        self.has_started = False
-        self.start_time = start_time
-        self.duration = duration
 
 ################################################################################
 
@@ -165,7 +157,8 @@ class BaseMoveCoordinator(object):
         motion = (self._world.time, kind, description, event, duration)
         self._initiated.append(motion)
         if kind is KIND_WALK:
-            self._world.odometry.onWalkInitiated(self._world.time, description, duration)
+            self._world.odometry.onWalkInitiated(Motion(
+                start_time=self._world.time, description=description, estimated_duration=duration))
         return initiated
 
     def _add_posted(self, postid, initiated):

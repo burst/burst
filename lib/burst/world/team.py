@@ -1,4 +1,4 @@
-from ..events import EVENT_ALL_YELLOW_GOAL_SEEN
+from burst_events import EVENT_ALL_YELLOW_GOAL_SEEN
 
 BLUE_GOAL, YELLOW_GOAL = 1, 2
 

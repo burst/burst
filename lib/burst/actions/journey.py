@@ -1,7 +1,7 @@
 from burst_util import chainDeferreds
 from burst.walkparameters import WalkParameters
 from burst.actions.actionconsts import (MINIMAL_CHANGELOCATION_TURN, DEFAULT_STEPS_FOR_TURN, DEFAULT_SLOW_WALK_STEPS)
-from burst.events import EVENT_CHANGE_LOCATION_DONE
+from burst_events import EVENT_CHANGE_LOCATION_DONE
 from burst_consts import SUPPORT_MODE_DOUBLE_LEFT
 from burst.world import World
 import burst.moves.walks as walks

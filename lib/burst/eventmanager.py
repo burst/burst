@@ -15,7 +15,7 @@ from burst_util import DeferredList, func_name, Profiler, succeed
 import burst_util
 import burst.actions
 
-from .events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
+from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
 
 import burst_consts

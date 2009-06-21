@@ -25,7 +25,7 @@ Other callbacks that are more like implementation details but might be important
             it was there to begin with), and register to all other state changes.
 '''
 
-from events import *
+from burst_events import *
 import burst
 import burst.moves.poses as poses
 import burst_consts

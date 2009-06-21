@@ -73,8 +73,8 @@ def calcTarget(distSmoothed, bearing):
 
     # by Vova - new kick TODO: use consts, add explanation of meaning, perhaps move inside adjusted_straight_kick (passing ball, of course)
     kick_side_offset = 1.1-1.2*(abs(target_y-KICK_Y_MIN[side])/7)
-    return (side, kp_x, kp_y, kp_dist, kp_bearing, target_location, kick_side_offset)
-    
+    return side, kp_x, kp_y, kp_dist, kp_bearing, target_location, kick_side_offset
+
 
 def calcBallArea(ball_x, ball_y, side):
     if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
@@ -94,3 +94,4 @@ def calcBallArea(ball_x, ball_y, side):
                 return BALL_SIDE_FAR
         else: #ball_x > KICK_X_MAX[side]
             return BALL_DIAGONAL
+

@@ -4,7 +4,7 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
-from burst_util import BurstDeferred, Nameable
+from burst_util import BurstDeferred, Nameable, succeedBurstDeferred
 
 class Behavior(BurstDeferred, Nameable):
     
@@ -25,7 +25,8 @@ class Behavior(BurstDeferred, Nameable):
             self._bd.clear()
             self._bd = None
         self._stopped = True
-
+        return self._stop_complete()
+        
     def stopped(self):
         return self._stopped
 
@@ -34,8 +35,14 @@ class Behavior(BurstDeferred, Nameable):
         self._stopped = False
         self._start(firstTime=True)
 
+    #####  Override by Inheritance  #####
+
     def _start(self, firstTime=False):
         pass # defaults to empty behavior
+
+    def _stop_complete(self):
+        """ Behavior specific burstdeferred fired on stop completion """
+        return succeedBurstDeferred(self)
 
 class ContinuousBehavior(Behavior):
     

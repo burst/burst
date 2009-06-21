@@ -8,7 +8,7 @@ from burst_util import (BurstDeferred, Nameable, calculate_middle, calculate_rel
 
 # local imports
 import burst
-from burst.events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
+from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
                           EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 import burst.actions
 from burst.actions.target_finder import TargetFinder
@@ -16,8 +16,8 @@ import burst.moves as moves
 import burst.moves.walks as walks
 import burst.moves.poses as poses
 
-from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, 
-                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL, 
+from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR,
+                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
                                    MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS, MOVEMENT_PERCENTAGE_TURN,
                                    MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
@@ -37,8 +37,8 @@ import random
 # When obstacle encountered DURING move:
 # * stop move only if it's a long walk (if it's a short walk to the ball, we prefer not to stop...)
 # When obstacle encountered BEFORE move:
-# * Kicking: change kick to inside-kick/angle-kick if obstacle is at center 
-#   (Goalie->inside kick towards opposite side, Kicker-> angle-kick towards field center) 
+# * Kicking: change kick to inside-kick/angle-kick if obstacle is at center
+#   (Goalie->inside kick towards opposite side, Kicker-> angle-kick towards field center)
 # * Ball far: side-step to opposite side (or towards field center if at center)
 #
 # TODO's:
@@ -60,8 +60,8 @@ class BallKicker(BurstDeferred):
         self._ultrasound = self._world.robot.ultrasound
         self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
         self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
-        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME) 
-        
+        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME)
+
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self._approachBall)
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
@@ -73,11 +73,11 @@ class BallKicker(BurstDeferred):
         self._movement_deferred = None
         self._movement_type = None
         self._movement_location = None
-        
+
         self._is_strafing = False
         self._is_strafing_init_done = False
 
-        self._obstacle_in_front = None        
+        self._obstacle_in_front = None
         self._target = self._world.ball
 
         self._actions.setCameraFrameRate(20)
@@ -108,9 +108,9 @@ class BallKicker(BurstDeferred):
         shouldStopMovement = forceStop or (self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR)
         if shouldStopMovement:
             self._clearMovement(clearFootsteps = True)
-        
+
         print "Kicking: _stopOngoingMovement: current movement %s (forceStop = %s)" % (shouldStopMovement and "STOPPED" or "CONTINUES", forceStop)
-        
+
     ################################################################################
     # Ultrasound callbacks
     #
@@ -165,13 +165,13 @@ class BallKicker(BurstDeferred):
             print "TARGET NOT RECENTLY SEEN???"
             #import pdb; pdb.set_trace()
             return
-        
+
         (side, kp_x, kp_y, kp_dist, kp_bearing, target_location, kick_side_offset) = calcTarget(self._target.distSmoothed, self._target.bearing)
 
         ### DECIDE ON NEXT MOVEMENT ###
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
         if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR) and not self._aligned_to_goal and self._align_to_target:
-            self.debugPrint("Aligning to goal! (stopping target tracker)")
+            self.debugPrint("Aligning to goal! (switching to goal finder)")
             self._actions.setCameraFrameRate(20)
             self.switchToFinder(to_goal_finder=True)
             return
@@ -186,7 +186,7 @@ class BallKicker(BurstDeferred):
                 #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
                 self._movement_type = MOVE_KICK
                 self._movement_location = target_location
-                
+
                 if self._obstacle_in_front:
                     self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
                 else:
@@ -204,18 +204,18 @@ class BallKicker(BurstDeferred):
                     if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
                         opposite_side_from_obstacle = self.getObstacleOppositeSide()
                         print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
-                        
+
                         self._movement_type = MOVE_SIDEWAYS
                         self._movement_deferred = self._actions.changeLocationRelativeSideways(
                             0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK)
-                        
+
 #                        self._movement_type = MOVE_CIRCLE_STRAFE
 #                        if opposite_side_from_obstacle == -1:
 #                            strafeMove = self._actions.executeCircleStrafeCounterClockwise
 #                        else:
 #                            strafeMove = self._actions.executeCircleStrafeClockwise
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
-                        
+
                     else:
                         self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
@@ -244,10 +244,10 @@ class BallKicker(BurstDeferred):
             self._movement_type = MOVE_FORWARD
             self._movement_location = target_location
             self._movement_deferred = self._actions.changeLocationRelative(0, 0, 0)
-        
+
         print "Movement STARTING!"
         self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
-        
+
     def switchToFinder(self, to_goal_finder=False):
         from_finder, to_finder = self._goalFinder, self._ballFinder
         if to_goal_finder:
@@ -277,7 +277,7 @@ class BallKicker(BurstDeferred):
 
     def strafe(self):
         self._is_strafing = True
-        
+
         if not self.goalpost_to_track.seen:
             self.debugPrint("strafe: goal post not seen")
             # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
@@ -314,10 +314,10 @@ class BallKicker(BurstDeferred):
 
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
         nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.2, self.strafe))
-        
+
         print "Movement STARTING! (strafing)"
         self._movement_deferred.onDone(nextAction)
-        
+
 
     def refindBall(self):
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(

@@ -13,6 +13,16 @@ import burst_consts
 
 # Data Structures
 
+def cross(*args):
+    if len(args) == 1:
+        for x in args[0]:
+            yield tuple([x])
+        raise StopIteration
+    for x in args[0]:
+        for rest in cross(*args[1:]):
+            yield tuple([x] + list(rest))
+
+
 class Nameable(object):
     
     def __init__(self, name='unnamed'):
@@ -393,6 +403,17 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
 
 # Debugging
 
+def timeit(tmpl):
+    def wrapper(f):
+        def wrap(*args, **kw):
+            t = time()
+            ret = f(*args, **kw)
+            print tmpl % ((time() - t) * 1000)
+            return ret
+        return wrap
+    return wrapper
+
+
 def traceme(f):
     """ Will print to stdout trace of all functions called within this function
     call - note that there is no handling of recursion in wrapped function, so
@@ -657,6 +678,13 @@ def compresstoprint(s, first, last):
     return s[:first] + '\n...\n' + s[-last:]
 
 # Operating System utilities
+
+def gethostname():
+    fd = open('/etc/hostname')
+    # all hostnames should be lower, we just enforce it..
+    hostname = fd.read().strip().lower()
+    fd.close()
+    return hostname
 
 def get_num_cores():
     ret = 1

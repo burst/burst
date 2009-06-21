@@ -3,7 +3,7 @@ import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
     Deferred, DeferredList, chainDeferreds)
-from burst.events import *
+from burst_events import *
 import burst.moves.choreograph as choreograph
 import burst.moves.poses as poses
 import burst.moves.walks as walks
@@ -99,6 +99,7 @@ class Actions(object):
 
         # we keep track of the last head bd
         self._current_head_bd = self._succeed(self)
+        self._current_motion_bd = self._succeed(self)
 
     #===============================================================================
     #    High Level - anything that uses vision
@@ -180,10 +181,11 @@ class Actions(object):
         distance = (delta_x**2 + delta_y**2)**0.5 / 100 # convert cm to meter
         bearing  = atan2(delta_y, delta_x) # TODO: Shouldn't this be the other way around?
 
-        return self._journey.start(walk=walk,
+        self._current_motion_bd = self._journey.start(walk=walk,
             steps_before_full_stop = steps_before_full_stop,
             delta_theta = delta_theta,
             distance=distance, bearing=bearing)
+        return self._current_motion_bd
 
     @legal_any
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
@@ -197,8 +199,9 @@ class Actions(object):
         
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens)
-        return self._movecoordinator.walk(d, duration=duration,
+        self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                             description=('turn', deltaTheta, walk))
+        return self._current_motion_bd
 
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
@@ -256,12 +259,13 @@ class Actions(object):
         print "Estimated duration: %3.3f" % (duration)
         
         d = chainDeferreds(dgens)
-        return self._movecoordinator.walk(d, duration=duration,
+        self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                     description=('sideway', delta_x, delta_y, walk))
-
+        return self._current_motion_bd
    
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        return self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
+        self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
+        return self._current_head_bd
 
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
         dgens = []
@@ -308,13 +312,6 @@ class Actions(object):
     #===============================================================================
     #    Low Level
     #===============================================================================
-    
-    def getCurrentHeadBD(self):
-        """ return a succeed if no head move in progress, or the bd of the current
-        head move, for possible onDone calls. Note that we support multiple onDone,
-        just like Deferred.addCallback, so you can register additional ones here.
-        """
-        return self._current_head_bd
 
     def switchToTopCamera(self):
         print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
@@ -374,9 +371,6 @@ class Actions(object):
         originalKick[4][4] = orig_value
         return bd
 
-    def getSpeedFromDistance(self,kick_dist):
-        return max(0.62 * pow(kick_dist,-0.4), 0.18)
-
     def inside_kick(self, kick_type, kick_leg):
         return self.executeMove(KICK_TYPES[(kick_type, kick_leg)])
 
@@ -388,8 +382,9 @@ class Actions(object):
     
     @legal_any
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
-        return self._movecoordinator.doMove(jointCodes, angles, times, 1,
+        self._current_motion_bd = self._movecoordinator.doMove(jointCodes, angles, times, 1,
                                             description=('choreograph', whatmove))
+        return self._current_motion_bd
 
     @legal_any
     def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
@@ -417,8 +412,9 @@ class Actions(object):
         angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
-        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
+        self._current_motion_bd = self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
             interp_type, description = description)
+        return self._current_motion_bd
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
@@ -448,8 +444,9 @@ class Actions(object):
         angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         #print repr((joints, angles_matrix, durations_matrix))
-        return self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
+        self._current_motion_bd = self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
             interp_type, description=description)
+        return self._current_motion_bd
 
     @legal_head
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
@@ -598,4 +595,16 @@ class Actions(object):
     def getAngle(self, joint_name):
         return self._world.getAngle(joint_name)
 
+    def getSpeedFromDistance(self,kick_dist):
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
+    
+    def getCurrentHeadBD(self):
+        """ return a succeed if no head move in progress, or the bd of the current
+        head move, for possible onDone calls. Note that we support multiple onDone,
+        just like Deferred.addCallback, so you can register additional ones here.
+        """
+        return self._current_head_bd
+
+    def getCurrentMotionBD(self):
+        return self._current_motion_bd
 

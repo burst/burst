@@ -16,12 +16,12 @@ import linecache
 
 from burst_consts import US_DISTANCES_VARNAME
 import burst
-from ..events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
+from burst_events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_ALL_BLUE_GOAL_IN_FRAME,
     EVENT_ALL_YELLOW_GOAL_IN_FRAME,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
     EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
-from burst_util import running_average, LogCalls
+from burst_util import running_average, LogCalls, cross, gethostname
 
 from burst.deferreds import BurstDeferredMaker
 import burst.field as field
@@ -35,7 +35,7 @@ from objects import Locatable
 from localization import Localization
 from movecoordinator import MoveCoordinator
 from kinematics import Pose
-from odometry import Odometry
+from burst.odometry import Odometry
 
 # TODO: Shouldn't require adding something to the path at any point
 # after player_init
@@ -44,33 +44,8 @@ from gamecontroller import GameControllerMessage, GameController
 from ..player_settings import PlayerSettings
 from gamestatus import GameStatus
 
-def timeit(tmpl):
-    def wrapper(f):
-        def wrap(*args, **kw):
-            t = time()
-            ret = f(*args, **kw)
-            print tmpl % ((time() - t) * 1000)
-            return ret
-        return wrap
-    return wrapper
 
 ############################################################################
-
-def cross(*args):
-    if len(args) == 1:
-        for x in args[0]:
-            yield tuple([x])
-        raise StopIteration
-    for x in args[0]:
-        for rest in cross(*args[1:]):
-            yield tuple([x] + list(rest))
-
-def gethostname():
-    fd = open('/etc/hostname')
-    # all hostnames should be lower, we just enforce it..
-    hostname = fd.read().strip().lower()
-    fd.close()
-    return hostname
 
 class World(object):
     """
