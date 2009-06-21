@@ -195,6 +195,7 @@ class PlayerRunner(object):
         if hasattr(self.loop, '_player'): # why? network problems?
             self._players.player = self.loop._player
             user_ns['player'] = self.loop._player
+            user_ns['main'] = self.loop._player._main_behavior
 
     def start(self):
         self.make()
@@ -218,7 +219,7 @@ def makeplayerloop(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
     """
-    import burst.player
+    import burst.behavior
     try:
         mod = __import__('players.%s' % name)
         playermod = getattr(mod, name)
@@ -230,8 +231,8 @@ def makeplayerloop(name, clazz=None):
         print ', '.join(players.players_list)
         return
     candidate_classes = [v for v in playermod.__dict__.values()
-                            if isinstance(v, type) and issubclass(v, burst.player.Player)
-                            and not v is burst.player.Player]
+                            if isinstance(v, type) and issubclass(v, burst.behavior.Behavior)
+                            and not v is burst.behavior.Behavior]
     if len(candidate_classes) == 0:
         print "%s contains no Player classes" % playermod.__name__
         return None

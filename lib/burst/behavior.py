@@ -49,6 +49,11 @@ class Behavior(BurstDeferred, Nameable):
         """ Behavior specific burstdeferred fired on stop completion """
         return self._succeed(self)
 
+    def __str__(self):
+        return '<Behavior %s: %s>' % (self.name, self.toCondensedString())
+
+    __repr__ = __str__
+
 class ContinuousBehavior(Behavior):
     
     def onDone(self, cb):

@@ -2,7 +2,7 @@
 
 import player_init
 
-from burst.behevior import InitialBehavior
+from burst.behavior import InitialBehavior
 
 class Template(InitialBehavior):
     
