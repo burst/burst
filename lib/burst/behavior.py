@@ -64,3 +64,4 @@ class InitialBehavior(Behavior):
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose
+

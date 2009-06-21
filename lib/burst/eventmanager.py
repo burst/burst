@@ -337,8 +337,8 @@ class BasicMainLoop(object):
     
     __running_instance = None
 
-    def __init__(self, playerclass):
-        self._main_behavior_class = playerclass
+    def __init__(self, main_behavior_class):
+        self._main_behavior_class = main_behavior_class
         self._ctrl_c_cb = None
         self._actions = None
         if self.__running_instance:
@@ -581,8 +581,8 @@ class SimpleMainLoop(BasicMainLoop):
     socket requests) too much, that happens in World.update.
     """
 
-    def __init__(self, playerclass):
-        super(SimpleMainLoop, self).__init__(playerclass = playerclass)
+    def __init__(self, main_behavior_class):
+        super(SimpleMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._keep_the_loop = True
 
         # need to call burst.init first
@@ -682,9 +682,8 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, playerclass, control_reactor=True, startRightNow=True):
-    
-        super(TwistedMainLoop, self).__init__(playerclass = playerclass)
+    def __init__(self, main_behavior_class, control_reactor=True, startRightNow=True):
+        super(TwistedMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._do_cleanup = True
         self._control_reactor = control_reactor
 
