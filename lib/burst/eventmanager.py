@@ -88,11 +88,12 @@ class AndEvent(SuperEvent):
         super(AndEvent, self).__init__(eventmanager, events, cb)
         self._cb = cb
         for event in events:
-            eventmanager.register(event, lambda self=self, event=event: self.onEvent(event))
+            eventmanager.register(lambda self=self, event=event: self.onEvent(event), event)
             
     def onEvent(self, event):
         self._waiting.remove(event)
         if len(self._waiting) == 0:
+            # BROKEN
             for event in self.events:
                 self._eventmanager.unregister(event)
             self._cb()
@@ -105,7 +106,7 @@ class SerialEvent(SuperEvent):
         super(SerialEvent, self).__init__(eventmanager, events)
         self._callbacks = callbacks
         self._i = 0
-        eventmanager.register(self._events[0], self.onEvent)
+        eventmanager.register(self.onEvent, self._events[0])
             
     def onEvent(self, event):
         self._eventmanager.unregister(self._events[self._i])
@@ -113,7 +114,7 @@ class SerialEvent(SuperEvent):
         self._i += 1
         if len(self._events) == self._i:
             return
-        self._eventmanager.register(self._events[self._i], self.onEvent)
+        self._eventmanager.register(self.onEvent, self._events[self._i])
 
 ################################################################################
 
@@ -337,8 +338,8 @@ class BasicMainLoop(object):
     
     __running_instance = None
 
-    def __init__(self, playerclass):
-        self._main_behavior_class = playerclass
+    def __init__(self, main_behavior_class):
+        self._main_behavior_class = main_behavior_class
         self._ctrl_c_cb = None
         self._actions = None
         if self.__running_instance:
@@ -578,8 +579,8 @@ class SimpleMainLoop(BasicMainLoop):
     socket requests) too much, that happens in World.update.
     """
 
-    def __init__(self, playerclass):
-        super(SimpleMainLoop, self).__init__(playerclass = playerclass)
+    def __init__(self, main_behavior_class):
+        super(SimpleMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._keep_the_loop = True
 
         # need to call burst.init first
@@ -679,9 +680,8 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, playerclass, control_reactor=True, startRightNow=True):
-    
-        super(TwistedMainLoop, self).__init__(playerclass = playerclass)
+    def __init__(self, main_behavior_class, control_reactor=True, startRightNow=True):
+        super(TwistedMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._do_cleanup = True
         self._control_reactor = control_reactor
 

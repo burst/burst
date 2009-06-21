@@ -326,6 +326,12 @@ def succeedBurstDeferred(data):
 def deferredToCondensedString(d):
     print "d-%s" % id(d)
 
+def returnsbd(f):
+    """ decorator to mark functions that return a bd. Easier to implement BehaviorActions
+    with this """
+    f.returnsbd = True
+    return f
+
 def pretty(c):
     """ pretty printing util - naturally subjective """
     if hasattr(c, '__class__'):

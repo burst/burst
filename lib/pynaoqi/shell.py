@@ -231,8 +231,8 @@ def makeplayerloop(name, clazz=None):
         print ', '.join(players.players_list)
         return
     candidate_classes = [v for v in playermod.__dict__.values()
-                            if isinstance(v, type) and issubclass(v, burst.behavior.Behavior)
-                            and not v is burst.behavior.Behavior]
+                            if isinstance(v, type) and issubclass(v, burst.behavior.InitialBehavior)
+                            and not v is burst.behavior.InitialBehavior]
     if len(candidate_classes) == 0:
         print "%s contains no Player classes" % playermod.__name__
         return None

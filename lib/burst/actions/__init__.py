@@ -2,7 +2,7 @@ from math import atan2
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
-    Deferred, DeferredList, chainDeferreds)
+    Deferred, DeferredList, chainDeferreds, returnsbd)
 from burst_events import *
 import burst.moves.choreograph as choreograph
 import burst.moves.poses as poses
@@ -124,8 +124,7 @@ class Actions(object):
         being able to detect the location.
         TODO: have several kick types, one for passing, one for kicking towards goal.
         """
-        ballkicker = BallKicker(self._eventmanager, self,
-            target_left_right_posts=target_left_right_posts)
+        ballkicker = BallKicker(self, target_left_right_posts=target_left_right_posts)
         ballkicker.start()
         return ballkicker
 

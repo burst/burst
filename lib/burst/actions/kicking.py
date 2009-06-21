@@ -15,6 +15,7 @@ from burst.actions.target_finder import TargetFinder
 import burst.moves as moves
 import burst.moves.walks as walks
 import burst.moves.poses as poses
+from burst.behavior import Behavior
 
 from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR,
                                    BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
@@ -45,17 +46,14 @@ import random
 # * RESET self._aligned_to_goal when needed
 #===============================================================================
 
-class BallKicker(BurstDeferred):
+class BallKicker(Behavior):
 
     VERBOSE = True
     ENABLE_MOVEMENT = True
 
-    def __init__(self, eventmanager, actions, target_left_right_posts, align_to_target=True):
-        super(BallKicker, self).__init__(None)
+    def __init__(self, actions, target_left_right_posts, align_to_target=True):
+        super(BallKicker, self).__init__(actions = actions, name = 'BallKicker')
         self._align_to_target = align_to_target
-        self._eventmanager = eventmanager
-        self._actions = actions
-        self._world = eventmanager._world
 
         self._ultrasound = self._world.robot.ultrasound
         self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
@@ -68,7 +66,7 @@ class BallKicker(BurstDeferred):
         self._goalFinder = TargetFinder(actions=actions, targets=target_left_right_posts, start=False)
         self._goalFinder.setOnTargetFoundCB(self.onGoalFound)
 
-    def start(self):
+    def _start(self, firstTime=False):
         self._aligned_to_goal = False
         self._movement_deferred = None
         self._movement_type = None
@@ -84,6 +82,9 @@ class BallKicker(BurstDeferred):
         # kicker initial position
         self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
+
+    #def _stop_complete(self):
+    #    # TODO
 
     ################################################################################
     # Handling movements
