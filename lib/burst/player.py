@@ -169,6 +169,8 @@ class Player(object):
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
         self._onNewGameState()
+        # register for future changes
+        self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
 
     def _onNewGameState(self):
         state = self._world.gameStatus.gameState
