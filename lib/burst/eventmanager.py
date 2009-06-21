@@ -88,11 +88,12 @@ class AndEvent(SuperEvent):
         super(AndEvent, self).__init__(eventmanager, events, cb)
         self._cb = cb
         for event in events:
-            eventmanager.register(event, lambda self=self, event=event: self.onEvent(event))
+            eventmanager.register(lambda self=self, event=event: self.onEvent(event), event)
             
     def onEvent(self, event):
         self._waiting.remove(event)
         if len(self._waiting) == 0:
+            # BROKEN
             for event in self.events:
                 self._eventmanager.unregister(event)
             self._cb()
@@ -105,7 +106,7 @@ class SerialEvent(SuperEvent):
         super(SerialEvent, self).__init__(eventmanager, events)
         self._callbacks = callbacks
         self._i = 0
-        eventmanager.register(self._events[0], self.onEvent)
+        eventmanager.register(self.onEvent, self._events[0])
             
     def onEvent(self, event):
         self._eventmanager.unregister(self._events[self._i])
@@ -113,7 +114,7 @@ class SerialEvent(SuperEvent):
         self._i += 1
         if len(self._events) == self._i:
             return
-        self._eventmanager.register(self._events[self._i], self.onEvent)
+        self._eventmanager.register(self.onEvent, self._events[self._i])
 
 ################################################################################
 

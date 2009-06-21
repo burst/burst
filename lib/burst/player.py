@@ -5,22 +5,11 @@
 The player module implements the Player class, which all players including Goalie and Kicker
 inherit from.
 
-Player implements all the common behavior, including gamecontroller handling and fall
-handling, with suitable places for higher level behavior to take over.
+Player implements all the basic robocup player behavior, which means it handles the GameController
+states, including Initial, Set, Ready, Play, Finish and Penalized. The main crux of the specific
+player, be it a kicker or goalie (or any test player) is done in the main_behavior instance
+which is created from the main_behavior_class (or factory) given.
 
-Callbacks that Inheritor needs to reimplement:
- onPlay - called when PLAYING state is achieved.
- onStop  - called right before shutdown of process, to let Player clean things up.
-           implemented in Player and can be overridden (again, remember to super).
-
-Other callbacks that are more like implementation details but might be important:
-
- onStart - when the player has been constructed. Not meant to be used
-           during the game except by the Player class itself.
- onConfigured - called by _onChestButtonPressed. when called it means the
-            robot stopps checking for bumper button or changes to kick off team (TODO
-            the later), will check current broadcast state, enter it (exactly as if
-            it was there to begin with), and register to all other state changes.
 '''
 
 from burst_events import *
