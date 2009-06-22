@@ -44,6 +44,8 @@ class BehaviorActions(object):
     returned from Actions
     """
 
+    debug = False # TODO - options, default False
+
     def __init__(self, actions, behavior):
         self._actions = actions
         self._behavior = behavior
@@ -53,8 +55,10 @@ class BehaviorActions(object):
     def clearFutureCallbacks(self):
         """ cancel all pending burst deferreds callbacks """
         # TODO - clear becomes cancel - is that ok?
-        if self.verbose:
-            print "BA.clearFutureCallbacks: removing %s" % (len(self._bds))
+        if self.verbose and len(self._bds) > 0:
+            print "BA.clearFutureCallbacks: removing [%s]" % (','.join(str(bd) for bd in self._bds))
+        if self.debug and len(self._bds) > 0:
+            import pdb; pdb.set_trace()
         for bd in self._bds:
             bd.clear()
 
@@ -94,8 +98,10 @@ class BehaviorEventManager(object):
             self._eventmanager.cancelCallLater(cb)
         for cb, event in self._registered:
             self._eventmanager.unregister(cb, event)
-        if self.verbose:
-            print "BEM.clearFutureCallbacks: removing %s, %s" % (len(self._calllaters), len(self._registered))
+        if self.verbose and (len(self._calllaters) > 0 or len(self._registered) > 0):
+            print "BEM.clearFutureCallbacks: removing CL [%s], E [%s]" % (
+                ','.join(func_name(cb) for cb in self._calllaters),
+                ','.join('%s->%s' % (event_name(e), func_name(cb)) for cb, e in self._registered))
         del self._calllaters[:]
         self._registered.clear()
         self._cb_to_wrapper.clear()

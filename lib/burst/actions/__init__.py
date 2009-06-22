@@ -584,7 +584,7 @@ class Actions(object):
             description=('movehead', x, y))
 
     def blockingStraightWalk(self, distance):
-        if self._world.robot.isMotionInProgress():
+        if self.isMotionInProgress():
             return False
 
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
@@ -685,14 +685,8 @@ class Actions(object):
 
 
     #================================================================================
-    # Utilities
+    # Status checks - about on going motions
     #================================================================================
-
-    def getAngle(self, joint_name):
-        return self._world.getAngle(joint_name)
-
-    def getSpeedFromDistance(self,kick_dist):
-        return max(0.62 * pow(kick_dist,-0.4), 0.18)
 
     def getCurrentHeadBD(self):
         """ return a succeed if no head move in progress, or the bd of the current
@@ -703,4 +697,21 @@ class Actions(object):
 
     def getCurrentMotionBD(self):
         return self._current_motion_bd
+
+    def isMotionInProgress(self):
+        return self._movecoordinator.isMotionInProgress()
+
+    def isHeadMotionInProgress(self):
+        return self._movecoordinator.isHeadMotionInProgress()
+
+    #================================================================================
+    #  Utilities and things that shouldn't be here
+    #================================================================================
+
+    def getSpeedFromDistance(self,kick_dist):
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
+
+    def getAngle(self, joint_name):
+        return self._world.getAngle(joint_name)
+
 

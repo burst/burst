@@ -59,9 +59,3 @@ class Robot(Movable):
         self.sonar.calc_events(events, deferreds)
         # TODO: Fall-down detection should probably be detected here, and not wherever it is now.
 
-    def isHeadMotionInProgress(self):
-        return self._world._movecoordinator.isHeadMotionInProgress()
-
-    def isMotionInProgress(self):
-        return self._world._movecoordinator.isMotionInProgress()
-

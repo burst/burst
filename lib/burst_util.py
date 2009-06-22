@@ -315,7 +315,7 @@ class BurstDeferred(object):
     def toCondensedString(self):
         """ try to give a short description of who is being called by this callback
         """
-        if not self._ondone: return '_'
+        if not self._ondone: return 'no callbacks'
         ret = []
         if hasattr(self, '_d'):
             return 'bd->%s' % (deferredToCondensedString(self._d))
@@ -341,7 +341,10 @@ def succeedBurstDeferred(data):
     return bd
 
 def deferredToCondensedString(d):
-    print "d-%s" % id(d)
+    if len(d.callbacks) == 0:
+        return 'd-empty-%s' % id(d)
+    # XXX ignore errbacks for now
+    return 'd-[%s]' % (','.join([func_name(cb) for (cb, args1, kw1), (eb, args2, kw2) in d.callbacks]))
 
 def returnsbd(f):
     """ decorator to mark functions that return a bd. Easier to implement BehaviorActions

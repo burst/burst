@@ -231,7 +231,7 @@ class Tracker(object):
         delta_angles = None
         centered, centered_at_pitch_limit, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
-        head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
+        head_motion_in_progress = self._actions.isHeadMotionInProgress()
         if target.seen and not centered and not head_motion_in_progress:
             CAM_X_TO_RAD_FACTOR = (FOV_X / 2)/2 # do half the error in a single step
             CAM_Y_TO_RAD_FACTOR = (FOV_Y / 2)/2

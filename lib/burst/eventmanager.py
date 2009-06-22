@@ -456,7 +456,7 @@ class BasicMainLoop(object):
 
     def _startBanner(self, s):
         print "="*80
-        print "= %s =" % s.center(76)
+        print "= %s =" % ((self._eventmanager._should_quit and 'quitting - event loop restarted' or s).center(76))
         print "="*80
 
     def _printTraceTickerHeader(self):

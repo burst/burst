@@ -18,23 +18,17 @@ class Localizer(Behavior):
             and not self._world.odometry.movedBetweenTimes(world_update_time, self._world.time)):
             print "Localizer: position is fine right now"
             self.stop()
-            if firstTime:
-                return self._succeed(self)
-            else:
-                return self._bd.callOnDone() # return just saves a line
+            self.callOnDone()
 
         # else go forth and localize!
         # we do a little extra work compared to previous versions: we don't just
         # search, we search and search again! we stop only when the EVENT_WORLD_LOCATION_UPDATED
         # actually fired.
-        self._bd = bd = self._make(self)
         def onLocationUpdated():
             self.stop()
-            bd.callOnDone()
+            self.callOnDone()
         self._eventmanager.registerOneShotBD(EVENT_WORLD_LOCATION_UPDATED).onDone(onLocationUpdated)
 
         # TODO - yellow gate isn't right. We should use "last seen", try to minimize time to localize.
         self._actions.search(targets).onDone(self._start)
-
-        return bd
 
