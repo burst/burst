@@ -63,11 +63,22 @@ def legal_any(f):
 
 # NOTE: I'm applying legal_head/legal_any only to the lower level. maybe also to higher? (i.e. kickBall)
 
+# SPECIAL NOTE: about the decorators
+#
+#  returnsbd - this is applied to any method that returns a bd, except those that calls others in Actions
+#     that do. It doesn't cause any action itself (just adds an attributes that says it returns a bd), but
+#     that attribute is looked for by BehaviorActions, which uses it to record BD's for later clearing on Behavior.stop.
+#
+#  legal_any, legal_head - implement the low level prevention of illegal actions. Set to any of the low level
+#     behaviors. Don't apply to higher level ones - it will just stop bugs from being discovered.
+
+# TODO - checks for those decorators (I must have missed something)
+
 class Actions(object):
     """ High level class used by Player to initiate any action that the robot does,
     including basics: head moves, joint moves, joint scripts (executeMoves)
     high level moves: change location relative
-    vision and head moves: head tracking
+    vision and head moves: head tracking, searching, localizing
     vision and head and body moves: ball kicking
     
     We put high level operations in Actions if:
@@ -171,13 +182,13 @@ class Actions(object):
 
     @returnsbd
     def localize(self):
-        self._localizer.start()
-        return self._localizer # a Behavior, hence a BurstDeferred
+        return self.localizer.start() # a Behavior, hence a BurstDeferred
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
     #===============================================================================
 
+    @returnsbd
     @legal_any
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
@@ -203,6 +214,7 @@ class Actions(object):
             distance=distance, bearing=bearing)
         return self._current_motion_bd
 
+    @returnsbd
     @legal_any
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
         print walk
@@ -219,6 +231,7 @@ class Actions(object):
                             description=('turn', deltaTheta, walk))
         return self._current_motion_bd
 
+    @returnsbd
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
@@ -280,6 +293,7 @@ class Actions(object):
         return self._current_motion_bd
 
     @returnsbd
+    @legal_any
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
         #calculate radius 
         #r=((y{-,+}r)**2 + x**2)**0.5
@@ -313,6 +327,7 @@ class Actions(object):
 
         
     @returnsbd
+    @legal_any
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd
@@ -383,16 +398,19 @@ class Actions(object):
     #    Low Level
     #===============================================================================
 
+    @returnsbd
     def switchToTopCamera(self):
         print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_TOP_CAMERA
         return self._wrap(self._imops.switchToTopCamera(), self)
 
+    @returnsbd
     def switchToBottomCamera(self):
         print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
         return self._wrap(self._imops.switchToBottomCamera(), self)
 
+    # don't wrap - calls two wrapped routines
     def setCamera(self, whichCamera):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
@@ -403,6 +421,7 @@ class Actions(object):
             bd = self.switchToTopCamera()
         return bd
 
+    @returnsbd
     def setCameraFrameRate(self, fps):
         bd = self._make(self)
         self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
@@ -489,6 +508,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
+    @returnsbd
     @legal_any
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
         """ Go through a list of body angles, works like northern bites code:
@@ -519,6 +539,7 @@ class Actions(object):
             interp_type, description=description)
         return self._current_motion_bd
 
+    @returnsbd
     @legal_head
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles

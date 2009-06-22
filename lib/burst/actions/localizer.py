@@ -10,8 +10,10 @@ class Localizer(Behavior):
 
     def _start(self, firstTime=False):
         # first check if we are already localized. If so return succeed
+        targets = [self._world.yglp, self._world.ygrp] # TODO - change these to team based
         robot = self._world.robot
-        world_x, world_y, world_heading, world_update_time = robot.world_x, robot.world_y, robot.world_heading, robot.world_update
+        (world_x, world_y, world_heading, world_update_time) = (
+            robot.world_x, robot.world_y, robot.world_heading, robot.world_update_time)
         if (world_x and world_y and world_heading and world_update_time
             and not self._world.odometry.movedBetweenTimes(world_update_time, self._world.time)):
             print "Localizer: position is fine right now"
@@ -26,10 +28,13 @@ class Localizer(Behavior):
         # search, we search and search again! we stop only when the EVENT_WORLD_LOCATION_UPDATED
         # actually fired.
         self._bd = bd = self._make(self)
-        self.register_once(lambda: (self.stop(), bd.callOnDone()), EVENT_WORLD_LOCATION_UPDATED)
+        def onLocationUpdated():
+            self.stop()
+            bd.callOnDone()
+        self._eventmanager.registerOneShotBD(EVENT_WORLD_LOCATION_UPDATED).onDone(onLocationUpdated)
 
         # TODO - yellow gate isn't right. We should use "last seen", try to minimize time to localize.
-        self._actions.search([self._world.yglp, self._world.ygrp]).onDone(self._start)
+        self._actions.search(targets).onDone(self._start)
 
         return bd
 
