@@ -4,7 +4,7 @@
 import player_init
 from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos, polar2cart, cart2polar)
 from burst.behavior import InitialBehavior
-from burst.events import *
+from burst_events import *
 from burst.moves import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent

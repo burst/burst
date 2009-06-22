@@ -7,20 +7,10 @@ Created on Jun 14, 2009
 from burst_util import BurstDeferred, Nameable, succeedBurstDeferred
 import burst.moves.poses as poses
 
-def checkstopped(f):
-    """ used by Behavior.register """
-    def wrapper(self, *args, **kw):
-        if self.stopped:
-            return
-        return f(self, *args, **kw)
-    # TODO - correct for im_func
-    #wrapper.func_name = f.func_name
-    #wrapper.func_doc = f.func_doc
-    return wrapper
-
 def behaviorwrapbd(behavior, f):
     def wrapper(*args, **kw):
-        bd = f()
+        bd = f(*args, **kw)
+        print "Behavior: %s" % bd
         return bd.onDone(lambda _,f=f, behavior=behavior, args=args, kw=kw:
                 behavior._applyIfNotStopped(f, args, kw))
     return wrapper

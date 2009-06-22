@@ -19,14 +19,22 @@ MALDINI = 'maldini'
 HAGI = 'hagi'
 #
 WEBOTS = 'webots'
+
+# constants to allow easy switching of naoqi versions (minor api changes)
+NAOQI_1_3_8 = 'NaoQi 1.3.8'
+NAOQI_1_2_0 = 'NaoQi 1.2.0'
+
 ################################################################################
 #                                                                              #
 #       >>>>         Must-Configure-Correctly Constants       <<<<<<<          #
 #                                                                              #
 ################################################################################
 
+# which version of naoqi are we using
+NAOQI_VERSION=NAOQI_1_2_0 # NAOQI_1_3_8
 
-
+# Wait for a configure event when no game controller present
+ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
 
 # From teams.cfg, in GameStateVisualizer 2009
 BURST_TEAM_NUMBER = 4
@@ -89,6 +97,9 @@ MMAP_LENGTH      = 4096
 # Important other constants (parameters for various behaviors)
 ################################################################################
 
+# shortcut variable, True if this is naoqi version 1.2.0
+is_120 = NAOQI_VERSION == NAOQI_1_2_0
+
 # WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
 # 'initial_position' - world coordinates
 INITIAL_POSITION = 'initial_position'
@@ -133,8 +144,29 @@ DEFAULT_NORMALIZED_CENTERING_X_ERROR = 0.05*4 #0.05*3
 DEFAULT_NORMALIZED_CENTERING_Y_ERROR = 0.05*4 #0.05*3
 CENTERING_MINIMUM_PITCH = -0.5 #-0.637
 
+# Sensor constants
+# Threshold for differing between leg with/without weight (x>0.00225 means leg DOES carry weight)
+# This value is the SUM of the 4 leg sensors (we use 1/x, where x is 1 FSR sensor reading)
+FSR_LEG_PRESSED_THRESHOLD = 0.00225
+INERTIAL_HISTORY = 10
+FSR_HISTORY = 10
+
 ################################################################################
 ################################################################################
+SONAR_PRECISION = 0.1 # only required for newer Naoqi, 1.3.8
+
+if NAOQI_VERSION == NAOQI_1_3_8:
+    VIDEO_MODULE = 'ALVideoDevice'
+    SONAR_MODULE = 'ALSonar'
+    VIDEO_MODULE_SUBSCRIBE = 'subscribe'
+    VIDEO_MODULE_UNSUBSCRIBE = 'unsubscribe'
+    SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, dt_ms, SONAR_PRECISION)
+else: # using NAOQI_1_2_0
+    VIDEO_MODULE = 'NaoCam'
+    SONAR_MODULE = 'ALUltraSound'
+    VIDEO_MODULE_SUBSCRIBE = 'register'
+    VIDEO_MODULE_UNSUBSCRIBE = 'unregister'
+    SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, [dt_ms])
 
 MIN_JERSEY_NUMBER, MAX_JERSEY_NUMBER = 1, 3
 GAME_CONTROLLER_BROADCAST_PORT = 3838
@@ -345,8 +377,8 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
-# Ultrasound constants
-US_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+# Sonar constants
+US_DISTANCES_VARNAME = "extractors/alsonar/distances"
 US_ELEMENTS_NUM = 2
 US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
 US_NEAR_DISTANCE = 0.4 # distance in meters

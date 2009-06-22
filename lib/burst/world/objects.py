@@ -250,8 +250,8 @@ class Locatable(Nameable):
         update_time = self._world.time
         dt = update_time - self.update_time
         if dt <= 0.0:
-            print "GRAVE ERROR: time flows backwards, pigs fly, run for your life!"
-            raise SystemExit
+            print "TIME ERROR: dt = %s, not updating anything" % dt
+            return
         body_x, body_y = new_dist * cos(new_bearing), new_dist * sin(new_bearing)
         dx, dy = body_x - self.body_x, body_y - self.body_y
         if dx**2 + dy**2 > (dt * self.upper_v_limit)**2:

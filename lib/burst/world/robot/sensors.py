@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
-import burst_events
+from burst_events import (EVENT_ON_BELLY, EVENT_ON_BACK, EVENT_ON_LEFT_SIDE, EVENT_ON_RIGHT_SIDE, EVENT_PICKED_UP, EVENT_BACK_ON_FEET)
 import burst
-
+from burst_consts import FSR_LEG_PRESSED_THRESHOLD, INERTIAL_HISTORY, FSR_HISTORY
+from burst_util import running_median
 
 __all__ = ['Sensors']
-
 
 class Sensors(object):
 
@@ -19,73 +19,99 @@ class Sensors(object):
         def update(self):
             pass
 
-    class FSR(Sensor):
-        def __init__(self, world, foot, location):
-            var = 'Device/SubDeviceList/%sFoot/FSR/%s/Sensor/Value' % (foot, location)
-            super(Sensors.FSR, self).__init__(world, var)
+    class SmoothedSensor(Sensor):
+        def __init__(self, world, var, historyLength):
+            super(Sensors.SmoothedSensor, self).__init__(world, var)
+            self._historyLength = historyLength
+            self.dataRunningMedian = running_median(self._historyLength)
+            self.dataRunningMedian.next()
+            self.lastRead = None
+        def update(self):
+            newReading = self._world.vars[self._var]
+            if newReading == None:
+                return
+            # if first reading ever, push another (same) reading to median filter
+            if self.lastRead == None:
+                for i in range(self._historyLength-1):
+                    self.lastRead = self.dataRunningMedian.send(newReading)
+            self.lastRead = self.dataRunningMedian.send(newReading)
+        def read(self):
+            return self.lastRead
 
     class FootFsrCluster(Sensor):
-        def __init__(self, world, foot):
+        def __init__(self, world, foot, historyLength):
             self._fsrs = []
+            self._historyLength = historyLength
+            self.dataRunningMedian = running_median(self._historyLength)
+            self.dataRunningMedian.next()
+            self.lastRead = None
             for location in [x+y for x in ['Front', 'Rear'] for y in ['Left', 'Right']]:
-                self._fsrs.append( Sensors.FSR(world, foot, location) )
+                var = 'Device/SubDeviceList/%sFoot/FSR/%s/Sensor/Value' % (foot, location)
+                self._fsrs.append( Sensors.Sensor(world, var) )
         def read(self):
-            return min(map(lambda x: x.read(), self._fsrs)) 
+            return self.lastRead
+        def update(self):
+            newReading = sum(map(lambda x: self.transformFSR(x.read()), self._fsrs))
+            if newReading == None:
+                return
+            # if first reading ever, push another (same) reading to median filter
+            if self.lastRead == None:
+                for i in range(self._historyLength-1):
+                    self.lastRead = self.dataRunningMedian.send(newReading)
+            self.lastRead = self.dataRunningMedian.send(newReading)
+        def transformFSR(self, x):
+            if x == 0: return 0
+            else: return 1/x
         def isPressed(self):
-            return self.read() < 1000
-
-    class RightFootFSRs(FootFsrCluster):
-        def __init__(self, world):
-            super(Sensors.RightFootFSRs, self).__init__(world, 'R')
-
-    class LeftFootFSRs(FootFsrCluster):
-        def __init__(self, world):
-            super(Sensors.LeftFootFSRs, self).__init__(world, 'L')
-
-    class IntertialSensor(Sensor): # Note: GyrRef, GyrX, AccX...
-        def __init__(self, world, var):
-            super(Sensors.IntertialSensor, self).__init__(world, var)
-
-    class YAngleIntertialSensor(IntertialSensor):
-        def __init__(self, world):
-            var = "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value"
-            super(Sensors.YAngleIntertialSensor, self).__init__(world, var)
+            return self.read() > FSR_LEG_PRESSED_THRESHOLD
 
     def __init__(self, world):
-#        self.debug = 0
-        self.rightFootFSRs = Sensors.RightFootFSRs(world)
-        self.leftFootFSRs = Sensors.LeftFootFSRs(world)
-        self.yAngleIntertialSensor = Sensors.YAngleIntertialSensor(world)
-        self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleIntertialSensor]
+        self.rightFootFSRs = Sensors.FootFsrCluster(world, 'R', FSR_HISTORY)
+        self.leftFootFSRs = Sensors.FootFsrCluster(world, 'L', FSR_HISTORY)
+        self.yAngleInertialSensor = Sensors.SmoothedSensor(world, "Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value", INERTIAL_HISTORY)
+        self.xAngleInertialSensor = Sensors.SmoothedSensor(world, "Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value", INERTIAL_HISTORY)
+        self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleInertialSensor, self.xAngleInertialSensor]
+        self._lastEvent = None
 
     def isOnBack(self):
-        # If either foot is on the ground, the robot hasn't fallen down.
-        if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
-            return False
-        # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor.read() < -1.0
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.yAngleInertialSensor.read() > 0.5])
 
     def isOnBelly(self):
-        # If either foot is on the ground, the robot hasn't fallen down.
-        if self.rightFootFSRs.isPressed() or self.leftFootFSRs.isPressed():
-            return False
-        # If neither foot is on the ground, it's up to the inertial sensors:
-        return self.yAngleIntertialSensor.read() > 1.0
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.yAngleInertialSensor.read() < -0.5])
 
-    def isFallenDown(self):
-        return self.isOnBack() or self.isOnBelly()
+    def isOnRightSide(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.xAngleInertialSensor.read() > 0.5])
+
+    def isOnLeftSide(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.xAngleInertialSensor.read() < -0.5])
 
     def calc_events(self, events, deferreds):
         # Another frame has passed. Time to poll again anything that requires smoothing:
         for sensor in self.sensors:
             sensor.update()
+
         # Calculate events:
-        if self.isOnBack():
-            events.add(burst_events.EVENT_FALLEN_DOWN)
-            events.add(burst_events.EVENT_ON_BACK)
-        if self.isOnBelly():
-            events.add(burst_events.EVENT_FALLEN_DOWN)
-            events.add(burst_events.EVENT_ON_BELLY)
-#        self.debug += 1
-#        print self.debug, events, self.rightFootFSRs.isPressed(), self.leftFootFSRs.isPressed(), self.yAngleIntertialSensor.read()
-#        print map(lambda x: x.read(), self.rightFootFSRs._fsrs), map(lambda x: x.read(), self.leftFootFSRs._fsrs)
+        # If neither foot is on the ground, we've fallen:
+        newEvent = None
+        if (not self.rightFootFSRs.isPressed()) and (not self.leftFootFSRs.isPressed()):
+            #print "self.yAngleInertialSensor.read(): ", self.yAngleInertialSensor.read()
+            #print "self.xAngleInertialSensor.read(): ", self.xAngleInertialSensor.read()
+
+            if self.yAngleInertialSensor.read() > 0.5:
+                newEvent = EVENT_ON_BELLY
+            elif self.yAngleInertialSensor.read() < -0.5:
+                newEvent = EVENT_ON_BACK
+            elif self.xAngleInertialSensor.read() > 0.5:
+                newEvent = EVENT_ON_RIGHT_SIDE
+            elif self.xAngleInertialSensor.read() < -0.5:
+                newEvent = EVENT_ON_LEFT_SIDE
+            else:
+                # Note: PICKED_UP is basically ignored
+                newEvent = EVENT_PICKED_UP
+        else:
+            if self._lastEvent != None:
+                newEvent = EVENT_BACK_ON_FEET
+
+        if newEvent and self._lastEvent != newEvent:
+            events.add(newEvent)
+            self._lastEvent = newEvent

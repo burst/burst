@@ -1,4 +1,4 @@
-from math import atan2
+from math import atan2, asin
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
@@ -17,10 +17,12 @@ from journey import Journey
 from kicking import BallKicker
 from headtracker import Tracker, Searcher
 from passing import passBall
+from localizer import Localizer
 
 from burst_consts import (InitialRobotState,
     ReadyRobotState, SetRobotState, PlayRobotState,
-    FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS)
+    FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS,
+    is_120)
 
 #######
 
@@ -45,7 +47,7 @@ def legal(f, group):
         if not _use_legal or state in group:
             return f(self, *args, **kw)
         else: # buddy, stop right here!
-            print "Actions: ILLEGAL MOVE: %s" % f.func_name
+            print "Actions: ILLEGAL ROBOCUP MOVE: %s" % f.func_name
             import pdb; pdb.set_trace()
             return self._eventmanager.callLaterBD(self._eventmanager.dt)
     wrapper.func_doc = f.func_doc
@@ -87,19 +89,26 @@ class Actions(object):
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
-        self._naocam = world.getNaoCamProxy()
+        #self._video = world.getALVideoDeviceProxy()
         self._imops = world.getImopsProxy()
 
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        self.tracker = Tracker(self)
-        self.searcher = Searcher(self)
+        self.tracker = Tracker(self)        # Please remember to stop
+        self.searcher = Searcher(self)      # all of these behaviors
+        self.localizer = Localizer(self)    # when you stop the InitialBehavior. Thank you.
 
         # we keep track of the last head bd
         self._current_head_bd = self._succeed(self)
         self._current_motion_bd = self._succeed(self)
+
+        # slight changes between 1.3.8 and 1.2.0
+        if is_120:
+            self.setWalkConfig = self.setWalkConfig_120
+        else:
+            self.setWalkConfig = self.setWalkConfig_138
 
     #===============================================================================
     #    High Level - anything that uses vision
@@ -107,6 +116,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
+    @returnsbd
     def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
@@ -128,6 +138,7 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
+    @returnsbd
     def passBall(self, target_world_frame=None):
         passingChallange = passBall(self._eventmanager, self)
         passingChallange.start()
@@ -140,6 +151,7 @@ class Actions(object):
             raise Exception("Can't start tracking while searching")
         self.tracker.track(target, lostCallback=lostCallback)
 
+    @returnsbd
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if not self.tracker.stopped():
             raise Exception("Can't start searching while tracking")
@@ -148,14 +160,18 @@ class Actions(object):
         else:
             return self.searcher.search(targets, center_on_targets)
 
+    # TODO: returns centered, maybe_bd - I should wrap this too, but returnsbd
+    # is too inflexible.
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
         return self.tracker.executeTracking(target,
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
 
+    @returnsbd
     def localize(self):
-        return self.search([self._world.yglp, self._world.ygrp])
+        self._localizer.start()
+        return self._localizer # a Behavior, hence a BurstDeferred
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
@@ -261,7 +277,39 @@ class Actions(object):
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                     description=('sideway', delta_x, delta_y, walk))
         return self._current_motion_bd
-   
+
+    def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
+        #calculate radius 
+        #r=((y{-,+}r)**2 + x**2)**0.5
+        #0= y**2 + r**2 {+/-}y*r*2 + x**2 - r**2
+        #r=abs( (y**2 + x**2) / (2*y) )
+        r= abs( delta_y/2 + (delta_x**2)/(2*delta_y) )
+        
+        #sin angle = y/r
+        angle = asin(delta_x/r)
+        
+        if delta_y<0:
+            angle=-angle           
+        
+        print "Calculated radius: %f, calculated angle %f" % (r, angle)
+
+        # TEMPORAL CODE - debugging
+        # TODO: Move to journey.py
+        dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
+                    # stuff that would have been synchronous and turn it asynchronous
+                    # All lambda's should have one parameter, the result of the last deferred.
+        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))     
+        dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
+        defaultSpeed = walk.defaultSpeed
+        dgens.append(lambda _: self._motion.addWalkArc( angle, r / 100. , defaultSpeed ))        
+        # TODO: Calculate arc length to get possible duration (by arc_length/speed)
+        duration = 10
+        d = chainDeferreds(dgens)
+        self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
+                    description=('arc', delta_x, delta_y, walk))
+        return self._current_motion_bd
+
+        
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd
@@ -278,7 +326,7 @@ class Actions(object):
         dgens.append(removeStiffness)
         return chainDeferreds(dgens)
 
-    def setWalkConfig(self, param):
+    def setWalkConfig_120(self, param):
         """ param should be one of the walks.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
@@ -290,12 +338,32 @@ class Actions(object):
         ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude ))
         ds.append(self._motion.setWalkArmsEnable(True))
-
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
         ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
-
         ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
                                                     ZmpOffsetX, ZmpOffsetY ))
+
+        return DeferredList(ds)
+
+    def setWalkConfig_138(self, param):
+        """ param should be one of the walks.WALK_X """
+        # 1.3.8: we currently plan to use the defaults of the new TrapezoidConfig: [5.0, -5.0]
+        # default walk config is : [0.035, 0.01, 0.025, 0.2, 0.23, 3.0]
+        # help said: pHipHeight must be in [0.15f 0.244f]
+
+        (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
+
+        # XXX we assume the order of these configs doesn't matter, hence the
+        # DeferredList - does it?
+        ds = []
+        ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
+                                            ElbowMedian, ElbowAmplitude ))
+        ds.append(self._motion.setWalkArmsEnable(True))
+        ds.append(self._motion.setWalkTrapezoidConfig(LHipRoll, RHipRoll))
+        ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
+                                                    HipHeight, TorsoYOrientation ))
 
         return DeferredList(ds)
 
@@ -514,6 +582,7 @@ class Actions(object):
 
     def lookaround(self, lookaround_type):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
+
 
     #================================================================================
     # Choreograph moves 

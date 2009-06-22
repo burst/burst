@@ -13,6 +13,8 @@ import stat
 import datetime
 import urllib2
 
+from burst_consts import is_120
+
 import Image
 
 # finished with global imports
@@ -28,7 +30,6 @@ from burst_util import (succeed, Deferred, whichlib, is64,
     is_64bit_elf, get_num_cores)
 from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
     CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA, CAMERA_WHICH_TOP_CAMERA)
-
 
 #########################################################################
 # Constants
@@ -247,7 +248,7 @@ def callNaoQiObject(mod, meth, *args):
     # Example
     #"""
     #<albroker:callNaoqi>
-    #<albroker:mod>NaoCam</albroker:mod>
+    #<albroker:mod>ALVideoDevice</albroker:mod>
     #<albroker:meth>register</albroker:meth>
     #<albroker:p>
     #    <item xsi:type="Array">
@@ -860,14 +861,19 @@ class NaoQiConnection(BaseNaoQiConnection):
                 options=options)
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
-        self._brokername = "soaptest"
-        self._camera_module = 'NaoCam' # seems to be a constant. Also, despite having two cameras, only one is operational at any time - so I expect it is like this.
+        self._brokername = "pynaoqi"
+        self._camera_module_name = is_120 and 'NaoCam' or 'ALVideoDevice' # name of the module to get images from. Used to be NaoCam in 1.2.0, in 1.3.0 changed to ALVideoDevice
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
         self._camera_param = (320, 240, 320*240*2) # these are updated later, but should not be changed, at least not this robocup..
-        self._registered_to_camera = False
+        self._subscribed_to_camera = False
         # raw string (length/meaning depends on colorspace, resolution), width, height
         self._camera_raw_frame = (None, 0, 0)
         self._camera_missed_frames = 0
+
+    def getCameraModule(self):
+        return getattr(self, self._camera_module_name)
+
+    CameraModule = property(getCameraModule)
 
     def getBrokerInfo(self):
         def onResponse(self, soapbody):
@@ -897,23 +903,27 @@ class NaoQiConnection(BaseNaoQiConnection):
         obj = exploreToGetModuleByNameObject(moduleName=modulename, dontLookIntoBrokerName = self._brokername)
         return self._sendRequest(obj, cb)
 
-    def registerToCamera(self,
+    def subscribeToCamera(self,
             resolution=vision_definitions.kQVGA,
             colorspace=vision_definitions.kYUV422InterlacedColorSpace,
             fps=15):
         """ Default parameters are exactly what nao-man (northern bites) use:
         YUV422 color space, 320x240 (Quarter VGA), and 15 fps
         """
-        if self._registered_to_camera:
+        if self._subscribed_to_camera:
             return succeed(self._camera_name)
         self._camera_resolution = resolution
         self._camera_colorspace = colorspace
-        d = self.NaoCam.register(self._camera_name, resolution, colorspace, fps)
+        if is_120:
+            meth = self.CameraModule.register
+        else:
+            meth = self.CameraModule.subscribe
+        d = meth(self._camera_name, resolution, colorspace, fps)
         d.addCallback(self._onRegisterToCamera)
         return d
 
     def _onRegisterToCamera(self, camera_name):
-        print "registered to camera under name: %s" % camera_name
+        print "subscribed to camera under name: %s" % camera_name
         self._camera_name = camera_name
         vd = vision_definitions
         self._camera_param_dimensions_d = {vd.kQVGA:(320, 240)} # TODO - fill it
@@ -924,7 +934,7 @@ class NaoQiConnection(BaseNaoQiConnection):
             print "WARNING: new param different from old: new = %s, old = %s" % (self._camera_param,
                 str((width, height, length)))
         self._camera_param = (width, height, length)
-        self._registered_to_camera = True
+        self._subscribed_to_camera = True
         return self._camera_name
 
     def has_imops(self):
@@ -946,7 +956,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         
         import gtk, gobject
 
-        self.registerToCamera()
+        self.subscribeToCamera()
         w = gtk.Window()
         gtkim = gtk.Image()
         w.add(gtkim)
@@ -989,7 +999,7 @@ class NaoQiConnection(BaseNaoQiConnection):
                 self._camera_missed_frames += 1
                 print "Bad frame %s" % self._camera_missed_frames
             return self._camera_raw_frame
-        d = self.NaoCam.getImageRemote(self._camera_name)
+        d = self.CameraModule.getImageRemote(self._camera_name)
         d.addCallback(filter_some)
         return d
 
@@ -1010,7 +1020,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         return image
 
     def setCameraParameter(self, param, value):
-        ret = self.NaoCam.setParam(int(param), int(value))
+        ret = self.CameraModule.setParam(int(param), int(value))
         return ret
 
     def switchToBottomCamera(self):
@@ -1041,7 +1051,7 @@ def test():
     print con.registerBroker()
     print con.exploreToGetModuleByName('ALLogger')
     print con.exploreToGetModuleByName('ALMemory')
-    print con.exploreToGetModuleByName('NaoCam')
+    print con.exploreToGetModuleByName('ALVideoDevice')
 
 def main():
     import sys
@@ -1053,9 +1063,9 @@ def main():
     broker_info = dict(con.getBrokerInfo())
     print con.getInfo(broker_info['name'])
     #print con.registerBroker()
-    #print con.exploreToGetModuleByName('NaoCam')
-    print con.registerToCamera()
-    con.NaoCam.register('test_cam', vision_definitions.kQQVGA, vision_definitions.kRGBColorSpace, 15)
+    #print con.exploreToGetModuleByName('ALVideoDevice')
+    print con.subscribeToCamera()
+    con.ALVideoDevice.subscribe('test_cam', vision_definitions.kQQVGA, vision_definitions.kRGBColorSpace, 15)
 
 
     c = 0

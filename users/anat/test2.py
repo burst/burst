@@ -23,18 +23,18 @@ else:
 
 # create proxy
 try:
-  alultrasoundProxy = ALProxy("ALUltraSound",IP,PORT)
+  alsonarProxy = ALProxy("ALSonar",IP,PORT)
 except RuntimeError,e:
-  print "error while creation alultrasound's proxy"
+  print "error while creation alsonar's proxy"
   exit(1)
 
 # subscribe to ALUltraound
 try:
   period = 2000 # minimum should be 240ms according to documentation
-  alultrasoundProxy.subscribe("test", [ period ] )
-  print "subscription to ALUltrasound is ok"
+  alsonarProxy.subscribe("test", [ period ] )
+  print "subscription to ALSonar is ok"
 except RuntimeError,e:
-  print "error while subscribing to alultrasound"
+  print "error while subscribing to alsonar"
   exit(1)
 
 
@@ -49,15 +49,15 @@ memoryProxy = ALProxy("ALMemory",IP,PORT)
 # Get The Left Foot Force Sensor Values
 
 for i in xrange(1,2000):
-    US = memoryProxy.getData("extractors/alultrasound/distances",0)
+    US = memoryProxy.getData("extractors/alsonar/distances",0)
     print US
 
 #~ # unsubscribe to ALUltraound
 #~ try:
-  #~ alultrasoundProxy.unsubscribe("test")
-  #~ print "unsubscription to ALUltrasound is ok"
+  #~ alsonarProxy.unsubscribe("test")
+  #~ print "unsubscription to ALSonar is ok"
 #~ except RuntimeError,e:
-  #~ print "error while unsubscribing to alultrasound"
+  #~ print "error while unsubscribing to alsonar"
   #~ exit(1)
 
 #~ print "quitting"

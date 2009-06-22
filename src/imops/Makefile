@@ -21,7 +21,7 @@
 #
 # compilation results will always end up in the BUILD dir, which is
 #  build_host32, build_host64 or build_robot
-# 
+#
 
 # Possible debug flags:
 # TODO - document function of each
@@ -29,6 +29,7 @@
 
 # BURST_DEBUG_VISION - print vision related stuff
 # BURST_DEBUG_VISION_THREAD - prints time per loop, and frame count
+# DEBUG_IMAGE_REQUESTS - ALImageTranscriber
 
 # Burst flags:
 # BURST_DO_LOCALIZATION_IN_MODULE - not working right now (or ever?)
@@ -50,6 +51,14 @@ HOST_32_LIB=imops_host_32.so
 PYNAOQI_32_LIB=imops_pynaoqi_32.so
 HOST_64_LIB=imops_host_64.so
 PYNAOQI_64_LIB=imops_pynaoqi_64.so
+
+# Turn on any debug flags - same for all targets
+#CFLAGS_DEBUG=-DBURST_DEBUG_VISION_THREAD -DDEBUG_IMAGE_REQUESTS
+CFLAGS_DEBUG=
+#OFFLINE_DEBUG_FLAGS=-DDEBUG_IMAGE
+OFFLINE_DEBUG_FLAGS=-DOFFLINE
+CFLAGS_DEBUG_BUILD_32=$(OFFLINE_DEBUG_FLAGS)
+CFLAGS_DEBUG_BUILD_64=$(OFFLINE_DEBUG_FLAGS)
 
 ################################################################################
 # This part must be copied as is

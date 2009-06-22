@@ -4,12 +4,13 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <ctime>
 
-void readVariablesFile(const char* file_name, std::vector<std::string>& out)
+inline void readVariablesFile(const char* file_name, std::vector<std::string>& out)
 {
     // read the variable names we will be writing to a csv file
-    ifstream varfile (file_name);
+    std::ifstream varfile (file_name);
 
     if (!varfile.is_open ()) {
         std::cout <<
@@ -31,7 +32,7 @@ void readVariablesFile(const char* file_name, std::vector<std::string>& out)
     varfile.close ();
 }
 
-std::string get_date ()
+inline std::string get_date ()
 {
     time_t t = time (0);
     struct tm *lt = localtime (&t);
@@ -71,7 +72,27 @@ struct Counter {
 };
 // --------------------------------------------------------------------------------
 
+// Convenient place to put this, but they are unrelated: definitions to
+// hide all API changes between 1.2.0 and 1.3.8 versions of Naoqi
 
-
+#ifdef NAOQI_138
+#define VIDEO_MODULE "ALVideoDevice"
+#define SONAR_MODULE "ALSonar"
+#define VIDEO_MODULE_SUBSCRIBE "subscribe"
+#define VIDEO_MODULE_UNSUBSCRIBE "unsubscribe"
+#else
+#ifdef NAOQI_120
+#define VIDEO_MODULE "NaoCam"
+#define SONAR_MODULE "ALUltraSound"
+#define VIDEO_MODULE_SUBSCRIBE "register"
+#define VIDEO_MODULE_UNSUBSCRIBE "unregister"
+namespace AL {
+class ALVisionImage;
+typedef ALVisionImage ALImage;
+};
+#else
+#error "You must have NAOQI_138 or NAOQI_120 defined"
+#endif // NAOQI_120
+#endif // NAOQI_138
 #endif // __BURST_UTIL_H__
 

@@ -19,8 +19,7 @@
 
 using namespace AL;
 
-class burstmem:public
-    AL::ALModule
+class burstmem : public AL::ALModule
 {
   public:
     /**
@@ -41,12 +40,12 @@ class burstmem:public
     bool        isMemoryMapRunning();
 
     void        clearMappedVariables();
-    void        addMappedVariable(int index, std::string var);
+    void        addMappedVariable(const int &index, const std::string &var);
 
     // TODO - get the fucking std::vector<std::string> wrapping to work
     //void        setMappedVariables(const std::vector<std::string>);
     int         getNumberOfVariables();
-    std::string getVarNameByIndex(int i);
+    std::string getVarNameByIndex(const int& i);
     
     /**
      * version

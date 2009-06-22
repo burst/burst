@@ -31,8 +31,8 @@ walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian 
            20.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           5,                   # LHipRoll(degrees) 
-           -5,                  # RHipRoll(degrees)
+           5.5,                   # LHipRoll(degrees) 
+           -5.5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better
            0.055,                  # StepLength

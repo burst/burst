@@ -83,25 +83,34 @@ void *getImageLoop(void *arg)
 #ifdef BURST_DEBUG_VISION_THREAD
     int count = 0;
 #endif
+    g_run_vision_thread = true;
+    std::cout << "Imops: In getImageLoop" << std::endl;
     while(g_run_vision_thread) {
         // check possible camera switch request, do before
         // image is waited for, while image frame isn't involved, since
         // camera switch invalidates it (see Aldebaran documentation)
         if (g_limops->m_switchRequested) {
+            std::cout << "ImopsModule: switching camera to";
             if (g_limops->m_requestedTopCamera) {
+                std::cout << " top camera";
                 // switch to top camera (does a (hopefully) harmless init too)
                 g_imageTranscriber->initCameraSettings(ALImageTranscriber::TOP_CAMERA);
             } else {
+                std::cout << " bottom camera";
                 // switch to bottom camera (does a (hopefully) harmless init too)
                 g_imageTranscriber->initCameraSettings(ALImageTranscriber::BOTTOM_CAMERA);
             }
+            std::cout << std::endl;
             g_limops->m_switchRequested = false;
         }
         const useconds_t startTime = micro_time();
+#ifdef BURST_DEBUG_VISION_THREAD
+        std::cout << "wait image " << count++ << std::endl;
+#endif
         g_imageTranscriber->waitForImage();
         g_limops->notifyNextVisionImage();
 #ifdef BURST_DEBUG_VISION_THREAD
-        std::cout << "image " << count++ << std::endl;
+        std::cout << "got image  " << count << std::endl;
 #endif
         const useconds_t processTime = micro_time() - startTime;
         volatile useconds_t vision_frame_length_us =
@@ -240,7 +249,7 @@ ImopsModule::ImopsModule (ALPtr < ALBroker > pBroker, std::string pName)
 
 }
 
-void ImopsModule::setFramesPerSecond(double fps)
+void ImopsModule::setFramesPerSecond(const double &fps)
 {
 #ifdef BURST_DEBUG_VISION_THREAD
     std::cout << "ImopsModule: setFramesPerSecond: " << fps << std::endl;
@@ -252,12 +261,14 @@ void ImopsModule::setFramesPerSecond(double fps)
 
 void ImopsModule::switchToTopCamera()
 {
+    std::cout << "ImopsModule: externally requested switch to top camera" << std::endl;
     m_switchRequested = true;
     m_requestedTopCamera = true;
 }
 
 void ImopsModule::switchToBottomCamera()
 {
+    std::cout << "ImopsModule: externally requested switch to bottom camera" << std::endl;
     m_switchRequested = true;
     m_requestedTopCamera = false;
 }
@@ -437,7 +448,7 @@ void ImopsModule::writeToALMemory()
 
     if (!memory_initialized) {
         AL::ALPtr<AL::ALBrokerManager> brokermanager = AL::ALBrokerManager::getInstance();
-        AL::ALPtr<AL::ALBroker> broker = brokermanager->getAnyBroker();
+        AL::ALPtr<AL::ALBroker> broker = m_broker;
         AL::ALPtr<AL::ALMemoryProxy> temp_memory(new AL::ALMemoryProxy(broker));
         memory = temp_memory;
         memory_initialized = true;
@@ -627,7 +638,7 @@ std::string ImopsModule::version ()
     // I messed up the copy/rename of recordermodule, this doen't compile,
     // missing some symbols
     //return ALTOOLS_VERSION (IMOPSMODULE);
-    return "1.2.0-imops";
+    return "1.3.8-imops";
 }
 
 //______________________________________________

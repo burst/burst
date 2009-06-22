@@ -1,15 +1,35 @@
 // alvalue.h uses printf, but doesn't do the include, g++ 4.4.0 complains
 #include <cstdio>
 
+#ifdef NAOQI_138
+#include "alimage.h"
+#else
 #include "alvisionimage.h"
+#endif
 #include "alvisiondefinitions.h"
 
 #include "manconfig.h"
+
+#include "burstutil.h"
 
 #include "ALImageTranscriber.h"
 
 using boost::shared_ptr;
 using namespace AL;
+
+const int ALImageTranscriber::DEFAULT_CAMERA_HUE;
+const int ALImageTranscriber::DEFAULT_CAMERA_GAIN;
+const int ALImageTranscriber::DEFAULT_CAMERA_LENSX;
+const int ALImageTranscriber::DEFAULT_CAMERA_LENSY;
+const int ALImageTranscriber::DEFAULT_CAMERA_CONTRAST;
+const int ALImageTranscriber::DEFAULT_CAMERA_EXPOSURE;
+const int ALImageTranscriber::DEFAULT_CAMERA_AUTO_GAIN;
+const int ALImageTranscriber::DEFAULT_CAMERA_REDCHROMA;
+const int ALImageTranscriber::DEFAULT_CAMERA_BLUECHROMA;
+const int ALImageTranscriber::DEFAULT_CAMERA_BRIGHTNESS;
+const int ALImageTranscriber::DEFAULT_CAMERA_SATURATION;
+const int ALImageTranscriber::DEFAULT_CAMERA_AUTO_EXPOSITION;
+const int ALImageTranscriber::DEFAULT_CAMERA_AUTO_WHITEBALANCE;
 
 ALImageTranscriber::ALImageTranscriber(shared_ptr<Synchro> synchro,
                                        shared_ptr<Sensors> s,
@@ -27,7 +47,7 @@ ALImageTranscriber::ALImageTranscriber(shared_ptr<Synchro> synchro,
         std::cerr << "Could not create a proxy to ALLogger module" << std::endl;
     }
 
-    registerCamera(broker);
+    subscribeCamera(broker);
     if(camera_active) {
         try{
             initCameraSettings(BOTTOM_CAMERA);
@@ -93,9 +113,9 @@ void ALImageTranscriber::stop() {
     if(camera_active){
         cout << "lem_name = " << lem_name << endl;
         try {
-            camera->callVoid("unregister", lem_name);
+            camera->callVoid(VIDEO_MODULE_UNSUBSCRIBE, lem_name);
         }catch (ALError &e) {
-            log->error("Man", "Could not call the unregister method of the NaoCam "
+            log->error("Man", "Could not call the unsubscribe method of the " VIDEO_MODULE
                        "module");
         }
     }
@@ -103,13 +123,13 @@ void ALImageTranscriber::stop() {
     Thread::stop();
 }
 
-void ALImageTranscriber::registerCamera(ALPtr<ALBroker> broker) {
+void ALImageTranscriber::subscribeCamera(ALPtr<ALBroker> broker) {
     try {
-        camera = broker->getProxy("NaoCam");
+        camera = broker->getProxy(VIDEO_MODULE);
         camera_active =true;
     }catch (ALError &e) {
         log->error("ALImageTranscriber",
-                   "Could not create a proxy to NaoCam module");
+                   "Could not create a proxy to " VIDEO_MODULE " module");
         camera_active =false;
         return;
     }
@@ -129,20 +149,20 @@ void ALImageTranscriber::registerCamera(ALPtr<ALBroker> broker) {
 #endif
 
     try {
-        lem_name = camera->call<std::string>("register", lem_name, format,
+        lem_name = camera->call<std::string>(VIDEO_MODULE_SUBSCRIBE, lem_name, format,
                                              colorSpace, fps);
         cout << "Registered Camera: " << lem_name << " successfully"<<endl;
     } catch (ALError &e) {
-        cout << "Failed to register camera" << lem_name << endl;
+        cout << "Failed to subscribe camera" << lem_name << endl;
         camera_active = false;
 //         SleepMs(500);
 
 //         try {
 //             printf("LEM failed once, trying again\n");
-//             lem_name = camera->call<std::string>("register", lem_name, format,
+//             lem_name = camera->call<std::string>("subscribe", lem_name, format,
 //                                                  colorSpace, fps);
 //         }catch (ALError &e2) {
-//             log->error("ALImageTranscriber", "Could not call the register method of the NaoCam "
+//             log->error("ALImageTranscriber", "Could not call the subscribe method of the " VIDEO_MODULE " "
 //                        "module\n" + e2.toString());
 //             return;
 //         }
@@ -153,7 +173,7 @@ void ALImageTranscriber::registerCamera(ALPtr<ALBroker> broker) {
 // set frame rate to the smallest number within the allowed values that
 // is bigger or equal to given fps.
 bool ALImageTranscriber::setFrameRate(unsigned int fps) {
-    static unsigned int allowed_fps[] = {5, 10, 15, 30}; // see NaoCam module setFrameRate help
+    static unsigned int allowed_fps[] = {5, 10, 15, 30}; // see ALVideoDevice/NaoCam module setFrameRate help
     const unsigned int num_allowed = sizeof(allowed_fps) / sizeof(int);
     unsigned int i = 0;
     for (; allowed_fps[i] < fps && i < num_allowed ; ++i) {};
@@ -415,21 +435,21 @@ void ALImageTranscriber::waitForImage ()
         printf("Requesting local image of size %ix%i, color space %i\n",
                IMAGE_WIDTH, IMAGE_HEIGHT, NAO_COLOR_SPACE);
 #endif
-        ALVisionImage *ALimage = NULL;
+        ALImage *ALimage = NULL;
 
         // Attempt to retrieve the next image
         try {
-            ALimage = (ALVisionImage*) (camera->call<int>("getDirectRawImageLocal",lem_name));
+            ALimage = (ALImage*) (camera->call<int>("getDirectRawImageLocal",lem_name));
         }catch (ALError &e) {
-            log->error("NaoMain", "Could not call the getImageLocal method of the "
-                       "NaoCam module");
+            log->error("NaoMain", "Could not call the getImageLocal method of the " VIDEO_MODULE
+                       " module");
         }
         if (ALimage != NULL) {
             memcpy(&image[0], ALimage->getFrame(), IMAGE_BYTE_SIZE);
             //image = ALimage->getFrame();
         }
         else
-            cout << "\tALVisionImage from camera was null!!" << endl;
+            cout << "\tALImage from camera was null!!" << endl;
 
 #ifdef DEBUG_IMAGE_REQUESTS
         //You can get some informations of the image.
@@ -468,7 +488,7 @@ void ALImageTranscriber::releaseImage(){
     }catch( ALError& e)
     {
         log->error( "ALImageTranscriber",
-                    "could not call the releaseImage method of the NaoCam module" );
+                    "could not call the releaseImage method of the " VIDEO_MODULE " module" );
     }
 }
 

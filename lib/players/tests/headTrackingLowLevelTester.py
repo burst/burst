@@ -3,7 +3,7 @@
 import player_init
 
 from burst.behavior import InitialBehavior
-from burst.events import EVENT_BALL_IN_FRAME
+from burst_events import EVENT_BALL_IN_FRAME
 import burst.moves as moves
 from burst_util import polar2cart
 

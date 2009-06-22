@@ -282,10 +282,10 @@ canvaspairs(vision)
 
 # Getting US Sensors
 # subscribe first
-con.ALUltraSound.subscribe("test", [500])
+con.ALSonar.subscribe("test", [500])
 # note - the third one is strange. Once you use it, the Actuator shows 3 (0 before), and the values are different then
 # those you get from the Sensor.
-watch(["Device/SubDeviceList/US/Sensor/Value", "Device/SubDeviceList/US/Actuator/Value", 'extractors/alultrasound/distances'])
+watch(["Device/SubDeviceList/US/Sensor/Value", "Device/SubDeviceList/US/Actuator/Value", 'extractors/alsonar/distances'])
 
 # Battery in a plot
 battery = refilter('Battery.*Value',names)

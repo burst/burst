@@ -1,0 +1,22 @@
+#!/bin/sh
+
+if [ -z "$AL_DIR" ]
+then
+  echo please define AL_DIR before executing webots
+  exit 1
+fi
+
+cd bin
+
+export URBI_PATH="${AL_DIR}/extern/"
+export PYTHONPATH="${AL_DIR}/extern/python/aldebaran:${AL_DIR}/modules/python"
+
+if [ $(uname) = "Linux" ]
+then
+	export LD_LIBRARY_PATH="${LD_LIBRARY_PATH};${AL_DIR}/extern/c/linux/lib/;../../../../../../lib/"
+	export PYTHONHOME="${AL_DIR}/extern/c/linux/"  
+else
+    export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH}:../../../../../../lib/:${AL_DIR}/extern/c/macosx/lib/"
+fi
+# Replace current process with nao_in_webots
+exec ./nao_in_webots -v $@

@@ -4,7 +4,7 @@
 from robot import *
 
 # TODO: Do we really need any of these?
-from ultrasound import *
+from sonar import *
 from buttons import *
 from leds import *
 from sensors import *

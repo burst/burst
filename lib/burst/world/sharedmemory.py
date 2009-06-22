@@ -34,9 +34,9 @@ class SharedMemoryReader(object):
         start_offset = BURST_SHARED_MEMORY_VARIABLES_START_OFFSET
         self._unpack_start = start_offset
         self._unpack_end = start_offset + struct.calcsize(self._unpack)
-        self._ultrasound_unpack = 'f'*US_ELEMENTS_NUM
-        self._ultrasound_start = 0
-        self._ultrasound_end = struct.calcsize(self._ultrasound_unpack) + self._ultrasound_start
+        self._sonar_unpack = 'f'*US_ELEMENTS_NUM
+        self._sonar_start = 0
+        self._sonar_end = struct.calcsize(self._sonar_unpack) + self._sonar_start
         self.vars = dict((k, 0.0) for k in self._var_names)
         # TODO - ugly (next year)
         self.vars[US_DISTANCES_VARNAME] = [0.0] * US_ELEMENTS_NUM
@@ -90,10 +90,10 @@ class SharedMemoryReader(object):
         # TODO - would a single dict.update be faster?
         for k, v in zip(self._var_names, values):
             self.vars[k] = v
-        # update ultrasound variables differently - they are stored at the beginning
+        # update sonar variables differently - they are stored at the beginning
         # of the shared memory region
-        self.vars[US_DISTANCES_VARNAME] = struct.unpack(self._ultrasound_unpack,
-            self._buf[self._ultrasound_start:self._ultrasound_end])
+        self.vars[US_DISTANCES_VARNAME] = struct.unpack(self._sonar_unpack,
+            self._buf[self._sonar_start:self._sonar_end])
         if self.verbose:
             print self.vars
 

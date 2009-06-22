@@ -36,47 +36,52 @@ def parse_command_line_arguments():
     import sys
     if not hasattr(sys, 'argv'): # fix for bug when importing from within nao-man
         sys.argv=['fake']
-    from optparse import OptionParser
+    from optparse import OptionParser, OptionGroup
     parser = OptionParser()
-    parser.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
-    parser.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
-    parser.add_option('', '--pynaoqi', action='store_true', dest='use_pynaoqi', help='use pynaoqi and twisted (TESTING)')
+    main = OptionGroup(parser, "main")
+    main.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
+    main.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
+    main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
+    main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
+    main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
+    main.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
+    main.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')
+    main.add_option('', '--dt', dest='dt', default=burst_consts.DEFAULT_EVENT_MANAGER_DT, help='main loop time step, in seconds (handle with caution!)')
+    # PREGAME TODO: game_controller and game_status should default to TRUE!!
+    main.add_option('', '--use_game_controller', action='store_true', dest='game_controller', default=False, help='Use game controller (start in initial state)')
+    main.add_option('', '--use_game_status', action='store_true', dest='game_status', default=False, help='Use game controller (start in initial state)')
+    main.add_option('', '--runsonar', action='store_true', dest='run_sonar', default=False, help='Run Sonar')
 
-    parser.add_option('', '--dt', dest='dt', default=burst_consts.DEFAULT_EVENT_MANAGER_DT, help='main loop time step, in seconds (handle with caution!)')
+    experimental = OptionGroup(parser, "experimental")
+    experimental.add_option('', '--pynaoqi', action='store_true', dest='use_pynaoqi', help='use pynaoqi and twisted (TESTING)')
+    experimental.add_option('', '--usepostid', action='store_true', dest='use_postid', default=False, help='affects ThreadedMoveCoordinator only')
+    experimental.add_option('', '--newmovecoordinator', action='store_true', dest='new_move_coordinator', default=False, help='debug - use new ThreadedMoveCoordinator')
 
-    parser.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
-    parser.add_option('', '--profile-player', action='store_true', dest='profile_player', default=False, help='profile player code')
-    parser.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
+    debug = OptionGroup(parser, "profile and debug")
+    debug.add_option('', '--profile', action='store_true', dest='profile', default=False, help='profile the application')
+    debug.add_option('', '--profile-player', action='store_true', dest='profile_player', default=False, help='profile player code')
+    debug.add_option('', '--logpositions', action='store_true', dest='log_positions', default=False, help='will record positions of objects into csv files in the current directory, with timestamps')
 
     # TODO - unsafe isn't required anymore, and also isn't correct for the possible "don't left t.i.d.Deferred's catch our exceptions" scenario.
-    parser.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
-    parser.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
-    parser.add_option('', '--debugpersonal', action='store_true', dest='debug_personal', default=False, help='Remove try around __import__(personal)')
-    parser.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
+    debug.add_option('', '--unsafe', action='store_false', dest='catch_player_exceptions', default=True, help='don\'t catch stray exceptions')
+    debug.add_option('', '--debug', action='store_true', dest='debug', default=False, help='Turn on debugging code')
 
-    parser.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
-    parser.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
-    parser.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
-    parser.add_option('', '--nomemoryupdates', action='store_true', dest='no_memory_updates', default=False, help='trace proxy calls')
+    debug.add_option('', '--nomemoryupdates', action='store_true', dest='no_memory_updates', default=False, help='trace proxy calls')
 
-    parser.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
-    parser.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
-    parser.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
-    parser.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
-    parser.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
-    parser.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
-    parser.add_option('', '--verbose-gamestatus', action='store_true', dest='verbose_gamestatus', default=False, help='Verbose game status class')
+    debug.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
+    debug.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
+    debug.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
+    debug.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
+    debug.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
+    debug.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
+    debug.add_option('', '--verbose-gamestatus', action='store_true', dest='verbose_gamestatus', default=False, help='Verbose game status class')
 
-    # PREGAME TODO: game_controller and game_status should default to TRUE!!
-    parser.add_option('', '--use_game_controller', action='store_true', dest='game_controller', default=False, help='Use game controller (start in initial state)')
-    parser.add_option('', '--use_game_status', action='store_true', dest='game_status', default=False, help='Use game controller (start in initial state)')
-    parser.add_option('', '--runultrasound', action='store_true', dest='run_ultrasound', default=False, help='Run UltraSound')
-
-    parser.add_option('', '--newmovecoordinator', action='store_true', dest='new_move_coordinator', default=False, help='debug - use new ThreadedMoveCoordinator')
-    parser.add_option('', '--usepostid', action='store_true', dest='use_postid', default=False, help='affects ThreadedMoveCoordinator only')
-
+    unused = OptionGroup(parser, "unused")
     # old unused
-    parser.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
+    unused.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
+
+    for group in [main, experimental, debug, unused]:
+        parser.add_option_group(group)
 
     opts, args = parser.parse_args()
     opts.dt = float(opts.dt)

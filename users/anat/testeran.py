@@ -105,12 +105,12 @@ motionProxy.setChainStiffness("Head",0.0)
 #if ( ttsProxy ):
  # ttsProxy.say("Move my head if you want me to stop")
 
-ultrasound_stop_distance = 0.41
+sonar_stop_distance = 0.41
 
 while (motionProxy.isRunning(walkTaskId)):
-    US = memoryProxy.getData("extractors/alultrasound/distances", 0)
+    US = memoryProxy.getData("extractors/alsonar/distances", 0)
     #~ print US
-    if ((US[0] < ultrasound_stop_distance) or (US[1] < ultrasound_stop_distance)):
+    if ((US[0] < sonar_stop_distance) or (US[1] < sonar_stop_distance)):
         print "Obstacle found!"
         motionProxy.clearFootsteps()#stops the walking
         

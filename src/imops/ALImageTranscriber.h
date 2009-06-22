@@ -28,7 +28,7 @@ public:
     void releaseImage();
 
 public: // helper methods
-    void registerCamera(AL::ALPtr<AL::ALBroker> broker);
+    void subscribeCamera(AL::ALPtr<AL::ALBroker> broker);
     void initCameraSettings(int whichCam);
     bool setFrameRate(unsigned int fps);
     void waitForImage();

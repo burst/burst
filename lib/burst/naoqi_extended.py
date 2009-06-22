@@ -1,6 +1,7 @@
 import os, sys, time
 import socket
 
+from burst_consts import SONAR_MODULE, VIDEO_MODULE
 
 from burst_util import (WrapWithDeferreds,
     get_first_available_tcp_port, once)
@@ -14,7 +15,7 @@ from options import host_to_ip, LOCALHOST_IP
 import burst
 
 __all__ = ['getBroker', 'getMotionProxy', 'getSpeechProxy', 'getMemoryProxy', 'getVisionProxy', 'getDCMProxy', 'shutdown'
-    ,'getLedsProxy', 'getUltraSoundProxy', 'getNaoCamProxy', 'getBurstMemProxy', 'getImopsProxy', 'getSentinelProxy']
+    ,'getLedsProxy', 'getSonarProxy', 'getALVideoDeviceProxy', 'getBurstMemProxy', 'getImopsProxy', 'getSentinelProxy']
 
 _broker = None
 proxies = [] # This was added for use by shutdown(). If no longer useful by the time we're done, we should get rid of this.
@@ -86,10 +87,10 @@ for getter, global_name, proxy_name in [
     ('getLedsProxy',   'ledsProxy',   'ALLeds'),
     ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
     ('getSentinelProxy', 'sentinelProxy', 'ALSentinel'),
-    ('getNaoCamProxy', 'naocamProxy', 'NaoCam'),
+    ('getALVideoDeviceProxy', 'naocamProxy', VIDEO_MODULE),
     ('getVisionProxy', 'visionProxy', 'vision'),
     ('getDCMProxy',    'dcmProxy',    'DCM'),
-    ('getUltraSoundProxy', 'ultraSoundProxy', 'ALUltraSound'),
+    ('getSonarProxy', 'ultraSoundProxy', SONAR_MODULE),
     ('getBurstMemProxy', 'burstmemProxy',   'burstmem'),
     ('getImopsProxy',    'imopsProxy',      'imops'),
     ]:

@@ -20,11 +20,16 @@ class WalkTester(InitialBehavior):
 #                     ('Walk straight - Asaf''s version (Stable walk)',
 #                      lambda: self._actions.executeMoveRadians(poses.STABLE_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STABLE_WALK))),
+
+
+#                      ('Walk straight',
+#                      lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
                       
-                     ('Walk straight',
+                      ('Walk arc',
                       lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
-                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
-                      
+                      lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
+
 #                     ('Walk sideways',
 #                      lambda: self._actions.changeLocationRelativeSideways(0.0, 20.0, walk=walks.SIDESTEP_WALK)),
 

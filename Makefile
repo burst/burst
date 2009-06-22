@@ -26,7 +26,7 @@ cleanpyc:
 	@echo "removing pyc files"
 	find . -iname "*.pyc" -exec rm \{\} \;
 
-clean: clean_pyc
+clean: cleanpyc
 	cd src/burstmem; $(MAKE) clean
 	rm -fR src/recordermodule/crossbuild
 	cd src/imops; $(MAKE) clean

@@ -44,7 +44,7 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
 
     // External module interface
 
-    void setFramesPerSecond(double fps);
+    void setFramesPerSecond(const double &fps);
     void switchToTopCamera();
     void switchToBottomCamera();
 
@@ -79,8 +79,8 @@ class ImopsModule : public AL::ALModule, public ImageSubscriber
     useconds_t                      vision_frame_length_us;
     useconds_t                      vision_frame_length_print_thresh_us;
 
-    bool                             m_switchRequested;
-    bool                             m_requestedTopCamera;
+    volatile bool                   m_switchRequested;
+    volatile bool                   m_requestedTopCamera;
 
     // needs to be called after the instance is created, since we use a global (err, TODO)
     void initVisionThread( ALPtr<ALBroker> broker );
