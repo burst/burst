@@ -73,6 +73,18 @@ class Sensors(object):
         self.sensors = [self.rightFootFSRs, self.leftFootFSRs, self.yAngleInertialSensor, self.xAngleInertialSensor]
         self._lastEvent = None
 
+    def isOnBack(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.yAngleInertialSensor.read() > 0.5])
+
+    def isOnBelly(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.yAngleInertialSensor.read() < -0.5])
+
+    def isOnRightSide(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.xAngleInertialSensor.read() > 0.5])
+
+    def isOnLeftSide(self):
+        return all([not self.rightFootFSRs.isPressed(), not self.leftFootFSRs.isPressed(), self.xAngleInertialSensor.read() < -0.5])
+
     def calc_events(self, events, deferreds):
         # Another frame has passed. Time to poll again anything that requires smoothing:
         for sensor in self.sensors:
