@@ -34,11 +34,11 @@ class trackerTester(InitialBehavior):
 
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
 # minimal printing for spreadshit
-        print "%s, %3.3f, %3.3f, %3.3f, %3.3f, %3.3f" % (self._world.ball.seen, self._world.ball.dist,              self._world.ball.distSmoothed, self._world.ball.bearing, ball_x, ball_y)
+#        print "%s, %3.3f, %3.3f, %3.3f, %3.3f, %3.3f" % (self._world.ball.seen, self._world.ball.dist,              self._world.ball.distSmoothed, self._world.ball.bearing, ball_x, ball_y)
 # legible printing
 #        print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
-#        print "Ball x: %3.3f, Ball y: %3.3f" % (ball_x, ball_y)
+        print "Ball x: %3.3f, Ball y: %3.3f, Ball bearing: %3.3f" % (ball_x, ball_y, self._world.ball.bearing)
 
 
 if __name__ == '__main__':
