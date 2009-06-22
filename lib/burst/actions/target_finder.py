@@ -11,6 +11,9 @@ Created on Jun 16, 2009
 from burst.behavior import ContinuousBehavior
 from burst_util import DeferredList
 
+# TODO: If several targets are found simultaneously, track either the earlier one in
+# the list of targets, or the one that is closer.
+
 class TargetFinder(ContinuousBehavior):
     ''' Continuous target finder & tracker '''
 
