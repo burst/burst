@@ -18,8 +18,11 @@ def behaviorwrapbd(behavior_actions, f):
         bd = f(*args, **kw)
         #print "behaviorwrapbd: %s" % bd
         behavior_actions._addBurstDeferred(bd)
-        return bd.onDone(lambda _,f=f, behavior=behavior_actions._behavior, args=args, kw=kw:
-                behavior._applyIfNotStopped(f, args, kw))
+        return bd
+        # TODO - I want to return the chained bd, but some functions (actions.kick)
+        # return a Behavior, and it cannot be replaced by a BD - what to do?
+        #return bd.onDone(lambda _,f=f, behavior=behavior_actions._behavior, args=args, kw=kw:
+        #        behavior._applyIfNotStopped(f, args, kw))
     wrapper.func_name = f.func_name
     wrapper.func_doc = f.func_doc
     return wrapper
@@ -174,7 +177,7 @@ class Behavior(BurstDeferred, Nameable):
         return self._stopped
 
     def start(self):
-        if not self._stopped: return
+        if not self._stopped: return self
         self._stopped = False
         self._start(firstTime=True)
         return self

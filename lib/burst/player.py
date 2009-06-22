@@ -243,21 +243,33 @@ class Player(object):
 
     def onOnBack(self):
         self._actions.say("I'm on my back.")
-        #self.unregisterFallHandling()
-        #self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
-    
+#        print "Player: onOnBack: stopping main_behavior"
+#        self._actions.killAll()
+#        self._main_behavior.stop()
+#        self.unregisterFallHandling()
+#        self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
+
+    def onOnBelly(self):
+        self._actions.say("I'm on my belly.")
+#        print "Player: onOnBelly: stopping main_behavior"
+#        self._actions.killAll()
+#        self._main_behavior.stop()
+#        self.unregisterFallHandling()
+#        self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
+        
     def onGottenUpFromBack(self):
         self._actions.say("Getting up done (from back)")
         self.registerFallHandling()
 
-    def onOnBelly(self):
-        self._actions.say("I'm on my belly.")
-        #self.unregisterFallHandling()
-        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
-        
+        print "Player: onGottenUpFromBack"
+        self._main_behavior.start().onDone(self._onMainBehaviorDone)
+
     def onGottenUpFromBelly(self):
         self._actions.say("Getting up done (from belly)")
         self.registerFallHandling()
+
+        print "Player: onGottenUpFromBelly"
+        self._main_behavior.start().onDone(self._onMainBehaviorDone)
 
     def onRightSide(self):
         self._actions.say("I'm on the right side")

@@ -585,6 +585,9 @@ class Actions(object):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
 
 
+    def killAll(self):
+        self._motion.killAll()
+
     #================================================================================
     # Choreograph moves 
     #================================================================================

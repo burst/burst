@@ -14,8 +14,7 @@ class Kicker(InitialBehavior):
         self._ballkicker = self.kick()
         self._ballkicker.onDone(self.onKickComplete)
 
-    def stop_complete(self):
-        # return a bd to complete on stop
+    def _stop(self):
         return self._ballkicker.stop()
 
     def kick(self):

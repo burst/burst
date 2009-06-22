@@ -66,6 +66,7 @@ class BallKicker(Behavior):
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
         self._goalFinder = TargetFinder(actions=actions, targets=target_left_right_posts, start=False)
         self._goalFinder.setOnTargetFoundCB(self.onGoalFound)
+        self._currentFinder = None
 
     def _start(self, firstTime=False):
         self._aligned_to_goal = False
@@ -84,8 +85,15 @@ class BallKicker(Behavior):
         self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
 
-    #def _stop(self):
-    #    # TODO
+    def _stop(self):
+        print "KICKING STOPS!!!"
+        self._clearMovement(clearFootsteps = False)
+
+        stop_bd = succeedBurstDeferred(self)
+        if self._currentFinder:
+            print "STOPPING CURRENT FINDER: %s" % self._currentFinder.name
+            stop_bd = self._currentFinder.stop()
+        return stop_bd
 
     ################################################################################
     # Handling movements
@@ -121,11 +129,13 @@ class BallKicker(Behavior):
         print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
         if self._movement_deferred:
-            print "NOTE: Obstacle in front while a movement is in progress"
             # if walking forward and ball is far, stop
             if self._movement_type == MOVE_FORWARD and self._movement_location == BALL_FRONT_FAR:
+                print "NOTE: Obstacle seen while a movement is in progress, movement STOPPED"
                 self._stopOngoingMovement(forceStop = True)
                 self._eventmanager.callLater(0.5, self._approachBall)
+            else:
+                print "NOTE: Obstacle seen while a movement is in progress, movement CONTINUES"
 
     def onObstacleLost(self):
         print "Obstacle lost!"
@@ -180,8 +190,7 @@ class BallKicker(Behavior):
         # Ball inside kicking area, kick it
         elif target_location == BALL_IN_KICKING_AREA:
             self.debugPrint("Kicking!")
-            self._ballFinder.stop()
-            self._goalFinder.stop()
+            self._currentFinder.stop()
             self.debugPrint("kick_side_offset: %3.3f" % (kick_side_offset))
             self._actions.setCameraFrameRate(10)
             #self._actions.kick(burst.actions.KICK_TYPE_STRAIGHT, side).onDone(self.callOnDone)
@@ -257,6 +266,7 @@ class BallKicker(Behavior):
             stop_bd = from_finder.stop()
             
         print "SwitchToFinder: calling %s.start" % (to_finder.name)
+        self._currentFinder = to_finder
         stop_bd.onDone(to_finder.start)
 
     ################################################################################
@@ -315,6 +325,7 @@ class BallKicker(Behavior):
 
 
     def refindBall(self):
+        self._currentFinder = None
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
             # TODO: Fix distSmooth after moving head - this is just a workaround
             lambda: self._eventmanager.callLater(0.5,
