@@ -33,7 +33,7 @@ def slowStraightWalk(distance):
     motionProxy.addWalkStraight( distance, 80)
     return motionProxy.walk()
 
-    
+
 def fastStraightWalk(distance):
     motionProxy = burst.getMotionProxy().post
     motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
@@ -44,8 +44,8 @@ def fastStraightWalk(distance):
 
 def initPosition():
     motionProxy = burst.getMotionProxy().post
-    joints = ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 
-        'LElbowRoll', 'LHipYawPitch', 'RHipPitch', 'RHipRoll', 'LHipPitch', 'LHipRoll', 'RKneePitch', 'LKneePitch', 'RAnklePitch', 
+    joints = ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'LShoulderPitch', 'LShoulderRoll', 'LElbowYaw',
+        'LElbowRoll', 'LHipYawPitch', 'RHipPitch', 'RHipRoll', 'LHipPitch', 'LHipRoll', 'RKneePitch', 'LKneePitch', 'RAnklePitch',
         'RAnkleRoll', 'LAnklePitch', 'LAnkleRoll']
     times = len(joints)*[[3]]
     angles = [[50], [0], [10], [35], [50], [0], [0], [-35], [-10], [-40], [0], [-40], [0], [125], [125], [-70], [0], [-70], [0]]
@@ -53,8 +53,8 @@ def initPosition():
         for j in range(0, len(angles[i])):
             angles[i][j] *= burst.motion.TO_RAD
     return motionProxy.doMove(joints, angles, times, 1)
-    
-    
+
+
 def zeroPosition():
     motionProxy = burst.getMotionProxy().post
     return motionProxy.gotoBodyAnglesWithSpeed(26*[0.0] , 15, burst.motion.INTERPOLATION_SMOOTH)
@@ -79,7 +79,7 @@ def flexRightArm():
     x = motionProxy.getChainAngles("RArm")
     x[3] = math.pi
     return motionProxy.post.gotoChainAngles("RArm", x, 3.0, 1)
-    
+
 
 def unflexRightArm():
     motionProxy = burst.getMotionProxy().post
@@ -132,7 +132,7 @@ def turn(degrees):
     motionProxy = burst.getMotionProxy().post
     motionProxy.addTurn(float(degrees), 60)
     return motionProxy.walk()
-    
+
 
 def addTurn(degrees):
     motionProxy = burst.getMotionProxy().post
@@ -194,8 +194,8 @@ def getUp():
 def headStiffnessOn():
     motionProxy = burst.getMotionProxy().post
     motionProxy.setChainStiffness('Head', 1.0, 0)
-    
-    
+
+
 def headStiffnessOff():
     motionProxy = burst.getMotionProxy().post
     motionProxy.setChainStiffness('Head', 0.0, 0)

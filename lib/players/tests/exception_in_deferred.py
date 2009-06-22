@@ -7,7 +7,7 @@ from burst.behavior import InitialBehavior
 from burst_util import Deferred
 
 class ExceptionInDeferred(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

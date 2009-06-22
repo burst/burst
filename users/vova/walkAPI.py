@@ -26,18 +26,18 @@ class Locomotion:
         except RuntimeError,e:
           print("cannot connect to main broker")
           exit(1)
-          
+
         try:
             self.motionProxy = ALProxy("ALMotion")
-            
+
         except Exception,e:
           print "Error when creating motion proxy:"
           print str(e)
           exit(1)
-    
+
         try:
             self.memoryProxy = ALProxy("ALMemory")
-            
+
         except Exception,e:
           print "Error when creating motion proxy:"
           print str(e)
@@ -53,7 +53,7 @@ class Locomotion:
         self.motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
 
 
-        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
         self.motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
         self.motionProxy.setWalkArmsEnable(True)
 
@@ -64,7 +64,7 @@ class Locomotion:
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
         self.motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
 
-        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
         self.motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
 
         self.motionProxy.addWalkStraight( 0.05*4, 80)
@@ -81,7 +81,7 @@ class Locomotion:
         * perform optimal motion planning
         * put orders on queue
         * check Odometry values while executing (???)
-        
+
         now:
         * running dummy function that performs no smart planning whatsoever, nor Odoemtry readings
         """
@@ -92,7 +92,7 @@ class Locomotion:
         """
         Turns, walk straight, turns
         """
-        #get current coordinates from Odometry    
+        #get current coordinates from Odometry
         x=self.memoryProxy.getData("Burst/Odometry/X",0)
         y=self.memoryProxy.getData("Burst/Odometry/Y",0)
         yaw= self.memoryProxy.getData("Burst/Odometry/Yaw",0)
@@ -106,14 +106,14 @@ class Locomotion:
 
         #Config, Dunno about those parameters on this stage copy/pasted from motion_Walk
         self.motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
-        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
         self.motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
         self.motionProxy.setWalkArmsEnable(True)
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
         self.motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.22, 2.0 )
-        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
         self.motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
-        
+
         #Turn 1
         self.motionProxy.addTurn( alpha1, 80 )
         print "alpha1: "+ str(alpha1)
@@ -124,16 +124,16 @@ class Locomotion:
         self.motionProxy.addTurn( alpha2, 80 )
         print "alpha2: "+ str(alpha2)
         #do walking
-        self.motionProxy.walk() 
-        
+        self.motionProxy.walk()
+
     def __del__(self):
         """
         Destructor - performing cleanup
         """
         broker.shutdown()
         print "Walk API broker destroyed"
-        
-        
-        
-        
-    
+
+
+
+
+

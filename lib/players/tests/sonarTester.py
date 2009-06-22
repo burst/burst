@@ -6,7 +6,7 @@ from burst_events import (EVENT_STEP,
     EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 
 class SonarTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -16,14 +16,14 @@ class SonarTester(InitialBehavior):
         self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME)
         # comment out for raw values:
         #self._eventmanager.register(self.onStep, EVENT_STEP)
-        
+
     def onObstacleSeen(self):
         self._actions.say('Obstacle seen!')
-        
+
         self._lastReading = self._world.robot.sonar.getLastReading()
         self._lastData = self._world.robot.sonar._lastData
         print "Sonar: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
-        
+
     def onObstacleLost(self):
         self._actions.say('Obstacle lost!')
 

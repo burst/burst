@@ -18,7 +18,7 @@ for i in range(0, 5):
       print "currentHeadYaw: %f" % currentHeadYaw
       xtodeg = ((320.0-val)/320.0) # between 1 (left) to -1 (right)
       print "xtodeg: %f" % xtodeg
-      
+
       if (abs(xtodeg)>0.05):
        xtodegfactor = 0.2
        newHeadYaw = currentHeadYaw + xtodeg*xtodegfactor

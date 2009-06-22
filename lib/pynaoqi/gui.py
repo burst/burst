@@ -70,7 +70,7 @@ def getJointData(con):
     return collecting
 
 class ToggleButton(object):
-    
+
     def __init__(self, button, widgets):
         self._button = button
         self._state = False
@@ -183,7 +183,7 @@ class Scale(object):
 def setWalkConfig(con, param):
     """ param should be one of the moves.WALK_X """
     (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-        LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+        LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength,
         StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
     ds = []
@@ -278,7 +278,7 @@ class Joints(BaseWindow):
         global start_time
         global con
         start_time = time()
-              
+
         self.scales = scales = {}
         self.con = pynaoqi.getDefaultConnection(with_twisted=True)
         con = self.con
@@ -445,7 +445,7 @@ class Joints(BaseWindow):
 
         for button_strip in [top_strip, toggle_strip, stiffness_off, stiffness_on, moves_strip, walk_strip]:
             c.pack_start(button_strip, False, False, 0)
-    
+
         # add the joints container after all the buttons
         c.add(self._joints_container)
 
@@ -457,7 +457,7 @@ class Joints(BaseWindow):
 
         w.resize(700, 400)
         w.show_all()
-    
+
     def showAllJoints(self):
         for pane in self._joint_panes:
             pane.show()

@@ -121,7 +121,7 @@ class OldSearcher(object):
 
     def _onScanDone(self):
         if self._stop: return
-        
+
         # see which targets have been sighted
         seen = set(target for target in self._targets if target.centered_self.sighted)
         unseen = set(target for target in self._targets if not target.centered_self.sighted)

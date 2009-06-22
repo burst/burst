@@ -17,7 +17,7 @@ from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
 
 class GameControllerTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

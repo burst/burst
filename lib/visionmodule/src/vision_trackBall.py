@@ -28,7 +28,7 @@ else:
 IP = "127.0.0.1"
 PORT = 9560
 
-#IP_REMOTE = "127.0.0.1" 
+#IP_REMOTE = "127.0.0.1"
 #PORT_REMOTE = 54010
 
 # Create a proxy to ALMotion
@@ -96,7 +96,7 @@ while True:
       print "currentHeadYaw: %f" % currentHeadYaw
       xtodeg = ((160.0-val)/160.0) # between 1 (left) to -1 (right)
       print "xtodeg: %f" % xtodeg
-      
+
       if (abs(xtodeg)>0.05):
        xtodegfactor = 23.2 #46.4/2
        newHeadYaw = currentHeadYaw + (xtodeg*xtodegfactor*motion.TO_RAD)
@@ -121,4 +121,4 @@ while True:
 motionProxy.setJointStiffness('HeadYaw',0.0,TimeInterpolation)
 visionProxy.unRegisterFromVIM()
 
-print "Test terminated successfully" 
+print "Test terminated successfully"

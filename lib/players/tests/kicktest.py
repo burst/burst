@@ -8,7 +8,7 @@ from burst_events import *
 from burst.moves import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
-from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT, 
+from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT,
                                    KICK_X_MIN, KICK_X_MAX, KICK_Y_MIN, KICK_Y_MAX,
                                    BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR, BALL_FRONT_FAR,  BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL)
 from burst_consts import LEFT, RIGHT
@@ -17,7 +17,7 @@ def pr(s):
     print s
 
 class KickTest(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -79,9 +79,9 @@ class KickTest(InitialBehavior):
         ball_location = self.calcBallArea(ball_x, ball_y, side)
         DEBUG_AREA = ('BALL_IN_KICKING_AREA', 'BALL_BETWEEN_LEGS', 'BALL_FRONT_NEAR', 'BALL_FRONT_FAR', 'BALL_SIDE_NEAR', 'BALL_SIDE_FAR', 'BALL_DIAGONAL')
         print "AREA: %s" % DEBUG_AREA[ball_location]
-        self._actions.kick(kick_type=burst.actions.KICK_TYPE_STRAIGHT,kick_leg=LEFT, kick_offset=0.2)        
+        self._actions.kick(kick_type=burst.actions.KICK_TYPE_STRAIGHT,kick_leg=LEFT, kick_offset=0.2)
 
-        
+
     def onLostBall(self):
         # TODO: add ball lost handling
         print "BALL LOST, clearing footsteps"
@@ -92,7 +92,7 @@ class KickTest(InitialBehavior):
 
 
     def calcBallArea(self, ball_x, ball_y, side):
-        if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
+        if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] <
             return BALL_IN_KICKING_AREA
         elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
             if ball_x <= KICK_X_MAX[side]:

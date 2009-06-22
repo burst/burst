@@ -15,9 +15,9 @@ class Bumpers(object):
         self.leftBumperPressed, self.rightBumperPressed = False, False
 
     def calc_events(self, events, deferreds):
-        (self.leftBumperRightSensor, self.leftBumperLeftSensor, self.rightBumperLeftSensor, 
+        (self.leftBumperRightSensor, self.leftBumperLeftSensor, self.rightBumperLeftSensor,
             self.rightBumperRightSensor) = self._world.getVars(self._vars)
-        left, right = ((self.leftBumperRightSensor+self.leftBumperLeftSensor)/2.0 > 0.5, 
+        left, right = ((self.leftBumperRightSensor+self.leftBumperLeftSensor)/2.0 > 0.5,
             (self.rightBumperLeftSensor+self.rightBumperRightSensor)/2.0 > 0.5)
         if not self.leftBumperPressed and left:
             events.add(burst_events.EVENT_LEFT_BUMPER_PRESSED)

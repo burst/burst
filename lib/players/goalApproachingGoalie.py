@@ -111,7 +111,7 @@ class Goalie(InitialBehavior):
             return self.ownGoal[0]
         else:
             return self.ownGoal[1]
-        
+
     '''
     def goToOwnGoal(self):
         self._report("Going towards own goal.")

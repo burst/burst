@@ -58,18 +58,18 @@ class Main(object):
             print "using top camera"
             self._con.switchToTopCamera()
         stage_color = clutter.Color(0x99, 0xcc, 0xff, 0xff)
-        
+
         stage = clutter.Stage()
         #stage.connect('button-press-event', clutter.main_quit)
         stage.connect('destroy', clutter.main_quit)
         stage.set_color(stage_color)
         stage.set_user_resizable(True)
         stage.set_size(400, 300)
-        
+
         self._texture = texture = clutter.Texture('top.jpg')
         texture.set_position(0, 0)
         stage.add(texture)
-            
+
         #tick(texture)
         gobject.timeout_add_seconds(1, self.onUpdateImage)
         stage.show()

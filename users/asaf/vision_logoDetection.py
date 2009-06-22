@@ -1,7 +1,7 @@
 # This test demonstrates how to use the ALVisionLogo module.
 # Note that you might not have this module depending on your distribution
 #
-# - We first instantiate a proxy to the ALVisionLogo module 
+# - We first instantiate a proxy to the ALVisionLogo module
 #     Note that this module should be loaded on the robot's naoqi.
 #     The module output its results in ALMemory in a variable
 #     called "extractors/alvisionlogo/logopositions"
@@ -31,7 +31,7 @@ else:
   from naoqi import ALBehavior
 
 # Replace here with your robot's IP address
-IP = "10.0.252.175" 
+IP = "10.0.252.175"
 
 PORT = 9559
 
@@ -88,5 +88,5 @@ for i in range(0, 20):
 # Unsubscribe the module
 logoProxy.unsubscribe("Test_Logo")
 
-print "Test terminated successfully" 
+print "Test terminated successfully"
 

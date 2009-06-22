@@ -222,7 +222,7 @@ class SoapRequestFactory(ClientFactory):
         self.tosend = tosend
         self.deferred = deferred
         self.con = con
-    
+
     def startedConnecting(self, connector):
         #print "YAY CONNECTING", connector
         pass

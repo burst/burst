@@ -59,7 +59,7 @@ class Movement(object):
     # __init__()
     # Input:      Intial position (x,y,yaw) and final position (x,y,yaw)
     #             notes: The yaw is in degrees.
-    #                    (-x,-y) -> First quadrant. 
+    #                    (-x,-y) -> First quadrant.
     #                    (-x,y) -> Second quadrant.
     #                    (x,y) -> Third quadrant.
     #                    (x,-y) -> Fourth quadrant.
@@ -97,7 +97,7 @@ class Movement(object):
     # strafe()
     # Input:      Final x, y and yaw.
     # Output:     -
-    # Operation:  Turns the robot to a position which is perpendicular 
+    # Operation:  Turns the robot to a position which is perpendicular
     # to the azimuth of the final destination, then walks sideways and finally corrects its
     # angle to match the final yaw.
     def strafe(self, x, y, yaw):
@@ -167,10 +167,10 @@ class Movement(object):
             # Turn 90-degrees.
             self.turn(turn90angle)
         # The angle of the arc is negative when the point is within the first or fourth quadrants.
-        # ( Move + Turn right ). 
+        # ( Move + Turn right ).
         if y<0:
-            # The two points and the circle's center create an isosceles triangle inside the circle ( the sides are the 
-            # circle's radius ), when the angle is actually on the the base angles of the triangle and the central angle 
+            # The two points and the circle's center create an isosceles triangle inside the circle ( the sides are the
+            # circle's radius ), when the angle is actually on the the base angles of the triangle and the central angle
             # equals to: Central angle = 180 - 2 * angle.
             central_angle= -(180-2*angle)
         # Else, it's positive. ( Move + Turn left ).
@@ -178,9 +178,9 @@ class Movement(object):
             central_angle= 180-2*angle
         # Radius r = d / ( 2 * sin( 90 - angle ) ). According to the law of sines.
         radius= dist/(2*math.cos((angle)*motion.TO_RAD))
-        # Walk in arc with 
+        # Walk in arc with
         motionProxy.addWalkArc(central_angle*motion.TO_RAD, radius, Movement.steps)
-        # 
+        #
         diffangle= yaw - central_angle - turn90angle
         if diffangle>0:
             odiffangle= diffangle - 360

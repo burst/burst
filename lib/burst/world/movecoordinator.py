@@ -50,7 +50,7 @@ KIND_WALK = 'walk'
 class SerialPostQueue(object):
 
     """ Queue of serial events for Robot.
-    
+
     Why this is here:
      Workaround for missing isFinished on ALMotion proxy.
     There is a isRunning, but if we call it before the motion has started, it
@@ -91,7 +91,7 @@ class SerialPostQueue(object):
         if event is None and deferred is None:
             print "ERROR: SerialPostQueue: handling an empty post?"
             import pdb; pdb.set_trace()
-    
+
         #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
         #    self.name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
         #)
@@ -173,7 +173,7 @@ class BaseMoveCoordinator(object):
 
     def isMotionInProgress(self):
         return False
-    
+
     def isHeadMotionInProgress(self):
         return False
 
@@ -258,7 +258,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     def isMotionInProgress(self):
         return self._motion_posts.isNotEmpty()
-    
+
     def isHeadMotionInProgress(self):
         return self._head_posts.isNotEmpty()
 

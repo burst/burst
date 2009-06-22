@@ -2,7 +2,7 @@ from burst_events import EVENT_WORLD_LOCATION_UPDATED
 from burst.behavior import Behavior
 
 class Localizer(Behavior):
-    
+
     """ Do a search for some landmarks until we can fix our position.
     """
     def __init__(self, actions):

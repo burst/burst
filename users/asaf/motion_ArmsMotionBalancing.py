@@ -33,14 +33,14 @@ NumJoints = len(motionProxy.getBodyJointNames())
 if (NumJoints == 22) :
   poseStart = [0.0,0.0,
     90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, -90.0 * motion.TO_RAD,  -90.0 * motion.TO_RAD,
-    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0, 
-    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0, 
+    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0,
+    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0,
     90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 90.0 * motion.TO_RAD]
 elif (NumJoints == 26) :
   poseStart = [0.0,0.0,
     90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, -90.0 * motion.TO_RAD,  -90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0,
-    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0, 
-    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0, 
+    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0,
+    0.0, 0.0, -20.0 * motion.TO_RAD, 40.0 * motion.TO_RAD, -20.0 * motion.TO_RAD, 0.0,
     90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0]
 else :
   print "Unexpected number of joints"
@@ -80,12 +80,12 @@ for i in range(0,5):
   motionProxy.post.gotoAngle("LElbowYaw",    -90 * motion.TO_RAD, tInterpolation, motion.INTERPOLATION_SMOOTH)
   motionProxy.gotoAngle("LElbowRoll",   -90 * motion.TO_RAD, tInterpolation, motion.INTERPOLATION_SMOOTH)
 
-  motionProxy.post.gotoChainAngles("LArm", angleL, tInterpolation,motion.INTERPOLATION_SMOOTH)  
+  motionProxy.post.gotoChainAngles("LArm", angleL, tInterpolation,motion.INTERPOLATION_SMOOTH)
   motionProxy.post.gotoAngle("RShoulderRoll",-90*motion.TO_RAD,tInterpolation,motion.INTERPOLATION_SMOOTH)
   motionProxy.post.gotoAngle("RShoulderPitch",90*motion.TO_RAD,tInterpolation,motion.INTERPOLATION_SMOOTH)
   motionProxy.post.gotoAngle("RElbowYaw",90*motion.TO_RAD,tInterpolation,motion.INTERPOLATION_SMOOTH)
   motionProxy.gotoAngle("RElbowRoll",90*motion.TO_RAD,tInterpolation,motion.INTERPOLATION_SMOOTH)
-  
+
 # Go to Start position
 motionProxy.setBalanceMode(motion.BALANCE_MODE_OFF)
 motionProxy.gotoBodyAnglesWithSpeed(poseStart, 50, motion.INTERPOLATION_SMOOTH)

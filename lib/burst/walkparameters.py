@@ -1,11 +1,11 @@
 from burst_consts import DEG_TO_RAD, RAD_TO_DEG
 
 class WalkParameters(list):
-    ''' An encapsulation of the walk parameters. I saw a TODO in the actions 
+    ''' An encapsulation of the walk parameters. I saw a TODO in the actions
         file that requested this, et voila! '''
 
     # Constants:
-    (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude, LHipRoll, RHipRoll, HipHeight, 
+    (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude, LHipRoll, RHipRoll, HipHeight,
     TorsoYOrientation, StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)
 
     def __init__(self, *args, **kwargs):

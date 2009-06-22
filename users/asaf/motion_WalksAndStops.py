@@ -37,7 +37,7 @@ try:
   ttsProxy = ALProxy("ALTextToSpeech")
 except Exception,e:
   pass
-  
+
 
 # ============================================================
 
@@ -51,7 +51,7 @@ motionProxy.setWalkArmsEnable(True)
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 
 
@@ -63,7 +63,7 @@ walkTaskId = motionProxy.post.walk() #non blocking call, we can do something els
 previousHeadAngle = motionProxy.getAngle("HeadYaw");
 
 motionProxy.setChainStiffness("Head",0.0,0.5)
-  
+
 
 time.sleep(2)
 if ( ttsProxy ):

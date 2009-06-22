@@ -193,7 +193,7 @@ class Player(object):
     def _onPlay(self):
         print "Player: OnPlay"
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
-    
+
     def _onMainBehaviorDone(self):
         print "Player: Main Behavior is done (%s)" % (self._main_behavior)
 
@@ -258,7 +258,7 @@ class Player(object):
 #        self._main_behavior.stop()
 #        self.unregisterFallHandling()
 #        self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
-        
+
     def onGottenUpFromBack(self):
         self._actions.say("Getting up done (from back)")
         self.registerFallHandling()

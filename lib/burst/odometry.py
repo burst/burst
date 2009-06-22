@@ -1,7 +1,7 @@
 # Note: We use world.motion, but don't construct it so no need to import
 
 class Motion(object):
-    
+
     def __init__(self, start_time, estimated_duration, description):
         self.description = description
         self.start_time = start_time
@@ -17,7 +17,7 @@ class Odometry(object):
     Currently holds some functions concerning walks that are computational
     in nature.
     """
-    
+
     def __init__(self, world):
         self._world = world
         self._walks_initiated = []

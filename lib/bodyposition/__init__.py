@@ -45,11 +45,11 @@ class BodyPosition(object):
             self._broker = ALBroker("pybroker", "127.0.0.1", 9999, ip, port)
         self._mem = ALProxy("ALMemory")
         self._d = dict([(x, 0.0) for x in self._short_to_full_name_d.values()])
-        
+
     def updateFSR(self):
         for k in self._fsr_full:
             self._d[k] = self._mem.getData(k, 0)
-            
+
     def updateInertial(self):
         for k in self._inertial_full:
             self._d[k] = self._mem.getData(k, 0)
@@ -84,7 +84,7 @@ class BodyPosition(object):
         return '\n'.join(
              ['%25s: %8.2f (%2.6f)' % (self.short(k), self._d[k], safe_inv(self._d[k])) for k in self._fsr_full]
              + ['%25s: %8.2f' % (self.short(k), self._d[k]) for k in self._inertial_full])
-        
+
     def pprint(self):
         print str(self)
 

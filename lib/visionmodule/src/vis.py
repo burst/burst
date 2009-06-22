@@ -39,7 +39,7 @@ except Exception, e:
   exit(1)
 
 #________________________________
-# Generic Proxy creation 
+# Generic Proxy creation
 #________________________________
 
 try:

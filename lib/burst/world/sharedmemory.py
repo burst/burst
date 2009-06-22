@@ -75,7 +75,7 @@ class SharedMemoryReader(object):
         self._buf = mmap.mmap(fd, MMAP_LENGTH, mmap.MAP_SHARED | mmap.ACCESS_READ, mmap.PROT_READ)
         print "world: shared memory opened successfully"
         self.openDeferred.callback(None)
-    
+
     def close(self):
         if self._fd is None: return
         # no mmap.munmap??

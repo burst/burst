@@ -13,7 +13,7 @@ def pr(s):
     print s
 
 class Donothing(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=None)
 

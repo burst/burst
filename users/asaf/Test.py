@@ -3,7 +3,7 @@ import sys
 import time
 from time import sleep
 path = `os.environ.get("AL_DIR")`
-home = `os.environ.get("HOME")` 
+home = `os.environ.get("HOME")`
 
 IP = "192.168.2.107" # Robot IP  Address
 PORT = 9559
@@ -33,21 +33,21 @@ kneeAngle = 60.0 * motion.TO_RAD
 torsoAngle = 0.0 * motion.TO_RAD
 wideAngle = -3.0 * motion.TO_RAD
 
-#Get the Number of Joints 
+#Get the Number of Joints
 NumJoints = len(motionProxy.getBodyJointNames())
 
 # Define The Initial Position
 if (NumJoints == 22) : #no hands
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
     120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, # missing hands?
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD] # missing hands?
 elif (NumJoints == 26) :
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
     120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,0.0,
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0]
 else :
   print "Unexpected number of Joint"
@@ -101,7 +101,7 @@ Id6 = motionProxy.post.gotoAngle('RElbowRoll', 0 * motion.TO_RAD, 0.4,motion.INT
 # Raise The LEFT_LEG
 ActualPosition = motionProxy.getPosition("LLeg", motion.SPACE_SUPPORT_LEG)
 Cmd = [ActualPosition[0]-0.01, ActualPosition[1]+0.00, ActualPosition[2]+0.03, ActualPosition[3]+0.00, ActualPosition[4]+0.00, ActualPosition[5]+0.00]
-motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, 0.4, motion.INTERPOLATION_SMOOTH) 
+motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, 0.4, motion.INTERPOLATION_SMOOTH)
 # Lower The LEFT_LEG
 Cmd = [ActualPosition[0]+0.00, ActualPosition[1]+0.00, ActualPosition[2]+0.02, ActualPosition[3]+0.00, ActualPosition[4]+0.00, ActualPosition[5]+0.00]
 motionProxy.gotoPosition("LLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, 0.4, motion.INTERPOLATION_SMOOTH)

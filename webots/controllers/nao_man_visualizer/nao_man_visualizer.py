@@ -1,7 +1,7 @@
-# File:         
-# Date:         
-# Description:  
-# Author:       
+# File:
+# Date:
+# Description:
+# Author:
 # Modifications:
 
 import cPickle
@@ -25,7 +25,7 @@ BASIC_TIME_STEP = 40
 class MyController (Supervisor):
 
     silent = True
-  
+
     def callman(self, s):
         return getattr(self.man, s)()
 
@@ -38,7 +38,7 @@ class MyController (Supervisor):
         # safety
         compile(s, 'test', 'single') # will raise an error, but won't possibly kill the nao
         return self.man.pyExec(s)
-     
+
     def run(self):
         MS_INIT_WAIT = 3000
         secs = int(MS_INIT_WAIT / 1000.0)
@@ -66,10 +66,10 @@ class MyController (Supervisor):
                     self.man = burst.ALProxy('Man')
                 except Exception, e:
                     print e
-                
+
 
         print "connected"
-    
+
         # Get some references - ball, oball (visualization), player
         player = self.getFromDef('RED_GOAL_KEEPER')
         player_trans = player.getField('translation')
@@ -82,7 +82,7 @@ class MyController (Supervisor):
         children.importMFNode(-1,'other_ball.wbt') # the file needs to be in the specific supervisor directory
         oball = self.getFromDef('OTHER_BALL')
         oball_trans = oball.getField('translation')
-        
+
         #self.naoexec('fd=open("/tmp/bla","w+");fd.write(str(brain.ball.lastVisionBearing));fd.close();print "ok"')
         #ang = float(open('/tmp/bla').read().strip())
 
@@ -105,9 +105,9 @@ class MyController (Supervisor):
                 old_v = v
             #ang += p_heading
             oball_trans.setSFVec3f([p_v[0] - 1.0 * cos(ang), p_v[1] + 1, p_v[2] + 1.0 * sin(ang)])
-    
+
             if self.step(BASIC_TIME_STEP) == -1: break
-        
+
         # Enter here exit cleanup code
 
     def label(self, s):

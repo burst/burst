@@ -8,13 +8,13 @@ import sys
 
 
 class PenaltyKicker(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
         for attribute in dir(burst_events):
-            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME', 
+            if attribute[:5] == "EVENT" and not attribute in ['EVENT_TIME_EVENT', 'EVENT_STEP', 'EVENT_BALL_IN_FRAME',
                 'EVENT_BALL_BODY_INTERSECT_UPDATE', 'EVENT_BALL_POSITION_CHANGED']:
                 self._eventmanager.register(getattr(burst_events, attribute[:]),
                     lambda attribute=attribute: sys.stdout.write(attribute[:]+"\n"))
@@ -22,7 +22,7 @@ class PenaltyKicker(InitialBehavior):
 
     def onGameStart(self):
         self._actions.kickBall().onDone(self.onKickComplete)
-    
+
     def onKickComplete(self):
         self._eventmanager.quit()
 

@@ -10,7 +10,7 @@ class HelloWorldService(SimpleWSGISoapApp):
         for i in range(0,times):
             results.append('Hello, %s'%name)
         return results
-        
+
 def main():
     from soaplib.client import make_service_client
     client = make_service_client('http://localhost:9999/', HelloWorldService())

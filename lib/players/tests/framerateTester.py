@@ -22,7 +22,7 @@ class FrameRateTester(InitialBehavior):
     def lowFramerate(self):
         print "setting 10 fps"
         self._actions.setCameraFrameRate(10).onDone(self.lowFramerateDone)
-    
+
     def lowFramerateDone(self):
         print "wait %s" % dt2
         self._eventmanager.callLater(dt2, self.highFramerate)

@@ -30,7 +30,7 @@ class Journey(object):
         self._distance_left = None
         self._time_per_steps, self._step_length = None, None
         self._make_bd = self._world.burst_deferred_maker.make
-    
+
     def __str__(self):
         return "<Journey %3.3f distance, %3.3f bearing>" % (self._distance, self._bearing)
 

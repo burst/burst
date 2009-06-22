@@ -20,7 +20,7 @@ class ALProxyThread(Thread):
     joined until the very end of the program (which is better anyhow),
     and it will now have an incoming queue to be fed new moves.
     """
-    
+
     QUIT = False
 
     def __init__(self, *args, **kw):
@@ -177,7 +177,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
 
     def isMotionInProgress(self):
         return self._body_move_holder.busy
-    
+
     def isHeadMotionInProgress(self):
         return self._head_move_holder.busy
 

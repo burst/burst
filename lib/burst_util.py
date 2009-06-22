@@ -24,7 +24,7 @@ def cross(*args):
 
 
 class Nameable(object):
-    
+
     def __init__(self, name='unnamed'):
         self.name = name
         self.verbose = False
@@ -39,11 +39,11 @@ class Nameable(object):
     __repr__ = __str__
 
 class RingBuffer(list):
-    
+
     """ Todo - a more efficient implementation. (only
     if this becomes an issue)
     """
-    
+
     def __init__(self, size):
         self.size_ = size
         self.index_ = 0
@@ -57,7 +57,7 @@ class RingBuffer(list):
         else:
             self.pop(0)
             self.append(x)
-            
+
 
 # Twisted-like Deferred and succeed
 
@@ -243,14 +243,14 @@ class BurstDeferred(object):
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
         self._allow_chaining = allow_chaining
-    
+
     def clear(self):
         for cb, chain_deferred in self._ondone:
             # recursively clear all child deferreds
             chain_deferred.clear()
         self._ondone = []
         self._being_called = False
-    
+
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
         If it is already complete then it will be called right away, and
@@ -479,7 +479,7 @@ def cached_deferred(filename):
                 print "warning: cache failed, returning uncached results"
                 return succeed(result)
             return result # must return for chained callback
-        
+
         def wrapper(*args):
             if not os.path.exists(filename):
                 # call function - don't protect this
@@ -618,19 +618,19 @@ def calculate_middle((left_dist, left_bearing), (right_dist, right_bearing)):
     return (target_x, target_y)
 
 def calculate_relative_pos((waypoint_x, waypoint_y), (target_x, target_y), offset):
-    """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point 
+    """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point
     in the middle of the target (e.g., goal) and the waypoint in the outward direction.
 
     The coordinate system is the standard: the x axis is to the front,
     the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
-    
+
     computation:
      target - target center (e.g., middle of goal)
      waypoint - waypoint (e.g., ball) - should be of type Locatable (support dist/bearing
      normal - normal pointing from target (goal center) to waypoint (ball)
      result - return result (x, y, bearing)
     """
-    
+
     normal_x, normal_y = waypoint_x - target_x, waypoint_y - target_y # normal is a vector pointing from center to ball
     normal_norm = sqrt(normal_x**2 + normal_y**2)
     normal_x, normal_y = normal_x / normal_norm, normal_y / normal_norm
@@ -822,7 +822,7 @@ class LogCalls(object):
 
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
-        # TODO: use callbacks for motion (isRunning) 
+        # TODO: use callbacks for motion (isRunning)
         if k in DONT_LOG_CALLS:
             return f
         if callable(f):

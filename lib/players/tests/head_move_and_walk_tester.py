@@ -6,7 +6,7 @@ import player_init
 from burst.behavior import InitialBehavior
 
 class HeadAndWalkTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=None)
 
@@ -19,7 +19,7 @@ class HeadAndWalkTester(InitialBehavior):
         self._actions.changeLocationRelative(50.0, 0.0, 0.0)
 
     def moveHead(self):
-        self._actions.moveHead(0.5,0.0).onDone(self._eventmanager.quit) 
+        self._actions.moveHead(0.5,0.0).onDone(self._eventmanager.quit)
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

@@ -34,7 +34,7 @@ PORT = 9559
 
 if (IP == ""):
   print "IP address not defined, aborting"
-  print "Please define it in " + __name__  
+  print "Please define it in " + __name__
   exit(1)
 
 # ======================= PRINT  ==========================

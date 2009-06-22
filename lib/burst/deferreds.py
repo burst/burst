@@ -39,7 +39,7 @@ class OncePerRound(BurstDeferred):
         # also store it for keeps
         self._per_turn_cbs.append(cb) # XXX - duplicates are warmly accepted
         return ret
-    
+
     def callOnDone(self):
         ret = None
         if self._world.time > self._last_called_on:
@@ -64,7 +64,7 @@ class BurstDeferredMaker(object):
         bd = BurstDeferred(data)
         self._bds.append(bd)
         return bd
-    
+
     def succeed(self, data):
         if self.verbose:
             print "BurstDeferredMaker: succeeding with data=%s" % data

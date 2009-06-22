@@ -77,7 +77,7 @@ def eventhandler(event):
 ################################################################################
 
 class SuperEvent(object):
-    
+
     def __init__(self, eventmanager, events):
         self._events = events
         self._waiting = set(events)
@@ -90,7 +90,7 @@ class AndEvent(SuperEvent):
         self._cb = cb
         for event in events:
             eventmanager.register(lambda self=self, event=event: self.onEvent(event), event)
-            
+
     def onEvent(self, event):
         self._waiting.remove(event)
         if len(self._waiting) == 0:
@@ -102,13 +102,13 @@ class AndEvent(SuperEvent):
 ################################################################################
 
 class SerialEvent(SuperEvent):
-    
+
     def __init__(self, eventmanager, events, callbacks):
         super(SerialEvent, self).__init__(eventmanager, events)
         self._callbacks = callbacks
         self._i = 0
         eventmanager.register(self.onEvent, self._events[0])
-            
+
     def onEvent(self, event):
         self._eventmanager.unregister(self._events[self._i])
         self._callbacks[self._i]()
@@ -278,7 +278,7 @@ class EventManager(object):
         self._num_call_laters = len(call_laters_this_frame)
         self._num_cbs_in_round = self._num_deferreds + self._num_events + self._num_time_step + self._num_call_laters
         if self.verbose and self._num_cbs_in_round >= self.num_callbacks_to_report:
-            print 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown() 
+            print 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown()
 
     def getPendingBreakdown(self):
         return (self._num_cbs_in_round, self._num_deferreds, self._num_events, self._num_time_step,
@@ -346,7 +346,7 @@ class EventManager(object):
 ################################################################################
 
 class BasicMainLoop(object):
-    
+
     __running_instance = None
 
     def __init__(self, main_behavior_class):
@@ -367,7 +367,7 @@ class BasicMainLoop(object):
         self._on_normal_quit_called = False
 
         self._profiler = None
-        
+
         # debug flags
         self._ticker = burst.options.ticker or burst.options.trace_proxies
 

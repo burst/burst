@@ -36,14 +36,14 @@ except Exception,e:
 TimeInterpolation = 0.05
 
 #**************************
-# BODY 
+# BODY
 #**************************
 
 print "Setting body stiffness to 1"
 motionProxy.setBodyStiffness(1.0,TimeInterpolation)
 
 #**************************
-# CHAIN 
+# CHAIN
 #**************************
 # HEAD
 #motionProxy.setChainStiffness('Head',1.0,TimeInterpolation);
@@ -55,7 +55,7 @@ motionProxy.setBodyStiffness(1.0,TimeInterpolation)
 #motionProxy.setChainStiffness('RLeg',1.0,TimeInterpolation);
 
 #**************************
-# JOINT 
+# JOINT
 #**************************
 
 # HEAD

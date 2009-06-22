@@ -8,7 +8,8 @@ burst.init()
 motion = burst.motion
 
 def do():
-	broker = burst.getBroker()	motionProxy = burst.getMotionProxy()
+	broker = burst.getBroker()
+    motionProxy = burst.getMotionProxy()
 
 	# Define The Initial Position
 	kneeAngle = 60.0 * burst.motion.TO_RAD
@@ -21,15 +22,15 @@ def do():
 	# Define The Initial Position
 	if (NumJoints == 22) :
 	  InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
-		 120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 
-		 0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-		 0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+		 120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD,
+		 0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+		 0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
 		 120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD]
 	elif (NumJoints == 26) :
 	  InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
 		 120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,0.0,
-		 0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-		 0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+		 0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+		 0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
 		 120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0]
 	else :
 	  print "Unexpected number of Joint"
@@ -66,7 +67,7 @@ def do():
 	wY = 0.0
 	wZ = 0.0
 	Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-	motionProxy.gotoPosition("LLeg", burst.motion.SPACE_SUPPORT_LEG, Cmd, burst.motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, burst.motion.INTERPOLATION_SMOOTH) 
+	motionProxy.gotoPosition("LLeg", burst.motion.SPACE_SUPPORT_LEG, Cmd, burst.motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, burst.motion.INTERPOLATION_SMOOTH)
 
 	#####################################################################
 	#####################################################################

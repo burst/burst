@@ -32,7 +32,7 @@ clean: cleanpyc
 	cd src/imops; $(MAKE) clean
 
 removewhitespace:
-	find . -iname "*.cpp" -or -iname "*.h" -or -iname "*.py" -exec sed "s/\s\s*$//" -i \{\} \;
+	find . -iname "*.cpp" -or -iname "*.h" -or -iname "*.py" -exec sed "s/\s\s*$$//" -i \{\} \;
 
 sizes:
 	ls -l $(MODULES)

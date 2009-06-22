@@ -89,10 +89,10 @@ def getRaulMotionProxy(deferred=True):
 
         def setBodyStiffness(self, num):
             return raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
-        
+
         def __getattr__(self, k):
             return getattr(self._p, k)
-    
+
     return RaulMotionProxy(deferred)
 
 burst.getMotionProxy = getRaulMotionProxy
@@ -228,18 +228,18 @@ def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     jointCodes = list()
     angles = list()
     times = list()
-    suspend = 1.20000    
+    suspend = 1.20000
 
     jointCodes.append("RAnklePitch")
     angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RAnkleRoll")
-    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)]) 
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RElbowYaw")
-    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)]) 
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RHipPitch")

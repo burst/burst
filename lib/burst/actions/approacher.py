@@ -17,7 +17,7 @@ class Approacher(Behavior):
     """
     def __init__(self, actions, target_pos_callback):
         super(Approacher, self).__init__(actions, 'Approacher')
-    
+
         self._target_pos_callback = target_pos_callback
 
     def _start(self, firstTime=False):

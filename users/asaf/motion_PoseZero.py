@@ -20,7 +20,7 @@ except Exception,e:
   print str(e)
   exit(1)
 
- 
+
 #Get the Number of Joints
 NumJoints = len(motionProxy.getBodyJointNames())
 

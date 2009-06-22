@@ -24,7 +24,7 @@ except Exception,e:
   print "Error when creating motion proxy:"
   print str(e)
   exit(1)
- 
+
 kneeAngle = 60.0 * motion.TO_RAD
 torsoAngle = 0.0 * motion.TO_RAD
 wideAngle = 0 * motion.TO_RAD

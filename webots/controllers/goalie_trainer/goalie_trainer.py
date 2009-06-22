@@ -1,7 +1,7 @@
-# File:         
-# Date:         
-# Description:  
-# Author:       
+# File:
+# Date:
+# Description:
+# Author:
 # Modifications:
 
 import cPickle
@@ -24,7 +24,7 @@ BASIC_TIME_STEP = 40
 class MyController (Supervisor):
 
     def run(self):
-    
+
         # Get some references - ball, oball (visualization), player
         player = self.getFromDef('RED_GOAL_KEEPER')
         player_trans = player.getField('translation')
@@ -32,11 +32,11 @@ class MyController (Supervisor):
         ball = self.getFromDef('BALL')
         ball_trans = ball.getField('translation')
         #ball_trans.setSFVec3f([0.0, 0.0, 1.0])
-        
+
         # Main loop
         while True:
             if self.step(BASIC_TIME_STEP) == -1: break
-        
+
         # Enter here exit cleanup code
 
     def label(self, s):

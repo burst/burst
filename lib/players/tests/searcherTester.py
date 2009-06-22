@@ -5,7 +5,7 @@ from burst.behavior import InitialBehavior
 from burst.actions.headtracker import Searcher
 
 class SearchTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -15,13 +15,13 @@ class SearchTester(InitialBehavior):
 
     def onFound(self):
         self._actions.say('Found it!')
-        
+
         for t in self.targets:
             if t.centered_self.sighted_centered:
                 print "%s sighted centered" % t.name
             else:
                 print "%s NOT sighted centered" % t.name
-        
+
         self._eventmanager.quit()
 
 if __name__ == '__main__':

@@ -16,9 +16,9 @@ from burst.image import normalized2_image_width, normalized2_image_height
 
 ############################################################################
 class Tracker(object):
-    
+
     """ track objects by moving the head """
-    
+
     def __init__(self, actions):
         self._target = None
         self._actions = actions
@@ -41,7 +41,7 @@ class Tracker(object):
         #self._trackingStep = traceme(self._trackingStep)
 
     ############################################################################
-    
+
     def _start(self, target, on_lost_callback):
         self._target = target
         self._stopped = False
@@ -150,7 +150,7 @@ class Tracker(object):
         if self._on_centered_bd is not None:
             print "ERROR - can't start tracking while centering"
             import pdb; pdb.set_trace()
-        
+
         # don't track objects that are not seen
         if not target.recently_seen:
             # TODO we immediately call the on_lost_callback - might

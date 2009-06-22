@@ -58,9 +58,9 @@ if walk == SLOW:
 
   param = [100.0 * motion.TO_RAD, # ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           30.0 * motion.TO_RAD,  # ElbowMedian 
-           10.0 * motion.TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
+           30.0 * motion.TO_RAD,  # ElbowMedian
+           10.0 * motion.TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.22,                  # HipHeight(meters)
            2.0,                   # TorsoYOrientation(degrees)
@@ -69,7 +69,7 @@ if walk == SLOW:
            0.04,                  # StepSide
            0.4,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
+           0.00,                  # ZmpOffsetY
            0.05*4,                # Distance
            80]                    # Speed
 
@@ -80,9 +80,9 @@ elif walk == FAST:
 
   param = [100.0 * motion.TO_RAD, # ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           30.0 * motion.TO_RAD,  # ElbowMedian 
-           10.0 * motion.TO_RAD,  # ElbowAmplitude 
-           3.5,                   # LHipRoll(degrees) 
+           30.0 * motion.TO_RAD,  # ElbowMedian
+           10.0 * motion.TO_RAD,  # ElbowAmplitude
+           3.5,                   # LHipRoll(degrees)
            -3.5,                  # RHipRoll(degrees)
            0.23,                  # HipHeight(meters)
            3.0,                   # TorsoYOrientation(degrees)
@@ -91,7 +91,7 @@ elif walk == FAST:
            0.02,                  # StepSide
            0.3,                   # MaxTurn
            0.015,                 # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
+           0.018,                 # ZmpOffsetY
            0.8,                   # Distance
            25]                    # Speed
 
@@ -102,9 +102,9 @@ elif walk == STANDARD:
 
   param = [100.0 * motion.TO_RAD, # ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           30.0 * motion.TO_RAD,  # ElbowMedian 
-           10.0 * motion.TO_RAD,  # ElbowAmplitude 
-           2.5,                   # LHipRoll(degrees) 
+           30.0 * motion.TO_RAD,  # ElbowMedian
+           10.0 * motion.TO_RAD,  # ElbowAmplitude
+           2.5,                   # LHipRoll(degrees)
            -2.5,                  # RHipRoll(degrees)
            0.23,                  # HipHeight(meters)
            0.0,                   # TorsoYOrientation(degrees)
@@ -113,7 +113,7 @@ elif walk == STANDARD:
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
+           0.018,                 # ZmpOffsetY
            0.5,                   # Distance
            25]                    # Speed
 
@@ -124,9 +124,9 @@ elif walk == HAPPY:
 
   param = [-100.0 * motion.TO_RAD,# ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           10.0 * motion.TO_RAD,  # ElbowMedian 
-           10.0 * motion.TO_RAD,  # ElbowAmplitude 
-           2.5,                   # LHipRoll(degrees) 
+           10.0 * motion.TO_RAD,  # ElbowMedian
+           10.0 * motion.TO_RAD,  # ElbowAmplitude
+           2.5,                   # LHipRoll(degrees)
            -2.5,                  # RHipRoll(degrees)
            0.22,                  # HipHeight(meters)
            0.0,                   # TorsoYOrientation(degrees)
@@ -135,7 +135,7 @@ elif walk == HAPPY:
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
+           0.018,                 # ZmpOffsetY
            0.05,                  # Distance
            20]                    # Speed
 
@@ -146,9 +146,9 @@ elif walk == SKI:
 
   param = [60.0 * motion.TO_RAD,  # ShoulderMedian
            60.0 * motion.TO_RAD,  # ShoulderAmplitude
-           30.0 * motion.TO_RAD,  # ElbowMedian 
-           -30.0 * motion.TO_RAD, # ElbowAmplitude 
-           3.5,                   # LHipRoll(degrees) 
+           30.0 * motion.TO_RAD,  # ElbowMedian
+           -30.0 * motion.TO_RAD, # ElbowAmplitude
+           3.5,                   # LHipRoll(degrees)
            -3.5,                  # RHipRoll(degrees)
            0.21,                  # HipHeight(meters)
            0.0,                   # TorsoYOrientation(degrees)
@@ -157,7 +157,7 @@ elif walk == SKI:
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
+           0.018,                 # ZmpOffsetY
            0.3,                   # Distance
            30]                    # Speed
 
@@ -168,8 +168,8 @@ elif walk == FASTER:
 
   param = [110.0 * motion.TO_RAD, # ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           90.0 * motion.TO_RAD,  # ElbowMedian 
-           00.0 * motion.TO_RAD,  # ElbowAmplitude 
+           90.0 * motion.TO_RAD,  # ElbowMedian
+           00.0 * motion.TO_RAD,  # ElbowAmplitude
            4.5,                   # LHipRoll(degrees) (2.5 original)
            -4.5,                  # RHipRoll(degrees) (-2.5 original)
            0.23,                  # HipHeight(meters)
@@ -179,7 +179,7 @@ elif walk == FASTER:
            0.02,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.016,                 # ZmpOffsetY 
+           0.016,                 # ZmpOffsetY
            1,                     # Distance
            18,                    # Speed
            0.68]                  # Angle
@@ -191,8 +191,8 @@ elif walk == SLOWER:
 
   param = [100.0 * motion.TO_RAD, # ShoulderMedian
            10.0 * motion.TO_RAD,  # ShoulderAmplitude
-           30.0 * motion.TO_RAD,  # ElbowMedian 
-           10.0 * motion.TO_RAD,  # ElbowAmplitude 
+           30.0 * motion.TO_RAD,  # ElbowMedian
+           10.0 * motion.TO_RAD,  # ElbowAmplitude
            4.5,                   # LHipRoll(degrees) (2.5 original)
            -4.5,                  # RHipRoll(degrees) (-2.5 original)
            0.23,                  # HipHeight(meters)
@@ -202,7 +202,7 @@ elif walk == SLOWER:
            0.04,                  # StepSide
            0.4,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
+           0.00,                  # ZmpOffsetY
            0.2,                   # Distance
            120]                   # Speed
 
@@ -210,14 +210,14 @@ elif walk == SLOWER:
 else:
   exit(0)
 
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 motionProxy.setWalkArmsConfig( param[0], param[1], param[2], param[3] )
 motionProxy.setWalkArmsEnable(True)
 
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( param[4], param[5], param[6], param[7] )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( param[8], param[9], param[10], param[11], param[12], param[13] )
 
 if len(param) == 16:

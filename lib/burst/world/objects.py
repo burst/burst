@@ -23,7 +23,7 @@ class CenteredLocatable(object):
     Stored inside the Locatable itself for usage by Localization.
     Updated by Searcher using Tracker (in actions.headtracker).
     """
-    
+
     def __init__(self, target):
         """ target - Locatable to keep track of.
         """
@@ -37,7 +37,7 @@ class CenteredLocatable(object):
         # image based
         self.centerX, self.centerY = None, None
         self.normalized2_centerX, self.normalized2_centerY = None, None
-        # 
+        #
         self.sighted = False
         self.sighted_centered = False # is True if last sighting was centered
         self.update_time = 0.0
@@ -100,7 +100,7 @@ class CenteredLocatable(object):
         the image """
 #        if self.centerX == None or self.centerY == None:
 #            import pdb; pdb.set_trace()
-        
+
         delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
         delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
         yaw = self.head_yaw + delta_yaw
@@ -110,7 +110,7 @@ class CenteredLocatable(object):
         #    target.centered_self.head_pitch, delta_pitch))
         return yaw, pitch
 
- 
+
 class Locatable(Nameable):
     """ stupid name. It is short for "something that can be seen, holds a position,
     has a limited velocity which can be estimated, and is also interesting to the
@@ -119,7 +119,7 @@ class Locatable(Nameable):
     Because of the way the vision system we use (northern's) works, we keep things
     in polar coordinates - bearing in radians, distance in centimeters.
     """
-    
+
     REPORT_JUMP_ERRORS = False
     HISTORY_SIZE = 20
 
@@ -147,7 +147,7 @@ class Locatable(Nameable):
         self.world_y = world_y or field.CENTER_FIELD_Y # TODO - is't wise?
         self.world_heading = 0.0 # default to pointing towards target goal
 
-        self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last 
+        self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last
 
         # This is the player body frame relative bearing. radians.
         self.bearing = 0.0
@@ -167,13 +167,13 @@ class Locatable(Nameable):
 
         # upper barrier on speed, used to remove outliers. cm/sec
         self.upper_v_limit = 400.0
-        
+
         self.seen = False
         self.recently_seen = False          # Was the object seen within MISSING_FRAMES_MINIMUM
         self.centered = False               # whether the distance from the center is smaller then XXX
         self.centered_at_pitch_limit = False # centered on X axis, on pitch low limit (looking most upwardly)
         self.missingFramesCounter = 0
-        
+
         # smoothed variables
         self.distSmoothed = 0.0
         self.distRunningMedian = running_median(3) # TODO: Change to ballEKF/ballLoc?
@@ -219,7 +219,7 @@ class Locatable(Nameable):
             abs(xNormalized) < normalized_error_x)
         centered = (abs(xNormalized) <= normalized_error_x and
                 abs(yNormalized) <= normalized_error_y)
-        
+
         return centered, centered_at_pitch_limit ,xNormalized, yNormalized
 
     def calc_recently_seen(self, new_seen):
@@ -245,7 +245,7 @@ class Locatable(Nameable):
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
-        
+
         TODO: This is a first order computation of velocity and position,
         removing outright outliers only. To be upgraded to a real localization
         system (i.e. reuse northern's code as a module, export variables).
@@ -263,7 +263,7 @@ class Locatable(Nameable):
                 print "JUMP ERROR: %s:%s - %s, %s -> %s, %s - bad new position value, not updating" % (
                     self.__class__.__name__, self.name, self.body_x, self.body_y, body_x, body_y)
             return
-            
+
         self.last_update_time, self.last_dist, self.last_elevation, self.last_bearing = (
             self.update_time, self.dist, self.elevation, self.bearing)
 
@@ -273,7 +273,7 @@ class Locatable(Nameable):
         self.distSmoothed = self.distRunningMedian.send(new_dist)
         #if isinstance(self, Ball):
         #    print "%s: self.dist, self.distSmoothed: %3.3f %3.3f" % (self, self.dist, self.distSmoothed)
-        
+
         self.elevation = new_elevation
         self.update_time = update_time
         self.body_x, self.body_y = body_x, body_y
@@ -295,7 +295,7 @@ class Locatable(Nameable):
                 self.centered, self.normalized2_centerX, self.normalized2_centerY)
 
         self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
-    
+
     def __str__(self):
         return "<%s at %s>" % (self.name, id(self))
 
@@ -332,7 +332,7 @@ class Ball(Movable):
         self.velocity = None
         self.time_intersection = None
         self.shouldComputeIntersection = False
-    
+
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
 
@@ -342,24 +342,24 @@ class Ball(Movable):
         T = 0
         DIST = 1
         BEARING = 2
-        
+
         X = 1
         Y = 2
-        
+
         ERROR_VAL_X = 10
         ERROR_VAL_Y = 0
         NUM_OF_POINTS = 10
-        
+
         if not self.CalcIsBallMoving():
             return False
-        
+
         if self.history[0] != None:
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
                                    , self.history[0][DIST] * sin(self.history[0][BEARING])]
         else:
             return False
-        
+
         #vars for least mean squares
         self.base_point_index = 1
         last_point = self.base_point
@@ -367,10 +367,10 @@ class Ball(Movable):
         sumXY = last_point[X] * last_point[Y]
         sumY = last_point[Y]
         sumSqrX =  last_point[X] * last_point[X]
-        sumT = 0 # T0= 0 
+        sumT = 0 # T0= 0
         sumXT = last_point[X] * 0 # T0= 0
         sumSqrT = 0 * 0 # T0= 0
-        
+
         n = 1
         for point in self.history:
             if point != None:
@@ -387,7 +387,7 @@ class Ball(Movable):
                         self.base_point_index = n -1
                     else:
                         self.base_point_index = n
-                    return False 
+                    return False
                 sumX += cor_point[X]
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
@@ -395,30 +395,30 @@ class Ball(Movable):
                 sumT += cor_point[T] - last_point[T]
                 sumXT += cor_point[X] * (cor_point[T] - last_point[T])
                 sumSqrT += (cor_point[T] - last_point[T]) * (cor_point[T] - last_point[T])
-                
+
                 last_point = cor_point
                 n += 1
             else:
                 if n < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
                     return False
                 break
-        
+
         n = n - self.base_point_index #real number of valid points
-        
-        
+
+
         if n >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
-            if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X: 
+            if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X:
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
                 slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX))
-            
+
             #calc time for intersection: when x(t) the slop is v. using least mean squares - don't work good
             #if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
             #    self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
-            #    self.time_intersection = -last_point[X] / self.velocity 
+            #    self.time_intersection = -last_point[X] / self.velocity
             #    print "velocity: ", self.velocity
             #    print "time for intersection: ", self.time_intersection
-            
+
                 #calc time for intersection:
                 #finding the x coordinate of two point on the regression line
                 if slop != 0:
@@ -436,40 +436,40 @@ class Ball(Movable):
                             self.time_intersection = dx2/self.velocity
                             #print "velocity: ", self.velocity
                             #print "time for intersection: ", self.time_intersection
-            
+
             return True
         if self.history[0] != None:
             self.base_point_index -= 1
-        return False  
-                 
-    
+        return False
+
+
     def movingBallPenalty(self):
-        
+
         ERROR_IN_Y = 2
-        
+
         if self.avrYplace_index >= 20:
             self.dy = (self.dist * sin(self.bearing)) - self.avrYplace
             if fabs(self.dy) > ERROR_IN_Y:
                 return True
-        
+
         self.avrYplace_index += 1
         self.sumY += self.dist * sin(self.bearing)
         self.avrYplace = self.sumY / self.avrYplace_index
 
         return False
-    
+
     def CalcIsBallMoving(self):
-        
+
         #The error functions (for ball.dist):
         #10.33 < x < 120 : f = 0.2955 * x - 10.33
         #120 <= x : f = 0.00136 * x ^ 1.94609
         T = 0
         DIST = 1
         BEARING = 2
-        
+
         ERROR_VAR = 1
         NUM_OF_CHANGED_POINTS = 5
-        
+
         i = 0
         dist_list = []
         dist_list_sub = []
@@ -490,7 +490,7 @@ class Ball(Movable):
         for i in range(1,NUM_OF_CHANGED_POINTS -1):
             if dist_list_sub[-i] > 0:
                 return False
-        
+
         #print "Ball comming"
         return True
 
@@ -521,7 +521,7 @@ class Ball(Movable):
                 events.add(BALL_MOVING_PENALTY) # TODO - WTF is this name? does it mean the ball moved and caused a penalty?
             #print "distance: man = %s, computed = %s" % (new_dist,
             #    getObjectDistanceFromHeight(max(new_height, new_width), self._real_length))
-            
+
         if self.seen and not new_seen:
             events.add(EVENT_BALL_LOST)
         if not self.seen and new_seen:
@@ -535,13 +535,13 @@ class Ball(Movable):
         # store new values
         (self.centerX, self.centerY, self.confidence,
                 self.elevation, self.focDist, self.height,
-                    self.width) = (new_centerX, new_centerY, new_confidence, 
+                    self.width) = (new_centerX, new_centerY, new_confidence,
                         new_elevation, new_focDist, new_height, new_width)
         self.seen = new_seen
         self.recently_seen = self.calc_recently_seen(new_seen)
         if self.seen:
             self.update_centered()
-        
+
 # TODO - CrossBar
 # extra vars compared to GoalPost:
 # 'LeftOpening', 'RightOpening', 'shotAvailable'
@@ -629,7 +629,7 @@ class GoalPost(Locatable):
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state
-        
+
         # TODO: REMOVE ME OR DIE
         new_id_certainty = ID_SURE
 
@@ -660,7 +660,7 @@ class GoalPost(Locatable):
         self.recently_seen = self.calc_recently_seen(new_seen)
         if self.seen:
             self.update_centered()
-        
+
         if new_id_certainty != ID_SURE and new_dist > 0.0:
             return new_state
         return None

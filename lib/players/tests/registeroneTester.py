@@ -7,7 +7,7 @@ from burst.behavior import InitialBehavior
 from burst_events import EVENT_STEP
 
 class RegisterOneShotTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

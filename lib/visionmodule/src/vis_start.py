@@ -24,7 +24,7 @@ else:
 IP = "192.168.7.158"
 PORT = 9559
 
-#IP_REMOTE = "127.0.0.1" 
+#IP_REMOTE = "127.0.0.1"
 #PORT_REMOTE = 54010
 
 # Create a proxy to ALMotion

@@ -66,7 +66,7 @@ class BehaviorActions(object):
         if hasattr(actions_k, 'returnsbd'):
             return behaviorwrapbd(self, actions_k)
         return actions_k
-                
+
 class BehaviorEventManager(object):
     """ Manage all calls to EventManager for a specific Behavior.
 
@@ -123,7 +123,7 @@ class BehaviorEventManager(object):
         def wrapper(*args, **kw):
             #print "BEM %s wrapper" % (self._behavior.name)
             return self._behavior._applyIfNotStopped(callback, args, kw)
-        self._cb_to_wrapper[callback] = wrapper 
+        self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.callLater(dt, callback, *args, **kw)
 
     def callLaterBD(self, dt):
@@ -201,7 +201,7 @@ class Behavior(BurstDeferred, Nameable):
     __repr__ = __str__
 
 class ContinuousBehavior(Behavior):
-    
+
     def __init__(self, actions, name):
         super(ContinuousBehavior, self).__init__(actions=actions, name=name, allow_chaining=False)
 
@@ -210,7 +210,7 @@ class ContinuousBehavior(Behavior):
         raise RuntimeError("You cannot register an onDone callback on a continuous behavior.")
 
 class InitialBehavior(Behavior):
-    
+
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose

@@ -1,7 +1,7 @@
 import time
 import burst
 burst.init()
-	
+
 def do():
 	motion = burst.motion
 	ALMotion_Proxy = burst.getMotionProxy()
@@ -63,8 +63,8 @@ def do():
 	except Exception,e:
 	  print "get up from back test Failed"
 	  exit(1)
-	  
-	  
+
+
 	joints = ["HeadPitch","HeadYaw","LAnklePitch","LAnkleRoll","LElbowRoll","LElbowYaw","LHipPitch","LHipRoll","LHipYawPitch","LKneePitch","LShoulderPitch","LShoulderRoll","RAnklePitch","RAnkleRoll","RElbowRoll","RElbowYaw","RHipPitch","RHipRoll","RHipYawPitch","RKneePitch","RShoulderPitch","RShoulderRoll"];
 	angles = [[0,0,-0.785398,0,0.349066,0.328232,0.331288,0.378859,0.378859,0.378859,0.279253],
 	[3.37175e-007,-4.76838e-007,6.7435e-007,3.37177e-007,3.37175e-007,-0.00743961,-0.0107031,-0.00940132,-0.00940132,-0.00940132],

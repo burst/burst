@@ -612,7 +612,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         burst_util.write_nbfrm(os.path.join(self._frames_location, 'capture_%02d.NBFRM' % self._frame_count),
             yuv = self._yuv, version=0, joints = [0.0]*26, sensors = [0.0]*22)
         self._frame_count += 1
-        
+
     def save_as(self, filename):
         """ save rgb using Imaging module """
         width, height = self._yuv_size
@@ -713,7 +713,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         else:
             self.yuv422_to_rgb888(yuv, rgb, len(yuv), len(rgb))
             updateImFromRGB(self._im, self._rgb, self._yuv_size)
-        
+
     def _update(self, result):
         self.onYUV(result)
 
@@ -782,7 +782,7 @@ class MyCircle(object):
 
     def get_screen_y(self):
         return (self._y - self._cy) * self._yf + self._cy_screen
-    
+
     def set_y(self, y):
         self._y = y
         if hasattr(self, 'maxmin_y'):

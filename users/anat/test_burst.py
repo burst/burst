@@ -17,7 +17,7 @@ def main(ip=None):
     # broker = burst.getBroker()
     # use broker ...
 
-    
+
     # create proxy
     try:
         alsonarProxy = burst.ALProxy("ALSonar",burst.ip,burst.port)
@@ -29,7 +29,7 @@ def main(ip=None):
     try:
         period = 2000 # minimum should be 240ms according to documentation
         alsonarProxy.subscribe("test", [ period ] )
-        print "subscription to ALSonar is ok" 
+        print "subscription to ALSonar is ok"
     except RuntimeError,e:
         print "error while subscribing to alsonar"
         exit(1)
@@ -60,13 +60,13 @@ def main(ip=None):
 
     #~ print "quitting"
     #~ exit(0)
-    
-    
-    
+
+
+
     #print( "Right FSR : %.2f %.2f %.2f %.2f" %  (RFsrFL, RFsrFR, RFsrBL, RFsrBR) )
 
 
-    
+
 if __name__ == '__main__':
     main()
 

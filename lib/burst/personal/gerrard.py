@@ -7,9 +7,9 @@ import burst.moves.walks as walks
 import burst.moves.poses as poses
 
 poses.STRAIGHT_WALK_INITIAL_POSE = [
-((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997), 
-(-0.010696038999999999, -0.088930041000000001, -0.65957807999999996, 1.5416281000000001, -0.76857597, 0.078275964000000003), 
-(-0.010696038999999999, 0.0061779618000000003, -0.66272998000000005, 1.5432459999999999, -0.78229808999999995, -0.0030260384000000001), 
+((1.734912, 0.25460203999999997, -1.563188, -0.52918803999999997),
+(-0.010696038999999999, -0.088930041000000001, -0.65957807999999996, 1.5416281000000001, -0.76857597, 0.078275964000000003),
+(-0.010696038999999999, 0.0061779618000000003, -0.66272998000000005, 1.5432459999999999, -0.78229808999999995, -0.0030260384000000001),
 (1.747268, -0.27309397000000002, 1.5661721, 0.50626194000000002),
 1.0)
 ]
@@ -30,9 +30,9 @@ walks.FIRST_TWO_SLOW_STEPS = False
 walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           20.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           5,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude
+           5,                   # LHipRoll(degrees)
            -5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better

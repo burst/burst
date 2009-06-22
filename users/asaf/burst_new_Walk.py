@@ -35,9 +35,9 @@ except Exception,e:
 #SIDESTEP_WALK = Walk(WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-#           20.0 * DEG_TO_RAD,  # ElbowMedian 
-#           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-#           4.5,                   # LHipRoll(degrees) 
+#           20.0 * DEG_TO_RAD,  # ElbowMedian
+#           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+#           4.5,                   # LHipRoll(degrees)
 #           -4.5,                  # RHipRoll(degrees)
 #           0.19,                  # HipHeight(meters)
 #           5.0,                   # TorsoYOrientation(degrees)
@@ -80,18 +80,18 @@ readyStand = [0.065920039999999999,
 
 
 motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 #new walk
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 20.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 #old walk
-#motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 15.0 * motion.TO_RAD ) 
+#motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 15.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 # Cech asymetric
 #motionProxy.setWalkExtraConfig( 4.5, -2.5, 0.19, 5.0 )
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 2.0 )
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 
 # Cech
 #motionProxy.setWalkConfig( 0.02, 0.015, 0.04, 0.3, 0.015, 0.02 )
@@ -105,7 +105,7 @@ motionProxy.addWalkStraight( 0.4, 21) #WORKS!
 # Speed = 21 step = 0.15
 #motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.02) #WORKS!
 #motionProxy.addWalkStraight( 0.4, 21) #WORKS!
-# Speed = 25 
+# Speed = 25
 #motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.02 ) #WORKS!
 #motionProxy.addWalkStraight( 0.4, 25) #WORKS!
 motionProxy.gotoBodyAnglesWithSpeed(readyStand,20,1)
