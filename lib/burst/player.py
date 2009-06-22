@@ -42,9 +42,8 @@ class Player(object):
         self._eventsToCallbacksMapping = {}
         self.verbose = burst.options.verbose_player
         # Fall-handling:
-        self._eventmanager.register(self.onFallenDown, EVENT_FALLEN_DOWN)
-        self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
-        self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
+        self.registerFallHandling()
+
         # Debugging aids via the LEDs:
         ### Ball:
         self._world.robot.leds.rightEarLED.turnOn()
@@ -61,6 +60,22 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
         self._main_behavior = main_behavior_class(actions) # doesn't start here
+
+    def registerFallHandling(self):
+        self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
+        self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
+        self._eventmanager.register(self.onPickedUp, EVENT_PICKED_UP)
+        self._eventmanager.register(self.onBackOnFeet, EVENT_BACK_ON_FEET)
+        self._eventmanager.register(self.onRightSide, EVENT_ON_RIGHT_SIDE)
+        self._eventmanager.register(self.onLeftSide, EVENT_ON_LEFT_SIDE)
+
+    def unregisterFallHandling(self):
+        self._eventmanager.unregister(self.onOnBelly, EVENT_ON_BELLY)
+        self._eventmanager.unregister(self.onOnBack, EVENT_ON_BACK)
+        self._eventmanager.unregister(self.onPickedUp, EVENT_PICKED_UP)
+        self._eventmanager.unregister(self.onBackOnFeet, EVENT_BACK_ON_FEET)
+        self._eventmanager.unregister(self.onRightSide, EVENT_ON_RIGHT_SIDE)
+        self._eventmanager.unregister(self.onLeftSide, EVENT_ON_LEFT_SIDE)
 
     def _register(self, callback, event):
         # TODO - not clear why this is here, should __init__ use it as well.
@@ -216,27 +231,41 @@ class Player(object):
             self._world.robot.leds.leftEarLED.turnOn()
         self._main_behavior.stop().onDone(afterBehaviorStopped)
 
-    def onFallenDown(self):
-        print "I'm down!"
-        self._eventmanager.unregister(self.onFallenDown)
+    def onPickedUp(self):
+        self._actions.say("I'm being picked-up")
+        #self._eventmanager.unregister(self.onPickedUp, EVENT_PICKED_UP)
+
+    def onBackOnFeet(self):
+        self._actions.say("I'm back on my feet")
+        self.registerFallHandling()
 
     def onOnBack(self):
-        print "I'm on my back."
-        self._eventmanager.unregister(self.onOnBack)
+        self._actions.say("I'm on my back.")
+        #self.unregisterFallHandling()
         #self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
     
     def onGottenUpFromBack(self):
-        print "Getting up done (from back)"
-        self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
+        self._actions.say("Getting up done (from back)")
+        self.registerFallHandling()
 
     def onOnBelly(self):
-        print "I'm on my belly."
-        self._eventmanager.unregister(self.onOnBelly)
+        self._actions.say("I'm on my belly.")
+        #self.unregisterFallHandling()
         #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
         
     def onGottenUpFromBelly(self):
-        print "Getting up done (from belly)"
-        self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
+        self._actions.say("Getting up done (from belly)")
+        self.registerFallHandling()
+
+    def onRightSide(self):
+        self._actions.say("I'm on the right side")
+        #self.unregisterFallHandling()
+        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
+
+    def onLeftSide(self):
+        self._actions.say("I'm on the left side")
+        #self.unregisterFallHandling()
+        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
 
     def _announceSeeingBall(self):
         self._world.robot.leds.rightEyeLED.turnOn(burst_consts.RED)
