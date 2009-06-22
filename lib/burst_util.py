@@ -227,7 +227,7 @@ class BurstDeferred(object):
     and func is expected to return a BD3 which is then chained to the former BD2.
     """
 
-    verbose = True
+    verbose = False # TODO - options
 
     def __init__(self, data, parent=None):
         self._data = data
@@ -293,6 +293,8 @@ class BurstDeferred(object):
             self._d = succeed(None)
         else:
             self._d = Deferred()
+            from twisted.internet.defer import log
+            self._d.addErrback(log.err)
             self.onDone(lambda: self._d.callback(None))
         return self._d
 
@@ -763,7 +765,7 @@ def getfunc(f_or_m):
 
 def func_name(f_or_m):
     if hasattr(f_or_m, 'im_func'):
-        return f_or_m.im_func.func_name
+        return '%s.%s' % (f_or_m.im_self.__class__.__name__, f_or_m.im_func.func_name)
     if f_or_m.func_name == '<lambda>':
         # try to get descriptive definition - mainly from where the lambda is defined,
         # and if it possibly shortcircuits to a function (that requires disassembling the

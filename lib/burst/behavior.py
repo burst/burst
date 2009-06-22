@@ -4,15 +4,24 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
-from burst_util import BurstDeferred, Nameable, succeedBurstDeferred
+from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
+    func_name)
 import burst.moves.poses as poses
 
-def behaviorwrapbd(behavior, f):
+# TODO REFACTOR. A lot of the functionality of BehaviorActions but more
+# specifically BehaviorEventManager is actually in EventManager / BurstDeferredMaker
+# and should be reused. Still, the implementation here is highly coupled to
+# a single Behavior (the whole stop/start thing). Needs some thinking.
+
+def behaviorwrapbd(behavior_actions, f):
     def wrapper(*args, **kw):
         bd = f(*args, **kw)
-        print "Behavior: %s" % bd
-        return bd.onDone(lambda _,f=f, behavior=behavior, args=args, kw=kw:
+        #print "behaviorwrapbd: %s" % bd
+        behavior_actions._addBurstDeferred(bd)
+        return bd.onDone(lambda _,f=f, behavior=behavior_actions._behavior, args=args, kw=kw:
                 behavior._applyIfNotStopped(f, args, kw))
+    wrapper.func_name = f.func_name
+    wrapper.func_doc = f.func_doc
     return wrapper
 
 # Wrappers to make sure that stopped state automatically witholds any
@@ -28,28 +37,71 @@ def behaviorwrapbd(behavior, f):
 #   + very clean
 #   - more code, where do I set the current behavior, when do I set the current behavior?
 class BehaviorActions(object):
+    """ See longer doc string on BehaviorEventManager. This handles the BurstDeferreds
+    returned from Actions
+    """
 
     def __init__(self, actions, behavior):
         self._actions = actions
         self._behavior = behavior
+        self._bds = []
+        self.verbose = True # TODO, options
+
+    def clearFutureCallbacks(self):
+        """ cancel all pending burst deferreds callbacks """
+        # TODO - clear becomes cancel - is that ok?
+        if self.verbose:
+            print "BA.clearFutureCallbacks: removing %s" % (len(self._bds))
+        for bd in self._bds:
+            bd.clear()
+
+    def _addBurstDeferred(self, bd):
+        self._bds.append(bd)
 
     def __getattr__(self, k):
         actions_k = getattr(self._actions, k)
         if hasattr(actions_k, 'returnsbd'):
-            return behaviorwrapbd(self._behavior, actions_k)
+            return behaviorwrapbd(self, actions_k)
         return actions_k
                 
 class BehaviorEventManager(object):
+    """ Manage all calls to EventManager for a specific Behavior.
+
+    The main purpose is to easily do stopping and restarting of the behavior.
+
+    The behavior must still implement the _start to register all events,
+    but the _stop can be avoided in the simpler cases, where all the behavior
+    does is governed by callbacks on events, call-laters or actions.
+
+    The BEM will record all callbacks and calllaters and unregister/cancel them
+    when the behavior is stopped.
+    """
 
     def __init__(self, eventmanager, behavior):
         self._eventmanager = eventmanager
         self._behavior = behavior
         self._cb_to_wrapper = {}
+        self._registered = set() # try to avoid this becoming too big
+        self._calllaters = [] # TODO (small, Algorithmic) - this is currently suboptimal on clear. (O(N))
+        self.verbose = True # TODO, options
+
+    def clearFutureCallbacks(self):
+        """ cancel callbacks, event registrations """
+        for cb in self._calllaters:
+            self._eventmanager.cancelCallLater(cb)
+        for cb, event in self._registered:
+            self._eventmanager.unregister(cb, event)
+        if self.verbose:
+            print "BEM.clearFutureCallbacks: removing %s, %s" % (len(self._calllaters), len(self._registered))
+        del self._calllaters[:]
+        self._registered.clear()
+        self._cb_to_wrapper.clear()
 
     def register(self, cb, event):
         wrapper = lambda: self._behavior._applyIfNotStopped(cb, [], {})
         self._cb_to_wrapper[cb] = wrapper
         self._eventmanager.register(wrapper, event)
+        self._registered.add((wrapper, event))
 
     def register_oneshot(self, callback, event):
         wrapper = lambda: self._behavior._applyIfNotStopped(cb, [], {})
@@ -59,6 +111,7 @@ class BehaviorEventManager(object):
     def unregister(self, callback, event=None):
         if callback not in self._cb_to_wrapper: return
         self._eventmanager.unregister(self._cb_to_wrapper[callback], event)
+        # TODO - remove from self? nah, who cares?
         # we cannot delete.. may be multiple events.
         # TODO: could solve this with reference counting. But is this really a problem?
         #del self._cb_to_wrapper[cb]
@@ -102,7 +155,7 @@ class Behavior(BurstDeferred, Nameable):
 
     def _applyIfNotStopped(self, f, args, kw):
         if self.stopped():
-            print "%s: Who is calling me at this time? I am stopped" % self
+            print "%s, %s: Who is calling me at this time? I am stopped" % (self, func_name(f))
             return
         return apply(f, args, kw)
 
@@ -113,7 +166,9 @@ class Behavior(BurstDeferred, Nameable):
             self._bd.clear()
             self._bd = None
         self._stopped = True
-        return self._stop_complete()
+        self._eventmanager.clearFutureCallbacks()
+        self._actions.clearFutureCallbacks()
+        return self._stop() # User cb - should return a BurstDeferred.
 
     def stopped(self):
         return self._stopped
@@ -122,6 +177,7 @@ class Behavior(BurstDeferred, Nameable):
         if not self._stopped: return
         self._stopped = False
         self._start(firstTime=True)
+        return self
 
     def log(self, msg):
         print "%s: %s" % (self.__class__.__name__, msg)
@@ -131,7 +187,7 @@ class Behavior(BurstDeferred, Nameable):
     def _start(self, firstTime=False):
         pass # defaults to empty behavior
 
-    def _stop_complete(self):
+    def _stop(self):
         """ Behavior specific burstdeferred fired on stop completion, allows
         you to stop any child behaviors """
         return self._succeed(self)
@@ -151,4 +207,9 @@ class InitialBehavior(Behavior):
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose
+
+    def stop(self):
+        if not self.stopped():
+            print "Stopping %s" % (self.name)
+        return super(InitialBehavior, self).stop()
 

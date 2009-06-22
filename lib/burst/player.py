@@ -146,13 +146,11 @@ class Player(object):
         #   wait for either chest button or game state change
         #    when that happens call self._onConfigured
         if not burst_consts.ALWAYS_CONFIGURE and game_state is UNKNOWN_GAME_STATE:
-            if game_state is UNKNOWN_GAME_STATE:
-                print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
-                print "NOTICE: PLEASE FIX BEFORE GAME"
+            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
+            print "NOTICE: PLEASE FIX BEFORE GAME"
             self._onConfigured()
         else:
-            if self.verbose:
-                print "Player: waiting for configuration event (change in game state, or chest button)"
+            print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
                 self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
                     fireOnOneCallback=True).addCallback(self._onConfigured)
@@ -171,11 +169,11 @@ class Player(object):
             self._onChestButtonPressed]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
-        self._onNewGameState()
         # register for future changes
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
 
     def _onNewGameState(self):
+        """ we only register here after we have actually been configured - simplifies the logic """
         state = self._world.gameStatus.gameState
         if self.verbose:
             print "Player: entered %s Game State" % gameStateToString(state)
@@ -191,25 +189,32 @@ class Player(object):
 
     def _onPlay(self):
         print "Player: OnPlay"
-        self._main_behavior.start() # onDone?
+        self._main_behavior.start().onDone(self._onMainBehaviorDone)
+    
+    def _onMainBehaviorDone(self):
+        print "Player: Main Behavior is done (%s)" % (self._main_behavior)
 
     def _onSet(self):
-        print "On Set: TODO"
+        print "Player: On Set: TODO"
+        self._main_behavior.stop()
 
     def _onReady(self):
+        self._main_behavior.stop()
         gameStatus = self._world.gameStatus
         weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
         jersey = self._world.robot.jersey
         ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
+        import pdb; pdb.set_trace()
         self._approacher = Approacher(self._actions, ready_location)
         self._approacher.start()
         self._approacher.onDone(self._onReadyDone)
 
     def _onReadyDone(self):
-        print "INFO: #%s Reached Ready Position!" % (self._world.robot.jersey)
+        print "INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey)
 
     def _onInitial(self):
-        print "On Initial - TODO"
+        print "Player: On Initial"
+        self._main_behavior.stop()
 
     def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
         """ implemented by inheritor from Player. Called whenever player

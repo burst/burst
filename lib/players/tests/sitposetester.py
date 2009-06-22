@@ -11,7 +11,7 @@ class SitPoseTester(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
-        # Down, Left, Up, Right - learn your directions!
+        print "sit pose, and relax!"
         self._actions.sitPoseAndRelax().onDone(self._eventmanager.quit)
 
 if __name__ == '__main__':

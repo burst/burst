@@ -35,3 +35,4 @@ if __name__ == '__main__':
     from burst.eventmanager import MainLoop
     mainloop = MainLoop(GameControllerTester)
     mainloop.run()
+

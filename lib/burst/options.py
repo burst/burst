@@ -75,6 +75,7 @@ def parse_command_line_arguments():
     debug.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
     debug.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
     debug.add_option('', '--verbose-gamestatus', action='store_true', dest='verbose_gamestatus', default=False, help='Verbose game status class')
+    debug.add_option('', '--verbose-reregister', action='store_true', dest='verbose_reregister', default=False, help='Warn on re-register of event callbacks')
 
     unused = OptionGroup(parser, "unused")
     # old unused
