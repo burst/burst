@@ -98,6 +98,9 @@ class CenteredLocatable(object):
     def estimated_yaw_and_pitch_to_center(self):
         """ return yaw and pitch that should bring this object into the center of
         the image """
+#        if self.centerX == None or self.centerY == None:
+#            import pdb; pdb.set_trace()
+        
         delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
         delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
         yaw = self.head_yaw + delta_yaw

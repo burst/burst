@@ -4,7 +4,9 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
-from burst_util import (BurstDeferred, Nameable, calculate_middle, calculate_relative_pos, polar2cart, cart2polar, nicefloats)
+from burst_util import (BurstDeferred, succeedBurstDeferred,
+    Nameable, calculate_middle, calculate_relative_pos,
+    polar2cart, cart2polar, nicefloats)
 
 # local imports
 import burst
@@ -249,11 +251,13 @@ class BallKicker(Behavior):
             # --- DONT DO THIS UNTIL IMOPS CODE DOES THE SWITCHING, or segfault for you ---
             #self._actions.setCamera(burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
             pass
+        stop_bd = succeedBurstDeferred(self)
         if not from_finder.stopped():
             print "STOPPING %s" % from_finder.name
-            from_finder.stop()
+            stop_bd = from_finder.stop()
+            
         print "SwitchToFinder: calling %s.start" % (to_finder.name)
-        if to_finder.stopped(): to_finder.start()
+        stop_bd.onDone(to_finder.start)
 
     ################################################################################
     # Strafing
@@ -287,8 +291,7 @@ class BallKicker(Behavior):
             self.debugPrint("Aligned position reached! (starting ball search)")
             self._aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
-            self._goalFinder.stop()
-            self.refindBall()
+            self._goalFinder.stop().onDone(self.refindBall)
             return
 
         # TODO: FPS=10 removed for now (for accurate feedback), might be needed for stable circle-strafing!

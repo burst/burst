@@ -229,11 +229,12 @@ class BurstDeferred(object):
 
     verbose = False # TODO - options
 
-    def __init__(self, data, parent=None):
+    def __init__(self, data, parent=None, allow_chaining=True):
         self._data = data
         self._ondone = []
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
+        self._allow_chaining = allow_chaining
     
     def clear(self):
         for cb, chain_deferred in self._ondone:
@@ -252,10 +253,13 @@ class BurstDeferred(object):
         """
         if cb is None:
             raise Exception("onDone called with cb == None")
-        chain_deferred = BurstDeferred(data = None, parent=self)
+        chain_deferred = None
+        if self._allow_chaining:
+            chain_deferred = BurstDeferred(data = None, parent=self)
         self._ondone.append((cb, chain_deferred))
         if self._completed:
-            chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED 
+            if chain_deferred:
+                chain_deferred._completed = True # propogate the shortcut. TESTING REQUIRED
             self.callOnDone()
         return chain_deferred
 
@@ -271,7 +275,7 @@ class BurstDeferred(object):
                 ret = cb(self._data)
             # is it a deferred? if so tell it to execute the deferred
             # we handed out once it is done.
-            if isinstance(ret, BurstDeferred):
+            if isinstance(ret, BurstDeferred) and chain_deferred and ret._allow_chaining:
                 ret.onDone(chain_deferred.callOnDone)
             elif isinstance(ret, Deferred):
                 ret.addCallback(lambda _: chain_deferred.callOnDone())

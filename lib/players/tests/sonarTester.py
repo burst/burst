@@ -2,7 +2,8 @@
 
 import player_init
 from burst.behavior import InitialBehavior
-from burst_events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
+from burst_events import (EVENT_STEP,
+    EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 
 class SonarTester(InitialBehavior):
     
@@ -12,12 +13,15 @@ class SonarTester(InitialBehavior):
     def _start(self, firstTime=False):
         self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
         self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
-        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME) 
+        self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME)
+        # comment out for raw values:
+        #self._eventmanager.register(self.onStep, EVENT_STEP)
         
     def onObstacleSeen(self):
         self._actions.say('Obstacle seen!')
         
-        self._lastReading = self._eventmanager._world.robot.sonar.getLastReading()
+        self._lastReading = self._world.robot.sonar.getLastReading()
+        self._lastData = self._world.robot.sonar._lastData
         print "Sonar: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
         
     def onObstacleLost(self):
@@ -26,6 +30,9 @@ class SonarTester(InitialBehavior):
     def onObstacleInFrame(self):
         #print 'Obstacle in frame!'
         pass
+
+    def onStep(self):
+        print "raw readings: %s" % (self._world.robot.sonar._lastData)
 
 if __name__ == '__main__':
     import burst

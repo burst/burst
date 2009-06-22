@@ -139,11 +139,11 @@ class BehaviorEventManager(object):
 
 class Behavior(BurstDeferred, Nameable):
 
-    def __init__(self, actions, name):
+    def __init__(self, actions, name, *args, **kw):
         """  Note to inheriting folk: this constructor must be the /last/
         call in your constructor, since it calls your start method
         """
-        BurstDeferred.__init__(self, self)
+        BurstDeferred.__init__(self, self, *args, **kw)
         Nameable.__init__(self, name)
         self._actions = BehaviorActions(actions, self)
         self._world = actions._world
@@ -199,8 +199,12 @@ class Behavior(BurstDeferred, Nameable):
 
 class ContinuousBehavior(Behavior):
     
+    def __init__(self, actions, name):
+        super(ContinuousBehavior, self).__init__(actions=actions, name=name, allow_chaining=False)
+
     def onDone(self, cb):
-        raise RuntimeException("You cannot register an onDone callback on a continuous behavior.")
+        #import pdb; pdb.set_trace()
+        raise RuntimeError("You cannot register an onDone callback on a continuous behavior.")
 
 class InitialBehavior(Behavior):
     

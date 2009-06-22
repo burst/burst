@@ -157,12 +157,14 @@ SONAR_PRECISION = 0.1 # only required for newer Naoqi, 1.3.8
 
 if NAOQI_VERSION == NAOQI_1_3_8:
     VIDEO_MODULE = 'ALVideoDevice'
+    US_DISTANCES_VARNAME = "extractors/alsonar/distances"
     SONAR_MODULE = 'ALSonar'
     VIDEO_MODULE_SUBSCRIBE = 'subscribe'
     VIDEO_MODULE_UNSUBSCRIBE = 'unsubscribe'
     SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, dt_ms, SONAR_PRECISION)
 else: # using NAOQI_1_2_0
     VIDEO_MODULE = 'NaoCam'
+    US_DISTANCES_VARNAME = "extractors/alultrasound/distances"
     SONAR_MODULE = 'ALUltraSound'
     VIDEO_MODULE_SUBSCRIBE = 'register'
     VIDEO_MODULE_UNSUBSCRIBE = 'unregister'
@@ -378,7 +380,6 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/Y']
 
 # Sonar constants
-US_DISTANCES_VARNAME = "extractors/alsonar/distances"
 US_ELEMENTS_NUM = 2
 US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
 US_NEAR_DISTANCE = 0.4 # distance in meters
