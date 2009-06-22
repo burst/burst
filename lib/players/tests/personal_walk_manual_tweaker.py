@@ -7,7 +7,6 @@ from burst.behavior import InitialBehavior
 from burst_events import *
 from burst_consts import *
 import burst.moves as moves
-from math import cos, sin
 import time
 from burst.walkparameters import WalkParameters
 from burst.moves.walks import Walk
@@ -21,7 +20,7 @@ class PersonalWalkManualTweaker(InitialBehavior):
 
     def _start(self, firstTime=False):
         self._eventmanager.register(EVENT_CHANGE_LOCATION_DONE, self.onChangeLocationDone)
-        self._eventmanager.register(EVENT_FALLEN_DOWN, self.onFallenDown)
+        #self._eventmanager.register(EVENT_FALLEN_DOWN, self.onFallenDown)
         self.walkStartTime = time.time()
         self.test()
 
@@ -40,13 +39,11 @@ class PersonalWalkManualTweaker(InitialBehavior):
         exit()
 #        self._eventmanager.quit()
 
-    def onFallenDown(self):
-        print "Fell down."
-        moduleCleanup(self._eventmanager, self._actions, self._world)
-        self._actions.sitPoseAndRelax()
-        exit()
-
-
+#    def onFallenDown(self):
+#        print "Fell down."
+#        moduleCleanup(self._eventmanager, self._actions, self._world)
+#        self._actions.sitPoseAndRelax()
+#        exit()
 
 cleaned = False
 def moduleCleanup(eventmanager, actions, world):

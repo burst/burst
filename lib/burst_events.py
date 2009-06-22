@@ -20,9 +20,12 @@ EVENT_HEAD_MOVE_DONE = counter; counter+=1
 EVENT_BODY_MOVE_DONE = counter; counter+=1
 
 # Fall Detection
-EVENT_FALLEN_DOWN = counter; counter+=1
 EVENT_ON_BELLY = counter; counter+=1
 EVENT_ON_BACK = counter; counter+=1
+EVENT_ON_LEFT_SIDE = counter; counter+=1
+EVENT_ON_RIGHT_SIDE = counter; counter+=1
+EVENT_PICKED_UP = counter; counter+=1
+EVENT_BACK_ON_FEET = counter; counter+=1
 
 # Sonar Obstacle Detection
 EVENT_OBSTACLE_SEEN = counter; counter += 1

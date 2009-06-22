@@ -1,4 +1,4 @@
-from math import atan2
+from math import atan2, asin
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
@@ -277,7 +277,39 @@ class Actions(object):
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                     description=('sideway', delta_x, delta_y, walk))
         return self._current_motion_bd
-   
+
+    def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
+        #calculate radius 
+        #r=((y{-,+}r)**2 + x**2)**0.5
+        #0= y**2 + r**2 {+/-}y*r*2 + x**2 - r**2
+        #r=abs( (y**2 + x**2) / (2*y) )
+        r= abs( delta_y/2 + (delta_x**2)/(2*delta_y) )
+        
+        #sin angle = y/r
+        angle = asin(delta_x/r)
+        
+        if delta_y<0:
+            angle=-angle           
+        
+        print "Calculated radius: %f, calculated angle %f" % (r, angle)
+
+        # TEMPORAL CODE - debugging
+        # TODO: Move to journey.py
+        dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
+                    # stuff that would have been synchronous and turn it asynchronous
+                    # All lambda's should have one parameter, the result of the last deferred.
+        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))     
+        dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
+        defaultSpeed = walk.defaultSpeed
+        dgens.append(lambda _: self._motion.addWalkArc( angle, r / 100. , defaultSpeed ))        
+        # TODO: Calculate arc length to get possible duration (by arc_length/speed)
+        duration = 10
+        d = chainDeferreds(dgens)
+        self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
+                    description=('arc', delta_x, delta_y, walk))
+        return self._current_motion_bd
+
+        
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd
@@ -550,6 +582,7 @@ class Actions(object):
 
     def lookaround(self, lookaround_type):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
+
 
     #================================================================================
     # Choreograph moves 

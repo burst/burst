@@ -15,7 +15,7 @@ def pr(s):
 class Donothing(InitialBehavior):
     
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=None)
 
     def _start(self, firstTime=False):
         self._eventmanager.register(self.onStep, EVENT_STEP)
