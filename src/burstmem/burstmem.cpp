@@ -156,7 +156,7 @@ void burstmem::clearMappedVariables()
 //______________________________________________
 // addMappedVariable
 //______________________________________________
-void burstmem::addMappedVariable(int index, std::string var)
+void burstmem::addMappedVariable(const int &index, const std::string &var)
 {
     m_varnames.resize(index+1);
     m_varnames[index] = var;
@@ -189,7 +189,7 @@ std::string burstmem::version ()
 //______________________________________________
 // get variable name by index
 //______________________________________________
-std::string burstmem::getVarNameByIndex (int i)
+std::string burstmem::getVarNameByIndex (const int &i)
 {
     if (this->m_varnames.size() > static_cast<unsigned int>(i) && i >= 0)
         return this->m_varnames[i];
@@ -252,13 +252,11 @@ void burstmem::startMemoryMap ()
 
     // Initialize sonar readings
     try {
-        ALPtr<ALProxy> us = this->getParentBroker()->getProxy( "ALUltraSound" );
-        ALValue paramUS;
-        paramUS.arrayPush( 500 ); // every 500 ms
-        us->callVoid( "subscribe", getName(), paramUS );
+        ALPtr<ALProxy> us = this->getParentBroker()->getProxy( "ALSonar" );
+        us->callVoid( "subscribe", getName(), paramUS , 500 /* every 500 ms */, 0.1 /* precision - TODO - what is the correct value here? */);
     }
     catch (AL::ALError e) {
-        std::cout << "burstmem: Failed to subscribe to ALUltraSound: " << e.toString () <<
+        std::cout << "burstmem: Failed to subscribe to ALSonar: " << e.toString () <<
             std::endl;
     }
 
@@ -361,11 +359,11 @@ burstmem::updateMemoryMappedVariables()
         // dump the third parameter (a string), and store the two
         // distances in floats
         try {
-            ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alultrasound/distances" ) );
+            ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alsonar/distances" ) );
             m_mmap[0] = distanceUS[0];
             m_mmap[1] = distanceUS[1];
         } catch (AL::ALError e) {
-            std::cout << "burstmem: ultrasound getData: ALError: " << e.toString() << std::endl;
+            std::cout << "burstmem: sonar getData: ALError: " << e.toString() << std::endl;
         }
 
 #if 1

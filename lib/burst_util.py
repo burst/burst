@@ -900,7 +900,7 @@ def read_nbfrm(filename, width=320, height=240):
     #       : right foot (front_left, front_right, rear_left, rear_right)   4
     #  left foot bumpers (left, right), right foot bumpers (left, right)    4
     #  inertial: accel x, y, z , gyro x, y, angles (computed by naoqi) x, y 7
-    #  ultrasound distance, ultrasound sound mode, supportfoot              3
+    #  sonar distance, sonar sound mode, supportfoot              3
     #                                                                total 22
     sensor_num = 22
     with open(filename) as fd:

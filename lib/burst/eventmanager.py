@@ -519,6 +519,12 @@ class BasicMainLoop(object):
             burst.actions._use_legal = True
             print "MainLoop: only LEGAL moves allowed from now on"
             self._player.onStart()
+        # TODO: Need someplace better? switch camera top then bottom - temp workaround
+        # for evils of 1.3.8
+        top = self._actions.switchToTopCamera
+        bottom = self._actions.switchToBottomCamera
+        for what, dt in sum([[(top, b), (top, b+0.05), (top, b+0.1), (bottom, b+0.2), (bottom, b+0.25), (bottom, b+0.3)] for b in (0.0, 0.5)], []):
+            self._eventmanager.callLater(dt, what)
         self._actions._initPoseAndStiffness(self._player._main_behavior._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):
@@ -609,6 +615,11 @@ class SimpleMainLoop(BasicMainLoop):
             try:
                 naoqi_ok, sleep_time = (
                     self._step_while_handling_non_player_exceptions())
+            except RuntimeError, e:
+                if 'SOAP error:Connection refused' in str(e):
+                    print "naoqi quit, quitting"
+                    import sys
+                    sys.exit(-1)
             except Exception, e:
                 print "BasicMainLoop: caught player exception: %s" % e
                 import traceback

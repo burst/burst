@@ -21,7 +21,7 @@ from burst_events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_ALL_YELLOW_GOAL_IN_FRAME,
     EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
     EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
-from burst_util import running_average, LogCalls, cross, gethostname
+from burst_util import running_average, LogCalls, cross, gethostname, nicefloats
 
 from burst.deferreds import BurstDeferredMaker
 import burst.field as field
@@ -86,12 +86,12 @@ class World(object):
         self._motion = callWrapper("ALMotion", burst.getMotionProxy(deferred=True))
         self._sentinel = callWrapper("ALSentinel", burst.getSentinelProxy(deferred=True))
         self._speech = callWrapper("ALSpeech", burst.getSpeechProxy(deferred=True))
-        self._naocam = callWrapper("NaoCam", burst.getNaoCamProxy(deferred=True))
+        self._video = callWrapper("ALVideoDevice", burst.getALVideoDeviceProxy(deferred=True))
         self._leds = callWrapper("ALLeds", burst.getLedsProxy(deferred=True))
         self._imops = callWrapper("imops", burst.getImopsProxy(deferred=True))
 
-        if burst.options.run_ultrasound:
-            self._ultrasound = callWrapper("ALUltraSound", burst.getUltraSoundProxy(deferred=True))
+        if burst.options.run_sonar:
+            self._sonar = callWrapper("ALSonar", burst.getSonarProxy(deferred=True))
         self._events = set()
         self._deferreds = []
 
@@ -117,8 +117,13 @@ class World(object):
         self._getAnglesMap = dict([(joint,
             'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
             for joint in self.jointnames])
-        self._body_angles_vars = self._getAnglesMap.values()
-        self.addMemoryVars(self._body_angles_vars)
+        if self.connected_to_webots:
+            self._updateBodyAngles = self._updateBodyAngles_from_ALMotion
+        else:
+            self._body_angles_vars = self._getAnglesMap.values()
+            self._updateBodyAngles = self._updateBodyAngles_from_DCM
+            self.addMemoryVars(self._body_angles_vars)
+        self.body_angles = [0.0] * 26
 
         # Variables for Inclination angles
         self._inclination_vars = ['Device/SubDeviceList/InertialSensor/AngleX/Sensor/Value',
@@ -156,7 +161,7 @@ class World(object):
         self.yglp = self.yellow_goal.left
         self.ygrp = self.yellow_goal.right
         # TODO - other robots
-        # Buttons, Leds (TODO: ultrasound,
+        # Buttons, Leds (TODO: sonar,
         self.robot = Robot(self)
         # construct team after all the posts are constructed, it keeps a
         # reference to them.
@@ -288,8 +293,8 @@ class World(object):
     def getSpeechProxy(self):
         return self._speech
 
-    def getNaoCamProxy(self):
-        return self._naocam
+    def getALVideoDeviceProxy(self):
+        return self._video
 
     def getImopsProxy(self):
         return self._imops
@@ -319,8 +324,9 @@ class World(object):
         return self.vars[self._getAnglesMap[jointname]]
 
     def getBodyAngles(self):
-        # TODO - OPTIMIZE?
-        return self.getVars(self._body_angles_vars)
+        # This works for DCM, but new naoqi doesn't support DCM very well. - no bigee, we have ALMotion.getBodyAngles
+        # that works fine in simulation too.
+        return self.body_angles
 
     def getInclinationAngles(self):
         # TODO - OPTIMIZE?
@@ -413,6 +419,16 @@ class World(object):
 
     _updateMemoryVariables = _updateMemoryVariablesFromALMemory
 
+    def _updateBodyAngles_from_ALMotion_onResults(self, angles):
+        #print "World: updated BodyAngles: %s" % nicefloats(angles)
+        self.body_angles = angles
+
+    def _updateBodyAngles_from_ALMotion(self):
+        self._motion.getBodyAngles().addCallback(self._updateBodyAngles_from_ALMotion_onResults)
+
+    def _updateBodyAngles_from_DCM(self):
+        self.body_angles = self.getVars(self._body_angles_vars)
+
     # Callbacks
 
     def collectNewUpdates(self, cur_time):
@@ -420,6 +436,9 @@ class World(object):
             print "TIME ERROR: World.collectNewUpdates called with the same time twice. Ignoring"
             return
         self.time = cur_time - self.start_time
+        # BodyAngles Note: if using ALMotion, this completed using a deferred - meaning with twisted not
+        # during this callback, so doRecord will record previous time frame values
+        self._updateBodyAngles()
         self._updateMemoryVariables() # must be first in update
         self._doRecord()
         # TODO: automatic calculation of event dependencies (see constructor)

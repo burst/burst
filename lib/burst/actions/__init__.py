@@ -88,7 +88,7 @@ class Actions(object):
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
-        self._naocam = world.getNaoCamProxy()
+        #self._video = world.getALVideoDeviceProxy()
         self._imops = world.getImopsProxy()
 
         self._joint_names = self._world.jointnames
@@ -299,12 +299,17 @@ class Actions(object):
         ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude ))
         ds.append(self._motion.setWalkArmsEnable(True))
+        ds.append(self._motion.setWalkTrapezoidConfig(LHipRoll, RHipRoll))
 
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
+        # 1.3.0 removed setWalkExtraConfig.
+        # we currently plan to use the defaults of the new TrapezoidConfig: [5.0, -5.0]
+        # default walk config is : [0.035, 0.01, 0.025, 0.2, 0.23, 3.0]
+        # help said: pHipHeight must be in [0.15f 0.244f]
+        #ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
 
         ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
-                                                    ZmpOffsetX, ZmpOffsetY ))
+                                                    HipHeight, TorsoYOrientation ))
 
         return DeferredList(ds)
 

@@ -65,6 +65,12 @@ class Localization(object):
         #            bottom_c.normalized2_centerX, bottom_c.normalized2_centerY,
         #            top_c.normalized2_centerX, top_c.normalized2_centerY
         #        )
+
+        # Also update the distance to the ball - not sure if it will be used, but not
+        # bad as a test.
+        ball = self._world.ball
+        if ball.seen and ball.centered_at_pitch_limit or ball.centered:
+            self.updatePoseAndCalcDistance(ball)
         for obj, other_obj in ((bottom, top), (top, bottom)):
             if obj.seen and obj.centered_at_pitch_limit or obj.centered:
                 if self.verbose:
@@ -99,11 +105,11 @@ class Localization(object):
                 if self.verbose:
                     print "Localization: UPDATE SELF POSITION"
                 events.add(EVENT_WORLD_LOCATION_UPDATED)
-        
+
         #seeing blue goal - yellow is unseen
         if self._world.bglp.seen and self._world.bgrp.seen:
             self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
-        
+
         #seeing yellow goal - blue is unseen
         if self._world.yglp.seen and self._world.ygrp.seen:
             self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
@@ -116,7 +122,7 @@ class Localization(object):
         self._pose.updateTransforms(body_angles, inclination_angles)
         obj.my_dist = self.calcPostDist(obj)
         if self.verbose:
-            print "Localization: %s new height = %3.1f, vision heights %3.1f, %3.1f" % (
+            print "Localization: %s new dist = %3.1f, vision dists %3.1f, %3.1f" % (
                 obj.name, obj.my_dist, obj.dist, obj.focDist)
 
     def calcPostDist(self, post):

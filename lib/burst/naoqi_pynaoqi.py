@@ -18,8 +18,8 @@ def getMotionProxy(deferred = False):
 def getLedsProxy(deferred = False):
     return con.ALLeds
 
-def getUltraSoundProxy(deferred = False):
-    return con.ALUltraSound
+def getSonarProxy(deferred = False):
+    return con.ALSonar
 
 def getBroker():
     """ this is BROKEN """
@@ -29,8 +29,8 @@ def getSpeechProxy(deferred = False):
     """ return None if nothing there """
     return hasattr(con, 'ALTextToSpeech') and con.ALTextToSpeech or None
 
-def getNaoCamProxy(deferred = False):
-    return con.NaoCam
+def getALVideoDeviceProxy(deferred = False):
+    return con.ALVideoDevice
 
 def getBurstMemProxy(deferred = False):
     return con.burstmem

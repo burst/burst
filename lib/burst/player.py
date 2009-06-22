@@ -24,6 +24,8 @@ from burst_consts import (InitialRobotState,
     SetGameState, PlayGameState, FinishGameState,
     UNKNOWN_GAME_STATE, gameStateToString)
 
+from burst.actions.approacher import Approacher
+
 def overrideme(f):
     return f
 
@@ -128,9 +130,10 @@ class Player(object):
         #  else:
         #   wait for either chest button or game state change
         #    when that happens call self._onConfigured
-        if game_state is UNKNOWN_GAME_STATE:
+        if not burst_consts.ALWAYS_CONFIGURE and game_state is UNKNOWN_GAME_STATE:
             if game_state is UNKNOWN_GAME_STATE:
-                print "NOTICE: No game controller - going straight to Playing"
+                print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
+                print "NOTICE: PLEASE FIX BEFORE GAME"
             self._onConfigured()
         else:
             if self.verbose:
@@ -138,13 +141,6 @@ class Player(object):
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
                 self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
                     fireOnOneCallback=True).addCallback(self._onConfigured)
-
-    def _onExpectingConfigureGameStateChange(self):
-        """ handle any generic change to game state - should probably use
-        specific functions for onPlay, onReady, onPlay, onPenalized, onFininshed
-        """
-        # T
-    #####
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -157,7 +153,7 @@ class Player(object):
             settings.teamNumber, settings.teamColor, settings.playerNumber,
             gameStateToString(state))
         for callback in [self._onLeftBumperPressed, self._onRightBumperPressed,
-            self._onChestButtonPressed, self._onExpectingConfigureGameStateChange]:
+            self._onChestButtonPressed]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
         self._onNewGameState()
@@ -190,7 +186,7 @@ class Player(object):
         weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
         jersey = self._world.robot.jersey
         ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
-        self._approacher = Approacher(ready_location)
+        self._approacher = Approacher(self._actions, ready_location)
         self._approacher.start()
         self._approacher.onDone(self._onReadyDone)
 

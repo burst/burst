@@ -25,7 +25,8 @@ WEBOTS = 'webots'
 #                                                                              #
 ################################################################################
 
-
+# Wait for a configure event when no game controller present
+ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
 
 
 # From teams.cfg, in GameStateVisualizer 2009
@@ -350,8 +351,8 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
  '/BURST/Vision/YGRP/X',
  '/BURST/Vision/YGRP/Y']
 
-# Ultrasound constants
-US_DISTANCES_VARNAME = "extractors/alultrasound/distances"
+# Sonar constants
+US_DISTANCES_VARNAME = "extractors/alsonar/distances"
 US_ELEMENTS_NUM = 2
 US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
 US_NEAR_DISTANCE = 0.4 # distance in meters

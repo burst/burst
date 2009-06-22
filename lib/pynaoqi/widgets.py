@@ -527,7 +527,7 @@ class Calibrator(BaseWindow, ImopsMixin):
 
 class VideoWindow(TaskBaseWindow, ImopsMixin):
 
-    """ Display the RGB of the received YUV image from NaoCam module directly
+    """ Display the RGB of the received YUV image from ALVideoDevice module directly
     or after thresholding, allow changing of angle to a specific point (comands
     head pitch and yaw only). Access to pixmaps and thresholded image in
     self._yuv, self._rgb, self._thresholded
@@ -543,7 +543,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         self._threshold = False # to threshold or not to threshold
         self._con = con
         self._tables = {}
-        self._con.registerToCamera().addCallback(self._finishInit)
+        self._con.subscribeToCamera().addCallback(self._finishInit)
         self._im = gtkim = gtk.Image()
         # you don't get button press on gtk.Image(), setting add_events on window
         # and gtkim doesn't cause propogation, don't know what does.

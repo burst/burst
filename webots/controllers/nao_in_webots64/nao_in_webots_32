@@ -1,7 +1,6 @@
 #!/bin/sh
 
-export LD_LIBRARY_PATH=$AL_DIR/extern/c/linux/lib:bin/
-
+export LD_LIBRARY_PATH=$AL_DIR/extern/c/linux/lib/python2.5:$AL_DIR/extern/c/linux/lib:bin/
 # just runs gdb and logs output
 #gdb bin/nao_in_webots -ex run -ex bt -ex quit --quiet 2>&1 | cat > /tmp/nao_in_webots.gdb.log
 

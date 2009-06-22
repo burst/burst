@@ -34,7 +34,7 @@ import random
 # 3. When near ball, circle-strafe (to correct direction) till goal is seen and centered (goal is tracked)
 # 4. Search ball down, align against ball and kick
 #
-# Handling Ultrasound data (obstacles):
+# Handling Sonar data (obstacles):
 # When obstacle encountered DURING move:
 # * stop move only if it's a long walk (if it's a short walk to the ball, we prefer not to stop...)
 # When obstacle encountered BEFORE move:
@@ -54,7 +54,7 @@ class BallKicker(Behavior):
         super(BallKicker, self).__init__(actions = actions, name = 'BallKicker')
         self._align_to_target = align_to_target
 
-        self._ultrasound = self._world.robot.ultrasound
+        self._sonar = self._world.robot.sonar
         self._eventmanager.register(self.onObstacleSeen, EVENT_OBSTACLE_SEEN)
         self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
         self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME)
@@ -112,10 +112,10 @@ class BallKicker(Behavior):
         print "Kicking: _stopOngoingMovement: current movement %s (forceStop = %s)" % (shouldStopMovement and "STOPPED" or "CONTINUES", forceStop)
 
     ################################################################################
-    # Ultrasound callbacks
+    # Sonar callbacks
     #
     def onObstacleSeen(self):
-        self._obstacle_in_front = self._ultrasound.getLastReading()
+        self._obstacle_in_front = self._sonar.getLastReading()
         print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
         if self._movement_deferred:
@@ -131,7 +131,7 @@ class BallKicker(Behavior):
 
     def onObstacleInFrame(self):
         #print "Obstacle in frame!"
-        self._obstacle_in_front = self._ultrasound.getLastReading()
+        self._obstacle_in_front = self._sonar.getLastReading()
         #print "Obstacle seen (on %s, distance of %f)!" % (self._obstacle_in_front)
 
     def getObstacleOppositeSide(self):

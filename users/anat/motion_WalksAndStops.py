@@ -73,18 +73,18 @@ except Exception,e:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create proxy
 try:
-  alultrasoundProxy = ALProxy("ALUltraSound",IP,PORT)
+  alsonarProxy = ALProxy("ALSonar",IP,PORT)
 except RuntimeError,e:
-  print "error while creating alultrasound's proxy"
+  print "error while creating alsonar's proxy"
   exit(1)
 
 # subscribe to ALUltraound
 try:
   period = 250 # minimum should be 240ms according to documentation
-  alultrasoundProxy.subscribe("test", [ period ] )
-  print "subscription to ALUltrasound is ok"
+  alsonarProxy.subscribe("test", [ period ] )
+  print "subscription to ALSonar is ok"
 except RuntimeError,e:
-  print "error while subscribing to alultrasound"
+  print "error while subscribing to alsonar"
   exit(1)
 
 
@@ -127,12 +127,12 @@ motionProxy.setChainStiffness("Head",0.0)
 #if ( ttsProxy ):
 #    ttsProxy.say("Move my head if you want me to stop")
 
-ultrasound_stop_distance = 0.60
+sonar_stop_distance = 0.60
 
 while (motionProxy.isRunning(walkTaskId)):
-    US = memoryProxy.getData("extractors/alultrasound/distances", 0)
+    US = memoryProxy.getData("extractors/alsonar/distances", 0)
     #~ print US
-    if ((US[0] < ultrasound_stop_distance) or (US[1] < ultrasound_stop_distance)):
+    if ((US[0] < sonar_stop_distance) or (US[1] < sonar_stop_distance)):
         print "Obstacle found!"
         if ( ttsProxy ):
             ttsProxy.say("Obstacle found!")

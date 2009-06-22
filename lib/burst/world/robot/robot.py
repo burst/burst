@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 
-from ultrasound import *
+from sonar import *
 from buttons import *
 from leds import *
 from sensors import *
@@ -24,7 +24,7 @@ class Robot(Movable):
         self.leds = LEDs(world)
         self.leds.turnEverythingOff()
         self.sensors = Sensors(world)
-        self.ultrasound = Ultrasound(world)
+        self.sonar = Sonar(world)
         self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
 
         # These are updated out of object, by Localization.
@@ -52,7 +52,7 @@ class Robot(Movable):
         self.bumpers.calc_events(events, deferreds)
         self.chestButton.calc_events(events, deferreds)
         self.sensors.calc_events(events, deferreds)
-        self.ultrasound.calc_events(events, deferreds)
+        self.sonar.calc_events(events, deferreds)
         # TODO: Fall-down detection should probably be detected here, and not wherever it is now.
 
     def isHeadMotionInProgress(self):
