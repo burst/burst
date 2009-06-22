@@ -13,4 +13,5 @@ if [ ! -e GameController.jar ]; then
  cp GameController.jar ../
  cd ..
 fi
-java -jar GameController.jar -numplayers 3 ${blue} ${red}
+# -quiet - should stop the ticking (the sound!)
+java -jar GameController.jar -quiet -numplayers 3 ${blue} ${red}

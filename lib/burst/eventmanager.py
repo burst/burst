@@ -17,7 +17,7 @@ import burst.actions
 from burst.player import Player
 
 from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
-    EVENT_STEP, EVENT_TIME_EVENT)
+    EVENT_STEP, EVENT_TIME_EVENT, event_name)
 from burst_consts import NAOQI_1_3_8, NAOQI_VERSION
 
 import burst_consts
@@ -179,7 +179,11 @@ class EventManager(object):
         return bd
 
     def cancelCallLater(self, callback):
-        if callback in self._call_later:
+        """ removes all pending call laters to 'callback' - if there are multiple,
+        all will be removed!
+
+        TODO: this is not very optimal, and also isn't always what the user wants """
+        while callback in self._call_later:
             self._call_later.remove(callback)
 
     def register(self, callback, event):
@@ -189,7 +193,8 @@ class EventManager(object):
         if callback not in self._callbacks:
             self._callbacks[callback] = set()
         if event in self._callbacks[callback]:
-            print "WARNING: harmless re-register of %s to %s" % (callback, event)
+            if burst.options.verbose_reregister:
+                print "WARNING: harmless re-register of %s to %s" % (func_name(callback), event_name(event))
         self._callbacks[callback].add(event)
         # add to _events
         self._events[event].add(callback)
@@ -449,6 +454,11 @@ class BasicMainLoop(object):
             return self._ctrl_c_cb(eventmanager=self._eventmanager, actions=self._actions,
                 world=self._world)
 
+    def _startBanner(self, s):
+        print "="*80
+        print "= %s =" % s.center(76)
+        print "="*80
+
     def _printTraceTickerHeader(self):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
         print "Time Objs-CL|IN|PO|Right        |Left         |Ball         |Out|Inc|".ljust(burst_consts.CONSOLE_LINE_LENGTH, '-')
@@ -671,7 +681,7 @@ class SimpleMainLoop(BasicMainLoop):
 
     def _run_loop_helper(self):
         import burst
-        print "running custom event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000)
+        self._startBanner("running custom event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000))
         from time import sleep, time
         quitting = False
         # we need the eventmanager until the total end, to sit down and stuff,
@@ -748,7 +758,7 @@ class TwistedMainLoop(BasicMainLoop):
         print "TwistedMainLoop: created main objects"
         from twisted.internet import reactor, task
         self.preMainLoopInit()
-        print "\nrunning TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000)
+        self._startBanner("running TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000))
         self._main_task = task.LoopingCall(self.onTimeStep)
         self._main_task.start(self._eventmanager.dt)
 

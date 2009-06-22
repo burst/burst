@@ -47,8 +47,7 @@ def legal(f, group):
         if not _use_legal or state in group:
             return f(self, *args, **kw)
         else: # buddy, stop right here!
-            print "Actions: ILLEGAL ROBOCUP MOVE: %s" % f.func_name
-            import pdb; pdb.set_trace()
+            print "Actions: ILLEGAL ROBOCUP MOVE: %s; turning into a calllater" % f.func_name
             return self._eventmanager.callLaterBD(self._eventmanager.dt)
     wrapper.func_doc = f.func_doc
     wrapper.func_name = f.func_name
@@ -278,6 +277,7 @@ class Actions(object):
                     description=('sideway', delta_x, delta_y, walk))
         return self._current_motion_bd
 
+    @returnsbd
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
         #calculate radius 
         #r=((y{-,+}r)**2 + x**2)**0.5
@@ -310,6 +310,7 @@ class Actions(object):
         return self._current_motion_bd
 
         
+    @returnsbd
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd

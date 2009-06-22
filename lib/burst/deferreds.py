@@ -9,6 +9,45 @@ from burst_util import (BurstDeferred, succeedBurstDeferred,
     func_name)
 import burst
 
+class OncePerRound(BurstDeferred):
+    """ this looks like a regular BurstDeferred, but it works a little differently:
+    It will wait to be called by whatever (use the callOnDone to chain it to the
+    end of any event / burstdeferred you want to), but only call the callbacks
+    you chain to it if they are the first during the current round, where round
+    means "a unique value for world.time".
+
+    >>> once = OncePerRound(self)
+    >>> self._eventmanager.register(once.callOnDone, EVENT_GAME_STATE_CHANGED)
+    >>> (and also self.onConfigured might call once.callOnDone)
+    ...
+    >>> t = 0
+    >>> EVENT_GAME_STATE_CHANGED fires
+    >>> it calls ... (stopped documenting when I realised I don't actually need this right now)
+    """
+
+    def __init__(self, world, data):
+        super(OncePerRound, self).__init__(data)
+        self._world = world
+        self._last_called_on = self._world.time - 1 # assumed strictly monotonic
+        self._per_turn_cbs = []
+
+    def onDone(self, cb):
+        # give this to the regular list
+        ret = super(OncePerRound, self).onDone(cb)
+        # also store it for keeps
+        self._per_turn_cbs.append(cb) # XXX - duplicates are warmly accepted
+        return ret
+    
+    def callOnDone(self):
+        ret = None
+        if self._world.time > self._last_called_on:
+            self._last_called_on = self._world.time
+            ret = super(OncePerRound, self).callOnDone()
+            # re-arm
+            for cb in self._per_turn_cbs:
+                super(OncePerRound, self).onDone(cb)
+        return ret
+
 class BurstDeferredMaker(object):
 
     def __init__(self):

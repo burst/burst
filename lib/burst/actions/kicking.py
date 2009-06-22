@@ -82,7 +82,7 @@ class BallKicker(Behavior):
         self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
 
-    #def _stop_complete(self):
+    #def _stop(self):
     #    # TODO
 
     ################################################################################
