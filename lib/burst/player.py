@@ -149,6 +149,7 @@ class Player(object):
             print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
             print "NOTICE: PLEASE FIX BEFORE GAME"
             self._onConfigured()
+            self._main_behavior.start()
         else:
             print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
