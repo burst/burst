@@ -1,6 +1,6 @@
 """ Personal file for a robot by the name of this file. """
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
-from burst.moves.walks import walks
+import burst.moves.walks as walks
 from burst_consts import DEG_TO_RAD
 
 walks.FIRST_TWO_SLOW_STEPS = False
