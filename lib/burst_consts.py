@@ -97,6 +97,9 @@ MMAP_LENGTH      = 4096
 # Important other constants (parameters for various behaviors)
 ################################################################################
 
+# shortcut variable, True if this is naoqi version 1.2.0
+is_120 = NAOQI_VERSION == NAOQI_1_2_0
+
 # WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
 # 'initial_position' - world coordinates
 INITIAL_POSITION = 'initial_position'

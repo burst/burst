@@ -1,10 +1,16 @@
 // alvalue.h uses printf, but doesn't do the include, g++ 4.4.0 complains
 #include <cstdio>
 
+#ifdef NAOQI_138
 #include "alimage.h"
+#else
+#include "alvisionimage.h"
+#endif
 #include "alvisiondefinitions.h"
 
 #include "manconfig.h"
+
+#include "burstutil.h"
 
 #include "ALImageTranscriber.h"
 
@@ -107,9 +113,9 @@ void ALImageTranscriber::stop() {
     if(camera_active){
         cout << "lem_name = " << lem_name << endl;
         try {
-            camera->callVoid("unsubscribe", lem_name);
+            camera->callVoid(VIDEO_MODULE_UNSUBSCRIBE, lem_name);
         }catch (ALError &e) {
-            log->error("Man", "Could not call the unsubscribe method of the ALVideoDevice "
+            log->error("Man", "Could not call the unsubscribe method of the " VIDEO_MODULE
                        "module");
         }
     }
@@ -119,11 +125,11 @@ void ALImageTranscriber::stop() {
 
 void ALImageTranscriber::subscribeCamera(ALPtr<ALBroker> broker) {
     try {
-        camera = broker->getProxy("ALVideoDevice");
+        camera = broker->getProxy(VIDEO_MODULE);
         camera_active =true;
     }catch (ALError &e) {
         log->error("ALImageTranscriber",
-                   "Could not create a proxy to ALVideoDevice module");
+                   "Could not create a proxy to " VIDEO_MODULE " module");
         camera_active =false;
         return;
     }
@@ -143,7 +149,7 @@ void ALImageTranscriber::subscribeCamera(ALPtr<ALBroker> broker) {
 #endif
 
     try {
-        lem_name = camera->call<std::string>("subscribe", lem_name, format,
+        lem_name = camera->call<std::string>(VIDEO_MODULE_SUBSCRIBE, lem_name, format,
                                              colorSpace, fps);
         cout << "Registered Camera: " << lem_name << " successfully"<<endl;
     } catch (ALError &e) {
@@ -156,7 +162,7 @@ void ALImageTranscriber::subscribeCamera(ALPtr<ALBroker> broker) {
 //             lem_name = camera->call<std::string>("subscribe", lem_name, format,
 //                                                  colorSpace, fps);
 //         }catch (ALError &e2) {
-//             log->error("ALImageTranscriber", "Could not call the subscribe method of the ALVideoDevice "
+//             log->error("ALImageTranscriber", "Could not call the subscribe method of the " VIDEO_MODULE " "
 //                        "module\n" + e2.toString());
 //             return;
 //         }
@@ -167,7 +173,7 @@ void ALImageTranscriber::subscribeCamera(ALPtr<ALBroker> broker) {
 // set frame rate to the smallest number within the allowed values that
 // is bigger or equal to given fps.
 bool ALImageTranscriber::setFrameRate(unsigned int fps) {
-    static unsigned int allowed_fps[] = {5, 10, 15, 30}; // see ALVideoDevice module setFrameRate help
+    static unsigned int allowed_fps[] = {5, 10, 15, 30}; // see ALVideoDevice/NaoCam module setFrameRate help
     const unsigned int num_allowed = sizeof(allowed_fps) / sizeof(int);
     unsigned int i = 0;
     for (; allowed_fps[i] < fps && i < num_allowed ; ++i) {};
@@ -435,8 +441,8 @@ void ALImageTranscriber::waitForImage ()
         try {
             ALimage = (ALImage*) (camera->call<int>("getDirectRawImageLocal",lem_name));
         }catch (ALError &e) {
-            log->error("NaoMain", "Could not call the getImageLocal method of the "
-                       "ALVideoDevice module");
+            log->error("NaoMain", "Could not call the getImageLocal method of the " VIDEO_MODULE
+                       " module");
         }
         if (ALimage != NULL) {
             memcpy(&image[0], ALimage->getFrame(), IMAGE_BYTE_SIZE);
@@ -482,7 +488,7 @@ void ALImageTranscriber::releaseImage(){
     }catch( ALError& e)
     {
         log->error( "ALImageTranscriber",
-                    "could not call the releaseImage method of the ALVideoDevice module" );
+                    "could not call the releaseImage method of the " VIDEO_MODULE " module" );
     }
 }
 

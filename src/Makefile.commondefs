@@ -5,4 +5,33 @@ DEBUG_BUILD=-fPIC -ggdb
 # ok, there is a -march=geode but only in newer g++.
 RELEASE_BUILD=-O3 -DNDEBUG -Wall -Wno-unused -Wno-strict-aliasing -march=k6-2 -mtune=k6-2
 
+# TODO - let user define this? right now it is just a constant here
+# Possible
+NAOQI_1_3_8="NaoQi 1.3.8"
+NAOQI_1_2_0="NaoQi 1.2.0"
+NAOQI_VERSION=$(NAOQI_1_2_0) # $(NAOQI_1_3_8)
+
+ifeq ($(NAOQI_VERSION),$(NAOQI_1_3_8))
+
+CFLAGS+=-DNAOQI_138
+
+ifdef $(AL_DIR_138)
+AL_DIR_VER=$(AL_DIR_138)
+else
+$(info Makefile.base: AL_DIR_138 not found, using /usr/local/NaoQiAcademics-1.3.8-Linux)
+AL_DIR_VER=/usr/local/NaoQiAcademics-1.3.8-Linux
+endif
+
+else # naoqi 1.2.0
+
+CFLAGS+=-DNAOQI_120
+
+ifdef $(AL_DIR_120)
+AL_DIR_VER=$(AL_DIR_120)
+else
+$(info Makefile.base: AL_DIR_120 not found, using /usr/local/NaoQiAcademics-1.2.0-Linux)
+AL_DIR_VER=/usr/local/NaoQiAcademics-1.2.0-Linux
+endif
+
+endif
 

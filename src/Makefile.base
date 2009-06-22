@@ -84,9 +84,9 @@ else
 # robot
 $(info COMPILING FOR ROBOT)
 BUILD_DIR=$(ROBOT_BUILD_DIR)
-STAGING=$(AL_DIR)/crosstoolchain/staging
-CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
-CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
+STAGING=$(AL_DIR_VER)/crosstoolchain/staging
+CC=$(AL_DIR_VER)/crosstoolchain/cross/bin/i486-linux-gcc
+CXX=$(AL_DIR_VER)/crosstoolchain/cross/bin/i486-linux-g++
 # TODO - this cannot be the right way to do this.
 BASE_CFLAGS=--sysroot $(STAGING)/i486-linux/ -I$(STAGING)/i486-linux/usr/include/c++/i486-linux -I$(STAGING)/i486-linux/usr/include/c++/
 PY_INC=-I$(STAGING)/i486-linux/usr/include/python2.5/
@@ -122,15 +122,15 @@ endif
 # -pthread - TODO read help!
 # -Wno-write-strings - TODO
 NB_FLAGS=-DNO_ZLIB -DWITH_NOIDREF -DROBOT_TYPE=NAO_RL -pthread -Wno-write-strings -DTRUNK_REVISION="\"rr0\""
-AL_INC=-I$(AL_DIR)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR)/extern/c/aldebaran/alcommon/include -I$(AL_DIR)/modules/proxies
-CFLAGS=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC)
+AL_INC=-I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/include -I$(AL_DIR_VER)/modules/proxies
+CFLAGS+=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC)
 CXXFLAGS=$(CFLAGS)
 
 # Libraries explanation
 # =====================
 #
-# alcommon required for ALFastMemoryAccess, found in $(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
-LDFLAGS_NAO=-lz -L$(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
+# alcommon required for ALFastMemoryAccess, found in $(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
+LDFLAGS_NAO=-lz -L$(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
 #LDFLAGS can be defined in the master Makefile
 LDFLAGS_BASE=-lz $(LDFLAGS)
 
@@ -232,7 +232,7 @@ webots:
 endif
 
 webots_helper: $(WEBOTS_TARGET)
-	cp $(WEBOTS_TARGET) $(AL_DIR)/modules/lib/libimops.so
+	cp $(WEBOTS_TARGET) $(AL_DIR_VER)/modules/lib/libimops.so
 
 ################################################################################
 

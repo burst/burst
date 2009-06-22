@@ -21,7 +21,8 @@ from localizer import Localizer
 
 from burst_consts import (InitialRobotState,
     ReadyRobotState, SetRobotState, PlayRobotState,
-    FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS)
+    FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS,
+    is_120)
 
 #######
 
@@ -102,6 +103,12 @@ class Actions(object):
         # we keep track of the last head bd
         self._current_head_bd = self._succeed(self)
         self._current_motion_bd = self._succeed(self)
+
+        # slight changes between 1.3.8 and 1.2.0
+        if is_120:
+            self.setWalkConfig = self.setWalkConfig_120
+        else:
+            self.setWalkConfig = self.setWalkConfig_138
 
     #===============================================================================
     #    High Level - anything that uses vision
@@ -287,7 +294,7 @@ class Actions(object):
         dgens.append(removeStiffness)
         return chainDeferreds(dgens)
 
-    def setWalkConfig(self, param):
+    def setWalkConfig_120(self, param):
         """ param should be one of the walks.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
             LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
@@ -299,15 +306,30 @@ class Actions(object):
         ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
                                             ElbowMedian, ElbowAmplitude ))
         ds.append(self._motion.setWalkArmsEnable(True))
-        ds.append(self._motion.setWalkTrapezoidConfig(LHipRoll, RHipRoll))
-
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-        # 1.3.0 removed setWalkExtraConfig.
-        # we currently plan to use the defaults of the new TrapezoidConfig: [5.0, -5.0]
+        ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
+        ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
+                                                    ZmpOffsetX, ZmpOffsetY ))
+
+        return DeferredList(ds)
+
+    def setWalkConfig_138(self, param):
+        """ param should be one of the walks.WALK_X """
+        # 1.3.8: we currently plan to use the defaults of the new TrapezoidConfig: [5.0, -5.0]
         # default walk config is : [0.035, 0.01, 0.025, 0.2, 0.23, 3.0]
         # help said: pHipHeight must be in [0.15f 0.244f]
-        #ds.append(self._motion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
 
+        (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
+
+        # XXX we assume the order of these configs doesn't matter, hence the
+        # DeferredList - does it?
+        ds = []
+        ds.append(self._motion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
+                                            ElbowMedian, ElbowAmplitude ))
+        ds.append(self._motion.setWalkArmsEnable(True))
+        ds.append(self._motion.setWalkTrapezoidConfig(LHipRoll, RHipRoll))
         ds.append(self._motion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
                                                     HipHeight, TorsoYOrientation ))
 

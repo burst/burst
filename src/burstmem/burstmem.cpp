@@ -252,11 +252,20 @@ void burstmem::startMemoryMap ()
 
     // Initialize sonar readings
     try {
-        ALPtr<ALProxy> us = this->getParentBroker()->getProxy( "ALSonar" );
-        us->callVoid( "subscribe", getName(), paramUS , 500 /* every 500 ms */, 0.1 /* precision - TODO - what is the correct value here? */);
+        const int DT_MS = 500;
+        ALPtr<ALProxy> us = this->getParentBroker()->getProxy( SONAR_MODULE );
+#ifdef NAOQI_138
+        us->callVoid( "subscribe", getName(), DT_MS , 0.1 /* precision - TODO - what is the correct value here? */);
+#elif NAOQI_120
+        ALValue paramUS;
+        paramUS.arrayPush( DT_MS ); // every DT_MS ms
+        us->callVoid( "subscribe", getName(), paramUS );
+#else
+#error "You must define either NAOQI_138 or NAOQI_120"
+#endif
     }
     catch (AL::ALError e) {
-        std::cout << "burstmem: Failed to subscribe to ALSonar: " << e.toString () <<
+        std::cout << "burstmem: Failed to subscribe to " SONAR_MODULE ": " << e.toString () <<
             std::endl;
     }
 

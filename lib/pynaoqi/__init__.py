@@ -13,6 +13,8 @@ import stat
 import datetime
 import urllib2
 
+from burst_consts import is_120
+
 import Image
 
 # finished with global imports
@@ -28,7 +30,6 @@ from burst_util import (succeed, Deferred, whichlib, is64,
     is_64bit_elf, get_num_cores)
 from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
     CAMERA_WHICH_PARAM, CAMERA_WHICH_BOTTOM_CAMERA, CAMERA_WHICH_TOP_CAMERA)
-
 
 #########################################################################
 # Constants
@@ -861,13 +862,18 @@ class NaoQiConnection(BaseNaoQiConnection):
         self._getInfoObject = getInfoObject('NaoQi')
         self._getBrokerInfoObject = getBrokerInfoObject()
         self._brokername = "pynaoqi"
-        self._camera_module = 'ALVideoDevice' # name of the module to get images from. Used to be NaoCam in 1.2.0, in 1.3.0 changed to ALVideoDevice
+        self._camera_module_name = is_120 and 'NaoCam' or 'ALVideoDevice' # name of the module to get images from. Used to be NaoCam in 1.2.0, in 1.3.0 changed to ALVideoDevice
         self._camera_name = 'mysoap_GVM' # TODO: actually this is GVM, or maybe another TLA, depending on Remote/Local? can I do local with python?
         self._camera_param = (320, 240, 320*240*2) # these are updated later, but should not be changed, at least not this robocup..
         self._subscribed_to_camera = False
         # raw string (length/meaning depends on colorspace, resolution), width, height
         self._camera_raw_frame = (None, 0, 0)
         self._camera_missed_frames = 0
+
+    def getCameraModule(self):
+        return getattr(self, self._camera_module_name)
+
+    CameraModule = property(getCameraModule)
 
     def getBrokerInfo(self):
         def onResponse(self, soapbody):
@@ -908,7 +914,11 @@ class NaoQiConnection(BaseNaoQiConnection):
             return succeed(self._camera_name)
         self._camera_resolution = resolution
         self._camera_colorspace = colorspace
-        d = self.ALVideoDevice.subscribe(self._camera_name, resolution, colorspace, fps)
+        if is_120:
+            meth = self.CameraModule.register
+        else:
+            meth = self.CameraModule.subscribe
+        d = meth(self._camera_name, resolution, colorspace, fps)
         d.addCallback(self._onRegisterToCamera)
         return d
 
@@ -989,7 +999,7 @@ class NaoQiConnection(BaseNaoQiConnection):
                 self._camera_missed_frames += 1
                 print "Bad frame %s" % self._camera_missed_frames
             return self._camera_raw_frame
-        d = self.ALVideoDevice.getImageRemote(self._camera_name)
+        d = self.CameraModule.getImageRemote(self._camera_name)
         d.addCallback(filter_some)
         return d
 
@@ -1010,7 +1020,7 @@ class NaoQiConnection(BaseNaoQiConnection):
         return image
 
     def setCameraParameter(self, param, value):
-        ret = self.ALVideoDevice.setParam(int(param), int(value))
+        ret = self.CameraModule.setParam(int(param), int(value))
         return ret
 
     def switchToBottomCamera(self):
