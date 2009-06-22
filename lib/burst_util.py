@@ -85,7 +85,12 @@ class WrapWithDeferreds(object):
         return '<DeferWrapped %s>' % repr(self._obj)
 
 class MyDeferred(object):
-    """ mimic in the most minimal way twisted.internet.defer.Deferred """
+    """ mimic in the most minimal way twisted.internet.defer.Deferred
+    missing:
+    errBacks
+    no recursion protection
+    no recalling of deferred results
+    """
     def __init__(self):
         self._callbacks = []
         self.called = 0
@@ -177,7 +182,9 @@ try:
     # use the real thing if it is there
     from twisted.internet.defer import Deferred, DeferredList
 except:
-    print "WARNING: USING MyDeferred instead of t.i.d.Deferred"
+    print "ERROR: You don't want to use MyDeferred instead of t.i.d.Deferred"
+    import sys
+    sys.exit(-1)
     Deferred = MyDeferred
     DeferredList = MyDeferredList
 
@@ -228,6 +235,7 @@ class BurstDeferred(object):
     """
 
     verbose = False # TODO - options
+    _being_called = False # recursion protection
 
     def __init__(self, data, parent=None, allow_chaining=True):
         self._data = data
@@ -241,6 +249,7 @@ class BurstDeferred(object):
             # recursively clear all child deferreds
             chain_deferred.clear()
         self._ondone = []
+        self._being_called = False
     
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
@@ -265,6 +274,8 @@ class BurstDeferred(object):
 
     def callOnDone(self):
         self._completed = True
+        if self._being_called: return
+        self._being_called = True
         if len(self._ondone) >= 2:
             if self.verbose:
                 print "BurstDeferred: using multiple onDone on %s (may be ok)" % (self)
@@ -280,6 +291,7 @@ class BurstDeferred(object):
             elif isinstance(ret, Deferred):
                 ret.addCallback(lambda _: chain_deferred.callOnDone())
         self._ondone = [] # zero the callback - don't call twice
+        self._being_called = False
 
     def onDoneCallDeferred(self, d):
         """ Helper for t.i.d.Deferred mingling - will call this deferred when
@@ -297,8 +309,6 @@ class BurstDeferred(object):
             self._d = succeed(None)
         else:
             self._d = Deferred()
-            from twisted.internet.defer import log
-            self._d.addErrback(log.err)
             self.onDone(lambda: self._d.callback(None))
         return self._d
 

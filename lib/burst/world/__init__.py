@@ -14,7 +14,9 @@ import mmap
 import struct
 import linecache
 
-from burst_consts import US_DISTANCES_VARNAME
+from twisted.python import log
+
+from burst_consts import US_DISTANCES_VARNAME, is_120
 import burst
 from burst_events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
     EVENT_ALL_BLUE_GOAL_IN_FRAME,
@@ -117,9 +119,11 @@ class World(object):
         self._getAnglesMap = dict([(joint,
             'Device/SubDeviceList/%s/Position/Sensor/Value' % joint)
             for joint in self.jointnames])
-        if self.connected_to_webots:
+        if self.connected_to_webots and is_120:
+            print "World: Using ALMotion for body angles"
             self._updateBodyAngles = self._updateBodyAngles_from_ALMotion
         else:
+            print "World: Using DCM for body angles"
             self._body_angles_vars = self._getAnglesMap.values()
             self._updateBodyAngles = self._updateBodyAngles_from_DCM
             self.addMemoryVars(self._body_angles_vars)
@@ -227,7 +231,7 @@ class World(object):
                         self._vars_to_get_list.remove(US_DISTANCES_VARNAME)
                     self._shm = SharedMemoryReader(self._vars_to_get_list)
                     self._updateMemoryVariables = self._updateMemoryVariables_noop #(temp)
-                    self._shm.openDeferred.addCallback(self._switchToSharedMemory)
+                    self._shm.openDeferred.addCallback(self._switchToSharedMemory).addErrback(log.err)
             if self._shm is None:
                 print "world: using ALMemory"
 
@@ -345,7 +349,7 @@ class World(object):
         """
         # note - blocking
         print "Checking for Man module by getting a vision variable: %s" % self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES
-        self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults)
+        self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults).addErrback(log.err)
 
     def onCheckManModuleResults(self, result):
         #print "onCheckManModuleResults: %r" % (result,)
@@ -409,7 +413,7 @@ class World(object):
         #  * subscribeOnData / subscribeOnDataChange
         #  * module with alfastmemoryaccess, and shared memory with python
         vars = self._vars_to_get_list
-        self._memory.getListData(vars).addCallback(self._updateMemoryFromALMemory_onResults)
+        self._memory.getListData(vars).addCallback(self._updateMemoryFromALMemory_onResults).addErrback(log.err)
 
     def _updateMemoryFromALMemory_onResults(self, values):
         for k, v in zip(self._vars_to_get_list, values):
@@ -424,7 +428,7 @@ class World(object):
         self.body_angles = angles
 
     def _updateBodyAngles_from_ALMotion(self):
-        self._motion.getBodyAngles().addCallback(self._updateBodyAngles_from_ALMotion_onResults)
+        self._motion.getBodyAngles().addCallback(self._updateBodyAngles_from_ALMotion_onResults).addErrback(log.err)
 
     def _updateBodyAngles_from_DCM(self):
         self.body_angles = self.getVars(self._body_angles_vars)

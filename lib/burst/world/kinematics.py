@@ -12,6 +12,8 @@ since I suspect they don't use the pitch correctly.
 import math
 from math import asin, hypot, atan, pi, atan2
 
+from twisted.python import log
+
 from burst_numpy_util import (sin, cos, zeros,
     tan, array, dot, norm,
     identity, translation4D, rotation4D,
@@ -974,7 +976,7 @@ class PynaoqiPose(Pose):
                 results.append(self._location[:2])
             return results
 
-        return self.update(con).addCallback(returnPairs)
+        return self.update(con).addCallback(returnPairs).addErrback(log.err)
 
     def update(self, con):
         """ Development helper. Not to be confused with player usable code.
@@ -986,11 +988,11 @@ class PynaoqiPose(Pose):
             con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
             con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
             onevision().addCallback(self._storeVision),
-            ], fireOnOneErrback=True).addCallbacks(self._updateFromVisionAndAngles, log.err)
+            ], fireOnOneErrback=True).addCallback(self._updateFromVisionAndAngles).addErrback(log.err)
         return d
 
     def update_print(self, con):
-        return self.update(con).addCallback(self._printUpdatedCalculations)
+        return self.update(con).addCallback(self._printUpdatedCalculations).addErrback(log.err)
 
     def _storeInclination(self, result):
         if not self._connecting_to_webots:

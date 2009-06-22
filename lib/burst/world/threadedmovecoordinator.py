@@ -1,6 +1,8 @@
 from threading import Thread
 from Queue import Queue
 
+from twisted.python import log
+
 from burst_util import (DeferredList, succeed, func_name)
 
 import burst
@@ -164,7 +166,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
         apply(getattr(self._motion.post, method_attr), args).addCallback(
             lambda postid: holder.thread.put(
                 method_getter=lambda motion: motion.wait,
-                args=(postid, 0), bd=bd, description='postid %s' % method_attr))
+                args=(postid, 0), bd=bd, description='postid %s' % method_attr)).addErrback(log.err)
 
     def _startActionStraight(self, method_attr, args, holder, bd):
         holder.thread.put(
@@ -233,7 +235,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
             print "ThreadedMoveCoordinator: walk"
         holder = self._walk_holder.makeBusy(self._completeWalk)
         bd = self._make_bd(self)
-        d.addCallback(lambda _: self._startAction(method_attr='walk', args=tuple(), holder=holder, bd=bd))
+        d.addCallback(lambda _: self._startAction(method_attr='walk', args=tuple(), holder=holder, bd=bd)).addErrback(log.err)
         self._add_initiated(time=self._world.time, kind=KIND_WALK, description=description,
             event=EVENT_CHANGE_LOCATION_DONE, # TODO: This isn't actually used - why is it here?
             duration=duration)

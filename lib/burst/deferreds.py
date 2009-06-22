@@ -5,6 +5,8 @@ This is used for the simple task of stopping all future deferreds, but
 is also possibly a debug aid.
 """
 
+from twisted.python import log
+
 from burst_util import (BurstDeferred, succeedBurstDeferred,
     func_name)
 import burst
@@ -76,7 +78,7 @@ class BurstDeferredMaker(object):
         if deferred.called:
             bd._completed = True
         else:
-            deferred.addCallback(lambda _: bd.callOnDone())
+            deferred.addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
         return bd
 
     def clear(self):

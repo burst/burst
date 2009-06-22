@@ -1,4 +1,6 @@
 from math import atan2, asin
+from twisted.internet.defer import log
+
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
@@ -404,7 +406,7 @@ class Actions(object):
     def setCameraFrameRate(self, fps):
         bd = self._make(self)
         self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
-        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
+        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
         return bd
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
@@ -652,10 +654,10 @@ class Actions(object):
                 DeferredList([
                     #self.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).getDeferred(),
                     self.executeMove(pose).getDeferred()
-                ]).addCallback(lambda _: bd.callOnDone())
+                ]).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
             else:
                 bd.callOnDone()
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove).addErrback(log.err)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
         return bd

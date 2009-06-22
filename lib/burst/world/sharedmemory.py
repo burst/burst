@@ -4,6 +4,8 @@ import struct
 import linecache
 import mmap
 
+from twisted.python import log
+
 import burst
 from burst_util import Deferred, chainDeferreds
 from burst_consts import (BURST_SHARED_MEMORY_PROXY_NAME,
@@ -45,7 +47,7 @@ class SharedMemoryReader(object):
         # or anything since we expect the first few frames to be eventless,
         # but this is definitely a TODO
         self.openDeferred = Deferred()
-        shm_proxy.clearMappedVariables().addCallback(self._complete_init)
+        shm_proxy.clearMappedVariables().addCallback(self._complete_init).addErrback(log.err)
 
     def _complete_init(self, _):
         # TODO - this is slow but only done on init
@@ -55,6 +57,7 @@ class SharedMemoryReader(object):
             self._reportNumberOfVariablesInBurstmem))
         map_d.addCallback(lambda _:
             self._shm_proxy.isMemoryMapRunning().addCallback(self._completeOpen))
+        map_d.addErrback(log.err)
 
     def _reportNumberOfVariablesInBurstmem(self, num):
         print "SharedMemory: burstmem says it has %s variables" % num
@@ -65,7 +68,7 @@ class SharedMemoryReader(object):
         def assertMMAPRunning(is_running):
             assert(is_running)
         self._shm_proxy.startMemoryMap().addCallback(
-            lambda _: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning))
+            lambda _: self._shm_proxy.isMemoryMapRunning().addCallback(assertMMAPRunning)).addErrback(log.err)
         if self._fd is not None: return
         data = open(MMAP_FILENAME, 'r')
         self._fd = fd = data.fileno()

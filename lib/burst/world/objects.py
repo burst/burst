@@ -15,7 +15,7 @@ from burst_util import running_median, RingBuffer, Nameable
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
 import burst_events
-
+import burst.field as field
 
 
 class CenteredLocatable(object):
@@ -143,8 +143,8 @@ class Locatable(Nameable):
         # This is the world x coordinate. Our x axis is to the right of our goal
         # center, and our y is towards the enemy gate^H^H^Hoal. The enemy goal is up.
         # (screw Ender)
-        self.world_x = world_x
-        self.world_y = world_y
+        self.world_x = world_x or field.CENTER_FIELD_X # default to estimating everything is in center of field.
+        self.world_y = world_y or field.CENTER_FIELD_Y # TODO - is't wise?
         self.world_heading = 0.0 # default to pointing towards target goal
 
         self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last 

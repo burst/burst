@@ -695,8 +695,7 @@ class SimpleMainLoop(BasicMainLoop):
                 self.cleanup() # TODO - merge with onNormalQuit? what's the difference?
                 d = self.onNormalQuit(naoqi_ok)
                 if d:
-                    d.addCallback(self.cleanupAfterNaoqi)
-                    d.addCallback(self._exitApp)
+                    d.addCallback(self.cleanupAfterNaoqi).addCallback(self._exitApp).addErrback(log.err)
             if sleep_time:
                 sleep(sleep_time)
 
@@ -799,7 +798,7 @@ class TwistedMainLoop(BasicMainLoop):
         if len(pending) == 0:
             self._completeShutdown()
         else:
-            DeferredList(pending).addCallback(self._completeShutdown)
+            DeferredList(pending).addCallback(self._completeShutdown).addErrback(log.err)
 
     def _completeShutdown(self, result=None):
         """ Do second half of shutdown:

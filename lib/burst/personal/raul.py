@@ -1,5 +1,7 @@
 """ Personal file for a robot by the name of this file. """
 
+from twisted.python import log
+
 import burst
 
 import burst.moves.walks as walks
@@ -101,7 +103,7 @@ if burst.using_pynaoqi:
     def new_init(self, *args, **kw):
         pynaoqi.NaoQiConnection.__init__(self, *args, **kw)
         # we should be the first callback, this is crucial
-        self.modulesDeferred.addCallback(lambda result: setup_stiffness_method(self))
+        self.modulesDeferred.addCallback(lambda result: setup_stiffness_method(self)).addErrback(log.err)
     def setup_stiffness_method(self):
         import types
         orig_setBodyStiffness = self.ALMotion.setBodyStiffness
@@ -111,10 +113,9 @@ if burst.using_pynaoqi:
 
     # oh, and we need to patch the getDefaultConnection too / only
     con = pynaoqi.getDefaultConnection()
-    con.modulesDeferred.addCallback(lambda result: setup_stiffness_method(con))
+    con.modulesDeferred.addCallback(lambda result: setup_stiffness_method(con)).addCallback(log.err)
 
-    print """
-
+print """
 RAUL HAS A FAULTY ARM. PATCHED ALMotion.setBodyStiffness
 to not set stiffness on it.  If you really want to set it's
 stiffness, use setChainStiffness or setJointStiffness, they
