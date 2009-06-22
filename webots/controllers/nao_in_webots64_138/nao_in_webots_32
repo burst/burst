@@ -1,8 +1,12 @@
 #!/bin/bash
 
-. setup_aldir_120.sh
-
-export LD_LIBRARY_PATH=$AL_DIR/extern/c/linux/lib:bin/
+if [ "x$AL_DIR_138" == "x" ]; then
+    echo "No AL_DIR_138, setting AL_DIR manually to /usr/local/NaoQiAcademics-1.3.8-Linux"
+    export AL_DIR=/usr/local/NaoQiAcademics-1.3.8-Linux
+else
+    export AL_DIR=$AL_DIR_138
+fi
+export LD_LIBRARY_PATH=$AL_DIR/extern/c/linux/lib/python2.5:$AL_DIR/extern/c/linux/lib:bin/
 # just runs gdb and logs output
 #gdb bin/nao_in_webots -ex run -ex bt -ex quit --quiet 2>&1 | cat > /tmp/nao_in_webots.gdb.log
 

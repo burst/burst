@@ -46,7 +46,7 @@ def legal(f, group):
         if not _use_legal or state in group:
             return f(self, *args, **kw)
         else: # buddy, stop right here!
-            print "Actions: ILLEGAL MOVE: %s" % f.func_name
+            print "Actions: ILLEGAL ROBOCUP MOVE: %s" % f.func_name
             import pdb; pdb.set_trace()
             return self._eventmanager.callLaterBD(self._eventmanager.dt)
     wrapper.func_doc = f.func_doc

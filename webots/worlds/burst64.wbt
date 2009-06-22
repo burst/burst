@@ -270,7 +270,7 @@ DEF BALL Solid {
     forceDependentSlip 0.5
   }
 }
-DEF RED_GOAL_KEEPER Nao138 {
+DEF RED_GOAL_KEEPER Nao {
   translation 0.672295 0.330261 0.0582341
   rotation 0 1 0 4.69199
   color 1 0 0

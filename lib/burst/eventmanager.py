@@ -18,6 +18,7 @@ from burst.player import Player
 
 from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
     EVENT_STEP, EVENT_TIME_EVENT)
+from burst_consts import NAOQI_1_3_8, NAOQI_VERSION
 
 import burst_consts
 
@@ -413,7 +414,7 @@ class BasicMainLoop(object):
             stop_deferred = self._player.onStop()
 
         # From this point onwards illegal moves (i.e. anything) are allowed.
-        print "MainLoop: ILLEGAL moves ALLOWED from now on"
+        print "MainLoop: ILLEGAL ROBOCUP moves ALLOWED from now on"
         burst.actions._use_legal = False
 
         if stop_deferred:
@@ -502,6 +503,7 @@ class BasicMainLoop(object):
                 if x not in dont_print]
                 )
         except:
+            print "ERROR, PDB-ing: BasicMainLoop.getCondensedState"
             import pdb; pdb.set_trace()
         return s
 
@@ -517,14 +519,13 @@ class BasicMainLoop(object):
         # Second, set stiffness, move to initial position, and queue player entrace.
         def setLegalAndCallPlayerOnStart():
             burst.actions._use_legal = True
-            print "MainLoop: only LEGAL moves allowed from now on"
+            print "MainLoop: only LEGAL ROBOCUP moves allowed from now on"
             self._player.onStart()
-        # TODO: Need someplace better? switch camera top then bottom - temp workaround
-        # for evils of 1.3.8
-        top = self._actions.switchToTopCamera
-        bottom = self._actions.switchToBottomCamera
-        for what, dt in sum([[(top, b), (top, b+0.05), (top, b+0.1), (bottom, b+0.2), (bottom, b+0.25), (bottom, b+0.3)] for b in (0.0, 0.5)], []):
-            self._eventmanager.callLater(dt, what)
+        if NAOQI_VERSION == NAOQI_1_3_8: # Workaround for camera switch bug. TODO - location?
+            top = self._actions.switchToTopCamera
+            bottom = self._actions.switchToBottomCamera
+            for what, dt in sum([[(top, b), (top, b+0.05), (top, b+0.1), (bottom, b+0.2), (bottom, b+0.25), (bottom, b+0.3)] for b in (0.0, 0.5)], []):
+                self._eventmanager.callLater(dt, what)
         self._actions._initPoseAndStiffness(self._player._main_behavior._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):

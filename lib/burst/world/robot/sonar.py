@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-from burst_consts import (LEFT, RIGHT, US_HISTORY_SIZE, US_NEAR_DISTANCE, US_FRAMES_TILL_LOST, US_DISTANCES_VARNAME)
+from burst_consts import (LEFT, RIGHT, US_HISTORY_SIZE, US_NEAR_DISTANCE,
+    US_FRAMES_TILL_LOST, US_DISTANCES_VARNAME, SONAR_EXTRACTOR_SUBSCRIBE)
 import burst_events
 from burst_events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST,
             EVENT_OBSTACLE_IN_FRAME)
@@ -15,7 +16,10 @@ class Sonar(object):
     def __init__(self, world):
         print "__init__"
         if burst.options.run_sonar:
-            world._sonar.post.subscribe('', 500, 0.1)
+            SONAR_EXTRACTOR_SUBSCRIBE(
+                module=world._sonar.post,
+                myname='',
+                dt_ms=500)
             world.addMemoryVars([US_DISTANCES_VARNAME])
         self._world = world
         self._sonarHistory = RingBuffer(US_HISTORY_SIZE)

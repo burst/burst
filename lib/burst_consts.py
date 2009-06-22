@@ -19,15 +19,22 @@ MALDINI = 'maldini'
 HAGI = 'hagi'
 #
 WEBOTS = 'webots'
+
+# constants to allow easy switching of naoqi versions (minor api changes)
+NAOQI_1_3_8 = 'NaoQi 1.3.8'
+NAOQI_1_2_0 = 'NaoQi 1.2.0'
+
 ################################################################################
 #                                                                              #
 #       >>>>         Must-Configure-Correctly Constants       <<<<<<<          #
 #                                                                              #
 ################################################################################
 
+# which version of naoqi are we using
+NAOQI_VERSION=NAOQI_1_2_0 # NAOQI_1_3_8
+
 # Wait for a configure event when no game controller present
 ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
-
 
 # From teams.cfg, in GameStateVisualizer 2009
 BURST_TEAM_NUMBER = 4
@@ -141,6 +148,20 @@ FSR_LEG_PRESSED_THRESHOLD = 0.00225
 
 ################################################################################
 ################################################################################
+SONAR_PRECISION = 0.1 # only required for newer Naoqi, 1.3.8
+
+if NAOQI_VERSION == NAOQI_1_3_8:
+    VIDEO_MODULE = 'ALVideoDevice'
+    SONAR_MODULE = 'ALSonar'
+    VIDEO_MODULE_SUBSCRIBE = 'subscribe'
+    VIDEO_MODULE_UNSUBSCRIBE = 'unsubscribe'
+    SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, dt_ms, SONAR_PRECISION)
+else: # using NAOQI_1_2_0
+    VIDEO_MODULE = 'NaoCam'
+    SONAR_MODULE = 'ALUltraSound'
+    VIDEO_MODULE_SUBSCRIBE = 'register'
+    VIDEO_MODULE_UNSUBSCRIBE = 'unregister'
+    SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, [dt_ms])
 
 MIN_JERSEY_NUMBER, MAX_JERSEY_NUMBER = 1, 3
 GAME_CONTROLLER_BROADCAST_PORT = 3838

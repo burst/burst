@@ -1,6 +1,7 @@
 import os, sys, time
 import socket
 
+from burst_consts import SONAR_MODULE, VIDEO_MODULE
 
 from burst_util import (WrapWithDeferreds,
     get_first_available_tcp_port, once)
@@ -86,10 +87,10 @@ for getter, global_name, proxy_name in [
     ('getLedsProxy',   'ledsProxy',   'ALLeds'),
     ('getMemoryProxy', 'memoryProxy', 'ALMemory'),
     ('getSentinelProxy', 'sentinelProxy', 'ALSentinel'),
-    ('getALVideoDeviceProxy', 'naocamProxy', 'ALVideoDevice'),
+    ('getALVideoDeviceProxy', 'naocamProxy', VIDEO_MODULE),
     ('getVisionProxy', 'visionProxy', 'vision'),
     ('getDCMProxy',    'dcmProxy',    'DCM'),
-    ('getSonarProxy', 'ultraSoundProxy', 'ALSonar'),
+    ('getSonarProxy', 'ultraSoundProxy', SONAR_MODULE),
     ('getBurstMemProxy', 'burstmemProxy',   'burstmem'),
     ('getImopsProxy',    'imopsProxy',      'imops'),
     ]:
