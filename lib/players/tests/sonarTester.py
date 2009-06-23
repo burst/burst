@@ -15,7 +15,7 @@ class SonarTester(InitialBehavior):
         self._eventmanager.register(self.onObstacleLost, EVENT_OBSTACLE_LOST)
         self._eventmanager.register(self.onObstacleInFrame, EVENT_OBSTACLE_IN_FRAME)
         # comment out for raw values:
-        #self._eventmanager.register(self.onStep, EVENT_STEP)
+        self._eventmanager.register(self.onStep, EVENT_STEP)
 
     def onObstacleSeen(self):
         self._actions.say('Obstacle seen!')
@@ -32,7 +32,8 @@ class SonarTester(InitialBehavior):
         pass
 
     def onStep(self):
-        print "raw readings: %s" % (self._world.robot.sonar._lastData)
+        #print "raw readings: " , self._world.robot.sonar._lastData
+	print self._world.robot.sonar._lastData
 
 if __name__ == '__main__':
     import burst
