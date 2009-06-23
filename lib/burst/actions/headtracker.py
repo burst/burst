@@ -483,11 +483,11 @@ class Searcher(object):
             target.centered_self.clear()
 
         print "Searcher: search started for %s %s %s." % (','.join([
-            '%s%s%s' % (t.name, t.centered_self.sighted and ' sighted?! ' or '',
-                t.centered_self.sighted_centered and ' sighted_centered?! ' or '')
+            '%s%s%s' % (t.name, ' sighted?! ' if t.centered_self.sighted else '',
+                ' sighted_centered?! ' if t.centered_self.sighted_centered else '')
                     for t in targets]),
-            center_on_targets and 'with centering' or 'no centering',
-            self._seenTargets == self._seenAll and 'for all' or 'for one')
+            'with centering' if center_on_targets else 'no centering',
+            'for all' if self._seenTargets == self._seenAll else 'for one')
 
         self._stopped = False
         self._search_count[0] += 1
