@@ -53,8 +53,6 @@ all: cross
 # we keep all interesting flags in one included file
 include $(ROOT)/src/Makefile.commondefs
 
-# Turn on any debug flags - same for all targets
-CFLAGS_DEBUG=
 
 ROBOT_BUILD_DIR=build_robot
 HOST_32_BUILD_DIR=build_host_32
@@ -69,7 +67,7 @@ PYNAOQI_TARGET=$(PYNAOQI_32_LIB)
 
 BASE_CFLAGS=-DWEBOTS=1
 BUILD_CFLAGS=$(DEBUG_BUILD)
-CFLAGS_DEBUG_BUILD=-DOFFLINE -DDEBUG_IMAGE
+CFLAGS_DEBUG_BUILD=$(CFLAGS_DEBUG_BUILD_32)
 PY_INC=-I/usr/include/python2.5
 else
 ifeq ($(BUILD),HOST64)
@@ -80,15 +78,15 @@ PYNAOQI_TARGET=$(PYNAOQI_64_LIB)
 
 BASE_CFLAGS=
 BUILD_CFLAGS=$(DEBUG_BUILD)
-CFLAGS_DEBUG_BUILD=-DOFFLINE -DDEBUG_IMAGE
+CFLAGS_DEBUG_BUILD=$(CFLAGS_DEBUG_BUILD_64)
 PY_INC=-I/usr/include/python2.5
 else
 # robot
 $(info COMPILING FOR ROBOT)
 BUILD_DIR=$(ROBOT_BUILD_DIR)
-STAGING=$(AL_DIR)/crosstoolchain/staging
-CC=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-gcc
-CXX=$(AL_DIR)/crosstoolchain/cross/bin/i486-linux-g++
+STAGING=$(AL_DIR_VER)/crosstoolchain/staging
+CC=$(AL_DIR_VER)/crosstoolchain/cross/bin/i486-linux-gcc
+CXX=$(AL_DIR_VER)/crosstoolchain/cross/bin/i486-linux-g++
 # TODO - this cannot be the right way to do this.
 BASE_CFLAGS=--sysroot $(STAGING)/i486-linux/ -I$(STAGING)/i486-linux/usr/include/c++/i486-linux -I$(STAGING)/i486-linux/usr/include/c++/
 PY_INC=-I$(STAGING)/i486-linux/usr/include/python2.5/
@@ -124,15 +122,17 @@ endif
 # -pthread - TODO read help!
 # -Wno-write-strings - TODO
 NB_FLAGS=-DNO_ZLIB -DWITH_NOIDREF -DROBOT_TYPE=NAO_RL -pthread -Wno-write-strings -DTRUNK_REVISION="\"rr0\""
-AL_INC=-I$(AL_DIR)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR)/extern/c/aldebaran/alcommon/include -I$(AL_DIR)/modules/proxies
-CFLAGS=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC) -I/home/shlatchz/trunk/opencv/src/cv -I/home/shlatchz/trunk/opencv/include/opencv -I/home/shlatchz/trunk/opencv/src/cxcore -I/home/shlatchz/trunk/opencv/src/highgui -I/home/shlatchz/trunk/opencv/src/cvaux
+AL_INC=-I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/soap -I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/interface -I$(AL_DIR_VER)/extern/c/aldebaran/alcommon/include -I$(AL_DIR_VER)/modules/proxies
+CFLAGS+=$(BUILD_CFLAGS) $(BASE_CFLAGS) $(NB_FLAGS) $(CFLAGS_DEBUG) $(CFLAGS_DEBUG_BUILD) $(PY_INC) $(AL_INC)
 CXXFLAGS=$(CFLAGS)
 
 # Libraries explanation
 # =====================
 #
-# alcommon required for ALFastMemoryAccess, found in $(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
-LDFLAGS=-lz -L$(AL_DIR)/extern/c/aldebaran/alcommon/lib/linux -lalcommon -L/home/shlatchz/trunk/opencv/release/lib -lcv -lhighgui -lcxcore
+# alcommon required for ALFastMemoryAccess, found in $(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
+LDFLAGS_NAO=-lz -L$(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
+#LDFLAGS can be defined in the master Makefile
+LDFLAGS_BASE=-lz $(LDFLAGS)
 
 OBJ=$(SRC:.cpp=.o)
 
@@ -170,13 +170,13 @@ precompiled.h.gch: precompiled.h
 # cross for robot (this is just standard 32bit but different flags maybe, and different toolchain)
 
 $(WEBOTS_TARGET): $(OBJ)
-	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS)
+	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS_BASE) $(LDFLAGS_NAO)
 
 $(TARGET_LIB): $(OBJ)
-	$(CXX) -shared $(CXXFLAGS) -o $(TARGET_LIB) $(OBJ) $(LDFLAGS)
+	$(CXX) -shared $(CXXFLAGS) -o $(TARGET_LIB) $(OBJ) $(LDFLAGS_BASE) $(LDFLAGS_NAO)
 
 $(PYNAOQI_TARGET): $(OBJ_PYNAOQI)
-	$(CXX) -shared $(CXXFLAGS) -o $(PYNAOQI_TARGET) $(OBJ_PYNAOQI) $(LDFLAGS)
+	$(CXX) -shared $(CXXFLAGS) -o $(PYNAOQI_TARGET) $(OBJ_PYNAOQI) $(LDFLAGS_BASE)
 
 $(HOST_BUILD_DIR):
 	mkdir -p $(HOST_BUILD_DIR)
@@ -232,7 +232,7 @@ webots:
 endif
 
 webots_helper: $(WEBOTS_TARGET)
-	cp $(WEBOTS_TARGET) $(AL_DIR)/modules/lib/libimops.so
+	cp $(WEBOTS_TARGET) $(AL_DIR_VER)/modules/lib/libimops.so
 
 ################################################################################
 
