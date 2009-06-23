@@ -36,8 +36,8 @@
 #include <vector>
 using namespace std;
 
-#define SHOW_RESULT 1
-#define SHOW_SOURCE 1
+#define SHOW_RESULT 0
+#define SHOW_SOURCE 0
 
 ObjectFragments::ObjectFragments(Vision* vis, Threshold* thr, int _color)
     : vision(vis), thresh(thr), color(_color), runsize(1)
@@ -1509,44 +1509,43 @@ void ObjectFragments::squareGoal(int x, int y, int c, int c2) {
  */
 
 void ObjectFragments::createObject(int c) {
-	bool flgAnyBall= true;
 	// EDITED BY 4MUSKETEERS! WE RULE!
-	if(flgAnyBall) {
-		anyballs(c, vision->ball);
-	}
-	else {
-		// these are in the relative order that they should be called
-		switch (color) {
-		case GREEN:
-			break;
-		case BLUE:
-			// either we should see a marker or a goal
-			blue(c);
-			break;
-		case RED:
-		case NAVY:
-			// George: I am disabling robot recognition for now because it
-			// causes crashes. The blobs formed for robots have negative
-			// and/or incorrect dimensions. Those dimensions are later used
-			// to access the thresholded array.
-			//robot(c);
-			break;
-		case YELLOW:
-			// either we should see a marker or a goal
-			yellow(c);
-			break;
-		case ORANGE:
-			balls(c, vision->ball);
-			// the ball
-			break;
-	#ifdef USE_PINK_BALL
-		case PINK:
-			balls(c, vision->pinkBall);
-	#endif
-		case BLACK:
-			break;
-		}
-	}
+    // these are in the relative order that they should be called
+    switch (color) {
+    case GREEN:
+        break;
+    case BLUE:
+        // either we should see a marker or a goal
+        blue(c);
+        break;
+    case RED:
+    case NAVY:
+        // George: I am disabling robot recognition for now because it
+        // causes crashes. The blobs formed for robots have negative
+        // and/or incorrect dimensions. Those dimensions are later used
+        // to access the thresholded array.
+        //robot(c);
+        break;
+    case YELLOW:
+        // either we should see a marker or a goal
+        yellow(c);
+        break;
+    case ORANGE:
+        // the ball
+#ifdef ANYBALL
+        std::cout << "ANYBALLS: createObject" << std::endl;
+        anyballs(c, vision->ball);
+#else
+        balls(c, vision->ball);
+#endif
+        break;
+#ifdef USE_PINK_BALL
+	case PINK:
+		balls(c, vision->pinkBall);
+#endif
+    case BLACK:
+        break;
+    }
 }
 
 
@@ -4290,7 +4289,7 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 		// Get ball
 		CvRect ballRect= cvRect(-1,-1,-1,-1);
 		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 305, 150, 0, 5, ballRect, 0);
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 0, 5, ballRect, 0);
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0);
 
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
 
@@ -4359,7 +4358,6 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	cvPyrDown( timg, pyr, CV_GAUSSIAN_5x5 ); // pyr is temporarily used to keep the smaller (down-scaled) picture 7
 	cvPyrUp( pyr, timg, CV_GAUSSIAN_5x5 ); // pyr is upscaled and saved back to timg, with less noise.
 	tgray = cvCreateImage( sz, 8, 1 );
-
 	img_hsv = cvCloneImage( timg );
 	cvCvtColor(img_hsv, timg, CV_RGB2HSV);
 
@@ -4369,6 +4367,7 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	// Remove low saturation colors from image (black & white, shadows, highlights)
 	IplImage* tBlackAndWhite = cvCreateImage( sz, 8, 1 );
 	cvZero(tBlackAndWhite);
+
 	cvSetImageCOI(timg, 2);
 	cvCopy(timg, tBlackAndWhite, 0);//since COI is not supported
 
@@ -4432,7 +4431,12 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 			amount= cvBoundingRect(contours).width;
 		else
 			amount= cvBoundingRect(contours).height;
-		iCurrFocal = sqrt(pow((160-(cvBoundingRect(contours).x+amount/2)),2)+pow((240-(cvBoundingRect(contours).y + amount/2)),2));
+		iCurrFocal = sqrt(static_cast<float>(pow(
+				static_cast<float>(160-(cvBoundingRect(contours).x+amount/2)),
+				static_cast<int>(2)))
+				+
+				static_cast<float>(pow(static_cast<float>(240-(cvBoundingRect(contours).y + amount/2)),
+					static_cast<int>(2))));
 
 		if (result) {
 			cvClearSeq(result);
