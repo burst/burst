@@ -282,8 +282,9 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
     def _onPostId(self, postid, initiated, bd):
         if not isinstance(postid, int):
             print "ERROR: IsRunningMoveCoordinator: onPostId with Bad PostId: %s" % repr(postid)
-            print "ERROR: IsRunningMoveCoordinator: Did you forget to enable ALMotion perhaps?"
-            raise SystemExit
+            print "ERROR: IsRunningMoveCoordinator: Did you forget to enable ALMotion perhaps? quitting."
+            import sys
+            sys.exit(-1)
         initiate_time, kind, description, event, duration = self._initiated[initiated]
         self._add_posted(postid, initiated)
         self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)

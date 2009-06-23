@@ -338,24 +338,29 @@ class WaitCommand(object):
 
 def searchMovesIter(searcher):
     while True:
-        for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (1.0,  0.5), (-1.0, 0.5),
+                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
-        yield WaitCommand(searcher._eventmanager, 3) # Give the robot time to see the ball before executing the costly turn command.
+        # Give the robot time to see the ball before executing the costly turn command.
+        yield WaitCommand(searcher._eventmanager, 3)
         yield TurnCommand(searcher._actions, -pi/2)
 
 def searchMoveIterWithoutAnythingButHeadMovements(searcher):
     while True:
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
+                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def searchMovesIterWithCameraSwitching(searcher):
     while True:
         if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
             yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
+                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5), (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
+                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
 
@@ -469,20 +474,26 @@ class Searcher(object):
         if not self.stopped():
             print "Searcher: WARNING: starting new search but not stopped"
             import pdb; pdb.set_trace()
-        print "Searcher: search started for %s %s %s." % (','.join([t.name for t in targets]),
+        self._reset()
+
+        # Forget where you've previously seen these objects - you wouldn't be looking for them if they were still there.
+        # TODO - history? (i.e. do keep these things, but with times - that would be perfect for
+        # later applying a filter, i.e. kalman or particle or whatever. The localizer would keep track of those things).
+        for target in targets:
+            target.centered_self.clear()
+
+        print "Searcher: search started for %s %s %s." % (','.join([
+            '%s%s%s' % (t.name, t.centered_self.sighted and ' sighted?! ' or '',
+                t.centered_self.sighted_centered and ' sighted_centered?! ' or '')
+                    for t in targets]),
             center_on_targets and 'with centering' or 'no centering',
             self._seenTargets == self._seenAll and 'for all' or 'for one')
 
-        self._reset()
         self._stopped = False
         self._search_count[0] += 1
         self.targets = targets[:]
         self._center_on_targets = center_on_targets
         self._timeoutCallback = timeoutCallback
-
-        # Forget where you've previously seen these objects - you wouldn't be looking for them if they were still there.
-        for target in targets:
-            target.centered_self.clear()
 
         # Register for the timeout, if one has been asked for.
         if not timeout is None:

@@ -4,7 +4,7 @@ import os
 import sys
 import re
 from time import time
-from math import cos, sin, sqrt, atan2
+from math import cos, sin, sqrt, atan2, pi
 import linecache
 import glob
 import socket
@@ -250,6 +250,7 @@ class BurstDeferred(object):
             chain_deferred.clear()
         self._ondone = []
         self._being_called = False
+        self._completed = False
 
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
@@ -283,6 +284,7 @@ class BurstDeferred(object):
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:
+                print ">>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<"
                 ret = cb(self._data)
             # is it a deferred? if so tell it to execute the deferred
             # we handed out once it is done.
@@ -540,6 +542,15 @@ class once(object):
         return self._cached
 
 # Some Math
+
+def shortest_angle(ang):
+    """
+    returns an angle that is equivalent but the smallest in the absolute sense
+    """
+    d = ang < 0 and 2*pi or -2*pi
+    while abs(ang) > pi:
+        ang += d
+    return ang
 
 def close_to_zero(v, amount=1e-10):
     return abs(v) < amount

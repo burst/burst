@@ -465,6 +465,8 @@ class BasicMainLoop(object):
         print "="*burst_consts.CONSOLE_LINE_LENGTH
 
     def _printTraceTicker(self):
+        """ debugging helper. prints a one line (up to overflow) state. """
+        world_location_updated = (EVENT_WORLD_LOCATION_UPDATED in self._pending_events and 'p' or ' ')
         ball = self._world.ball.seen and 'B' or ' '
         yglp = self._world.yglp.seen and 'L' or ' '
         ygrp = self._world.ygrp.seen and 'R' or ' '
@@ -486,8 +488,9 @@ class BasicMainLoop(object):
         total, deferreds, event_cbs, step_cbs, calllater_cbs = self._eventmanager.getPendingBreakdown()
         # LINE_UP is to line up with the LogCalls object.
         LINE_UP = 62
-        print ("%4.1f %s%s%s%s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (self.cur_time - self.main_start_time,
-            ball,
+        print ("%4.1f %s%s%s%s%s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (
+            self.cur_time - self.main_start_time,
+            world_location_updated, ball,
             yglp, ygrp, unknown_yellow,
             bglp, bgrp, unknown_blue,
             len(self._eventmanager._call_later),
@@ -548,6 +551,7 @@ class BasicMainLoop(object):
         returns the amount of time to sleep in seconds
         """
         self._eventmanager.computePendingCallbacks()
+        # Print ticker after computing all callbacks/events, but before executing them
         if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberPendingCallbacks() > 0):
             self._printTraceTicker()
 

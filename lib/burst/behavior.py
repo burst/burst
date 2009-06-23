@@ -24,7 +24,7 @@ def behaviorwrapbd(behavior_actions, f):
         # return a Behavior, and it cannot be replaced by a BD - what to do?
         #return bd.onDone(lambda _,f=f, behavior=behavior_actions._behavior, args=args, kw=kw:
         #        behavior._applyIfNotStopped(f, args, kw))
-    wrapper.func_name = f.func_name
+    wrapper.func_name = 'stoppable_' + f.func_name
     wrapper.func_doc = f.func_doc
     return wrapper
 
@@ -185,6 +185,13 @@ class Behavior(BurstDeferred, Nameable):
 
     def start(self):
         if not self._stopped: return self
+        # DISCUSSION: (talking to yourself again? and storing distributed copies?!)
+        # every Behavior is a BurstDeferred. That means users will onDone on it, and
+        # getDeferred() from it. Whenever they call start() they expect this to be "renewed",
+        # so basically we should do a clear here.. no?
+        if len(self._ondone) > 0:
+            self.log("Questionable: Removing some callbacks and setting completed to false (cbs=%s)" % self)
+        self.clear()
         self._stopped = False
         self._start(firstTime=True)
         return self
