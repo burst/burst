@@ -2,3 +2,6 @@ ROBOT=messi
 # or any of the other robots, or an ip address
 #Robots:
 # messi cech gerrard hagi raul maldini
+
+# To use ANYBALL, uncomment the following:
+#USE_ANYBALL=1

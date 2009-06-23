@@ -69,7 +69,7 @@ CFLAGS_DEBUG_BUILD_64=$(OFFLINE_DEBUG_FLAGS)
 ifeq ($(USE_ANYBALL), 1)
 $(info =================================== Building ANYBALLS imops ==================================)
 CFLAGS+=-DANYBALL
-LDFLAGS_WEBOTS+=-lcv
+LDFLAGS_WEBOTS+=-lcv -lhighgui
 # TODO - 64 bit
 LDFLAGS_NAO+=-lcv
 endif
