@@ -36,6 +36,9 @@ class Localizer(Behavior):
         def onLocationUpdated():
             self.log("got EVENT_WORLD_LOCATION_UPDATED")
             self.stop()
+            if not self._actions.searcher.stopped():
+                self.log("Stopping Searcher (wasn't stopped)")
+                self._actions.searcher.stop()
             self.callOnDone()
         self._eventmanager.registerOneShotBD(EVENT_WORLD_LOCATION_UPDATED).onDone(onLocationUpdated)
 
