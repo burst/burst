@@ -175,6 +175,7 @@ class BallKicker(Behavior):
 
         if not self._target.recently_seen:
             print "TARGET NOT RECENTLY SEEN???"
+            # TODO: searcher / searcher CB should take care of finding target, behavior should take care of turning when search fails
             #import pdb; pdb.set_trace()
             return
 

@@ -383,7 +383,7 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
 US_ELEMENTS_NUM = 2
 US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
 US_NEAR_DISTANCE = 0.4 # distance in meters
-US_FRAMES_TILL_LOST = 3
+US_FRAMES_TILL_LOST = 3 # 3 frames * 500ms = ~1.5 before declaring object as lost
 
 # Joint data
 joint_names, joint_limits = (['HeadYaw',
