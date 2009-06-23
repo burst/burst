@@ -1,4 +1,4 @@
-from math import atan2, asin
+from math import atan2, asin, pi
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
@@ -58,6 +58,8 @@ def legal_head(f):
 
 def legal_any(f):
     return legal(f, any_move_allowed)
+
+
 
 # NOTE: I'm applying legal_head/legal_any only to the lower level. maybe also to higher? (i.e. kickBall)
 
@@ -279,6 +281,9 @@ class Actions(object):
 
     @returnsbd
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
+        #handle divide by zero 
+        if delta_y==0:
+            return self.changeLocationRelativeSideways(delta_x, delta_y, walk)
         #calculate radius 
         #r=((y{-,+}r)**2 + x**2)**0.5
         #0= y**2 + r**2 {+/-}y*r*2 + x**2 - r**2
@@ -291,17 +296,20 @@ class Actions(object):
         if delta_y<0:
             angle=-angle           
         
-        print "Calculated radius: %f, calculated angle %f" % (r, angle)
+        #print "Calculated radius: %f, calculated angle %f" % (r, angle)
+        
+        # TODO: Handle addWalkArc limitations (min/max radius)
 
-        # TEMPORAL CODE - debugging
-        # TODO: Move to journey.py
+        # TODO: Move to journey.py (???)
         dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
                     # stuff that would have been synchronous and turn it asynchronous
                     # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))     
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         defaultSpeed = walk.defaultSpeed
+        # give radius in meters!!!
         dgens.append(lambda _: self._motion.addWalkArc( angle, r / 100. , defaultSpeed ))        
+
         # TODO: Calculate arc length to get possible duration (by arc_length/speed)
         duration = 10
         d = chainDeferreds(dgens)
@@ -680,4 +688,21 @@ class Actions(object):
 
     def getCurrentMotionBD(self):
         return self._current_motion_bd
+
+
+    def getArcBearing(self, delta_x, delta_y):
+        if delta_y == 0:
+            return 0
+        #calculate radius 
+        #r=((y{-,+}r)**2 + x**2)**0.5
+        #0= y**2 + r**2 {+/-}y*r*2 + x**2 - r**2
+        #r=abs( (y**2 + x**2) / (2*y) )      
+        r= abs( delta_y/2 + (delta_x**2)/(2*delta_y) )
+        #sin angle = y/r
+        # resulting angle pi-central angle
+        angle = asin(delta_x/r)
+        if delta_y < 0:
+            angle=-angle    
+        return angle
+
 
