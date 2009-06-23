@@ -54,8 +54,14 @@ class TargetFinder(ContinuousBehavior):
         seen_objects.extend([t for t in self._targets if t.recently_seen and not t.seen])
 
         if len(seen_objects) > 0:
-            # reset targets to the first seen object (could be arbitrary if we were just called)
-            self._targets =  [seen_objects[0]]
+            if len(seen_objects) > 1:
+                # if more than 1 object seen, select the one with minimal bearing
+                # we also reset the _targets so we'll track the same target if target lost
+                bearings = [abs(t.bearing) for t in seen_objects]
+                self._targets = [seen_objects[bearings.index(min(bearings))]]
+            else:
+                self._targets = [seen_objects[0]]
+
             target = self._targets[0]
             print "will track %s" % target.name
             # NOTE: to make the behavior happy we need to always keep the deferred we are
