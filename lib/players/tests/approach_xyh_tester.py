@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
+from math import pi
+
 import player_init
 
 from burst.behavior import InitialBehavior
-
 import burst.field as field
-
-from burst.actions.approacher import ApproachXYActiveLocalization
+from burst.actions.approacher import TurtleTurn, ApproachXYHActiveLocalization
 
 class ApproachTester(InitialBehavior):
 
@@ -15,8 +15,9 @@ class ApproachTester(InitialBehavior):
 
     def _start(self, firstTime=False):
         self.log("Starting")
-        ApproachXYActiveLocalization(
-            self._actions, field.MIDFIELD_X+100, field.MIDFIELD_Y).start().onDone(self._onApproacherDone)
+        #TurtleTurn( self._actions, 20.0, 0.0, pi/4, 2).start().onDone(self._onApproacherDone)
+        ApproachXYHActiveLocalization(
+            self._actions, field.MIDFIELD_X, field.MIDFIELD_Y, 0.0).start().onDone(self._onApproacherDone)
 
     def _onApproacherDone(self):
         self.log("Done")

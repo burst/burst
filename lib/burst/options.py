@@ -71,6 +71,7 @@ def parse_command_line_arguments():
     debug.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     debug.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
     debug.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')
+    debug.add_option('', '--verbose-journey', action='store_true', dest='verbose_journey', default=False, help='Verbose movecoordinator')
     debug.add_option('', '--verbose-movecoordinator', action='store_true', dest='verbose_movecoordinator', default=False, help='Verbose movecoordinator')
     debug.add_option('', '--verbose-deferreds', action='store_true', dest='verbose_deferreds', default=False, help='Verbose deferreds (burstdeferreds)')
     debug.add_option('', '--verbose-player', action='store_true', dest='verbose_player', default=False, help='Verbose player class')
