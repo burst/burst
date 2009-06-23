@@ -24,10 +24,10 @@ else:
 # Replace here with your robot's IP address
 #IP = "192.168.7.108"
 #PORT = 9559
-IP = "127.0.0.1" 
+IP = "127.0.0.1"
 PORT = 9560
 
-#IP_REMOTE = "127.0.0.1" 
+#IP_REMOTE = "127.0.0.1"
 #PORT_REMOTE = 54010
 
 # Create a proxy to Vision module
@@ -45,4 +45,4 @@ visionProxy.saveImage("/var/tmp/")
 
 visionProxy.unRegisterFromVIM()
 
-print "Test terminated successfully" 
+print "Test terminated successfully"

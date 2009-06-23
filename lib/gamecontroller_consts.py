@@ -4,17 +4,17 @@ import burst_events
 ###############
 # Game States #
 ###############
-InitialGameState = 0; 
-ReadyGameState = 1; 
-SetGameState = 2; 
-PlayGameState = 3; 
+InitialGameState = 0;
+ReadyGameState = 1;
+SetGameState = 2;
+PlayGameState = 3;
 FinishGameState = 4;
 # PenalizedGameState = 666; # TODO: Should I have something like this?
 
 #########
 # Teams #
 #########
-TeamA = BlueTeam = 0; 
+TeamA = BlueTeam = 0;
 TeamB = RedTeam = 1;
 
 #############

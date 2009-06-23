@@ -26,7 +26,7 @@ def debugme():
     import pdb; pdb.set_trace()
 
 class Rectangle(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

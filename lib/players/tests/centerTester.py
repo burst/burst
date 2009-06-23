@@ -5,7 +5,7 @@ import player_init
 from burst.behavior import InitialBehavior
 
 class centerTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -24,7 +24,7 @@ class centerTester(InitialBehavior):
     def reallyWrapUp(self):
         print "centered again!"
         self._eventmanager.quit()
- 
+
 
 if __name__ == '__main__':
     import burst

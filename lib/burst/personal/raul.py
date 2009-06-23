@@ -1,5 +1,7 @@
 """ Personal file for a robot by the name of this file. """
 
+from twisted.python import log
+
 import burst
 
 import burst.moves.walks as walks
@@ -87,10 +89,10 @@ def getRaulMotionProxy(deferred=True):
 
         def setBodyStiffness(self, num):
             return raulSetBodyStiffness(self._p, self._orig_setbodystiffness, num)
-        
+
         def __getattr__(self, k):
             return getattr(self._p, k)
-    
+
     return RaulMotionProxy(deferred)
 
 burst.getMotionProxy = getRaulMotionProxy
@@ -101,7 +103,7 @@ if burst.using_pynaoqi:
     def new_init(self, *args, **kw):
         pynaoqi.NaoQiConnection.__init__(self, *args, **kw)
         # we should be the first callback, this is crucial
-        self.modulesDeferred.addCallback(lambda result: setup_stiffness_method(self))
+        self.modulesDeferred.addCallback(lambda result: setup_stiffness_method(self)).addErrback(log.err)
     def setup_stiffness_method(self):
         import types
         orig_setBodyStiffness = self.ALMotion.setBodyStiffness
@@ -111,10 +113,9 @@ if burst.using_pynaoqi:
 
     # oh, and we need to patch the getDefaultConnection too / only
     con = pynaoqi.getDefaultConnection()
-    con.modulesDeferred.addCallback(lambda result: setup_stiffness_method(con))
+    con.modulesDeferred.addCallback(lambda result: setup_stiffness_method(con)).addCallback(log.err)
 
-    print """
-
+print """
 RAUL HAS A FAULTY ARM. PATCHED ALMotion.setBodyStiffness
 to not set stiffness on it.  If you really want to set it's
 stiffness, use setChainStiffness or setJointStiffness, they
@@ -227,18 +228,18 @@ def CIRCLE_STRAFE_COUNTER_CLOCKWISE():
     jointCodes = list()
     angles = list()
     times = list()
-    suspend = 1.20000    
+    suspend = 1.20000
 
     jointCodes.append("RAnklePitch")
     angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RAnkleRoll")
-    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)]) 
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RElbowYaw")
-    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)]) 
+    angles.append([float(0.00000), float(0.00000), float(0.00000), float(0.00000), float(0.00000)])
     times.append([float(0.13333), float(0.46667), float(0.60000), float(0.73333), float(suspend)])
 
     jointCodes.append("RHipPitch")

@@ -21,7 +21,7 @@ else:
   from naoqi import ALBehavior
 
 # Replace here with your robot's IP address
-IP = "192.168.7.159" 
+IP = "192.168.7.159"
 PORT = 9559
 
 # Create a proxy to ALMotion
@@ -74,5 +74,5 @@ for i in range(0, 5):
 
 motionProxy.setJointStiffness('HeadYaw',0.0,TimeInterpolation)
 
-print "Test terminated successfully" 
+print "Test terminated successfully"
 

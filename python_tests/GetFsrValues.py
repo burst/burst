@@ -3,7 +3,7 @@ import sys
 import time
 
 path = `os.environ.get("AL_DIR")`
-home = `os.environ.get("HOME")` 
+home = `os.environ.get("HOME")`
 
 IP = "192.168.2.101" # Robot IP  Address
 PORT = 9559

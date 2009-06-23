@@ -32,6 +32,8 @@ New and annoyingly thready:
    the bd's given to the user, and return it via calc_events called from world.
 """
 
+from twisted.python import log
+
 import burst
 from burst_util import (DeferredList, succeed, Deferred, func_name)
 from burst_events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
@@ -48,7 +50,7 @@ KIND_WALK = 'walk'
 class SerialPostQueue(object):
 
     """ Queue of serial events for Robot.
-    
+
     Why this is here:
      Workaround for missing isFinished on ALMotion proxy.
     There is a isRunning, but if we call it before the motion has started, it
@@ -89,17 +91,18 @@ class SerialPostQueue(object):
         if event is None and deferred is None:
             print "ERROR: SerialPostQueue: handling an empty post?"
             import pdb; pdb.set_trace()
-    
+
         #print "DEBUG: %s: waiting for %s, event %s, duration %3.2f, final_time-cur_time %3.2f, isRunning %s" % (
         #    self.name, postid, event, duration, self._start_time + duration - self._world.time, self._motion.isRunning(postid)
         #)
         if self._world.time >= self._start_time + duration:
             if not isinstance(postid, int):
+                print "ERROR: SerialPostQueue: postid that isn't int?"
                 import pdb; pdb.set_trace()
 
             self._isRunning(postid).addCallback(
                 lambda result, postid=postid, event=event, deferred=deferred:
-                    self._onIsRunning(result, postid, event, deferred))
+                    self._onIsRunning(result, postid, event, deferred)).addErrback(log.err)
 
     def _isRunning(self, postid):
         return self._motion.isRunning(postid)
@@ -170,7 +173,7 @@ class BaseMoveCoordinator(object):
 
     def isMotionInProgress(self):
         return False
-    
+
     def isHeadMotionInProgress(self):
         return False
 
@@ -255,7 +258,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     def isMotionInProgress(self):
         return self._motion_posts.isNotEmpty()
-    
+
     def isHeadMotionInProgress(self):
         return self._head_posts.isNotEmpty()
 
@@ -273,7 +276,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         initiated = self._add_initiated(self._world.time, kind, description, event, duration)
         bd = self._make_bd(self)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
-            self._onPostId(postid, initiated, bd))
+            self._onPostId(postid, initiated, bd)).addErrback(log.err)
         return bd
 
     def _onPostId(self, postid, initiated, bd):
@@ -308,7 +311,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
             kind=KIND_HEAD, event=EVENT_HEAD_MOVE_DONE, duration=0.1)
 
     def walk(self, d, duration, description):
-        d.addCallback(lambda _: self._motion.post.walk())
+        d.addCallback(lambda _: self._motion.post.walk()).addErrback(log.err)
         return self._waitOnPostid(d,
             description=description,
             kind=KIND_WALK, event=EVENT_CHANGE_LOCATION_DONE, duration=duration)

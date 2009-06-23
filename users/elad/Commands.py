@@ -21,11 +21,11 @@ class Command(object):
 	""
 
 	__metaclass__ = Registrat
-	
+
 	keywords = []
-	
+
 	pid = None
-	
+
 	@classmethod
 	def triggeredBy(clazz, command):
 		return command.split(" ")[0] in clazz.keywords
@@ -33,21 +33,21 @@ class Command(object):
 	def __init__(self, command):
 		self.command = command
 		self.modifiers = Util.StringTokenizer.tokenize(command)[1:]
-	
+
 	def execute(self):
 		pass
-		
+
 	def wait(self):
 		pass
 
 
 class CompoundCommand(object):
 	""
-	
+
 	def __init__(self, commands, isSynchronous):
 		self.commands = commands
 		self.isSynchronous = isSynchronous
-	
+
 	def execute(self):
 		for command in self.commands:
 			command.execute()
@@ -58,7 +58,7 @@ class CompoundCommand(object):
 		if not self.isSynchronous: # Otherwise, you've already waited when executing.
 			for command in self.commands:
 				command.wait()
-	
+
 	# DBG
 	def toString(self):
 		string = "["
@@ -89,57 +89,57 @@ class ModuleSanityException(Exception):
 
 class HelpCommand(Command):
 	"help"
-	
+
 	keywords = ["help", "command", "commands", "list", "h", "?"]
-	
+
 	def execute(self):
 		for command in Registrat.registered:
 			if command != Command: # Ignore the abstract class everyone's inheriting from.
 				print command.__doc__.center(20) + " " + str(command.keywords)
-			
-			
+
+
 class SayCommand(Command):
 	"say"
-	
+
 	keywords = ["say"]
-	
+
 	def execute(self):
 		# I don't use the modifiers here, since extra spaces might have meaning.
 		self.pid = burst.getSpeechProxy().post.say(self.command[3:]) # TODO: Should pass through some other module.
-	
+
 	def wait(self):
 		burst.getSpeechProxy().wait(self.pid, 0)
 
 
 class StiffnessOnCommand(Command):
 	"stiffness_on"
-	
+
 	keywords = ["stiffness_on", "stiffnesson", "son"]
 
 	def execute(self):
 		self.pid =  BasicMotion.setStiffness(1.0)
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class StiffnessOffCommand(Command):
 	"stiffness_off"
-	
+
 	keywords = ["soff", "sof", "soft", "stiffness_off", "stiffnessoff"]
 
 	def execute(self):
 		self.pid = BasicMotion.setStiffness(0.0)
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class WalkCommand(Command):
 	"walk"
-	
+
 	keywords = ["w", "walk"]
-	
+
 	def execute(self): # TODO: Fix.
 		if len(self.modifiers) < 1:
 			raise ParseError, "distance expected"
@@ -154,16 +154,16 @@ class WalkCommand(Command):
 				self.pid = BasicMotion.fastStraightWalk(distance)
 			else:
 				print "Unsupport gait. Choose either slow, fast, or leave empty to default to slow."
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
-				
+
 
 class CrouchPositionCommand(Command):
 	"crouch"
-	
+
 	keywords = ["crouch", "c"]
-	
+
 	def execute(self):
 		#return BasicMotion.crouch() # Unimplemented.
 		pass
@@ -171,24 +171,24 @@ class CrouchPositionCommand(Command):
 
 class ZeroPositionCommand(Command):
 	"zero (position)"
-	
+
 	keywords = ["0", "z", "zero"]
-	
+
 	def execute(self):
 		self.pid = BasicMotion.zeroPosition()
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class InitPositionCommand(Command):
 	"initial (position)"
-	
+
 	keywords = ["init", "i", "initial", "initial position"]
-	
+
 	def execute(self):
 		self.pid = BasicMotion.initPosition()
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
@@ -196,9 +196,9 @@ class InitPositionCommand(Command):
 # TODO: Violates synchronicity?
 class ShootCommand(Command):
 	"shoot"
-	
+
 	keywords = ["shoot"]
-	
+
 	def execute(self): # TODO: Return pid.
 		import Shoot
 		Shoot.do()
@@ -206,18 +206,18 @@ class ShootCommand(Command):
 
 class ExitCommand(Command):
 	"exit"
-	
+
 	keywords = ["exit", "quit", "q", "e"]
-	
+
 	def execute(self):
 		raise TerminateSignal, ""
-		
+
 
 class FlexArmCommand(Command):
 	"flex"
-	
+
 	keywords = ["flex"]
-	
+
 	def execute(self):
 		modifiers = self.command[len(Util.StringTokenizer(self.command).nextToken()):]
 		if "l" in modifiers:
@@ -226,16 +226,16 @@ class FlexArmCommand(Command):
 			self.pid = BasicMotion.flexRightArm()
 		else:
 			raise ParseError, "right/left expected"
-		
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class UnflexArmCommand(Command):
 	"unflex"
-	
+
 	keywords = ["unflex"]
-	
+
 	def execute(self):
 		modifiers = self.command[len(Util.StringTokenizer(self.command).nextToken()):]
 		if "l" in modifiers:
@@ -244,16 +244,16 @@ class UnflexArmCommand(Command):
 			self.pid = BasicMotion.unflexRightArm()
 		else:
 			raise ParseError, "right/left expected"
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class CloseHandCommand(Command):
 	"close_hand"
-	
+
 	keywords = ["closehand", "handclose", "close_hand", "hand_close", "ch"]
-	
+
 	def execute(self):
 		if "l" in self.modifiers or "left" in self.modifiers:
 			self.pid = BasicMotion.closeLeftHand()
@@ -261,16 +261,16 @@ class CloseHandCommand(Command):
 			self.pid = BasicMotion.closeRightHand()
 		else:
 			raise ParseError, "right/left expected"
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class OpenHandCommand(Command):
 	"open_hand"
-	
+
 	keywords = ["openhand", "handopen", "open_hand", "hand_open", "oh"]
-	
+
 	def execute(self):
 		if "l" in self.command:
 			self.pid = BasicMotion.openLeftHand()
@@ -285,56 +285,56 @@ class OpenHandCommand(Command):
 
 class StopWalkingCommand(Command):
 	"stop"
-	
+
 	keywords = ["stop", "halt", "s"]
-	
+
 	def execute(self):
 		BasicMotion.stopWalking()
-	
+
 	def wait():
 		pass # Asynchronous anyhow.
-		
+
 
 class StopWalkingCommand(Command):
 	"kill"
-	
+
 	keywords = ["kill"]
-	
+
 	def execute(self):
 		BasicMotion.killAllTasks()
-	
+
 	def wait():
 		pass # Asynchronous anyhow.
 
 
 class TurnCommand(Command):
 	"turn"
-	
+
 	keywords = ["turn"]
-	
+
 	def execute(self):
 		if len(self.modifiers) < 1:
 			raise ParseError, "how much should I turn?"
 		self.pid = BasicMotion.turn(self.modifiers[0])
-	
+
 	def wait(self):
 		BasicMotion.wait(self.pid)
 
 
 class WaitCommand(Command): # Note that this one is synchronous.
 	"wait"
-	
+
 	keywords = ["wait"]
-	
+
 	def execute(self):
 		time.sleep(float(self.modifiers[0]))
 
 
 class GetUpCommand(Command):
 	"get_up"
-	
+
 	keywords = ["get_up", "getup", "gu"]
-	
+
 	def execute(self):
 		if len(self.modifiers) == 0:
 			BasicMotion.getUp()
@@ -348,28 +348,28 @@ class GetUpCommand(Command):
 
 class MoveHeadCommand(Command):
 	"movehead"
-	
+
 	keywords = ["movehead", "move_head", "mh"]
-	
+
 	def execute(self):
 		if len(self.modifiers) < 2:
 			raise ParseError, "coordinates expected"
 		x = self.modifiers[0]
 		y = self.modifiers[1]
 		self.pid = BasicMotion.moveHead(x, y)
-		
+
 
 class SoftExitCommand(Command):
 	"softexit"
-	
+
 	keywords = ["softexit", "soft_exit", "se"]
-	
+
 	def execute(self):
 		CommandParser.parseCompoundCommand("i&sof&q").execute()
-		
-		
+
+
 class CommandParser(object):
-	
+
 	commands = Registrat.registered
 
 	@classmethod
@@ -383,10 +383,10 @@ class CommandParser(object):
 
 	@classmethod
 	def parseCompoundCommand(clazz, userCommand):
-		
+
 		sync = False
 		coms = []
-		
+
 		userCommand = userCommand.strip()
 		while userCommand != "":
 			userCommand = userCommand.strip()
@@ -415,13 +415,13 @@ class CommandParser(object):
 			else:
 				coms.append(CommandParser.parseSingleCommand(userCommand))
 				userCommand = ""
-		
+
 		return CompoundCommand(coms, sync)
-	
+
 	@classmethod
 	def parse(clazz, userCommand):
 		return CommandParser.parseCompoundCommand(userCommand)
-		
+
 
 def moduleSanityCheck():
 	# Make sure no keyword is used by more than one Command. (Sure, it's quite inefficient, but who cares?)
@@ -432,5 +432,5 @@ def moduleSanityCheck():
 					if keyword in command2.keywords:
 						raise ModuleSanityException()
 
-	
+
 moduleSanityCheck()

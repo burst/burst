@@ -1,4 +1,5 @@
-from math import atan2, asin, pi
+from math import atan2, asin
+from twisted.internet.defer import log
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed,
@@ -63,17 +64,28 @@ def legal_any(f):
 
 # NOTE: I'm applying legal_head/legal_any only to the lower level. maybe also to higher? (i.e. kickBall)
 
+# SPECIAL NOTE: about the decorators
+#
+#  returnsbd - this is applied to any method that returns a bd, except those that calls others in Actions
+#     that do. It doesn't cause any action itself (just adds an attributes that says it returns a bd), but
+#     that attribute is looked for by BehaviorActions, which uses it to record BD's for later clearing on Behavior.stop.
+#
+#  legal_any, legal_head - implement the low level prevention of illegal actions. Set to any of the low level
+#     behaviors. Don't apply to higher level ones - it will just stop bugs from being discovered.
+
+# TODO - checks for those decorators (I must have missed something)
+
 class Actions(object):
     """ High level class used by Player to initiate any action that the robot does,
     including basics: head moves, joint moves, joint scripts (executeMoves)
     high level moves: change location relative
-    vision and head moves: head tracking
+    vision and head moves: head tracking, searching, localizing
     vision and head and body moves: ball kicking
-    
+
     We put high level operations in Actions if:
      * it is an easily specified operation (head scanning)
      * it is short timed (ball kicking)
-    
+
     We will put it in Player instead if:
      * it is complex, runs for a long time.. (not very well understood)
     """
@@ -125,7 +137,7 @@ class Actions(object):
         If target is None it kicks towards the enemy goal (currently the Yellow - TODO).
         Otherwise target should be a location which will be used to short circuit the
         scanning process. (caller needs to supply a valid target)
-        
+
         Kicking towards a target entails:
          * if target is default: scan for ball until found (using various strategies)
          * approach ball using different strategies (far, close)
@@ -171,22 +183,22 @@ class Actions(object):
 
     @returnsbd
     def localize(self):
-        self._localizer.start()
-        return self._localizer # a Behavior, hence a BurstDeferred
+        return self.localizer.start() # a Behavior, hence a BurstDeferred
 
     #===============================================================================
     #    Mid Level - any motion that uses callbacks
     #===============================================================================
 
+    @returnsbd
     @legal_any
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
         """
         Add an optional addTurn and StraightWalk to ALMotion's queue.
          Will fire EVENT_CHANGE_LOCATION_DONE once finished.
-         
+
         Coordinate frame for robot is same as world: x forward, y left (z up)
-         
+
         What kind of walk this is: for simplicity we do a turn, walk,
         then final turn to wanted angle.
 
@@ -203,35 +215,37 @@ class Actions(object):
             distance=distance, bearing=bearing)
         return self._current_motion_bd
 
+    @returnsbd
     @legal_any
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
         print walk
         self.setWalkConfig(walk.walkParameters)
         dgens = []
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
-        
+
         print "ADD TURN (deltaTheta): %f" % (deltaTheta)
         dgens.append(lambda _: self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN))
-        
+
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                             description=('turn', deltaTheta, walk))
         return self._current_motion_bd
 
+    @returnsbd
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
-         
+
         Coordinate frame for robot is same as world: x forward, y left (z up)
         X & Y are in radians!
-        
-        What kind of walk is this: for simplicity we do sidewalking then walking to target 
+
+        What kind of walk is this: for simplicity we do sidewalking then walking to target
         (we assume no orientation change is required)
         """
-        
+
         print "changeLocationRelativeSideways (delta_x: %3.3f delta_y: %3.3f)" % (delta_x, delta_y)
         distance, distanceSideways = delta_x / CM_TO_METER, delta_y / CM_TO_METER
         did_sideways = None
@@ -243,15 +257,15 @@ class Actions(object):
 
         if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
             walk = walks.SIDESTEP_WALK
-        
+
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
-        
+
         defaultSpeed = walk.defaultSpeed
         stepLength = walk[WalkParameters.StepLength]
-        
+
         if distance >= MINIMAL_CHANGELOCATION_X:
             print "WALKING STRAIGHT (stepLength: %3.3f distance: %3.3f defaultSpeed: %3.3f)" % (stepLength, distance, defaultSpeed)
-            
+
             #dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
             # Vova trick - start with slower walk, then do the faster walk.
             slow_walk_distance = min(distance, stepLength*2)
@@ -269,17 +283,18 @@ class Actions(object):
             dgens.append(lambda _: self._motion.addWalkSideways(distanceSideways, defaultSpeed))
         else:
             print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % distanceSideways
-            
+
         duration = (defaultSpeed * distance / stepLength +
                     (did_sideways and defaultSpeed or self._eventmanager.dt) ) * 0.02 # 20ms steps
         print "Estimated duration: %3.3f" % (duration)
-        
+
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
                     description=('sideway', delta_x, delta_y, walk))
         return self._current_motion_bd
 
     @returnsbd
+    @legal_any
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
         #handle divide by zero 
         if delta_y==0:
@@ -289,10 +304,10 @@ class Actions(object):
         #0= y**2 + r**2 {+/-}y*r*2 + x**2 - r**2
         #r=abs( (y**2 + x**2) / (2*y) )
         r= abs( delta_y/2 + (delta_x**2)/(2*delta_y) )
-        
+
         #sin angle = y/r
         angle = asin(delta_x/r)
-        
+
         if delta_y<0:
             angle=-angle           
         
@@ -304,7 +319,7 @@ class Actions(object):
         dgens = []  # deferred generators. This is the DESIGN PATTERN to collect a bunch of
                     # stuff that would have been synchronous and turn it asynchronous
                     # All lambda's should have one parameter, the result of the last deferred.
-        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))     
+        dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
         defaultSpeed = walk.defaultSpeed
         # give radius in meters!!!
@@ -317,8 +332,9 @@ class Actions(object):
                     description=('arc', delta_x, delta_y, walk))
         return self._current_motion_bd
 
-        
+
     @returnsbd
+    @legal_any
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd
@@ -338,7 +354,7 @@ class Actions(object):
     def setWalkConfig_120(self, param):
         """ param should be one of the walks.WALK_X """
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength,
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
         # XXX we assume the order of these configs doesn't matter, hence the
@@ -361,7 +377,7 @@ class Actions(object):
         # help said: pHipHeight must be in [0.15f 0.244f]
 
         (ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude,
-            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength, 
+            LHipRoll, RHipRoll, HipHeight, TorsoYOrientation, StepLength,
             StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
         # XXX we assume the order of these configs doesn't matter, hence the
@@ -389,16 +405,19 @@ class Actions(object):
     #    Low Level
     #===============================================================================
 
+    @returnsbd
     def switchToTopCamera(self):
         print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_TOP_CAMERA
         return self._wrap(self._imops.switchToTopCamera(), self)
 
+    @returnsbd
     def switchToBottomCamera(self):
         print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
         return self._wrap(self._imops.switchToBottomCamera(), self)
 
+    # don't wrap - calls two wrapped routines
     def setCamera(self, whichCamera):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
@@ -409,10 +428,11 @@ class Actions(object):
             bd = self.switchToTopCamera()
         return bd
 
+    @returnsbd
     def setCameraFrameRate(self, fps):
         bd = self._make(self)
         self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
-        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone())
+        self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
         return bd
 
     def changeHeadAnglesRelative(self, delta_yaw, delta_pitch, interp_time = 0.15):
@@ -456,7 +476,7 @@ class Actions(object):
             return self.executeMove(poses.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
         else :
             return self.executeMove(poses.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
-    
+
     @legal_any
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         self._current_motion_bd = self._movecoordinator.doMove(jointCodes, angles, times, 1,
@@ -484,7 +504,7 @@ class Actions(object):
             def getangles((larm, lleg, rleg, rarm, interp_time)):
                 return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
             joints = self._joint_names[2:]
-        
+
         n_joints = len(joints)
         angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
@@ -495,6 +515,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
+    @returnsbd
     @legal_any
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
         """ Go through a list of body angles, works like northern bites code:
@@ -507,7 +528,7 @@ class Actions(object):
         NOTE: currently this is SYNCHRONOUS - it takes at least
         sum(interp_time) to execute.
         """
-        
+
         if len(moves[0]) == 6:
             def getangles((head, larm, lleg, rleg, rarm, interp_time)):
                 return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
@@ -525,6 +546,7 @@ class Actions(object):
             interp_type, description=description)
         return self._current_motion_bd
 
+    @returnsbd
     @legal_head
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
@@ -569,7 +591,7 @@ class Actions(object):
             description=('movehead', x, y))
 
     def blockingStraightWalk(self, distance):
-        if self._world.robot.isMotionInProgress():
+        if self.isMotionInProgress():
             return False
 
         self._motion.setBodyStiffness(INITIAL_STIFFNESS)
@@ -597,7 +619,7 @@ class Actions(object):
         self._motion.killAll()
 
     #================================================================================
-    # Choreograph moves 
+    # Choreograph moves
     #================================================================================
 
     # TODO? - generate these from moves.choreograph
@@ -610,13 +632,13 @@ class Actions(object):
 
     def executeLeapLeft(self):
         return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_LEFT, "goalie leap left")
-    
+
     def executeLeapLeftSafe(self):
         return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_LEFT_SAFE, "goalie leap left safe")
 
     def executeLeapRight(self):
         return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_RIGHT, "goalie leap right")
-    
+
     def executeLeapRightSafe(self):
         return self.executeMoveChoreograph(choreograph.GOALIE_LEAP_RIGHT_SAFE, "goalie leap right safe")
 
@@ -627,14 +649,14 @@ class Actions(object):
         return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFE_COUNTER_CLOCKWISE, "circle strafe clockwise")
 
     def executeCircleStraferInitPose(self):
-        return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose") 
+        return self.executeMoveChoreograph(choreograph.CIRCLE_STRAFER_INIT_POSE, "circle strafer init pose")
 
     def executeTurnCW(self):
-        return self.executeMoveChoreograph(choreograph.TURN_CW, "turn cw") 
+        return self.executeMoveChoreograph(choreograph.TURN_CW, "turn cw")
 
     def executeTurnCCW(self):
         return self.executeMoveChoreograph(choreograph.TURN_CCW, "turn ccw")
-    
+
     def executeToBellyFromLeapRight(self):
         return self.executeMoveChoreograph(choreograph.TO_BELLY_FROM_LEAP_RIGHT, "to belly from leap right")
 
@@ -649,7 +671,7 @@ class Actions(object):
         """ Not to be called by the player, it is called during
         BasicMainLoop.preMainLoopInit, and on completion player.onStart
         is called.
-        
+
         Sets stiffness, then sets initial position for body and head.
         Returns a BurstDeferred.
         """
@@ -660,25 +682,19 @@ class Actions(object):
                 DeferredList([
                     #self.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).getDeferred(),
                     self.executeMove(pose).getDeferred()
-                ]).addCallback(lambda _: bd.callOnDone())
+                ]).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
             else:
                 bd.callOnDone()
-        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove)
+        self._motion.setBodyStiffness(INITIAL_STIFFNESS).addCallback(doMove).addErrback(log.err)
         #self._motion.setBalanceMode(BALANCE_MODE_OFF) # needed?
         # we ignore this deferred because the STAND move takes longer
         return bd
- 
+
 
     #================================================================================
-    # Utilities 
+    # Status checks - about on going motions
     #================================================================================
 
-    def getAngle(self, joint_name):
-        return self._world.getAngle(joint_name)
-
-    def getSpeedFromDistance(self,kick_dist):
-        return max(0.62 * pow(kick_dist,-0.4), 0.18)
-    
     def getCurrentHeadBD(self):
         """ return a succeed if no head move in progress, or the bd of the current
         head move, for possible onDone calls. Note that we support multiple onDone,
@@ -689,6 +705,22 @@ class Actions(object):
     def getCurrentMotionBD(self):
         return self._current_motion_bd
 
+
+    def isMotionInProgress(self):
+        return self._movecoordinator.isMotionInProgress()
+
+    def isHeadMotionInProgress(self):
+        return self._movecoordinator.isHeadMotionInProgress()
+
+    #================================================================================
+    #  Utilities and things that shouldn't be here
+    #================================================================================
+
+    def getSpeedFromDistance(self,kick_dist):
+        return max(0.62 * pow(kick_dist,-0.4), 0.18)
+
+    def getAngle(self, joint_name):
+        return self._world.getAngle(joint_name)
 
     def getArcBearing(self, delta_x, delta_y):
         if delta_y == 0:

@@ -1,7 +1,7 @@
 # This test demonstrates how to use the ALLandMarkDetection module.
 # Note that you might not have this module depending on your distribution
 #
-# - We first instantiate a proxy to the ALLandMarkDetection module 
+# - We first instantiate a proxy to the ALLandMarkDetection module
 #     Note that this module should be loaded on the robot's naoqi.
 #     The module output its results in ALMemory in a variable
 #     called "extractors/allandmarkdetection/landmarkdetected"
@@ -31,7 +31,7 @@ else:
   from naoqi import ALBehavior
 
 # Replace here with your robot's IP address
-IP = "10.0.252.175" 
+IP = "10.0.252.175"
 
 PORT = 9559
 
@@ -77,7 +77,7 @@ for i in range(0, 20):
   if(val):
     # check whether we got a list of values
     if(isinstance(val[0], list)):
-       
+
       # we detected naomarks !
       # for each mark, we can read its ID and coordinates
       print "Number of Naomarks detected:", len(val)
@@ -89,5 +89,5 @@ for i in range(0, 20):
 # Unsubscribe the module
 landMarkProxy.unsubscribe("Test_LandMark")
 
-print "Test terminated successfully" 
+print "Test terminated successfully"
 

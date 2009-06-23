@@ -8,7 +8,7 @@ import burst_events
 THRESHOLD = 0.15
 
 class StrafeAroundBall(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -37,8 +37,8 @@ class StrafeAroundBall(InitialBehavior):
             self._actions.executeTurnCCW().onDone(self.strafe)
         else:
             self.onArrivedAtPosition()
-        
-    
+
+
     def onArrivedAtPosition(self):
         print 'Goal reached!'
         self._actions.sitPoseAndRelax()

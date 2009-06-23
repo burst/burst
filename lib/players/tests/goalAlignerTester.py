@@ -17,7 +17,7 @@ class GoalAlignerTester(InitialBehavior):
         self.goalposts = [self._world.yglp, self._world.ygrp]
         self.movement_deferred = None
         self.searchGoalPosts()
-        
+
     def searchGoalPosts(self):
         self._actions.tracker.stop()
         self.goalpost_to_track = None
@@ -26,7 +26,7 @@ class GoalAlignerTester(InitialBehavior):
 
     def onGoalPostFound(self):
         print "Search finished"
-        
+
         # select a sighted goal post
         for t in self.goalposts:
             if t.centered_self.sighted:
@@ -35,12 +35,12 @@ class GoalAlignerTester(InitialBehavior):
                     self.goalpost_to_track = t
                 else:
                     print "%s sighted" % t.name
-                    # update goalpost_to_track, but only if not already set (as to not override sighted_centered) 
+                    # update goalpost_to_track, but only if not already set (as to not override sighted_centered)
                     if self.goalpost_to_track is None:
                         self.goalpost_to_track = t
             else:
                 print "%s NOT sighted" % t.name
-        
+
         if self.goalpost_to_track is None:
             print "ERROR! no goalpost to track!"
             self._eventmanager.quit()
@@ -48,7 +48,7 @@ class GoalAlignerTester(InitialBehavior):
             # track goal post, align against it
             self.goalLocationKnown = True
             self._actions.setCameraFrameRate(20)
-            
+
             print "manually centering on goal post (from search goal results)"
             self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchCenteringDone)
 
@@ -62,7 +62,7 @@ class GoalAlignerTester(InitialBehavior):
         if self.movement_deferred != None:
             self.movement_deferred.clear()
         self._actions.clearFootsteps().onDone(self.searchGoalPosts)
-    
+
     def strafe(self):
         print "strafing"
         if self.goalLocationKnown:

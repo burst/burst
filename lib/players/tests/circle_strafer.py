@@ -35,17 +35,17 @@ class circle_strafer(InitialBehavior):
             print "self.counter smaller then 10"
             self.counter = self.counter + 1
         self.doNextAction()
-    
+
     def doNextAction(self):
         print "\ndoNextAction)"
         print "------------------"
 
         #if self.counter < 25 and (self.counter % 3) == 1:
-        if self.counter < 10:      
+        if self.counter < 10:
             self._actions.executeCircleStrafeClockwise().onDone(self.onTurnDone)
             #self._actions.executeCircleStrafeCounterClockwise().onDone(self.onTurnDone)
             return
-#        self.onTurnDone()        
+#        self.onTurnDone()
 #        return
 
 if __name__ == '__main__':

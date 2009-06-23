@@ -2,7 +2,7 @@
 from burst_consts import DEG_TO_RAD
 from numpy import array
 # List and order of the devices
-#HeadYaw HeadPitch	LShoulderPitch	LShoulderRoll LElbowYaw	LElbowRoll	LWristYaw	LHand	LHipYawPitch	LHipRoll	LHipPitch	LKneePitch	LAnklePitch	LAnkleRoll	RHipRoll	RHipPitch	RKneePitch	RAnklePitch	RAnkleRoll	RShoulderPitch	RShoulderRoll	RElbowYaw	RElbowRoll	RWristYaw	RHand	
+#HeadYaw HeadPitch	LShoulderPitch	LShoulderRoll LElbowYaw	LElbowRoll	LWristYaw	LHand	LHipYawPitch	LHipRoll	LHipPitch	LKneePitch	LAnklePitch	LAnkleRoll	RHipRoll	RHipPitch	RKneePitch	RAnklePitch	RAnkleRoll	RShoulderPitch	RShoulderRoll	RElbowYaw	RElbowRoll	RWristYaw	RHand
 
 #utility
 ALLJOINTSONES = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -10,7 +10,7 @@ ALLJOINTSNAMES = ['HeadYaw', 'HeadPitch', 'LShoulderPitch', 'LShoulderRoll', 'LE
 
 #Initial pose
 INITIALPOSJOINTVALUES=(((1.75, 0.26, -1.57, -0.52),
-    (0.0, -0.04, -0.58, 1.03, -0.51, 0.04), 
+    (0.0, -0.04, -0.58, 1.03, -0.51, 0.04),
     (0, 0.04, -0.58, 1.03, -0.51, -0.04),
     (1.75, -0.26, 1.57, 0.52), 2.0),)
 RIGHT_FOOT = "R"
@@ -23,18 +23,18 @@ PREFIX_JOINTS="Device/SubDeviceList/"
 
 MOVEMENT_JOINTS_LEFT=[PREFIX_JOINTS + "LShoulderPitch" + A_V , PREFIX_JOINTS +"LElbowRoll" + A_V ,
         PREFIX_JOINTS +"LHipRoll" + A_V , PREFIX_JOINTS +"LHipPitch" + A_V ,
-        PREFIX_JOINTS +"LKneePitch" + A_V , PREFIX_JOINTS +"LAnklePitch" + A_V, 
-        PREFIX_JOINTS +"LAnkleRoll" + A_V , PREFIX_JOINTS +"RHipRoll" + A_V , 
-        PREFIX_JOINTS +"RHipPitch" + A_V , PREFIX_JOINTS +"RKneePitch" + A_V , 
-        PREFIX_JOINTS +"RAnklePitch" + A_V , PREFIX_JOINTS +"RAnkleRoll" + A_V , 
+        PREFIX_JOINTS +"LKneePitch" + A_V , PREFIX_JOINTS +"LAnklePitch" + A_V,
+        PREFIX_JOINTS +"LAnkleRoll" + A_V , PREFIX_JOINTS +"RHipRoll" + A_V ,
+        PREFIX_JOINTS +"RHipPitch" + A_V , PREFIX_JOINTS +"RKneePitch" + A_V ,
+        PREFIX_JOINTS +"RAnklePitch" + A_V , PREFIX_JOINTS +"RAnkleRoll" + A_V ,
         PREFIX_JOINTS +"RShoulderPitch" + A_V , PREFIX_JOINTS +"RElbowRoll" + A_V ]
 
 MOVEMENT_JOINTS_RIGHT=[PREFIX_JOINTS + "RShoulderPitch" + A_V , PREFIX_JOINTS +"RElbowRoll" + A_V ,
         PREFIX_JOINTS +"RHipRoll" + A_V , PREFIX_JOINTS +"RHipPitch" + A_V ,
-        PREFIX_JOINTS +"RKneePitch" + A_V , PREFIX_JOINTS +"RAnklePitch" + A_V, 
-        PREFIX_JOINTS +"RAnkleRoll" + A_V , PREFIX_JOINTS +"LHipRoll" + A_V , 
-        PREFIX_JOINTS +"LHipPitch" + A_V , PREFIX_JOINTS +"LKneePitch" + A_V , 
-        PREFIX_JOINTS +"LAnklePitch" + A_V , PREFIX_JOINTS +"LAnkleRoll" + A_V , 
+        PREFIX_JOINTS +"RKneePitch" + A_V , PREFIX_JOINTS +"RAnklePitch" + A_V,
+        PREFIX_JOINTS +"RAnkleRoll" + A_V , PREFIX_JOINTS +"LHipRoll" + A_V ,
+        PREFIX_JOINTS +"LHipPitch" + A_V , PREFIX_JOINTS +"LKneePitch" + A_V ,
+        PREFIX_JOINTS +"LAnklePitch" + A_V , PREFIX_JOINTS +"LAnkleRoll" + A_V ,
         PREFIX_JOINTS +"LShoulderPitch" + A_V , PREFIX_JOINTS +"LElbowRoll" + A_V ]
 
 def gait_attempt_generate(steptime):
@@ -44,7 +44,7 @@ def gait_attempt_generate(steptime):
 
     steptime = float(steptime)
 
-    #first attempt to generate some DCM gait 
+    #first attempt to generate some DCM gait
     for jointcode, angle, time in [
 
        (PREFIX_JOINTS +"LHipPitch" + A_V , [-0.96, -0.96, -1.1, -1.45, -0.96,-0.86], [steptime* 0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9 ]),
@@ -54,8 +54,8 @@ def gait_attempt_generate(steptime):
         (PREFIX_JOINTS +"LAnkleRoll" + A_V , [0, -0.38, -0.1, 0.0, 0.28, 0.28, 0.0], [steptime*0.05, steptime * 0.2, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]),
 
         (PREFIX_JOINTS +"RHipPitch" + A_V , [-0.96, -0.96,-0.96,-0.86, -1.1, -1.1], [steptime*0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]),
-        (PREFIX_JOINTS +"RKneePitch" + A_V , [1.395,1.395, 1.395, 1.395, 1.395,1.05], [steptime*0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]), 
-        (PREFIX_JOINTS +"RAnklePitch" + A_V , [-0.62,-0.62, -0.62, -0.86, -0.86, -0.2], [steptime*0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]), 
+        (PREFIX_JOINTS +"RKneePitch" + A_V , [1.395,1.395, 1.395, 1.395, 1.395,1.05], [steptime*0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]),
+        (PREFIX_JOINTS +"RAnklePitch" + A_V , [-0.62,-0.62, -0.62, -0.86, -0.86, -0.2], [steptime*0.05, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]),
         (PREFIX_JOINTS +"RAnkleRoll" + A_V , [0, -0.28, -0.18, 0.38, 0.1, 0.0], [steptime*0.05, steptime * 0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9]),
         (PREFIX_JOINTS +"RHipRoll" + A_V , [0.0, 0.0,0.0, 0.0, 0.0, 0.0, 0.0], [steptime* 0.05, steptime*0.15, steptime*0.25, steptime*0.4, steptime*0.6, steptime*0.75, steptime*0.9])
 
@@ -128,13 +128,13 @@ def recorded_movement(steptime):
 ),
         (PREFIX_JOINTS +"RHipRoll" + A_V , [3.2448E-02, -0.388444, 0.300994, 0.281819, 0.298213, 0.279997, 0.296392, -0.383458, 0.259576, 0.259384, 0.292557, 0.257562, 0.258042, -0.381349, 0.259959, 0.25785, 0.293036, 0.256412, 0.258329, -0.380486, 0.259671, 0.258904, 0.293228, -0.381253, 0.260151, 0.25785, 0.296487, 0.285078, 0.345575, 5.2006E-02]
 , [steptime * 0.00001, steptime*0.101538461538461, steptime*0.2, steptime*0.209230769230769, steptime*0.246153846153847, steptime*0.28, steptime*0.292307692307693, steptime*0.366153846153847, steptime*0.421538461538463, steptime*0.424615384615386, steptime*0.443076923076924, steptime*0.461538461538463, steptime*0.464615384615386, steptime*0.520000000000001, steptime*0.575384615384617, steptime*0.57846153846154, steptime*0.593846153846155, steptime*0.615384615384617, steptime*0.61846153846154, steptime*0.673846153846156, steptime*0.726153846153848, steptime*0.729230769230771, steptime*0.74769230769231, steptime*0.824615384615387, steptime*0.87692307692308, steptime*0.880000000000003, steptime*0.901538461538464, steptime*0.920000000000003, steptime*0.929230769230772,steptime*1]
-), 
+),
         (PREFIX_JOINTS +"RHipPitch" + A_V , [-0.579606, -0.580949, -0.505591, -1.208163, -0.748442, -0.778163, -0.326113, -0.536942, 0.280392, -1.078252, -0.369161, -0.535024, 8.1835E-02, -1.084772, -0.766179, -0.770398, -0.368969, -0.536271, 8.4999E-02, -1.083046, -0.768097, -0.770877, -0.371941, -0.535983, 7.8192E-02, -1.086114, -0.765987, -0.77011, -0.365517, -0.435027, -0.353341, -0.57673]
 ,[steptime * 0.00001, steptime*1.53846153846154E-02, steptime*5.53846153846154E-02, steptime*0.107692307692308, steptime*0.147692307692308, steptime*0.16, steptime*0.206153846153846, steptime*0.258461538461539, steptime*0.344615384615385, steptime*0.375384615384616, steptime*0.427692307692309, steptime*0.452307692307693, steptime*0.495384615384617, steptime*0.529230769230771, steptime*0.544615384615386, steptime*0.547692307692309, steptime*0.581538461538463, steptime*0.603076923076925, steptime*0.649230769230771, steptime*0.680000000000002, steptime*0.69846153846154, steptime*0.701538461538464, steptime*0.732307692307694, steptime*0.756923076923079, steptime*0.800000000000002, steptime*0.830769230769233, steptime*0.849230769230772, steptime*0.852307692307695, steptime*0.883076923076926, steptime*0.904615384615387, steptime*0.926153846153849, steptime*1]
 ),
         (PREFIX_JOINTS +"RKneePitch" + A_V ,[1.032807, 1.034533, 0.899062, 1.653119, 0.68689, 0.996854, 0.738855, 0.965599, 0.83751, 0.948917, 0.217391, 1.678334, 0.808556, 1.003853, 0.780081, 0.973269, 0.891967, 0.958025, 0.508371, 1.674786, 0.813637, 1.001648, 0.779985, 0.973749, 0.890625, 0.959559, 0.516329, 1.681018, 0.807022, 1.005004, 0.783628, 0.972982, 0.891104, 0.959367, 0.510864, 1.672102, 0.816705, 1.002415, 0.778451, 0.876339, 0.750647, 1.03089]
 , [steptime * 0.00001, steptime*1.23076923076923E-02, steptime*5.53846153846154E-02, steptime*9.84615384615384E-02, steptime*0.147692307692308, steptime*0.175384615384616, steptime*0.209230769230769, steptime*0.255384615384616, steptime*0.28923076923077, steptime*0.307692307692308, steptime*0.344615384615385, steptime*0.366153846153847, steptime*0.390769230769232, steptime*0.403076923076924, steptime*0.424615384615386, steptime*0.44923076923077, steptime*0.467692307692309, steptime*0.480000000000001, steptime*0.495384615384617, steptime*0.520000000000001, steptime*0.541538461538463, steptime*0.556923076923078, steptime*0.581538461538463, steptime*0.603076923076925, steptime*0.61846153846154, steptime*0.630769230769233, steptime*0.649230769230771, steptime*0.673846153846156, steptime*0.695384615384617, steptime*0.710769230769233, steptime*0.732307692307694, steptime*0.753846153846156, steptime*0.772307692307695, steptime*0.781538461538464, steptime*0.800000000000002, steptime*0.824615384615387, steptime*0.846153846153849, steptime*0.864615384615387, steptime*0.883076923076926, steptime*0.904615384615387, steptime*0.923076923076926, steptime*1]
-), 
+),
         (PREFIX_JOINTS +"RAnklePitch" + A_V , [-0.51519, -0.515766, -0.457953, -0.649511, -2.451E-03, -0.485373, -0.482785, -0.485469, -0.474923, -0.496591, -0.451338, -0.714802, -0.562073, -1.016521, -9.9572E-02, -0.476169, -0.476073, -0.50311, -0.487291, -0.711926, -0.653826, -0.999743, -9.7559E-02, -0.503302, -0.487099, -0.714131, -0.656606, -1.004057, -0.101681, -0.502918, -0.486811, -0.713364, -0.652579, -1.001468, -9.6984E-02, -0.505795, -0.462843, -0.521806, -0.515382]
 , [steptime * 0.00001, steptime*1.23076923076923E-02, steptime*5.53846153846154E-02, steptime*8.61538461538461E-02, steptime*0.144615384615385, steptime*0.196923076923077, steptime*0.2, steptime*0.203076923076923, steptime*0.215384615384616, steptime*0.24923076923077, steptime*0.283076923076924, steptime*0.323076923076924, steptime*0.344615384615385, steptime*0.356923076923078, steptime*0.390769230769232, steptime*0.421538461538463, steptime*0.424615384615386, steptime*0.446153846153847, steptime*0.461538461538463, steptime*0.489230769230771, steptime*0.495384615384617, steptime*0.513846153846155, steptime*0.541538461538463, steptime*0.600000000000002, steptime*0.612307692307694, steptime*0.636923076923079, steptime*0.646153846153848, steptime*0.664615384615387, steptime*0.692307692307694, steptime*0.753846153846156, steptime*0.766153846153848, steptime*0.790769230769233, steptime*0.800000000000002, steptime*0.818461538461541, steptime*0.846153846153849, steptime*0.901538461538464, steptime*0.923076923076926, steptime*0.975384615384618,steptime*1]
 ),
@@ -184,13 +184,13 @@ def recorded_movement_2(steptime):
 ),
         (PREFIX_JOINTS +"RHipRoll" + A_V , [1.3944E-02, -0.388539, 0.300994, 0.28038, 0.298213, 0.280189, 0.296392, -0.383842, 0.260055, 0.257658, 0.293228, 0.256028, 0.258329, -0.381349, 0.260055, 0.257658, 0.293228, 0.255357, 0.258329, -0.385184, 3.4845E-02]
 , [steptime * 0.00001, steptime*0.121212121212121, steptime*0.248737373737374, steptime*0.265151515151515, steptime*0.311868686868687, steptime*0.35479797979798, steptime*0.369949494949495, steptime*0.467171717171717, steptime*0.539141414141414, steptime*0.542929292929293, steptime*0.566919191919192, steptime*0.592171717171717, steptime*0.595959595959596, steptime*0.666666666666667, steptime*0.737373737373737, steptime*0.741161616161616, steptime*0.766414141414141, steptime*0.79040404040404, steptime*0.795454545454545, steptime*0.866161616161616,steptime*1]
-), 
+),
         (PREFIX_JOINTS +"RHipPitch" + A_V , [-0.580757, -0.58114, -0.505207, -1.211327, -0.746716, -0.778259, -0.326017, -0.536846, 0.282118, -1.077677, -0.764453, -0.768959, -0.369065, -0.535408, 7.5316E-02, -1.083334, -0.764933, -0.769247, -0.369161, -0.535791, 7.685E-02, -0.65832, -0.420262, -0.577976]
 , [steptime * 0.00001, steptime*6.31313131313131E-03, steptime*6.06060606060606E-02, steptime*0.130050505050505, steptime*0.181818181818182, steptime*0.19949494949495, steptime*0.261363636363636, steptime*0.328282828282828, steptime*0.436868686868687, steptime*0.478535353535354, steptime*0.501262626262626, steptime*0.506313131313131, steptime*0.545454545454545, steptime*0.578282828282828, steptime*0.637626262626263, steptime*0.676767676767677, steptime*0.69949494949495, steptime*0.705808080808081, steptime*0.744949494949495, steptime*0.776515151515151, steptime*0.837121212121212, steptime*0.876262626262626, steptime*0.900252525252525,steptime*1]
 ),
         (PREFIX_JOINTS +"RKneePitch" + A_V , [1.034341, 1.034821, 0.89887, 1.654461, 0.686795, 0.997813, 0.738855, 0.965599, 0.837606, 0.950259, 0.207611, 1.679484, 0.81335, 1.0051, 0.779026, 0.973269, 0.890337, 0.960422, 0.519493, 1.680443, 0.812583, 1.005579, 0.779122, 0.973461, 0.890145, 0.960518, 0.517575, 1.56779, 0.870203, 1.032807, 1.032424]
 ,[steptime * 0.00001, steptime*6.31313131313131E-03, steptime*5.93434343434343E-02, steptime*0.117424242424242, steptime*0.180555555555556, steptime*0.217171717171717, steptime*0.263888888888889, steptime*0.32449494949495, steptime*0.366161616161616, steptime*0.393939393939394, steptime*0.436868686868687, steptime*0.46969696969697, steptime*0.498737373737374, steptime*0.518939393939394, steptime*0.545454545454545, steptime*0.577020202020202, steptime*0.597222222222222, steptime*0.612373737373737, steptime*0.636363636363636, steptime*0.667929292929293, steptime*0.698232323232323, steptime*0.717171717171717, steptime*0.744949494949495, steptime*0.775252525252525, steptime*0.795454545454545, steptime*0.811868686868687, steptime*0.835858585858586, steptime*0.868686868686869, steptime*0.900252525252525, steptime*0.991161616161616,steptime*1]
-), 
+),
         (PREFIX_JOINTS +"RAnklePitch" + A_V , [-0.515766, -0.515766, -0.457857, -0.649799, -9.17E-04, -0.486907, -0.482497, -0.485948, -0.474923, -0.496974, -0.451338, -0.71509, -0.553924, -1.021698, -0.104078, -0.473101, -0.47243, -0.475402, -0.475306, -0.503494, -0.487099, -0.71298, -0.654401, -1.002044, -0.103887, -0.473581, -0.472047, -0.475306, -0.475115, -0.503302, -0.486907, -0.713268, -0.653346, -1.090728, -0.514136, -0.537529, -0.516533]
 , [steptime * 0.00001, steptime*6.31313131313131E-03, steptime*5.93434343434343E-02, steptime*9.97474747474748E-02, steptime*0.178030303030303, steptime*0.246212121212121, steptime*0.247474747474747, steptime*0.253787878787879, steptime*0.272727272727273, steptime*0.316919191919192, steptime*0.358585858585859, steptime*0.410353535353535, steptime*0.436868686868687, steptime*0.458333333333333, steptime*0.497474747474747, steptime*0.534090909090909, steptime*0.535353535353535, steptime*0.541666666666667, steptime*0.545454545454545, steptime*0.573232323232323, steptime*0.589646464646465, steptime*0.622474747474748, steptime*0.63510101010101, steptime*0.657828282828283, steptime*0.696969696969697, steptime*0.732323232323232, steptime*0.733585858585859, steptime*0.73989898989899, steptime*0.743686868686869, steptime*0.772727272727273, steptime*0.789141414141414, steptime*0.821969696969697, steptime*0.83459595959596, steptime*0.861111111111111, steptime*0.898989898989899, steptime*0.94949494949495,steptime*1]
 ),
@@ -229,9 +229,9 @@ def first_step_generator(steptime):
         (PREFIX_JOINTS +"LKneePitch" + A_V , [0.78, 1.0], [steptime * 0.5,steptime]),
         (PREFIX_JOINTS +"LAnklePitch" + A_V , [-0.41, -0.51], [steptime * 0.5,steptime]),
         (PREFIX_JOINTS +"LAnkleRoll" + A_V , [0.38, 0.1], [steptime*0.9, steptime]),
-        (PREFIX_JOINTS +"RHipRoll" + A_V , [0.29], [steptime]), 
+        (PREFIX_JOINTS +"RHipRoll" + A_V , [0.29], [steptime]),
         (PREFIX_JOINTS +"RHipPitch" + A_V , [-0.51,-1.21], [steptime * 0.5, steptime]),
-        (PREFIX_JOINTS +"RKneePitch" + A_V , [0.90,1.65], [steptime * 0.3, steptime]), 
+        (PREFIX_JOINTS +"RKneePitch" + A_V , [0.90,1.65], [steptime * 0.3, steptime]),
         (PREFIX_JOINTS +"RAnklePitch" + A_V , [-0.46,-0.65,0.0], [steptime * 0.4 ,steptime * 0.7 ,steptime]),
         (PREFIX_JOINTS +"RAnkleRoll" + A_V , [0.38],  [steptime]),
         (PREFIX_JOINTS +"RShoulderPitch" + A_V , [2.0],[steptime]),
@@ -264,9 +264,9 @@ def regular_step_generator(foot, steptime):
         (PREFIX_JOINTS + swing_foot + "KneePitch" + A_V , [0.45, 1.68, 0.79,  1.00, 0.89, 0.98], []),
         (PREFIX_JOINTS + swing_foot + "AnklePitch" + A_V , [-0.72,-0.65, -1.01, -0.07,  -0.5,-0.51  ], []),
         (PREFIX_JOINTS + swing_foot + "AnkleRoll" + A_V , [-0.23, -0.07, -0.35, 0.37], []),
-        (PREFIX_JOINTS + support_foot + "HipRoll" + A_V , [0.38, -0.29], []), 
+        (PREFIX_JOINTS + support_foot + "HipRoll" + A_V , [0.38, -0.29], []),
         (PREFIX_JOINTS + support_foot + "HipPitch" + A_V , [], []),
-        (PREFIX_JOINTS + support_foot + "KneePitch" + A_V , [], []), 
+        (PREFIX_JOINTS + support_foot + "KneePitch" + A_V , [], []),
         (PREFIX_JOINTS + support_foot + "AnklePitch" + A_V , [], []),
         (PREFIX_JOINTS + support_foot + "AnkleRoll" + A_V , [],  []),
         (PREFIX_JOINTS + support_foot + "ShoulderPitch" + A_V , [1.48, 2.01],[]),
@@ -278,7 +278,7 @@ def regular_step_generator(foot, steptime):
     return jointCodes, angles, times
 
 
-def regular_step_generator(self):   
+def regular_step_generator(self):
     #d = {}
     #d = dict()
     #d = dict([(k, v) for k,v in [(1,2),(3,4),(5,6)])
@@ -296,4 +296,4 @@ def add_single_step(self, steptime, foot):
         legvar='L'
     else:
         legvar='R'
-    
+

@@ -44,7 +44,7 @@ class Computed(object):
         """
         Example of calculation:
          kick point (REMOVED for now, will be done on request, via burst_util)
-         
+
         Requires (in __init__):
         # Kick Point
         self.kp = None
@@ -54,7 +54,7 @@ class Computed(object):
         if (self._team.target_goal_seen_event in events
                     and EVENT_BALL_IN_FRAME in events):
             new_kp = self.calculate_kp()
-            
+
             if not self.kp_valid or (new_kp[0] - self.kp[0] > 1e-5 or new_kp[1] - self.kp[1] > 1e-5):
                 events.add(EVENT_KP_CHANGED)
             self.kp_valid = True
@@ -70,11 +70,11 @@ class Computed(object):
 
         The coordinate system is the standard: the x axis is to the front,
         the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
-        
+
         computation:
          c - goal center
          b - ball position
-         r - robot 
+         r - robot
          n - normal pointing from goal center to ball
          kp - kicking point (x, y, bearing)
         """
@@ -83,7 +83,7 @@ class Computed(object):
         left_post, right_post, ball = team.left_post, team.right_post, self._world.ball
         left_alpha, left_dist, right_alpha, right_dist = (
             left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
-        
+
         ball_alpha, ball_dist = ball.bearing, ball.dist
         ball_x, ball_y = ball_dist * cos(ball_alpha), ball_dist * sin(ball_alpha)
         k = self.kp_k

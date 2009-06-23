@@ -25,7 +25,7 @@ class Localization(object):
     world position of the robot and anything else. It doesn't actually go and
     look for information. That is a Behavior thing, which the Localizer takes
     care of. """
-    
+
     def __init__(self, world):
         self._world = world
         self._pose = world.pose
@@ -54,7 +54,7 @@ class Localization(object):
         # until we add more landmarks like intersections etc.)
         # On the gripping hand, this is the perfect place to do Particle Filter / Kalman
         # Filter updates from landmarks, once such code exists.
-        
+
         # We defer updating pose until we actually need it.
         new_dist = False
         bottom, top = self._bottom, self._top
@@ -167,11 +167,11 @@ class Localization(object):
         if HALF_GOAL_SIZE>=sglp.dist or HALF_GOAL_SIZE>=sgrp.dist:
             return
 
-        #debug 
+        #debug
         #(x1,y1, theta1) = xyt_from_two_dist_one_angle(200, 250, 0,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
 
-        (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )       
-        
+        (x1,y1, theta1) =  xyt_from_two_dist_one_angle(sglp.dist, sgrp.dist, sglp.bearing,HALF_GOAL_SIZE , (0, HALF_GOAL_SIZE) ,(0, -HALF_GOAL_SIZE) )
+
         if x1 and y1:
             uglp.dist = ((FIELD_SIZE + x1)**2 + (-HALF_GOAL_SIZE + y1)**2)**0.5
             ugrp.dist = ((FIELD_SIZE + x1)**2 + (HALF_GOAL_SIZE + y1)**2)**0.5

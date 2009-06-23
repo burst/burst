@@ -325,17 +325,17 @@ INSIDE_KICK_LEFT=(
      (0.,22.,-10.,20.,-10.,-22.),
      (0.,22.,-10.,20.,-10.,-22.),
      (80.,-40.,50.,70.),0.8),
-    #Lift left leg    
+    #Lift left leg
     ((80.,40.,-50.,-70.),
      (0.,40.,-10.,20.,-10.,-22.),
      (0.,22.,-10.,20.,-10.,-22.),
      (80.,-90.,50.,0.),2.0),
-    #left leg forward    
+    #left leg forward
     ((80.,40.,-50.,-70.),
      (0.,45.,-40.,20.,10.,30.),
      (0.,22.,-10.,20.,-10.,-22.),
      (80.,-90.,50.,0.),2.5),
-    #kick, poo, kick    
+    #kick, poo, kick
     ((80.,40.,-50.,-70.),
      (0.,17.,-60.,40.,10.,-20.),
      (0.,22.,-10.,20.,-10.,-22.),
@@ -363,10 +363,10 @@ def makeback(x):
     return (x[0][:4],x[1],x[2],x[3][:4],x[4][0])
 
 def getGreatKickLeft(kick_side_offset):
-    return map(makeback, (    ( array(map(makesym,GREAT_KICK_LEFT_EXTD))  +array(map(makesym,GREAT_KICK_LEFT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_LEFT))*kick_side_offset    ).tolist()) 
+    return map(makeback, (    ( array(map(makesym,GREAT_KICK_LEFT_EXTD))  +array(map(makesym,GREAT_KICK_LEFT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_LEFT))*kick_side_offset    ).tolist())
 
 def getGreatKickRight(kick_side_offset):
-    return map(makeback, (    ( array(map(makesym,GREAT_KICK_RIGHT_EXTD))  +array(map(makesym,GREAT_KICK_RIGHT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_RIGHT))*kick_side_offset    ).tolist()) 
+    return map(makeback, (    ( array(map(makesym,GREAT_KICK_RIGHT_EXTD))  +array(map(makesym,GREAT_KICK_RIGHT_OFFSET))  )*(1-kick_side_offset)  +   array(map(makesym,GREAT_KICK_RIGHT))*kick_side_offset    ).tolist())
 
 SHPAGAT = (
     #Stand up more fully
@@ -392,12 +392,12 @@ ALMOST_INSIDE_KICK=(
      (0.,20.,-10.,20.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
      (80.,-40.,50.,70.),0.8),
-    #Lift left leg    
+    #Lift left leg
     ((80.,40.,-50.,-70.),
      (0.,40.,-10.,20.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
      (80.,-90.,50.,0.),1.5),
-    #left leg forward    
+    #left leg forward
     ((80.,40.,-50.,-70.),
      (0.,45.,-40.,20.,10.,30.),
      (0.,20.,-10.,20.,-10.,-20.),
@@ -414,7 +414,7 @@ SIDE_KICK_LEFT= (
      (0.,20.,-10.,20.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
      (80.,-40.,50.,70.),0.8),
-    #Lift left leg    
+    #Lift left leg
     ((80.,40.,-50.,-70.),
      (0.,20.,-50.,60.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
@@ -429,7 +429,7 @@ SIDE_KICK_LEFT= (
      (0.,50.,-50.,60.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
      (80.,-40.,50.,70.),0.15),
-    #Lift left leg    
+    #Lift left leg
     ((80.,40.,-50.,-70.),
      (0.,20.,-50.,60.,-10.,-20.),
      (0.,20.,-10.,20.,-10.,-20.),
@@ -460,22 +460,22 @@ SIDE_KICK_RIGHT= (
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
      (0.,-20.,-50.,60.,-10.,20.),
-     (80.,-40.,50.,70.),1.0),    
+     (80.,-40.,50.,70.),1.0),
     #Ready
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
      (0.,-15.,-50.,60.,-10.,20.),
-     (80.,-40.,50.,70.),1.0),    
+     (80.,-40.,50.,70.),1.0),
     #Kick
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
      (0.,-50.,-50.,60.,-10.,20.),
-     (80.,-40.,50.,70.),0.15),    
+     (80.,-40.,50.,70.),0.15),
     #lift the right leg
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),
      (0.,-20.,-50.,60.,-10.,20.),
-     (80.,-40.,50.,70.),1.0),    
+     (80.,-40.,50.,70.),1.0),
     #swing to the left
     ((80.,40.,-50.,-70.),
      (0.,-20.,-10.,20.,-10.,20.),

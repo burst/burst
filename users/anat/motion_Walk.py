@@ -35,7 +35,7 @@ except Exception,e:
 motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
 
 
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 
@@ -46,7 +46,7 @@ motionProxy.setWalkArmsEnable(True)
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
 
 motionProxy.addWalkStraight( 0.05*4, 80)
@@ -63,7 +63,7 @@ motionProxy.walk()   #Blocking Function
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 
 motionProxy.addWalkStraight( 0.04*4, 25)

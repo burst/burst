@@ -35,9 +35,9 @@ except Exception,e:
 #SIDESTEP_WALK = Walk(WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-#           20.0 * DEG_TO_RAD,  # ElbowMedian 
-#           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-#           4.5,                   # LHipRoll(degrees) 
+#           20.0 * DEG_TO_RAD,  # ElbowMedian
+#           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+#           4.5,                   # LHipRoll(degrees)
 #           -4.5,                  # RHipRoll(degrees)
 #           0.19,                  # HipHeight(meters)
 #           5.0,                   # TorsoYOrientation(degrees)
@@ -53,9 +53,9 @@ except Exception,e:
 #SLOW_WALK = Walk(WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           15.0 * DEG_TO_RAD,  # ShoulderAmplitude
-#           30.0 * DEG_TO_RAD,  # ElbowMedian 
-#           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-#           4.5,                   # LHipRoll(degrees) 
+#           30.0 * DEG_TO_RAD,  # ElbowMedian
+#           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+#           4.5,                   # LHipRoll(degrees)
 #           -4.5,                  # RHipRoll(degrees)
 #           0.22,                  # HipHeight(meters)
 #           3.4,                   # TorsoYOrientation(degrees)
@@ -71,8 +71,8 @@ except Exception,e:
 #FASTER_WALK = WalkParameters([
 #           110.0 * DEG_TO_RAD, # ShoulderMedian
 #           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-#           90.0 * DEG_TO_RAD,  # ElbowMedian 
-#           0.0 * DEG_TO_RAD,  # ElbowAmplitude 
+#           90.0 * DEG_TO_RAD,  # ElbowMedian
+#           0.0 * DEG_TO_RAD,  # ElbowAmplitude
 #           4.5,                   # LHipRoll(degrees) (2.5 original)
 #           -4.5,                  # RHipRoll(degrees) (-2.5 original)
 #           0.23,                  # HipHeight(meters)
@@ -82,7 +82,7 @@ except Exception,e:
 #           0.02,                  # StepSide
 #           0.3,                   # MaxTurn
 #           0.01,                  # ZmpOffsetX
-#           0.016,                 # ZmpOffsetY 
+#           0.016,                 # ZmpOffsetY
 #           18])#,                    # 20ms count per step
 #           #,0.68]                  # Angle 0.68
 
@@ -115,13 +115,13 @@ readyStand = [0.065920039999999999,
 
 
 motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 20.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.24, 2.0 )
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.035, 0.045, 0.04, 0.3, 0.015, 0.03 )
 motionProxy.addWalkStraight( 0.07*8, 35)
 motionProxy.gotoBodyAnglesWithSpeed(readyStand,20,1)
@@ -138,7 +138,7 @@ motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
 
 
 
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 
@@ -149,7 +149,7 @@ motionProxy.setWalkArmsEnable(True)
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
 
 motionProxy.addWalkStraight( 0.05*4, 80)
@@ -166,7 +166,7 @@ exit(0)
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 
 motionProxy.addWalkStraight( 0.04*4, 25)

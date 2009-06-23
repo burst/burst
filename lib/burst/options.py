@@ -41,7 +41,7 @@ def parse_command_line_arguments():
     main = OptionGroup(parser, "main")
     main.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
     main.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
-    main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change') 
+    main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change')
     main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     main.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')

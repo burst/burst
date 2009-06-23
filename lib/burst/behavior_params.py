@@ -5,17 +5,17 @@ from burst_util import (polar2cart, cart2polar)
 #===============================================================================
 # This file contains the behavior parameters. The default values are for the
 # Webots simulation.
-# 
-# Note: Some values are overridden by the personalization file (per-robot file). 
+#
+# Note: Some values are overridden by the personalization file (per-robot file).
 #===============================================================================
 
 ### Ball position relative to robot
 # BALL_IN_KICKING_AREA - ball is ready to be kicked
 # BALL_BETWEEN_LEGS - ball between legs
 # BALL_FRONT_NERA - ball in front (between minimum and maximum KICK_Y)
-# BALL_FRONT_FAR - 
+# BALL_FRONT_FAR -
 # BALL_SIDE_NEAR - ball on side (between minimum and maximum KICK_X)
-# BALL_SIDE_FAR - 
+# BALL_SIDE_FAR -
 # BALL_DIAGONAL - ball diagonal (else...)
 ###
 (BALL_IN_KICKING_AREA,
@@ -63,7 +63,7 @@ def calcTargetXY(target_x, target_y):
     # determine kicking leg
     side = target_y < 0 # 0 = LEFT, 1 = RIGHT
     print "Designated kick leg: %s" % (side==LEFT and "LEFT" or "RIGHT")
-    
+
     # calculate optimal kicking point
     kp_x, kp_y = target_x - KICK_X_OPT[side], target_y - KICK_Y_OPT[side]
     kp_dist, kp_bearing = cart2polar(kp_x, kp_y)
@@ -80,7 +80,7 @@ def calcTargetXY(target_x, target_y):
 
 
 def calcBallArea(ball_x, ball_y, side):
-    if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] < 
+    if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] <
         return BALL_IN_KICKING_AREA
     elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
         if ball_x <= KICK_X_MAX[side]:

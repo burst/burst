@@ -8,7 +8,7 @@ import burst.moves.poses as poses
 from burst_util import polar2cart
 
 class trackerTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -17,7 +17,7 @@ class trackerTester(InitialBehavior):
         self._actions.setCameraFrameRate(20)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).onDone(self.track)
-    
+
     def track(self):
         #print "trackerTester: TRACKING %s" % (self.count)
         self.count += 1
@@ -29,7 +29,7 @@ class trackerTester(InitialBehavior):
     def wrapUp(self):
         print "tracker lost the ball"
         self._eventmanager.quit()
-        
+
     def printBall(self):
 
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)

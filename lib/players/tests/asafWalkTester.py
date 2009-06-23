@@ -14,13 +14,13 @@ import time
 import motion
 
 class walkTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
         self.kp = None
-        self._eventmanager.register(self.onChangeLocationDone, EVENT_CHANGE_LOCATION_DONE)        
+        self._eventmanager.register(self.onChangeLocationDone, EVENT_CHANGE_LOCATION_DONE)
         self.walkStartTime = time.time()
         self.doWalk()
 
@@ -54,15 +54,15 @@ class walkTester(InitialBehavior):
 
         motionProxy = self._actions._motion
         motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
-        
+
         print motionProxy.getBodyStiffnesses()
-        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+        # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
         motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 20.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
         motionProxy.setWalkArmsEnable(True)
 
         # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
         motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 2.0 )
-        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+        # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
         motionProxy.setWalkConfig( 0.015, 0.015, 0.04, 0.3, 0.015, 0.015)
         motionProxy.addWalkStraight(0.05, 150)
         motionProxy.addWalkStraight(0.05, 125)

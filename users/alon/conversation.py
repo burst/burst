@@ -5,7 +5,7 @@ Example conversation, captured with:
     ./testvision -p nao.local
 """
 
-msgs = [ 
+msgs = [
 """
 POST / HTTP/1.1
 Host: nao.local:9559

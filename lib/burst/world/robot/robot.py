@@ -7,6 +7,7 @@ from leds import *
 from sensors import *
 
 import burst
+import burst.field as field
 from ..objects import Movable
 from burst_consts import ROBOT_DIAMETER
 
@@ -28,7 +29,10 @@ class Robot(Movable):
         self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
 
         # These are updated out of object, by Localization.
-        self.world_x = self.world_y = self.world_heading = self.world_update_time = None
+        self.world_x = field.CENTER_FIELD_X
+        self.world_y = field.CENTER_FIELD_Y
+        self.world_heading = 0.0 # heading towards opponent goal
+        self.world_update_time = -200.0 # in 200 seconds we can be in 20m radius - enough to say "I don't know shit"
 
     def get_state(self):
         """ return the RobotState - one of gamecontroller.constants.{Initial,Ready,Set,Penalized,Play}RobotState
@@ -54,10 +58,4 @@ class Robot(Movable):
         self.sensors.calc_events(events, deferreds)
         self.sonar.calc_events(events, deferreds)
         # TODO: Fall-down detection should probably be detected here, and not wherever it is now.
-
-    def isHeadMotionInProgress(self):
-        return self._world._movecoordinator.isHeadMotionInProgress()
-
-    def isMotionInProgress(self):
-        return self._world._movecoordinator.isMotionInProgress()
 

@@ -6,7 +6,7 @@ from burst.behavior import InitialBehavior
 import burst
 
 class Kicker(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

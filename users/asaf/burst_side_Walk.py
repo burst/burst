@@ -35,9 +35,9 @@ except Exception,e:
 #SIDESTEP_WALK = Walk(WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-#           20.0 * DEG_TO_RAD,  # ElbowMedian 
-#           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-#           4.5,                   # LHipRoll(degrees) 
+#           20.0 * DEG_TO_RAD,  # ElbowMedian
+#           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+#           4.5,                   # LHipRoll(degrees)
 #           -4.5,                  # RHipRoll(degrees)
 #           0.19,                  # HipHeight(meters)
 #           5.0,                   # TorsoYOrientation(degrees)
@@ -51,13 +51,13 @@ except Exception,e:
 #    )
 
 motionProxy.setSupportMode(motion.SUPPORT_MODE_DOUBLE_LEFT)
-# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+# ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
 motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 20.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
 motionProxy.setWalkArmsEnable(True)
 
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.19, 5.0 )
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.025, 0.015, 0.03, 0.3, 0.015, 0.02 )
 motionProxy.addWalkSideways(0.03*4, 18)
 motionProxy.walk()

@@ -35,7 +35,7 @@ class turnccw(InitialBehavior):
             print "self.counter smaller then 25"
             self.counter = self.counter + 1
         self.doNextAction()
-    
+
     def doNextAction(self):
         print "\ndoNextAction)"
         print "------------------"

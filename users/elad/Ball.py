@@ -4,4 +4,4 @@ class Ball:
 		y = 0.0
 		angle_of_movement = 0.0
 		speed_of_movement = 0.0
-    
+

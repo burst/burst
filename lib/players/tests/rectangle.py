@@ -15,7 +15,7 @@ def pr(s):
     print s
 
 class Rectangle(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 

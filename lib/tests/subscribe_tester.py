@@ -2,7 +2,7 @@
 
 ##############################################################################
 # Name: subscribe_tester.py
-# 
+#
 # Summary: Show how to create a module and use the callback mechanism.
 #
 # Usage: subscribe_tester.py [Naoqi IP address, local IP address]
@@ -76,7 +76,7 @@ class MarkHandlerModule(ALModule):
     print str(value)
     if (len(value) != 0):
       self.mHasDetectedMarks = True
-  
+
   def hasDetectedMarks(self):
     return self.mHasDetectedMarks
 
@@ -105,7 +105,7 @@ try:
 
   # Let the NaoMark detection run for a little while.
   time.sleep(5)
-  
+
   # Shut the Python Broker down
   broker.shutdown()
 
@@ -118,7 +118,7 @@ import pdb; pdb.set_trace()
 
 # Check that we detected some Naomarks.
 if (markHandler.hasDetectedMarks() == False):
-  print "%s : Could not detect Naomarks !" % (testName) 
+  print "%s : Could not detect Naomarks !" % (testName)
   testFailed = 1
 
 if (testFailed == 1):

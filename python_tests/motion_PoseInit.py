@@ -24,7 +24,7 @@ except Exception,e:
   print "Error when creating motion proxy:"
   print str(e)
   exit(1)
- 
+
 kneeAngle = 60.0 * motion.TO_RAD
 torsoAngle = 0.0 * motion.TO_RAD
 wideAngle = 0 * motion.TO_RAD
@@ -35,15 +35,15 @@ NumJoints = len(motionProxy.getBodyJointNames())
 # Define The Initial Position
 if (NumJoints == 22) :
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
-    120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -90.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -90.0 * motion.TO_RAD, -80.0 * motion.TO_RAD,
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 80.0 * motion.TO_RAD]
 elif (NumJoints == 26) :
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
     120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -90.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,0.0,
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0]
 else :
   print "Unexpected number of joints"

@@ -11,7 +11,7 @@ import burst.moves.poses as poses
 import time
 
 class WalkTester(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -25,7 +25,7 @@ class WalkTester(InitialBehavior):
 #                      ('Walk straight',
 #                      lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
-                      
+
                       ('Walk arc',
                       lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
                       lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
@@ -39,24 +39,24 @@ class WalkTester(InitialBehavior):
 #                     ('Sit',
 #                     lambda: self._actions.sitPoseAndRelax())
                      ]
-        
+
         self.doNextMove()
-        
+
     def doNextMove(self):
         if len(self.movesList) > 0:
             self.testMove(self.movesList.pop(0))
         else:
             self.onTestDone()
-    
+
     def testMove(self, (moveName, moveFunc)):
         print "%s Started!" % moveName
         self.moveStartTime = time.time()
         moveFunc().onDone(self.onMoveDone)
-        
+
     def onMoveDone(self):
         print "Took approximately %f" % (time.time() - self.moveStartTime)
         self.doNextMove()
-    
+
     def onTestDone(self):
         self._eventmanager.quit()
 

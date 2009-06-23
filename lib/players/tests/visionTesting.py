@@ -14,7 +14,7 @@ import burst.moves as moves
 from burst_util import polar2cart
 
 class visionTesting(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -24,12 +24,12 @@ class visionTesting(InitialBehavior):
     def initPos(self):
         self._actions.executeMove(moves.SIT_POS)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
-    
+
     def printBall(self):
         ball_x = self._world.ball.dist * cos(self._world.ball.bearing)
         ball_y = self._world.ball.dist * sin(self._world.ball.bearing)
         print ball_x," , ", ball_y
-        
+
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop

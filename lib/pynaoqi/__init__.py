@@ -281,7 +281,7 @@ def postNaoQiObject(mod, meth, *args):
 # NaoQiModule, NaoQiMethod (Top Level objects)
 
 class NaoQiParam(object):
-    
+
     def __init__(self, ztype, zname, zdoc):
         ztype = int(ztype)
         self.__doc__ = zdoc
@@ -296,7 +296,7 @@ class NaoQiParam(object):
             except:
                 return False
         return True
-    
+
     def docstring(self):
         return '%s %s: %s' % (self._type, self.name, self.__doc__)
 
@@ -451,7 +451,7 @@ class NaoQiMethod(object):
 
     def __call__(self, *args):
         ret = Deferred()
-        
+
         if not self._has_docs:
             self.makeHelp().addCallback(lambda _, self=self, args=args:
                 self._realcall(args=args, callCreator=callNaoQiObject,
@@ -526,13 +526,13 @@ if False:
         a corresponding xml message with head <albroker:X></albroker:X> is received,
         and the parameter is the contents
         """
-        
+
         def __init__(self, host, port):
             url = "http://%s:%s/" % (host, port)
             self._message_maker = MessageMaker(url)
 
         def handle_getBrokerInfo(self):
-            return 
+            return
 
 
 ##################################################################
@@ -635,7 +635,7 @@ class ALMotionExtended(NaoQiModule):
     def executeMove20(self, moves, interp_type, return_instead=False):
         """ for 20 joint moves (4 + 6 + 6 + 4) or 22 joints (2 + 4 + 6 + 6 + 4)
         """
-        
+
         if len(moves[0]) == 6:
             def getangles((head, larm, lleg, rleg, rarm, interp_time)):
                 return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
@@ -671,7 +671,7 @@ class ALMotionExtended(NaoQiModule):
                 + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm)
                 + [0.0, 0.0]]
             self.gotoBodyAngles(joints, interp_time, interp_type)
-  
+
 ##################################################################
 # Connection (Top Level object)
 
@@ -694,7 +694,7 @@ class BaseNaoQiConnection(object):
 
         self.modulesDeferred = Deferred()
         self._modules_to_wait_for_init_of = None
-       
+
         if self.options.twisted:
             # if we have twisted, use that implementation
             try:
@@ -709,7 +709,7 @@ class BaseNaoQiConnection(object):
                 NaoQiModule.VERBOSE = False
 
         self._initModules()
-    
+
     def getHost(self):
         return self._message_maker._host
     host = property(getHost)
@@ -953,7 +953,7 @@ class NaoQiConnection(BaseNaoQiConnection):
     def retrieveImages(self):
         """ Debugging helper - you need to run pynaoqi with the -gthread argument
         for this to work """
-        
+
         import gtk, gobject
 
         self.subscribeToCamera()
@@ -967,7 +967,7 @@ class NaoQiConnection(BaseNaoQiConnection):
             pixbuf = gtk.gdk.pixbuf_new_from_data(rgb, gtk.gdk.COLORSPACE_RGB, False, 8, width, height, width*3)
             gtkim.set_from_pixbuf(pixbuf)
             return True
-        
+
         gobject.timeout_add(500, getNew)
 
     def getRGBRemoteFromYUV422(self):

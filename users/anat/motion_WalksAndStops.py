@@ -10,32 +10,32 @@ from motion_CurrentConfig import *
 log = []
 start_time = time.time()
 def mylogger(something):
-    
+
     class wrap(object):
-        
+
         def __init__(self, obj):
             self.obj = obj
             if hasattr(obj, '__class__'):
                 self.name = obj.__class__.__name__
             else:
                 self.name = repr(obj)
-            
+
         def __call__(self, *args, **kw):
             self.__log('__call__', args, kw)
             return self.obj(*args, **kw)
-            
+
         def __getitem__(self, k):
             self.__log('__getitem__', [k])
             return self.obj.__getitem__(k)
-            
+
         def __getattr__(self, k):
             self.__log('__getattr__', [k])
             return getattr(self.obj, k)
-            
+
         def __log(self, what, args=[], kw={}):
             log.append((time.time() - start_time, '%s: %s: %r, %r' % (what, self.name, args, kw)))
             print '%3.2f: %s' % (log[-1][0], str(log[-1][1])[:80])
-            
+
     return something
     #return wrap(something)
 
@@ -109,7 +109,7 @@ motionProxy.setWalkArmsEnable(True)
 # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
 motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
 
-# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+# StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
 motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 
 
@@ -121,7 +121,7 @@ walkTaskId = motionProxy.post.walk() #non blocking call, we can do something els
 previousHeadAngle = motionProxy.getAngle("HeadYaw");
 
 motionProxy.setChainStiffness("Head",0.0)
-  
+
 
 #time.sleep(2)
 #if ( ttsProxy ):
@@ -136,20 +136,20 @@ while (motionProxy.isRunning(walkTaskId)):
         print "Obstacle found!"
         if ( ttsProxy ):
             ttsProxy.say("Obstacle found!")
-        
+
         motionProxy.clearFootsteps()#stops the walking
-        
+
         time.sleep(3)
-        
+
         print "Footsteps cleared!"
         if ( ttsProxy ):
             ttsProxy.say("Footsteps cleared!")
-        
+
         motionProxy.addTurn( 120.0 * motion.TO_RAD, 50 )#turn 90 deg left(?)
         motionProxy.walk()#stops the loop till finish turning
         motionProxy.addWalkStraight( 10, 25 )
-        walkTaskId = motionProxy.post.walk() 
-        
+        walkTaskId = motionProxy.post.walk()
+
     if (abs(motionProxy.getAngle("HeadYaw") - previousHeadAngle) > 0.1):
         motionProxy.clearFootsteps()#stops the walking
 

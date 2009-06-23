@@ -35,7 +35,7 @@ class turncw(InitialBehavior):
             print "self.counter = %d" % (self.counter)
             self.counter = self.counter + 1
         self.doNextAction()
-    
+
     def doNextAction(self):
         print "\ndoNextAction)"
         print "------------------"

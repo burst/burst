@@ -14,7 +14,7 @@ import os
 
 
 class PersonalWalkManualTweaker(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -30,7 +30,7 @@ class PersonalWalkManualTweaker(InitialBehavior):
         #self._actions.changeLocationRelative()
         t = getattr(self._actions, walkType)
         t(walkDistance, walk=walkParams)
-    
+
     def onChangeLocationDone(self):
         self.walkEndTime = time.time()
         print "Walk Done! - took approximately %f seconds." % (self.walkEndTime - self.walkStartTime)
@@ -56,7 +56,7 @@ def moduleCleanup(eventmanager, actions, world):
             if not robotName is None:
                 result = str(robotName)
                 result += ", " + str(battery_charge)
-                result += ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", " 
+                result += ", " + str(walkParams) + ", " + str(walkType) + ", " + str(walkDistance) + ", "
     #            print walkDistance, walkParams[WalkParameters.StepLength], remaining_steps
                 distanceWalkedBeforeFallingDown = min(walkDistance, max(0.0, walkDistance - 100 * walkParams[WalkParameters.StepLength] * remaining_steps))
                 result += str(distanceWalkedBeforeFallingDown)
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     else:
         print 'Please provide the robot\'s name, so that we can log the test\'s results.'
         exit()
-    
+
     mainloop = MainLoop(PersonalWalkManualTweaker)
     mainloop.setCtrlCCallback(moduleCleanup)
     mainloop.run()

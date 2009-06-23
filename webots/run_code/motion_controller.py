@@ -16,7 +16,7 @@ print "existing lines: %s" % output_lines
 f = open(OUT_FILE,'a')
 
 (x_init_pos, y_init_pos, yaw_init_pos,
- x_dest_pos, y_dest_pos, yaw_dest_pos)= [float(x.strip()) for x in 
+ x_dest_pos, y_dest_pos, yaw_dest_pos)= [float(x.strip()) for x in
     linecache.getlines('parameters.txt')]
 
 print "About to run for the following parameters:"

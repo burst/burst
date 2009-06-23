@@ -4,7 +4,7 @@ burst.init()
 
 def do():
 	ALMotion_Proxy = burst.getMotionProxy()
-	 
+
 	#________________________________
 	# Remote procedure call
 	#________________________________

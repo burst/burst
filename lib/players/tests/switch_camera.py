@@ -5,7 +5,7 @@ import player_init
 from burst.behavior import Behavior
 
 class SwitchCamera(Behavior):
-    
+
     def _start(self, firstTime=False):
         self._actions.initPoseAndStiffness().onDone(self.startTen)
 

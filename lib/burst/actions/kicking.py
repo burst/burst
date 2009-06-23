@@ -264,7 +264,7 @@ class BallKicker(Behavior):
         if not from_finder.stopped():
             print "STOPPING %s" % from_finder.name
             stop_bd = from_finder.stop()
-            
+
         print "SwitchToFinder: calling %s.start" % (to_finder.name)
         self._currentFinder = to_finder
         stop_bd.onDone(to_finder.start)

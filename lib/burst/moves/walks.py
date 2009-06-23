@@ -47,9 +47,9 @@ class Walk(object):
 STABLE_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           20.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
+           20.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            2.0,                   # TorsoYOrientation(degrees)
@@ -65,9 +65,9 @@ STABLE_WALK = Walk(WalkParameters([
 TURN_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.22,                  # HipHeight(meters)
            3.4,                   # TorsoYOrientation(degrees)
@@ -84,9 +84,9 @@ TURN_WALK = Walk(WalkParameters([
 STRAIGHT_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.22,                  # HipHeight(meters)
            3.4,                   # TorsoYOrientation(degrees)
@@ -102,9 +102,9 @@ STRAIGHT_WALK = Walk(WalkParameters([
 SIDESTEP_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           20.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4.5,                   # LHipRoll(degrees) 
+           20.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            5.0,                   # TorsoYOrientation(degrees)
@@ -134,8 +134,8 @@ STABLE_PAIR = (STABLE_WALK, poses.STABLE_WALK_INITIAL_POSE)
 FAST_WALK_WEBOTS = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           90.0 * DEG_TO_RAD,  # ElbowMedian 
-           0.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           90.0 * DEG_TO_RAD,  # ElbowMedian
+           0.0 * DEG_TO_RAD,  # ElbowAmplitude
            4.5,                   # LHipRoll(degrees) (2.5 original)
            -4.5,                  # RHipRoll(degrees) (-2.5 original)
            0.23,                  # HipHeight(meters) MAX
@@ -145,14 +145,14 @@ FAST_WALK_WEBOTS = WalkParameters([
            0.02,                  # StepSide
            0.3,                   # MaxTurn
            0.06,                  # ZmpOffsetX MAX
-           0.016,                 # ZmpOffsetY 
+           0.016,                 # ZmpOffsetY
            18])
 
 FASTER_WALK = WalkParameters([
            110.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           90.0 * DEG_TO_RAD,  # ElbowMedian 
-           0.0 * DEG_TO_RAD,  # ElbowAmplitude 
+           90.0 * DEG_TO_RAD,  # ElbowMedian
+           0.0 * DEG_TO_RAD,  # ElbowAmplitude
            4.5,                   # LHipRoll(degrees) (2.5 original)
            -4.5,                  # RHipRoll(degrees) (-2.5 original)
            0.23,                  # HipHeight(meters)
@@ -162,16 +162,16 @@ FASTER_WALK = WalkParameters([
            0.02,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.016,                 # ZmpOffsetY 
+           0.016,                 # ZmpOffsetY
            18])#,                    # 20ms count per step
            #,0.68]                  # Angle 0.68
 
 FAST_WALK = WalkParameters([
            100.0 * DEG_TO_RAD, # 0 ShoulderMedian
            10.0 * DEG_TO_RAD,    # 1 ShoulderAmplitude
-           30.0 * DEG_TO_RAD,    # 2 ElbowMedian 
-           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude 
-           3.5,                  # 4 LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,    # 2 ElbowMedian
+           10.0 * DEG_TO_RAD,    # 3 ElbowAmplitude
+           3.5,                  # 4 LHipRoll(degrees)
            -3.5,                 # 5 RHipRoll(degrees)
            0.23,                 # 6 HipHeight(meters)
            3.0,                  # 7 TorsoYOrientation(degrees)
@@ -180,16 +180,16 @@ FAST_WALK = WalkParameters([
            0.02,                 # 10 StepSide
            0.3,                  # 11 MaxTurn
            0.015,                # 12 ZmpOffsetX
-           0.018,                # 13 ZmpOffsetY 
+           0.018,                # 13 ZmpOffsetY
            # Not walk parameters proper.
            25])                   # 15 20ms count per step
 
 STD_WALK = WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           2.5,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           2.5,                   # LHipRoll(degrees)
            -2.5,                  # RHipRoll(degrees)
            0.23,                  # HipHeight(meters)
            0.0,                   # TorsoYOrientation(degrees)
@@ -198,15 +198,15 @@ STD_WALK = WalkParameters([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.01,                  # ZmpOffsetX
-           0.018,                 # ZmpOffsetY 
+           0.018,                 # ZmpOffsetY
            25])                    # 20ms count per step
 
 SLOW_WALK1 = WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           4,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           10.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4,                   # LHipRoll(degrees)
            -4.5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            5.0,                   # TorsoYOrientation(degrees)
@@ -215,6 +215,6 @@ SLOW_WALK1 = WalkParameters([
            0.03,                  # StepSide
            0.3,                   # MaxTurn
            0.015,                  # ZmpOffsetX
-           0.00,                  # ZmpOffsetY 
+           0.00,                  # ZmpOffsetY
            100])                    # 20ms count per step
 '''

@@ -49,14 +49,14 @@ if walk == SLOW:
   ## Slow Walk With High Step
   #################
 
-  # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+  # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
   motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
   motionProxy.setWalkArmsEnable(True)
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.22, 2.0 )
 
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.05, 0.04, 0.04, 0.4, 0.01, 0.00 )
 
   motionProxy.addWalkStraight( 0.05*4, 80)
@@ -70,14 +70,14 @@ elif walk == FAST:
   ## Speed Walk
   #################
 
-  # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude 
+  # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
   motionProxy.setWalkArmsConfig( 100.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 30.0 * motion.TO_RAD, 10.0 * motion.TO_RAD )
   motionProxy.setWalkArmsEnable(True)
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.23, 3.0 )
   #motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.23, 3.0 ) #Vova Suggested
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.015, 0.018 )
 
   motionProxy.addWalkStraight( 0.8, 25)
@@ -98,7 +98,7 @@ elif walk == STANDARD:
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 2.5, -2.5, 0.23, 0.0 )
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.04, 0.02, 0.03, 0.3, 0.01, 0.018)
 
   motionProxy.addWalkStraight( 0.5, 25)
@@ -115,7 +115,7 @@ elif walk == HAPPY:
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 2.5, -2.5, 0.22, 0.0 )
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.01, 0.02, 0.03, 0.3, 0.01, 0.018)
 
   motionProxy.addWalkStraight( 0.01*5, 20)
@@ -132,7 +132,7 @@ elif walk == SKI:
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 3.5, -3.5, 0.21, 0.0 )
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.06, 0.001, 0.03, 0.3, 0.01, 0.018)
 
   motionProxy.addWalkStraight( 0.06*5, 30)
@@ -146,11 +146,11 @@ elif walk == FASTER:
   # ShoulderMedian, ShoulderAmplitude, ElbowMedian, ElbowAmplitude
   motionProxy.setWalkArmsConfig( 110.0 * motion.TO_RAD, 10.0 * motion.TO_RAD, 90.0 * motion.TO_RAD, 0.0 * motion.TO_RAD )
   motionProxy.setWalkArmsEnable(True)
-  
+
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   #motionProxy.setWalkExtraConfig( 2.5, -2.5, 0.23, 0.0 ) #Original
   motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.23, 0.0 ) #Vova suggested
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   #motionProxy.setWalkConfig( 0.04, 0.02, 0.03, 0.3, 0.01, 0.016) #Original
   motionProxy.setWalkConfig( 0.04, 0.02, 0.02, 0.3, 0.01, 0.016)
 
@@ -169,7 +169,7 @@ elif walk == SLOWER:
 
   # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
   motionProxy.setWalkExtraConfig( 4.5, -4.5, 0.23, 2.0 )
-  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY 
+  # StepLength, StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY
   motionProxy.setWalkConfig( 0.05, 0.02, 0.04, 0.4, 0.01, 0.00 )
 
   motionProxy.addWalkStraight( 0.05*4, 120)

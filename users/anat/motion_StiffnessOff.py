@@ -36,12 +36,12 @@ TimeInterpolation = 0.05
 #**************************
 # BODY
 #**************************
-  
+
 print "Setting body stiffness to 0.0"
 motionProxy.setBodyStiffness(0.0)
 
 #**************************
-# CHAIN 
+# CHAIN
 #**************************
 
 # HEAD
@@ -56,7 +56,7 @@ motionProxy.setBodyStiffness(0.0)
 #motionProxy.setChainStiffness('RLeg',0.0,TimeInterpolation);
 
 #**************************
-# JOINT 
+# JOINT
 #**************************
 
 # HEAD

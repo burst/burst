@@ -11,7 +11,7 @@ from burst_consts import *
 from burst import moves
 
 class Localize(InitialBehavior):
-    
+
     """ To be converted into an action:
     Search for both yellow gate posts, centering on each.
     Location will be computed by Localization once both posts
@@ -31,7 +31,7 @@ class Localize(InitialBehavior):
     def _ook(self):
         self._eventmanager.register(self._worldLocationUpdated, EVENT_WORLD_LOCATION_UPDATED)
         self._actions.localize().onDone(self.doneLocalizing)
-        
+
     def doneLocalizing(self):
         print "Localize: done localizing"
         self._worldLocationUpdated()

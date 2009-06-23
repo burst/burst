@@ -27,7 +27,7 @@ class Sonar(object):
         self._lastData = None # last raw data (for deciding when data changed)
         self._lastReading = None # last (side / distance)
         self._obstacle_lost_frames_counter = 0
-        
+
     # valid only when obstacle seen/in_frame events occur, otherwise, returns None
     def getLastReading(self):
         return self._lastReading
@@ -40,9 +40,9 @@ class Sonar(object):
     def calc_events(self, events, deferreds):
         if not burst.options.run_sonar:
             return
-        
+
         new_data = self._world.vars[US_DISTANCES_VARNAME]
-        
+
         # make sure sonar data is valid
         if self._lastData != new_data and new_data and (len(new_data) >= 2):
             self._lastData = new_data
@@ -65,7 +65,7 @@ class Sonar(object):
             else:
                 if self._obstacleSeen:
                     self._obstacle_lost_frames_counter += 1
-                    
+
                     if self._obstacle_lost_frames_counter >= US_FRAMES_TILL_LOST:
                         newEvent = EVENT_OBSTACLE_LOST
                         self._obstacleSeen = False
@@ -95,20 +95,20 @@ class Sonar(object):
         min_right= 9999
         upper_thresh= US_NEAR_DISTANCE # TODO: get this number from personalization file (minimal noise left/right when no obstacle). Was 1.0.
         lower_thresh= 0.045
-    
+
         # Run on data and get the needed parameters for evaluation.
         for point in history:
             if point == None:
                 break
             left_val = point[LEFT]
             right_val = point[RIGHT]
-        
+
             currDiff= abs(left_val-right_val)
             # New minimal difference between left and right readings.
             if currDiff<diff:
                 # Readings of an existing object [ below the threshold ].
                 if left_val<=upper_thresh or right_val<=upper_thresh:
-                    # Some weird bug when left and right readings are the same. 
+                    # Some weird bug when left and right readings are the same.
                     if currDiff>0:
                         diff= currDiff;
             # New left minimum reading.
@@ -133,14 +133,14 @@ class Sonar(object):
             # Right value was lower than the left value.
             if right_val<=left_val:
                 vote_majority_right= vote_majority_right + 1
-        
+
         # Find min of min.
         if min_left<min_right:
             min_min= min_left
         else:
             min_min= min_right
-        
-        # If min of min is above upper threshold, 
+
+        # If min of min is above upper threshold,
         # the reading is invalid.
         if min_min>upper_thresh:
             return ("nothing", 0)

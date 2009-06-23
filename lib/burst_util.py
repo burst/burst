@@ -24,7 +24,7 @@ def cross(*args):
 
 
 class Nameable(object):
-    
+
     def __init__(self, name='unnamed'):
         self.name = name
         self.verbose = False
@@ -39,11 +39,11 @@ class Nameable(object):
     __repr__ = __str__
 
 class RingBuffer(list):
-    
+
     """ Todo - a more efficient implementation. (only
     if this becomes an issue)
     """
-    
+
     def __init__(self, size):
         self.size_ = size
         self.index_ = 0
@@ -57,7 +57,7 @@ class RingBuffer(list):
         else:
             self.pop(0)
             self.append(x)
-            
+
 
 # Twisted-like Deferred and succeed
 
@@ -85,7 +85,12 @@ class WrapWithDeferreds(object):
         return '<DeferWrapped %s>' % repr(self._obj)
 
 class MyDeferred(object):
-    """ mimic in the most minimal way twisted.internet.defer.Deferred """
+    """ mimic in the most minimal way twisted.internet.defer.Deferred
+    missing:
+    errBacks
+    no recursion protection
+    no recalling of deferred results
+    """
     def __init__(self):
         self._callbacks = []
         self.called = 0
@@ -177,7 +182,9 @@ try:
     # use the real thing if it is there
     from twisted.internet.defer import Deferred, DeferredList
 except:
-    print "WARNING: USING MyDeferred instead of t.i.d.Deferred"
+    print "ERROR: You don't want to use MyDeferred instead of t.i.d.Deferred"
+    import sys
+    sys.exit(-1)
     Deferred = MyDeferred
     DeferredList = MyDeferredList
 
@@ -228,6 +235,7 @@ class BurstDeferred(object):
     """
 
     verbose = False # TODO - options
+    _being_called = False # recursion protection
 
     def __init__(self, data, parent=None, allow_chaining=True):
         self._data = data
@@ -235,13 +243,14 @@ class BurstDeferred(object):
         self._completed = False # we need this for concatenation to work
         self._parent = parent # DEBUG only
         self._allow_chaining = allow_chaining
-    
+
     def clear(self):
         for cb, chain_deferred in self._ondone:
             # recursively clear all child deferreds
             chain_deferred.clear()
         self._ondone = []
-    
+        self._being_called = False
+
     def onDone(self, cb):
         """ store a callback to be called when a result is complete.
         If it is already complete then it will be called right away, and
@@ -265,6 +274,8 @@ class BurstDeferred(object):
 
     def callOnDone(self):
         self._completed = True
+        if self._being_called: return
+        self._being_called = True
         if len(self._ondone) >= 2:
             if self.verbose:
                 print "BurstDeferred: using multiple onDone on %s (may be ok)" % (self)
@@ -280,6 +291,7 @@ class BurstDeferred(object):
             elif isinstance(ret, Deferred):
                 ret.addCallback(lambda _: chain_deferred.callOnDone())
         self._ondone = [] # zero the callback - don't call twice
+        self._being_called = False
 
     def onDoneCallDeferred(self, d):
         """ Helper for t.i.d.Deferred mingling - will call this deferred when
@@ -297,15 +309,13 @@ class BurstDeferred(object):
             self._d = succeed(None)
         else:
             self._d = Deferred()
-            from twisted.internet.defer import log
-            self._d.addErrback(log.err)
             self.onDone(lambda: self._d.callback(None))
         return self._d
 
     def toCondensedString(self):
         """ try to give a short description of who is being called by this callback
         """
-        if not self._ondone: return '_'
+        if not self._ondone: return 'no callbacks'
         ret = []
         if hasattr(self, '_d'):
             return 'bd->%s' % (deferredToCondensedString(self._d))
@@ -331,7 +341,10 @@ def succeedBurstDeferred(data):
     return bd
 
 def deferredToCondensedString(d):
-    print "d-%s" % id(d)
+    if len(d.callbacks) == 0:
+        return 'd-empty-%s' % id(d)
+    # XXX ignore errbacks for now
+    return 'd-[%s]' % (','.join([func_name(cb) for (cb, args1, kw1), (eb, args2, kw2) in d.callbacks]))
 
 def returnsbd(f):
     """ decorator to mark functions that return a bd. Easier to implement BehaviorActions
@@ -469,7 +482,7 @@ def cached_deferred(filename):
                 print "warning: cache failed, returning uncached results"
                 return succeed(result)
             return result # must return for chained callback
-        
+
         def wrapper(*args):
             if not os.path.exists(filename):
                 # call function - don't protect this
@@ -608,19 +621,19 @@ def calculate_middle((left_dist, left_bearing), (right_dist, right_bearing)):
     return (target_x, target_y)
 
 def calculate_relative_pos((waypoint_x, waypoint_y), (target_x, target_y), offset):
-    """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point 
+    """ A point k distant (offset) from the waypoint (e.g., ball) along the line connecting the point
     in the middle of the target (e.g., goal) and the waypoint in the outward direction.
 
     The coordinate system is the standard: the x axis is to the front,
     the y axis is to the left of the robot. The bearing is measured from the x axis ccw.
-    
+
     computation:
      target - target center (e.g., middle of goal)
      waypoint - waypoint (e.g., ball) - should be of type Locatable (support dist/bearing
      normal - normal pointing from target (goal center) to waypoint (ball)
      result - return result (x, y, bearing)
     """
-    
+
     normal_x, normal_y = waypoint_x - target_x, waypoint_y - target_y # normal is a vector pointing from center to ball
     normal_norm = sqrt(normal_x**2 + normal_y**2)
     normal_x, normal_y = normal_x / normal_norm, normal_y / normal_norm
@@ -812,7 +825,7 @@ class LogCalls(object):
 
     def __getattr__(self, k):
         f = getattr(self._obj, k) # can throw, which is ok.
-        # TODO: use callbacks for motion (isRunning) 
+        # TODO: use callbacks for motion (isRunning)
         if k in DONT_LOG_CALLS:
             return f
         if callable(f):

@@ -16,9 +16,9 @@ from burst.image import normalized2_image_width, normalized2_image_height
 
 ############################################################################
 class Tracker(object):
-    
+
     """ track objects by moving the head """
-    
+
     def __init__(self, actions):
         self._target = None
         self._actions = actions
@@ -41,7 +41,7 @@ class Tracker(object):
         #self._trackingStep = traceme(self._trackingStep)
 
     ############################################################################
-    
+
     def _start(self, target, on_lost_callback):
         self._target = target
         self._stopped = False
@@ -150,7 +150,7 @@ class Tracker(object):
         if self._on_centered_bd is not None:
             print "ERROR - can't start tracking while centering"
             import pdb; pdb.set_trace()
-        
+
         # don't track objects that are not seen
         if not target.recently_seen:
             # TODO we immediately call the on_lost_callback - might
@@ -231,7 +231,7 @@ class Tracker(object):
         delta_angles = None
         centered, centered_at_pitch_limit, xNormalized, yNormalized = target.centering_error(
             normalized_error_x, normalized_error_y)
-        head_motion_in_progress = self._world.robot.isHeadMotionInProgress()
+        head_motion_in_progress = self._actions.isHeadMotionInProgress()
         if target.seen and not centered and not head_motion_in_progress:
             CAM_X_TO_RAD_FACTOR = (FOV_X / 2)/2 # do half the error in a single step
             CAM_Y_TO_RAD_FACTOR = (FOV_Y / 2)/2

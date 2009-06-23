@@ -19,8 +19,8 @@ except Exception,e:
   print str(e)
   exit(1)
 
-# Get The Initial Position of the Right Arm [x, y, z, wx, wy, wz] 
-# in the Support Leg Space 
+# Get The Initial Position of the Right Arm [x, y, z, wx, wy, wz]
+# in the Support Leg Space
 InitialPosition = motionProxy.getPosition('RArm', motion.SPACE_SUPPORT_LEG)
 print InitialPosition
 
@@ -30,18 +30,18 @@ TargetPosition = InitialPosition
 # Create a Target Position of +8cm along X axis (first coordinate)
 TargetPosition[0] += 0.04
 
-# Move the Right Arm with to the Target Position relative to 
-#   Support Leg Space in 2.0s with Smooth Interpolation. 
-# A Velocity Mask is used so orientations of the End effector are 
+# Move the Right Arm with to the Target Position relative to
+#   Support Leg Space in 2.0s with Smooth Interpolation.
+# A Velocity Mask is used so orientations of the End effector are
 #   not controlled.
 motionProxy.gotoPosition('RArm', motion.SPACE_SUPPORT_LEG, TargetPosition, motion.AXIS_MASK_VEL, 2.0, motion.INTERPOLATION_SMOOTH)
 
 # Create a Target Position of -8cm along Y axis (second coordinate)
 TargetPosition[1] += -0.08
 motionProxy.gotoPosition('RArm', motion.SPACE_SUPPORT_LEG, TargetPosition, motion.AXIS_MASK_VEL, 2.0, motion.INTERPOLATION_SMOOTH)
-  
+
 TargetPosition[0] += -0.08
 motionProxy.gotoPosition('RArm', motion.SPACE_SUPPORT_LEG, TargetPosition, motion.AXIS_MASK_VEL, 2.0, motion.INTERPOLATION_SMOOTH)
-  
+
 TargetPosition[1] += 0.08
 motionProxy.gotoPosition('RArm', motion.SPACE_SUPPORT_LEG, TargetPosition, motion.AXIS_MASK_VEL, 2.0, motion.INTERPOLATION_SMOOTH)

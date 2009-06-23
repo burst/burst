@@ -32,13 +32,14 @@ clean: cleanpyc
 	cd src/imops; $(MAKE) clean
 
 removewhitespace:
-	find . -iname "*.cpp" -or -iname "*.h" -or -iname "*.py" -exec sed "s/\s\s*$//" -i \{\} \;
+	find . -iname "*.cpp" -or -iname "*.h" -or -iname "*.py" -exec sed "s/\s\s*$$//" -i \{\} \;
 
 sizes:
 	ls -l $(MODULES)
 
 pyloc:
-	find . -iname "*.py" | xargs cat | grep -v "^\s*#.*$$" | wc -l
+	find lib -iname "*.py" | xargs cat | grep -v "^\s*#.*$$" | wc -l
+	find . -path ./lib -prune -o -iname "*.py" -print | xargs cat | grep -v "^\s*#.*$$" | wc -l
 
 pyloctotal:
 	find . -iname "*.py" | xargs cat | wc -l

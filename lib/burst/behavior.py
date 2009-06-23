@@ -44,6 +44,8 @@ class BehaviorActions(object):
     returned from Actions
     """
 
+    debug = False # TODO - options, default False
+
     def __init__(self, actions, behavior):
         self._actions = actions
         self._behavior = behavior
@@ -53,8 +55,10 @@ class BehaviorActions(object):
     def clearFutureCallbacks(self):
         """ cancel all pending burst deferreds callbacks """
         # TODO - clear becomes cancel - is that ok?
-        if self.verbose:
-            print "BA.clearFutureCallbacks: removing %s" % (len(self._bds))
+        if self.verbose and len(self._bds) > 0:
+            print "BA.clearFutureCallbacks: removing [%s]" % (','.join(str(bd) for bd in self._bds))
+        if self.debug and len(self._bds) > 0:
+            import pdb; pdb.set_trace()
         for bd in self._bds:
             bd.clear()
 
@@ -66,7 +70,7 @@ class BehaviorActions(object):
         if hasattr(actions_k, 'returnsbd'):
             return behaviorwrapbd(self, actions_k)
         return actions_k
-                
+
 class BehaviorEventManager(object):
     """ Manage all calls to EventManager for a specific Behavior.
 
@@ -94,8 +98,10 @@ class BehaviorEventManager(object):
             self._eventmanager.cancelCallLater(cb)
         for cb, event in self._registered:
             self._eventmanager.unregister(cb, event)
-        if self.verbose:
-            print "BEM.clearFutureCallbacks: removing %s, %s" % (len(self._calllaters), len(self._registered))
+        if self.verbose and (len(self._calllaters) > 0 or len(self._registered) > 0):
+            print "BEM.clearFutureCallbacks: removing CL [%s], E [%s]" % (
+                ','.join(func_name(cb) for cb in self._calllaters),
+                ','.join('%s->%s' % (event_name(e), func_name(cb)) for cb, e in self._registered))
         del self._calllaters[:]
         self._registered.clear()
         self._cb_to_wrapper.clear()
@@ -123,7 +129,7 @@ class BehaviorEventManager(object):
         def wrapper(*args, **kw):
             #print "BEM %s wrapper" % (self._behavior.name)
             return self._behavior._applyIfNotStopped(callback, args, kw)
-        self._cb_to_wrapper[callback] = wrapper 
+        self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.callLater(dt, callback, *args, **kw)
 
     def callLaterBD(self, dt):
@@ -201,7 +207,7 @@ class Behavior(BurstDeferred, Nameable):
     __repr__ = __str__
 
 class ContinuousBehavior(Behavior):
-    
+
     def __init__(self, actions, name):
         super(ContinuousBehavior, self).__init__(actions=actions, name=name, allow_chaining=False)
 
@@ -210,7 +216,7 @@ class ContinuousBehavior(Behavior):
         raise RuntimeError("You cannot register an onDone callback on a continuous behavior.")
 
 class InitialBehavior(Behavior):
-    
+
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose

@@ -12,6 +12,8 @@ which is created from the main_behavior_class (or factory) given.
 
 '''
 
+from twisted.python import log
+
 from burst_events import *
 import burst
 import burst.moves.poses as poses
@@ -154,7 +156,7 @@ class Player(object):
             print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
                 self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
-                    fireOnOneCallback=True).addCallback(self._onConfigured)
+                    fireOnOneCallback=True).addCallback(self._onConfigured).addErrback(log.err)
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -191,7 +193,7 @@ class Player(object):
     def _onPlay(self):
         print "Player: OnPlay"
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
-    
+
     def _onMainBehaviorDone(self):
         print "Player: Main Behavior is done (%s)" % (self._main_behavior)
 
@@ -217,16 +219,16 @@ class Player(object):
         print "Player: On Initial"
         self._main_behavior.stop()
 
-    def onStop(self): # TODO: Shouldn't this be called onPaused, while onStop deals with the end of the game?
-        """ implemented by inheritor from Player. Called whenever player
-        moves from action to no action. (game controller moves from playing
-        state to another, or when changing behaviors)
+    def onStop(self):
+        """ Called when we want to shutdown our program - i.e. game over, go home, or whatever.
+        Not called during the game (unless we have a bug! do we? nah..)
 
         Needs to take care of cleaning up: stop any action you were in the middle of,
         i.e. clearFootsteps.
         """
         def afterBehaviorStopped():
             self._actions.clearFootsteps()
+            self._actions.killAll()
             self._world._sentinel.enableDefaultActionSimpleClick(True)
             self._world.robot.leds.turnEverythingOff()
             self._world.robot.leds.rightEarLED.turnOn()
@@ -256,7 +258,7 @@ class Player(object):
 #        self._main_behavior.stop()
 #        self.unregisterFallHandling()
 #        self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
-        
+
     def onGottenUpFromBack(self):
         self._actions.say("Getting up done (from back)")
         self.registerFallHandling()

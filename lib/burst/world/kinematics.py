@@ -12,6 +12,8 @@ since I suspect they don't use the pitch correctly.
 import math
 from math import asin, hypot, atan, pi, atan2
 
+from twisted.python import log
+
 from burst_numpy_util import (sin, cos, zeros,
     tan, array, dot, norm,
     identity, translation4D, rotation4D,
@@ -45,7 +47,7 @@ EST_DIST, EST_ELEVATION, EST_BEARING, EST_X, EST_Y = range(5)
 
 # TODO: UGLY
 class Estimate(list):
-    
+
     def __init__(self, v = None):
         if v is None:
             v = [0.0, 0.0, 0.0, 0.0, 0.0]
@@ -58,7 +60,7 @@ class Estimate(list):
 
     def set_dist(self, v):
         self[EST_DIST] = v
-        
+
     dist = property(get_dist, set_dist)
 
     def get_elevation(self):
@@ -82,7 +84,7 @@ class Estimate(list):
 
     def set_x(self, v):
         self[EST_X] = v
-    
+
     x = property(get_x, set_x)
 
     def get_y(self):
@@ -130,21 +132,21 @@ def calculateForwardTransform(id, angles):
         if alpha != 0:
             rotX = rotation4D(X_AXIS, alpha)
             fullTransform = dot(fullTransform, rotX)
-      
+
         #theta - rotate about the Z(i) axis
         if theta + angle != 0:
             rotZ = rotation4D(Z_AXIS, theta + angle)
             fullTransform = dot(fullTransform, rotZ)
-      
+
         #offset D movement along the Z(i) axis
         if d != 0:
             transZ = translation4D(0.0, 0.0, d)
             fullTransform = dot(fullTransform, transZ)
-      
+
     # Do the end transforms
     for endTransform in END_TRANSFORMS[id]:
         fullTransform = dot(fullTransform, endTransform)
-    
+
     return fullTransform
 
 #### NaoPose
@@ -154,7 +156,7 @@ class Pose(object):
      Pose: The class that is responsible for calculating the pose of the robot
      in order that the vision system can tell where the objects it sees are located
      with respect to the center of the body.
-    
+
      To understand this file, please review the modified Denavit Hartenberg
      convention on robotics coordinate frame transformations, as well as the
      following documentation:
@@ -162,26 +164,26 @@ class Pose(object):
       * NaoWare documentation
       * HONG NUBots Enhancements to vision 2005 (for Horizon)
       * Wiki line-plane intersection:  en.wikipedia.org/wiki/Line-plane_intersection
-    
+
      The following coordinate frames will be important:
       * The camera frame. origin at the focal point, alligned with the head.
       * The body frame. origin at the center of mass (com), alligned with the torso.
       * The world frame. orgin at the center of mass, alligned with the ground
       * The horizon frame. origin at the focal point, alligned with the ground
-    
+
      The following methods are central to the functioning of Pose:
       * tranform()     - must be called each frame. setups transformation matrices
                          for the legs and the camera, which enables calculation of
                          body height and horizon
-    
+
       * pixEstimate()  - returns an estimate to a given x,y pixel, representing an
                          object at a certain height from the ground. Takes units of
                          CM, and returns in CM. See also bodyEstimate
-    
+
       * bodyEstimate() - returns an estimate for a given x,y pixel, and a distance
                          calculated from vision by blob size. See also pixEstimate
-    
-    
+
+
       * Performance Profile: mDH for 3 chains takes 70% time in tranform(), and
                              horizon caculation takes the other 30%. pixEstimate()
                              and bodyEstimate() take two orders of magnitude less
@@ -190,30 +192,30 @@ class Pose(object):
                       gyros, so we won't need to use the support leg's orientation
                       in space to figure this out. That will save quite a bit of
                       computation.
-    
+
      @date July 2008
      @author George Slavov
      @author Johannes Strom
-    
+
      TODO:
        - Need to fix the world frame, since it currently relies on the rotation of
          the foot also about the Z axis, which means when we are turning, for
          example, we will report distances and more imporantly bearings relative
          to the foot instead of the body. This has been hacked for now, in
          bodyEstimate.
-    
+
        - While testing this code on the robot, we saw a significant, though
          infrequent, jump in the estimate for the horizon line. The cause could be
          one of bad joint information from the motion engine, a singular matrix
          inversion we do somewhere in the code, or something completely different.
          Needs to be looked at.
-    
+
        - While testing this code on the robot, we have noticed severe
          discrepancies between distances reported from pixEstimate, and their
          actual values. While the model seems to work well in general, there
          needs to be a serious evaluation of these defects, since these
          inaccuracies will have serious consequences for localization.
-    
+
     """
 
     def __init__(self, world):
@@ -274,7 +276,7 @@ class Pose(object):
     def bearingFromPix(self, x, y):
         raise NotImplementedError('TODO')
 
-    # NaoPose.cpp 
+    # NaoPose.cpp
 
     def updateTransforms(self, bodyAngles, inclinationAngles, supportLegChain=LLEG_CHAIN, debug=False):
         """
@@ -320,14 +322,14 @@ class Pose(object):
 
         bodyToWorldTransform = dot(rotation4D(X_AXIS, bodyInclinationX),
                 rotation4D(Y_AXIS, bodyInclinationY))
-      
+
         torsoLocationInLegFrame = dot(bodyToWorldTransform, supportLegLocation)
         # get the Z component of the location
         self.comHeight = -torsoLocationInLegFrame[Z]
-      
+
         self.cameraToWorldFrame = cameraToWorldFrame = dot(
             bodyToWorldTransform, cameraToBodyTransform)
-      
+
         self.calcImageHorizonLine()
         self.focalPointInWorldFrame = [cameraToWorldFrame[X,3],
             cameraToWorldFrame[Y,3], cameraToWorldFrame[Z,3]]
@@ -382,26 +384,26 @@ class Pose(object):
 
         #const float height_mm_left = intersectionLeft[Z];
         #const float height_mm_right = intersectionRight[Z];
-      
+
         # TODO: Temp fix for BURST:
         height_mm_left = IMAGE_HEIGHT_MM/2
         height_mm_right = IMAGE_HEIGHT_MM/2
-      
+
         height_pix_left = -height_mm_left*MM_TO_PIX_Y + IMAGE_HEIGHT/2
         height_pix_right = -height_mm_right*MM_TO_PIX_Y + IMAGE_HEIGHT/2
-      
+
         #cout << "height_mm_left: " << height_mm_left << endl;
         #cout << "height_mm_right: " << height_mm_right << endl;
         #cout << "height_pix_left: " << height_pix_left << endl;
         #cout << "height_pix_right: " << height_pix_right << endl;
-      
+
         self.horizonLeft[:] = 0.0, round(height_pix_left)
         self.horizonRight[:] = IMAGE_WIDTH - 1, round(height_pix_right)
-      
+
         self.horizonSlope = float((height_pix_right - height_pix_left) /(IMAGE_WIDTH -1.0))
-      
+
         #cout << "horizonSlope: " << horizonSlope << endl;
-      
+
         if self.horizonSlope != 0:
             perpenHorizonSlope = -1/self.horizonSlope
         else:
@@ -420,7 +422,7 @@ class Pose(object):
         #normally need 3 points, but since one is the origin, it can get ignored
         unitX = vector4D(1,0,0)
         unitY = vector4D(0,1,0)
-      
+
         #we now solve the point of intersection using linear algebra
         #Ax=b, where b is the target, x is the solution of weights (t,u,v)
         #to solve l1 + (l2 -l1)t = o1*u + o2*v
@@ -430,11 +432,11 @@ class Pose(object):
         #See http://en.wikipedia.org/wiki/Line-plane_intersection for detail
         eqSystem = zeros((3,3))
         eqSystem[0,0]=l1[0] - l2[0]; eqSystem[0,1] = unitX[0]; eqSystem[0,2]=unitY[0];
-      
+
         eqSystem[1,0]=l1[1] - l2[1]; eqSystem[1,1] = unitX[1]; eqSystem[1,2]=unitY[1];
-      
+
         eqSystem[2,0]=l1[2] - l2[2]; eqSystem[2,1] = unitX[2]; eqSystem[2,2]=unitY[2];
-      
+
         # Solve for the solution of the weights.
         # Now usually we would solve eqSystem*target = l1 for target, but l1 is
         # defined in homogeneous coordiantes. We need it to be a 3 by 1 vector to
@@ -451,10 +453,10 @@ class Pose(object):
         #  # will be at the top of the screen in this case which works for us.
         #  return l1;
         #}
-      
+
         result = lu_solve((lu, piv), target)
         t = result[0]
-      
+
         #the first variable in the linear equation was t, so it appears at the top of
         #the vector 'result'. The 't' is such that the point l1 + (l2 -l1)t is on
         #the horizon plane
@@ -462,7 +464,7 @@ class Pose(object):
         intersection = l2 - l1
         intersection *= t
         intersection += l1
-      
+
         # The intersection seems to currently have the wrong y coordinate. It's the
         # negative of what it should be.
         return intersection
@@ -482,7 +484,7 @@ class Pose(object):
                 0 <= pixel_x <= IMAGE_WIDTH and 0 <= pixel_y <= IMAGE_HEIGHT]
 
     def testPixEstimateStraightForward(self, x, y, camera_pitch=0.0):
-        """ Reset our orientation to a fixed way - have the camera 
+        """ Reset our orientation to a fixed way - have the camera
         rotated along the y axis (pitch) with angle camera_pitch compared to level - we
         add the CAMERA_PITCH_ANGLE ourselves.
 
@@ -974,7 +976,7 @@ class PynaoqiPose(Pose):
                 results.append(self._location[:2])
             return results
 
-        return self.update(con).addCallback(returnPairs)
+        return self.update(con).addCallback(returnPairs).addErrback(log.err)
 
     def update(self, con):
         """ Development helper. Not to be confused with player usable code.
@@ -986,11 +988,11 @@ class PynaoqiPose(Pose):
             con.ALMemory.getListData(self._inclination_vars).addCallback(self._storeInclination),
             con.ALMotion.getBodyAngles().addCallback(self._storeBodyAngles),
             onevision().addCallback(self._storeVision),
-            ], fireOnOneErrback=True).addCallbacks(self._updateFromVisionAndAngles, log.err)
+            ], fireOnOneErrback=True).addCallback(self._updateFromVisionAndAngles).addErrback(log.err)
         return d
 
     def update_print(self, con):
-        return self.update(con).addCallback(self._printUpdatedCalculations)
+        return self.update(con).addCallback(self._printUpdatedCalculations).addErrback(log.err)
 
     def _storeInclination(self, result):
         if not self._connecting_to_webots:
@@ -1071,7 +1073,7 @@ class PynaoqiPose(Pose):
             top=None, bottom=None, debug=False):
         """ Take two objects and update our self location in WF from it.
         NOTE: the objects need to be ordered - top_y > bottom_y
-        
+
         Defaults to Yellow Goal Left Post and Right Post (Top and Bottom
         respectively)
         """

@@ -23,12 +23,12 @@ proxies = [] # This was added for use by shutdown(). If no longer useful by the 
 # TODO: Move to burst_exceptions
 class InitException(Exception):
     pass
-    
+
 def init(ip = None, port = None):
     """ You must call this first. Technically, we could init everything
     the first time it is called, but we prefer to make you call this
     function first. Just because we can.
-    
+
         Signed: The doc string writer.
     """
     global _broker

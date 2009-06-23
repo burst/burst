@@ -6,7 +6,7 @@ Authors: David Gouaillier & Chris Kilner
 Small example to show how to coordinate Nao's movements
 """
 
- 
+
 
 from motion_CurrentConfig import *
 #####
@@ -22,7 +22,7 @@ except RuntimeError,e:
 ####
 # Create motion proxy
 
- 
+
 
 print "Creating motion proxy"
 try:
@@ -31,7 +31,7 @@ except Exception,e:
   print "Error when creating motion proxy:"
   print str(e)
   exit(1)
- 
+
 
 # Define The Initial Position
 kneeAngle = 60.0 * motion.TO_RAD
@@ -44,15 +44,15 @@ NumJoints = len(motionProxy.getBodyJointNames())
 # Define The Initial Position
 if (NumJoints == 22) :
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
-    120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD,
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD]
 elif (NumJoints == 26) :
   InitialPosition = [0.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,
     120.0 * motion.TO_RAD, 15.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, -80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD,0.0,
-    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle, 
-    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle, 
+    0.0, wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, -wideAngle,
+    0.0, -wideAngle, -kneeAngle/2-torsoAngle, kneeAngle, -kneeAngle/2, wideAngle,
     120.0 * motion.TO_RAD, -15.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 80.0 * motion.TO_RAD, 0.0 * motion.TO_RAD, 0.0]
 else :
   print "Unexpected number of Joint"
@@ -89,7 +89,7 @@ wX = 0.0
 wY = 0.0
 wZ = 0.0
 Cmd = [ActualPosition[0]+X, ActualPosition[1]+Y, ActualPosition[2]+Z, ActualPosition[3]+wX, ActualPosition[4]+wY, ActualPosition[5]+wZ]
-motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH) 
+motionProxy.gotoPosition("RLeg", motion.SPACE_SUPPORT_LEG, Cmd, motion.AXIS_MASK_ALL, InterpolationTimeForThisSection, motion.INTERPOLATION_SMOOTH)
 
 #####################################################################
 #####################################################################

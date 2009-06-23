@@ -181,7 +181,7 @@ class GameStatus(object):
         raise Exception("getMyPlayerStatus() - can't find myself among the players.")
 
     def changeKickOffTeam(self, kickOffTeam): # TODO: Untested.
-        # TODO: I've been led to believe Python has properties/attributes/whatever, like C#. I probably just want to use that instead for the 
+        # TODO: I've been led to believe Python has properties/attributes/whatever, like C#. I probably just want to use that instead for the
         # kickOffTeam variable, so that setColors() is called whenever it's changed.
         raise Exception("This feature has not yet been tested. It should work, but do test it before removing this line.")
         self.kickOffTeam = kickOffTeam
@@ -209,7 +209,7 @@ class EmptyGameStatus(object):
     def readMessage(*args, **kw): pass
     def calc_events(*args, **kw): pass
     def getScore(*args, **kw): return 0
-    def getMyPlayerStatus(*args, **kw): return Standard 
+    def getMyPlayerStatus(*args, **kw): return Standard
 
 
 

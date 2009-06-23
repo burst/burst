@@ -70,7 +70,7 @@ def xyt_from_two_dist_one_angle(r1, r2, a1, d, p0, p1, debug=False):
         _y = ( x_unit_y ) * x + ( y_unit_y ) * y
         x, y = _x, _y
         # rotate the heading - TODO: be nice to not need a tan^-1 here.
-        # TODO - not accurate for delta_x << 1 
+        # TODO - not accurate for delta_x << 1
         obj_theta = atan2(x_unit_y, x_unit_x)
         theta += obj_theta
     # Translate
@@ -87,7 +87,7 @@ def kick_angle_size_from_distance_and_angle_to_mid_target(r, a, l):
 
     returns +-b, the kick angle, from which x and y are computed so: (in center
     of target coordinate system)
-    
+
     on sign of b: we cannot compute the sign of b since there is a symmetry to
     the problem. To break this we must have r1 and r2 and know which is larger.
     That is left for the caller.

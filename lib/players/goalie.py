@@ -36,7 +36,7 @@ class Goalie(InitialBehavior):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
         self.isPenalty = True # TODO: Use the gameStatus object.
         self._restart()
-    
+
     def _restart(self):
         self._report("in play")
         self.whichBehavior() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
@@ -66,7 +66,7 @@ class Goalie(InitialBehavior):
     def returnHead(self):
         self._eventmanager.unregister(self.returnHead)
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR)
-        
+
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
         self.targetFinder.stop()
@@ -83,7 +83,7 @@ class Goalie(InitialBehavior):
             else:
                 self._actions.say("Leap left.")
                 self.waitingOnLeft()
-            
+
     def leap(self):
         self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.targetFinder.stop()
@@ -127,7 +127,7 @@ class Goalie(InitialBehavior):
 
     def getUpBelly(self):
         self._actions.executeGettingUpBelly().onDone(self.onLeapComplete)
-        
+
     def onLeapComplete(self):
         if realLeap:
             self._report("Leap complete.")

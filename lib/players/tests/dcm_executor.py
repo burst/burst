@@ -30,7 +30,7 @@ CLEAR_BEFORE = "ClearBefore"
 INTERPOLATION_STEP = 0.025
 
 class DCMExecutor(InitialBehavior):
-    
+
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
@@ -55,7 +55,7 @@ class DCMExecutor(InitialBehavior):
         #print "got t = %s" % t
         #ret = self.dcmProxy.set(["Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value", 'ClearAll', [[2.0, t+500]]])
         #print "called dcm.set, got %s" % repr(ret)
-    
+
 
 
     def createMovementJointsAlias(self):
@@ -69,23 +69,23 @@ class DCMExecutor(InitialBehavior):
         #self.addMotionSequence((["Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value"], [[2.0]], [[1.0]]))
         #self.dcmProxy.set( ["Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value", 'ClearAll', [[0, t+100]] ])
         self.addMotionSequence(domove_constants.gait_attempt_generate(3.0))
-        
+
         time.sleep(20.0)
         print "DONE"
         self.f.close()
-        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))        
+        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))
         #time.sleep(5.0)
-        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))       
+        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))
         #time.sleep(5.0)
-        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))    
+        #self.addMotionSequence(domove_constants.gait_attempt_generate(4.0))
         self._world._motion.setBodyStiffness(0.0)
         print "STIFFNESS OFF!"
-        
-    
+
+
     def addMotionSequence(self, (jointCodes, angles, times), mergeMode=CLEAR_ALL):
         """emulates naoQi doMove behavior with linear interpolation + DCM merge mode"""
-    
-        print "DEBUG: add Motion Sequence called"        
+
+        print "DEBUG: add Motion Sequence called"
         #import pdb; pdb.set_trace()
 
         #get current actuators values (ALMemory, good enough):
@@ -100,18 +100,18 @@ class DCMExecutor(InitialBehavior):
     def onGetTime(self, result,(jointCodes, angles, times), mergeMode,initialvalues):
         timeVal = result + DCM_OFFSET #base time
         print "DEBUG: onGetTime called"
-        
-        for index in range(len(jointCodes)):         
-            (iangles, itimes) = self.interpolate(initialvalues[index], (angles[index] , times[index] ))        
+
+        for index in range(len(jointCodes)):
+            (iangles, itimes) = self.interpolate(initialvalues[index], (angles[index] , times[index] ))
             #print [jointCodes[index], mergeMode,
             #    [ [iangles[commandIndex] , int(itimes[commandIndex]*MS + timeVal) ]
             #        for commandIndex in range(len(iangles) ) ]]
-  
+
             # debug
             self.dcmProxy.set([jointCodes[index], mergeMode,
                 [ [iangles[commandIndex] , int(itimes[commandIndex]*MS + timeVal) ]
                     for commandIndex in range(len(iangles) ) ]])
-        
+
 
     def interpolate(self, curangle, (angles, times)):
         """interpolates array by given interpolation parameter (polynom degree)
@@ -130,8 +130,8 @@ class DCMExecutor(InitialBehavior):
 
             finishtime = times[index]
             timeintervals=int((finishtime-starttime) / INTERPOLATION_STEP)
-            eqparams = self.calculatefunction(finishtime-starttime, startangle, angles[index])                    
-            
+            eqparams = self.calculatefunction(finishtime-starttime, startangle, angles[index])
+
             for i in range (1, timeintervals+1):
                 #curtime = starttime + INTERPOLATION_STEP*i
                 curtime = INTERPOLATION_STEP*i
@@ -141,11 +141,11 @@ class DCMExecutor(InitialBehavior):
                 angleval = angleval+ eqparams[1]*x #b
                 x = x * curtime
                 angleval = angleval+ eqparams[0]*x #a
-                    
-                returnangles.append(angleval)  
+
+                returnangles.append(angleval)
                 returntimes.append(curtime + starttime)
         #debug
-        
+
         #print >>self.f, "initial times:"
         #print >>self.f, [0.0] + times
         #print >>self.f, "Times: "
@@ -169,8 +169,8 @@ class DCMExecutor(InitialBehavior):
         a = -2*b/(3*t)
         # debug - check data
         #print "v1 %s, v2 %s, t %s, a %s, b %s,  %s, %s" % (v1,v2,t,a,b, 3*t_2*a +2*t*b, t_2*t*a + t_2*b- v2 + v1 )
-        return [a,b,0,v1]        
-        
+        return [a,b,0,v1]
+
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop

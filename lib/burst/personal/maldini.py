@@ -7,9 +7,9 @@ walks.FIRST_TWO_SLOW_STEPS = False
 walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
-           30.0 * DEG_TO_RAD,  # ElbowMedian 
-           20.0 * DEG_TO_RAD,  # ElbowAmplitude 
-           5,                   # LHipRoll(degrees) 
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude
+           5,                   # LHipRoll(degrees)
            -5,                  # RHipRoll(degrees)
            0.19,                  # HipHeight(meters)
            -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better

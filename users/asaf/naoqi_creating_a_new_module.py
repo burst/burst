@@ -33,7 +33,7 @@ else:
 class MyModulePython(ALModule):
   def printSomething(self,myString ):
     "A method that just print on screen what is sent, and also calls ALLogger"
-    
+
     #Print what was sent:
     print "Printing something: " + myString
 
@@ -52,7 +52,7 @@ class MyModulePython(ALModule):
 ThisBrokerIP = "127.0.0.1"
 ThisBrokerPort = 9999
 
-# Creating it 
+# Creating it
 try:
   pythonBroker = ALBroker("pythonBroker",ThisBrokerIP,ThisBrokerPort, NAO_IP, NAO_PORT)
 except RuntimeError,e:
