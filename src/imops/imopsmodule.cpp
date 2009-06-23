@@ -315,6 +315,7 @@ void ImopsModule::notifyNextVisionImage() {
 
     // Process current frame
     g_vision->notifyImage(g_sensors->getImage());
+
     //Release the camera image
     //if(camera_active)
     g_imageTranscriber->releaseImage();
@@ -638,7 +639,11 @@ std::string ImopsModule::version ()
     // I messed up the copy/rename of recordermodule, this doen't compile,
     // missing some symbols
     //return ALTOOLS_VERSION (IMOPSMODULE);
+#ifdef NAOQI_120
+    return "1.2.0-imops";
+#else
     return "1.3.8-imops";
+#endif
 }
 
 //______________________________________________

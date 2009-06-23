@@ -70,10 +70,10 @@ class vision : public AL::ALModule {
     ALValue getBallRemote();
 
     /**
-     * getBall : Get the ball rect (within the field area!). To be used if the visionmodule is a local module.
+     * getBall : Get the balls' rect (within the field area!). To be used if the visionmodule is a local module.
      * @return an ALValue\n
      */
-    ALValue getBall();
+    ALValue getBalls();
 
     /**
      * version
@@ -122,7 +122,7 @@ class vision : public AL::ALModule {
     //  ( definitions contained in alvisiondefinitions.h )
     int colorSpace;
 
-    CvSeq* getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect);
+    CvSeq** getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect** rect, bool isField);
     //CvSeq* getHullByColor(IplImage* img, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea);
 
     CvMemStorage* storage;

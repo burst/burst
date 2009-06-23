@@ -38,16 +38,10 @@ class MyController (Supervisor):
                 x_pos = array(player_trans.getSFVec3f())[0]
                 y_pos = array(player_trans.getSFVec3f())[2]
                 rotation = (player_rot.getSFRotation()[3])*180/math.pi
-                if norm(player_new_pos - player_old_pos) < 1e-4 and not ((x_pos >= -0.01 and x_pos <= 0.01) and (y_pos >= -0.01 and y_pos <= 0.01)):
-                    rotation += 90
-                    if rotation<0:
-                        rotation += 360
-                    print >>f, math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
-                    print math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
-                    f.flush()
-                    player_trans.setSFVec3f([0, 0.325, 0])
-                    player_rot.setSFRotation([0, -1, 0, 1.57])
-                    run_num += 1
+                rotation += 90
+                if rotation<0:
+                    rotation += 360
+                print math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
             if self.step(BASIC_TIME_STEP) == -1: break
         # Enter here exit cleanup code
 

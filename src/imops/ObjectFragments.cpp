@@ -36,6 +36,9 @@
 #include <vector>
 using namespace std;
 
+#define SHOW_RESULT 1
+#define SHOW_SOURCE 1
+
 ObjectFragments::ObjectFragments(Vision* vis, Threshold* thr, int _color)
     : vision(vis), thresh(thr), color(_color), runsize(1)
 {
@@ -1361,7 +1364,7 @@ float ObjectFragments::correct(blob b, int color, int c2) {
             biggest2 = scan.good;
         }
     }
-	// What we're going to do is scan opposite corners at the bottom and subtract 
+	// What we're going to do is scan opposite corners at the bottom and subtract
 	// those results.
 	x = b.rightBottom.x;
 	y = b.rightBottom.y;
@@ -1506,37 +1509,44 @@ void ObjectFragments::squareGoal(int x, int y, int c, int c2) {
  */
 
 void ObjectFragments::createObject(int c) {
-    // these are in the relative order that they should be called
-    switch (color) {
-    case GREEN:
-        break;
-    case BLUE:
-        // either we should see a marker or a goal
-        blue(c);
-        break;
-    case RED:
-    case NAVY:
-        // George: I am disabling robot recognition for now because it
-        // causes crashes. The blobs formed for robots have negative
-        // and/or incorrect dimensions. Those dimensions are later used
-        // to access the thresholded array.
-        //robot(c);
-        break;
-    case YELLOW:
-        // either we should see a marker or a goal
-        yellow(c);
-        break;
-    case ORANGE:
-        balls(c, vision->ball);
-        // the ball
-        break;
-#ifdef USE_PINK_BALL
-    case PINK:
-        balls(c, vision->pinkBall);
-#endif
-    case BLACK:
-        break;
-    }
+	bool flgAnyBall= true;
+	// EDITED BY 4MUSKETEERS! WE RULE!
+	if(flgAnyBall) {
+		anyballs(c, vision->ball);
+	}
+	else {
+		// these are in the relative order that they should be called
+		switch (color) {
+		case GREEN:
+			break;
+		case BLUE:
+			// either we should see a marker or a goal
+			blue(c);
+			break;
+		case RED:
+		case NAVY:
+			// George: I am disabling robot recognition for now because it
+			// causes crashes. The blobs formed for robots have negative
+			// and/or incorrect dimensions. Those dimensions are later used
+			// to access the thresholded array.
+			//robot(c);
+			break;
+		case YELLOW:
+			// either we should see a marker or a goal
+			yellow(c);
+			break;
+		case ORANGE:
+			balls(c, vision->ball);
+			// the ball
+			break;
+	#ifdef USE_PINK_BALL
+		case PINK:
+			balls(c, vision->pinkBall);
+	#endif
+		case BLACK:
+			break;
+		}
+	}
 }
 
 
@@ -3433,6 +3443,7 @@ bool ObjectFragments::atBoundary(blob b) {
  * @return           we always return 0 - the return is an artifact of other methods
  */
 int ObjectFragments::balls(int horizon, VisualBall *thisBall) {
+
     int confidence = 10;
     occlusion = NOOCCLUSION;
 	static const int MAXDIAM = 100;
@@ -3511,7 +3522,7 @@ int ObjectFragments::balls(int horizon, VisualBall *thisBall) {
     int w = blobWidth(topBlob);
     int h = blobHeight(topBlob);
     estimate e;
-    e = vision->pose->pixEstimate(topBlob.leftTop.x + blobWidth(topBlob) / 2, 
+    e = vision->pose->pixEstimate(topBlob.leftTop.x + blobWidth(topBlob) / 2,
 								  topBlob.leftTop.y + 2 * blobHeight(topBlob) / 3, 0.0);
     //cout << "Estimated distance is " << e.dist << endl;
     if (BALLDEBUG) {
@@ -3592,8 +3603,12 @@ int ObjectFragments::balls(int horizon, VisualBall *thisBall) {
     // start out by figuring out whether we're using blobs or inferred information
     //float rat = (float) w / (float) h;
     // x, y, width, and height. Not up for debate.
+
     thisBall->setX(topBlob.leftTop.x);
     thisBall->setY(topBlob.leftTop.y);
+
+    std::cout<< "TOP X: " << topBlob.leftTop.x << " TOP Y: " << topBlob.leftTop.y <<
+    " WIDTH: " << static_cast<float>(w) << " HEIGHT: " << static_cast<float>(h) << std::endl;
 
     thisBall->setWidth( static_cast<float>(w) );
     thisBall->setHeight( static_cast<float>(h) );
@@ -3622,6 +3637,7 @@ int ObjectFragments::balls(int horizon, VisualBall *thisBall) {
                                           thisBall->getCenterY(),
                                           static_cast<float>(thisBall->
                                                              getFocDist())));
+
     if (atBoundary(topBlob)) {
         // INFERRED MEASUREMENTS
         //estimate es;
@@ -3637,6 +3653,10 @@ int ObjectFragments::balls(int horizon, VisualBall *thisBall) {
     }
     return 0;
 }
+
+
+
+
 
 /* Sanity check routines for beacons and posts
  */
@@ -4174,3 +4194,322 @@ void ObjectFragments::drawMore(int x, int y, int c) {
     thresh->drawLine(x - 1, y, x - 11, y + 10, c);
 #endif
 }
+
+void ObjectFragments::yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size)
+{
+    char y1, u, y2, v;
+    if (rgb_size != size * 3 / 2) {
+        printf("yuv422_to_rgb888: ERROR, rgb array not of correct size, expected %d, got %d. doing nothing.\n", size * 3 / 2, rgb_size);
+        return;
+    }
+    for (;size > 0; yuv+=4, rgb+=6, size-=4) {
+        // Main source: wikipedia YUV, some googling (forget where), and
+        // The aldebaran forums that convinced me that the order is
+        // y1|u|y2|v and not u|y1|v|y2.
+        y1 = yuv[0]; u = yuv[1]; y2 = yuv[2]; v = yuv[3];
+
+        // yuv[0] = u, yuv[1] = v
+        // u and v are +-0.5
+        u -= 128;
+        v -= 128;
+
+        // Conversion
+        rgb[0] = y1 + 1.732446 * u;
+        rgb[1] = y1 - 0.698001 * v - 0.337633 * u;
+        rgb[2] = y1 + 1.370705 * v;
+
+        rgb[3] = y2 + 1.732446 * u;
+        rgb[4] = y2 - 0.698001 * v - 0.337633 * u;
+        rgb[5] = y2 + 1.370705 * v;
+    }
+}
+
+// Our function, we rule.
+int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
+    const char* constyuvImg;
+    int ballX= 0;
+    int ballY= 0;
+    int ballWidth= 0;
+    int ballHeight= 0;
+
+    int imgWidth= 320;
+    int imgHeight= 240;
+    int imgYUVNbLayers= 2;
+    int imgRGBNbLayers= 3;
+    int imgYUVStringSize= imgWidth*imgHeight*imgYUVNbLayers;
+    int imgRGBStringSize= imgWidth*imgHeight*imgRGBNbLayers;
+    constyuvImg= (const char *) thresh->getYUV();
+    char yuvImg[imgYUVStringSize];
+    memcpy( yuvImg, constyuvImg, imgYUVStringSize );
+    char rgbImg[imgRGBStringSize];
+    yuv422_to_rgb888(yuvImg, rgbImg, imgYUVStringSize, imgRGBStringSize);
+
+    // now you create an openCV image and you save it in a file.
+    IplImage* src = cvCreateImage( cvSize( imgWidth, imgHeight ), 8,  imgRGBNbLayers);
+
+    src->imageData = rgbImg;
+
+	#if SHOW_SOURCE
+		cvSaveImage("/home/shlatchz/Desktop/cam_pics/img_capture.jpg",src);
+	#endif
+
+    IplImage* mask = 0;
+    IplImage* imageClipped = 0;
+
+    // Get field
+    CvRect fieldRect = cvRect(-1,-1,-1,-1);
+    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1);
+    //CvSeq* field = getLargestColoredContour(src, 80, 30, 25, 100, fieldRect, 1);
+
+    if (field != NULL) {
+
+    	std::cout << "fieldRect: " << fieldRect.x << ", " << fieldRect.y << ", " << fieldRect.width << ", " << fieldRect.height << std::endl;
+
+		CvSize imageSize = cvSize(src->width, src->height);
+		mask = cvCreateImage( imageSize, 8, 1 );
+		cvZero(mask);
+
+		CvScalar colorWHITE = CV_RGB(255, 255, 255);
+
+		int elementCount = field->total;
+
+		CvPoint* tempPT = new CvPoint[elementCount];
+		CvPoint pt0 = **CV_GET_SEQ_ELEM( CvPoint*, field, elementCount - 1 );
+
+		for (int i = 0; i < elementCount; i++) {
+			CvPoint pt = **CV_GET_SEQ_ELEM( CvPoint*, field, i );
+			tempPT[i].x = pt.x;
+			tempPT[i].y = pt.y;
+		}
+		cvFillConvexPoly(mask, tempPT, elementCount, colorWHITE, 8, 0);
+
+		imageClipped = cvCreateImage( imageSize, 8, 3 );
+		cvZero(imageClipped);
+		cvCopy(src, imageClipped, mask);
+
+		// Get ball
+		CvRect ballRect= cvRect(-1,-1,-1,-1);
+		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 305, 150, 0, 5, ballRect, 0);
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 0, 5, ballRect, 0);
+
+		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
+
+		if (ballHull != NULL) {
+			ballX= ballRect.x;
+			ballY= ballRect.y;
+			ballWidth= ballRect.width;
+			ballHeight= ballRect.height;
+		}
+		else {
+			// Didn't find a ball.
+			return 0;
+		}
+    }
+    else {
+    	// Didn't find the field.
+    	return 0;
+    }
+
+    thisBall->setX(ballX);
+    thisBall->setY(ballY);
+
+    thisBall->setWidth( static_cast<float>(ballWidth) );
+    thisBall->setHeight( static_cast<float>(ballHeight) );
+    thisBall->setRadius( std::max(static_cast<float>(ballWidth)/2.0f,
+								  static_cast<float>(ballHeight)/2.0f ) );
+    int amount = ballHeight / 2;
+    if (ballWidth > ballHeight)
+        amount = ballWidth / 2;
+
+    if (occlusion == LEFTOCCLUSION) {
+        thisBall->setCenterX(ballX - amount);
+        thisBall->setX(ballX - amount * 2);
+    } else {
+        thisBall->setCenterX(ballX + amount);
+    }
+    if (occlusion != TOPOCCLUSION) {
+        thisBall->setCenterY(ballY + amount);
+    } else {
+        thisBall->setCenterY(ballY - amount);
+    }
+    thisBall->setConfidence(SURE);
+    thisBall->findAngles();
+    thisBall->setFocalDistanceFromRadius();
+    thisBall->setDistanceEst(vision->pose->
+                             bodyEstimate(thisBall->getCenterX(),
+                                          thisBall->getCenterY(),
+                                          static_cast<float>(thisBall->
+                                                             getFocDist())));
+    // Everything is ok.
+    return 0;
+}
+
+CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField) {
+    CvSeq* seqhull= NULL;
+    CvMemStorage* storage= cvCreateMemStorage(0);
+	CvSeq* contours = NULL; // = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint) , storageContours);
+	CvSeq* result = NULL;
+	CvSize sz = cvSize( src->width & -2, src->height & -2 );
+	IplImage* timg = cvCloneImage( src ); // make a copy of input image
+	IplImage* pyr = cvCreateImage( cvSize(sz.width/2, sz.height/2), 8, 3 );
+	IplImage* tgray = NULL;
+	IplImage* img_hsv = NULL;
+
+	// down-scale and upscale the image to filter out the noise (much faster compared to cvSmooth)
+	cvPyrDown( timg, pyr, CV_GAUSSIAN_5x5 ); // pyr is temporarily used to keep the smaller (down-scaled) picture 7
+	cvPyrUp( pyr, timg, CV_GAUSSIAN_5x5 ); // pyr is upscaled and saved back to timg, with less noise.
+	tgray = cvCreateImage( sz, 8, 1 );
+
+	img_hsv = cvCloneImage( timg );
+	cvCvtColor(img_hsv, timg, CV_RGB2HSV);
+
+	int thresholdValue = iBoxColorValue; //Hue value
+	int thresholdVariance = iBoxColorRange; //Hue range
+
+	// Remove low saturation colors from image (black & white, shadows, highlights)
+	IplImage* tBlackAndWhite = cvCreateImage( sz, 8, 1 );
+	cvZero(tBlackAndWhite);
+	cvSetImageCOI(timg, 2);
+	cvCopy(timg, tBlackAndWhite, 0);//since COI is not supported
+
+	cvThreshold(tBlackAndWhite, tBlackAndWhite, iBoxSaturationCutoff, 255, CV_THRESH_BINARY);
+
+	// extract the H color plane
+	cvSetImageCOI(timg, 1);
+	cvCopy(timg, tgray, 0);//since COI is not supported
+
+	int topValue = thresholdValue+thresholdVariance;
+	int bottomValue = thresholdValue-thresholdVariance;
+
+	bool bInverseThreshold = false;
+
+	if (bottomValue < 0) {
+		bInverseThreshold = true;
+		bottomValue = 360 + bottomValue;
+	}
+
+	if (topValue >= 360) {
+		bInverseThreshold = true;
+		topValue = topValue - 360;
+	}
+
+	IplImage* imgOverTrimmed = cvCloneImage( tgray );
+	IplImage* imgUnderTrimmed = cvCloneImage( tgray );
+	topValue = topValue / 2;
+	bottomValue = bottomValue / 2;
+
+	cvThreshold(imgOverTrimmed, imgOverTrimmed, topValue, 255, CV_THRESH_BINARY_INV);
+	cvThreshold(imgUnderTrimmed, imgUnderTrimmed, bottomValue, 255, CV_THRESH_BINARY);
+
+	if (!bInverseThreshold) {
+		cvAnd(imgOverTrimmed,imgUnderTrimmed,tgray,NULL);
+	} else {
+		cvOr(imgOverTrimmed,imgUnderTrimmed,tgray,NULL);
+	}
+
+	cvThreshold( tgray, tgray, 0, 255, CV_THRESH_BINARY );
+	cvAnd(tBlackAndWhite,tgray,tgray,NULL);
+
+	/*int iContourNumber = */
+	cvFindContours( tgray, storage, &contours, sizeof(CvContour),
+										 CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0) );
+	CvSeq* max_contour = NULL;
+	CvSeq* min_contour_ball = NULL;
+	CvSeq* curr_contour = contours;
+	int iMaxSize = -1;
+	int iMinFocal= 99999;
+	int iCurrSize = 0;
+	int iCount= 0;
+	double iCurrFocal= 0;
+	double ratioThresh= 2;
+
+	while (curr_contour) {
+		result = cvApproxPoly(curr_contour, sizeof(CvContour), storage,
+		CV_POLY_APPROX_DP, cvContourPerimeter(curr_contour)*0.02, 0 );
+		iCurrSize = fabs(cvContourArea(result, CV_WHOLE_SEQ));
+		int amount= 0;
+		if(cvBoundingRect(contours).width>cvBoundingRect(contours).height)
+			amount= cvBoundingRect(contours).width;
+		else
+			amount= cvBoundingRect(contours).height;
+		iCurrFocal = sqrt(pow((160-(cvBoundingRect(contours).x+amount/2)),2)+pow((240-(cvBoundingRect(contours).y + amount/2)),2));
+
+		if (result) {
+			cvClearSeq(result);
+		}
+
+		if (iCurrSize > iMinimalArea) {
+			if (iCurrSize >= iMaxSize) {
+				max_contour = curr_contour; //result
+				iMaxSize = iCurrSize;
+			}
+			if((double)cvBoundingRect(contours).width/cvBoundingRect(contours).height<ratioThresh &&
+				(double)cvBoundingRect(contours).height/cvBoundingRect(contours).width<ratioThresh) {
+				if(iCurrFocal <= iMinFocal) {
+					min_contour_ball = curr_contour;
+					iMinFocal = iCurrFocal;
+					std::cout << "Selected ball index: " << iCount << std::endl;
+				}
+			}
+		}
+
+		#if SHOW_RESULT
+			IplImage* debugImage = cvCloneImage(src);
+			CvScalar colorRED = CV_RGB(255, 0, 0);
+			cvDrawContours(debugImage, curr_contour, colorRED, colorRED, -1, CV_FILLED, 8);
+			char buff[90];
+			sprintf(buff, "/home/shlatchz/Desktop/cam_pics/img_capture_debug_%d_%d.jpg", isField, iCount );
+			cvSaveImage(buff,debugImage);
+			cvReleaseImage(&debugImage);
+		#endif
+		iCount= iCount + 1;
+
+		if (curr_contour->h_next == NULL) {
+			curr_contour = NULL;
+		} else {
+			curr_contour = curr_contour->h_next;
+		}
+	}
+    if(isField) {
+    	if (max_contour != NULL) {
+			rect = cvBoundingRect(max_contour);
+			seqhull = cvConvexHull2(max_contour, 0, CV_COUNTER_CLOCKWISE, 0);
+		}
+	}
+    else {
+		if(min_contour_ball != NULL) {
+			rect = cvBoundingRect(min_contour_ball);
+			seqhull = cvConvexHull2(min_contour_ball, 0, CV_COUNTER_CLOCKWISE, 0);
+		}
+    }
+
+	// release memory
+	if (pyr) cvReleaseImage( &pyr );
+	if (tgray) cvReleaseImage( &tgray );
+	if (timg) cvReleaseImage( &timg );
+	if (img_hsv) cvReleaseImage( &img_hsv );
+
+	if (tBlackAndWhite) cvReleaseImage( &tBlackAndWhite );
+	if (imgOverTrimmed) cvReleaseImage( &imgOverTrimmed );
+	if (imgUnderTrimmed) cvReleaseImage( &imgUnderTrimmed );
+
+	pyr = NULL;
+	tgray = NULL;
+	timg = NULL;
+	img_hsv = NULL;
+	tBlackAndWhite = NULL;
+	imgOverTrimmed = NULL;
+	imgUnderTrimmed = NULL;
+
+	if (contours) {
+		cvClearSeq(contours);
+		contours = NULL;
+	}
+
+	if (storage) {
+    	cvClearMemStorage(storage);
+	}
+
+	return seqhull;
+}
+
