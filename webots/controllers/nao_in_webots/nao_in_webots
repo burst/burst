@@ -14,6 +14,7 @@
 # rich man's remote debugging
 #gdbserver localhost:2333 bin/nao_in_webots
 
+#valgrind ./bin/nao_in_webots
+
 # just let it be
 ./bin/nao_in_webots
-

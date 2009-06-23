@@ -6,10 +6,11 @@ from burst.behavior import InitialBehavior
 from burst_events import *
 from burst_consts import *
 import burst.moves as moves
+from burst.actions.target_finder import TargetFinder
 
-DESIRED_DISTANCE_FROM_GOAL = 100 # In centimeters.
-SAFETY_MARGIN = 50
-BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL = 0.15 # In radians.
+DESIRED_DISTANCE_FROM_GOAL = 80 # In centimeters.
+SAFETY_MARGIN = 30
+BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL = 0.2 # In radians.
 
 class Goalie(InitialBehavior):
 
@@ -21,7 +22,7 @@ class Goalie(InitialBehavior):
 #        super(Goalie, self).onStart()
         self._reset()
         # TODO: ownGoal according to my own team color.
-        self.ownGoal = [self._world.bgrp, self._world.bglp]
+        self.ownGoal = [self._world.ygrp, self._world.yglp]
         self.oppositeGoal = [self._world.ygrp, self._world.yglp]
         self._actions.setCameraFrameRate(10)
 
@@ -74,18 +75,20 @@ class Goalie(InitialBehavior):
         if not post_selected:
             print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
             self.closest_goalpost = self.closestOwnGoalPost()
-            self._eventmanager.register(self.printer, EVENT_STEP)
+#            self._eventmanager.register(self.printer, EVENT_STEP)
             self._actions.tracker.track(self.closest_goalpost)
-        print self.closest_goalpost.dist, self.closest_goalpost.bearing
+        print "Closest goal post distance, bearing:", self.closest_goalpost.dist, self.closest_goalpost.bearing
+        # Regardless of the bearing, if the robot is close enough to the goal post...
         if self.closest_goalpost.dist <= DESIRED_DISTANCE_FROM_GOAL:
             self.onArrivedNextToOneGoalPostOfOwnGoal()
-        elif abs(self.closest_goalpost.bearing) < BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL:
-            self.walkTowardsOnePostOfOwnGoal()
-        else:
+        # If the robot's not close enough to the goal post yet, it needs to align itself in its direction.
+        elif abs(self.closest_goalpost.bearing) > BEARING_THRESHOLD_WHEN_APPROACHING_OWN_GOAL:
             self._actions.turn(self.closest_goalpost.bearing).onDone(self.alignTowardsOnePostOfOwnGoal)
+        # If the robot's not close enough yet, but it's already aligned with the goal post...
+        else:
+            self.walkTowardsOnePostOfOwnGoal()
 
     def printer(self):
-        return
         print self.closest_goalpost.dist
 
     def walkTowardsOnePostOfOwnGoal(self):
@@ -97,8 +100,29 @@ class Goalie(InitialBehavior):
             self._actions.changeLocationRelative(distanceToWalk).onDone(self.alignTowardsOnePostOfOwnGoal)
 
     def onArrivedNextToOneGoalPostOfOwnGoal(self):
-        print 'Got there!'
+        print 'Got there 1'
+        direction = 1 if self.closest_goalpost in [self._world.yglp, self._world.bglp] else -1
+        self._actions.turn(direction*math.pi/4).onDone(self.findOtherGoalPostOfOwnGoalTurnStep)
+
+#alignAccordingToOppositeGoalSearchingStep
+
+    def findOtherGoalPostOfOwnGoalTurnStep(self):
+        print "aligning according to opposite goal"
+        self.otherPostOfOwnGoal = self.ownGoal[1] if self.ownGoal[0] == self.closest_goalpost else self.ownGoal[0]
+        self._actions.tracker.stop()
+        self._actions.searcher.search(targets=[self.otherPostOfOwnGoal], center_on_targets=True).onDone(self.onOtherPostOfOwnGoalFound)
+
+    def onOtherPostOfOwnGoalFound(self):
+        self._actions.tracker.track(self.otherPostOfOwnGoal)
+        print "eh-ey!"
         self._eventmanager.quit()
+
+    def alignAccordingToOppositeGoalMovementStep(self, first=True):
+        self._eventmanager.quit()
+        self.relevantOppositeGoalPost = self._actions.searcher.seen_objects[0]
+#        while True:
+#            if self.relevantOppositeGoalPost.bearing < -ALIGNING_ACCORDING_TO_OPPOSITE_THRESHOLD:
+#                self._actions.
 
     def closestOwnGoalPost(self):
         if not self.ownGoal[0].seen and not self.ownGoal[1].seen:
