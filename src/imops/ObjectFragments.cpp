@@ -1509,44 +1509,44 @@ void ObjectFragments::squareGoal(int x, int y, int c, int c2) {
  */
 
 void ObjectFragments::createObject(int c) {
-	bool flgAnyBall= true;
 	// EDITED BY 4MUSKETEERS! WE RULE!
-	if(flgAnyBall) {
-		anyballs(c, vision->ball);
-	}
-	else {
-		// these are in the relative order that they should be called
-		switch (color) {
-		case GREEN:
-			break;
-		case BLUE:
-			// either we should see a marker or a goal
-			blue(c);
-			break;
-		case RED:
-		case NAVY:
-			// George: I am disabling robot recognition for now because it
-			// causes crashes. The blobs formed for robots have negative
-			// and/or incorrect dimensions. Those dimensions are later used
-			// to access the thresholded array.
-			//robot(c);
-			break;
-		case YELLOW:
-			// either we should see a marker or a goal
-			yellow(c);
-			break;
-		case ORANGE:
-			balls(c, vision->ball);
-			// the ball
-			break;
-	#ifdef USE_PINK_BALL
-		case PINK:
-			balls(c, vision->pinkBall);
-	#endif
-		case BLACK:
-			break;
-		}
-	}
+#ifdef ANYBALL
+//#if 0
+    std::cout << "ANYBALLS: createObject" << std::endl;
+    anyballs(c, vision->ball);
+#else
+    // these are in the relative order that they should be called
+    switch (color) {
+    case GREEN:
+        break;
+    case BLUE:
+        // either we should see a marker or a goal
+        blue(c);
+        break;
+    case RED:
+    case NAVY:
+        // George: I am disabling robot recognition for now because it
+        // causes crashes. The blobs formed for robots have negative
+        // and/or incorrect dimensions. Those dimensions are later used
+        // to access the thresholded array.
+        //robot(c);
+        break;
+    case YELLOW:
+        // either we should see a marker or a goal
+        yellow(c);
+        break;
+    case ORANGE:
+        balls(c, vision->ball);
+        // the ball
+        break;
+    #ifdef USE_PINK_BALL
+        case PINK:
+            balls(c, vision->pinkBall);
+    #endif
+    case BLACK:
+        break;
+    }
+#endif
 }
 
 
@@ -4432,7 +4432,12 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 			amount= cvBoundingRect(contours).width;
 		else
 			amount= cvBoundingRect(contours).height;
-		iCurrFocal = sqrt(pow((160-(cvBoundingRect(contours).x+amount/2)),2)+pow((240-(cvBoundingRect(contours).y + amount/2)),2));
+		iCurrFocal = sqrt(static_cast<float>(pow(
+				static_cast<float>(160-(cvBoundingRect(contours).x+amount/2)),
+				static_cast<int>(2)))
+				+
+				static_cast<float>(pow(static_cast<float>(240-(cvBoundingRect(contours).y + amount/2)),
+					static_cast<int>(2))));
 
 		if (result) {
 			cvClearSeq(result);

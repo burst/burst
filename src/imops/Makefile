@@ -34,6 +34,12 @@
 # Burst flags:
 # BURST_DO_LOCALIZATION_IN_MODULE - not working right now (or ever?)
 
+ifndef ROOT
+# XXX we assume we are called from the Makefile directory if no ROOT is supplied
+ROOT=../../
+endif
+include $(ROOT)/Makefile.local
+
 ################################################################################
 
 TARGET_LIB=libimops.so
@@ -59,6 +65,14 @@ CFLAGS_DEBUG=
 OFFLINE_DEBUG_FLAGS=-DOFFLINE
 CFLAGS_DEBUG_BUILD_32=$(OFFLINE_DEBUG_FLAGS)
 CFLAGS_DEBUG_BUILD_64=$(OFFLINE_DEBUG_FLAGS)
+
+ifeq ($(USE_ANYBALL), 1)
+$(info =================================== Building ANYBALLS imops ==================================)
+CFLAGS+=-DANYBALL
+LDFLAGS_WEBOTS+=-lcv
+# TODO - 64 bit
+LDFLAGS_NAO+=-lcv
+endif
 
 ################################################################################
 # This part must be copied as is
