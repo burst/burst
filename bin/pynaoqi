@@ -1,4 +1,15 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=$HOME/src/burst/lib
 export PYTHON_PATH=$PYTHON_PATH:$HOME/src/burst/lib
-exec pynaoqish.py
+name=`basename $0`
+if [ $name == "pynaoqi" ]; then
+    echo running pynaoqish.py $*
+    exec pynaoqish.py $*
+else
+    # cechsh -> cech
+    n=${#name}
+    name=${name:0:n-2}
+    echo running pynaoqish.py --ip $name $*
+    exec pynaoqish.py --ip $name $*
+fi
+

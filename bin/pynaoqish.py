@@ -22,6 +22,7 @@ def main():
     shell.main()
 
 if __name__ == '__main__':
+    print "args = %s" % sys.argv
     set_robot_ip_from_argv()
     main()
 

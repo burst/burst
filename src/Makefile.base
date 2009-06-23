@@ -130,7 +130,7 @@ CXXFLAGS=$(CFLAGS)
 # =====================
 #
 # alcommon required for ALFastMemoryAccess, found in $(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux/libalcommon.a
-LDFLAGS_NAO=-lz -L$(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
+LDFLAGS_NAO+=-lz -L$(AL_DIR_VER)/extern/c/aldebaran/alcommon/lib/linux -lalcommon
 #LDFLAGS can be defined in the master Makefile
 LDFLAGS_BASE=-lz $(LDFLAGS)
 
@@ -170,7 +170,7 @@ precompiled.h.gch: precompiled.h
 # cross for robot (this is just standard 32bit but different flags maybe, and different toolchain)
 
 $(WEBOTS_TARGET): $(OBJ)
-	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS_BASE) $(LDFLAGS_NAO)
+	$(CXX) -shared $(CXXFLAGS) -o $(WEBOTS_TARGET) $(OBJ) $(LDFLAGS_BASE) $(LDFLAGS_NAO) $(LDFLAGS_WEBOTS)
 
 $(TARGET_LIB): $(OBJ)
 	$(CXX) -shared $(CXXFLAGS) -o $(TARGET_LIB) $(OBJ) $(LDFLAGS_BASE) $(LDFLAGS_NAO)
@@ -202,7 +202,7 @@ crossinstall: $(ROBOT_BUILD_DIR)
 	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile crossinstall_helper BUILD=ROBOT DEBUG=0 srcdir=../ ROOT=../../../
 
 crossdebug: $(ROBOT_BUILD_DIR)
-	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=1
+	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=1 srcdir=../ ROOT=../../../
 
 # These are run from within the ROBOT_BUILD_DIR directory
 cross_helper: $(TARGET_LIB)

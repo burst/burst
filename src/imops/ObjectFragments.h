@@ -37,9 +37,11 @@ class ObjectFragments; // forward reference
 #include "VisualBall.h"
 #include "Vision.h"
 
+#ifdef USE_ANYBALL
 // EDITED BY 4MUSKETEERS! WE RULE!
 #include "opencv/cv.h"
 #include "opencv/highgui.h"
+#endif
 
 //here are defined the lower bounds on the sizes of goals, posts, and balls
 //IMPORTANT: they are only guesses right now.
@@ -272,10 +274,13 @@ public:
     bool badSurround(blob b);
     bool atBoundary(blob b);
     int balls(int c, VisualBall *thisBall);
+
+#ifdef USE_ANYBALL
     // EDITED BY 4MUSKETEERS! WE STILL RULE!
     int anyballs(int c, VisualBall *thisBall);
     void yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size);
     CvSeq* getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField);
+#endif
 
     // sanity checks
     bool rightBlobColor(blob obj, float per);
