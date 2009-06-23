@@ -41,5 +41,5 @@ def getImopsProxy(deferred = False):
     return hasattr(con, 'imops') and con.imops or None
 
 def getSentinelProxy(deferred = False):
-    return con.ALSentinel
+    return con.ALSentinel if hasattr(con, 'ALSentinel') else None
 

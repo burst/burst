@@ -40,12 +40,20 @@ class burstmem : public AL::ALModule
     bool        isMemoryMapRunning();
 
     void        clearMappedVariables();
+#ifdef NAOQI_138
     void        addMappedVariable(const int &index, const std::string &var);
+#else
+    void        addMappedVariable(int index, std::string var);
+#endif
 
     // TODO - get the fucking std::vector<std::string> wrapping to work
     //void        setMappedVariables(const std::vector<std::string>);
     int         getNumberOfVariables();
+#ifdef NAOQI_138
     std::string getVarNameByIndex(const int& i);
+#else
+    std::string getVarNameByIndex(int i);
+#endif
     
     /**
      * version

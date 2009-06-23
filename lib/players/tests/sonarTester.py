@@ -22,7 +22,7 @@ class SonarTester(InitialBehavior):
 
         self._lastReading = self._world.robot.sonar.getLastReading()
         self._lastData = self._world.robot.sonar._lastData
-        print "Sonar: SEEN obstacle (on %s, distance of %f)" % (self._lastReading)
+        print "Sonar: SEEN obstacle (%s)" % str(self._lastReading)
 
     def onObstacleLost(self):
         self._actions.say('Obstacle lost!')
@@ -32,8 +32,7 @@ class SonarTester(InitialBehavior):
         pass
 
     def onStep(self):
-        #print "raw readings: " , self._world.robot.sonar._lastData
-	print self._world.robot.sonar._lastData
+        print "raw readings: %s" % str(self._world.robot.sonar._lastData)
 
 if __name__ == '__main__':
     import burst

@@ -1532,7 +1532,7 @@ void ObjectFragments::createObject(int c) {
         break;
     case ORANGE:
         // the ball
-#ifdef ANYBALL
+#ifdef USE_ANYBALL
         std::cout << "ANYBALLS: createObject" << std::endl;
         anyballs(c, vision->ball);
 #else
@@ -4194,6 +4194,10 @@ void ObjectFragments::drawMore(int x, int y, int c) {
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Domain of the Musketeers, May they Rule in Peace.
+
+#ifdef USE_ANYBALL
 void ObjectFragments::yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size)
 {
     char y1, u, y2, v;
@@ -4516,4 +4520,5 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 
 	return seqhull;
 }
+#endif // USE_ANYBALL
 
