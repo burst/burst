@@ -7,6 +7,7 @@ Created on Jun 14, 2009
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
     func_name)
 import burst.moves.poses as poses
+from burst_events import event_name
 
 # TODO REFACTOR. A lot of the functionality of BehaviorActions but more
 # specifically BehaviorEventManager is actually in EventManager / BurstDeferredMaker
@@ -113,8 +114,8 @@ class BehaviorEventManager(object):
         self._registered.add((wrapper, event))
 
     def register_oneshot(self, callback, event):
-        wrapper = lambda: self._behavior._applyIfNotStopped(cb, [], {})
-        self._cb_to_wrapper[cb] = wrapper
+        wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
+        self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.register_oneshot(wrapper, event)
 
     def unregister(self, callback, event=None):

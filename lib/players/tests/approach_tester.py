@@ -15,7 +15,8 @@ class ApproachTester(InitialBehavior):
 
     def _start(self, firstTime=False):
         self.log("Starting")
-        ApproachXYActiveLocalization(self._actions, field.CENTER_FIELD_X+100, field.CENTER_FIELD_Y).start().onDone(self._onApproacherDone)
+        ApproachXYActiveLocalization(
+            self._actions, field.MIDFIELD_X+100, field.MIDFIELD_Y).start().onDone(self._onApproacherDone)
 
     def _onApproacherDone(self):
         self.log("Done")

@@ -26,12 +26,6 @@ FIELD_GREEN_HEIGHT = FIELD_WHITE_HEIGHT + 2.0 * GREEN_PAD_X
 FIELD_WIDTH = FIELD_WHITE_WIDTH   #  XXX: Northern use GREEN
 FIELD_HEIGHT = FIELD_WHITE_HEIGHT #        -"-
 
-CENTER_FIELD_X = FIELD_GREEN_WIDTH * .5
-CENTER_FIELD_Y = FIELD_GREEN_HEIGHT * .5
-
-MIDFIELD_X = FIELD_WIDTH * .5
-MIDFIELD_Y = 0.0
-
 # LANDMARK CONSTANTS
 
 BURST_WORLD_FRAME_DOC = """
@@ -69,6 +63,10 @@ B is the Blue goal.
 
 "|-;" are line chars for the white borders or for the green 'edge'
 """
+
+# Center of field, where ball is placed on kick-off.
+MIDFIELD_X = FIELD_WIDTH * .5
+MIDFIELD_Y = 0.0
 
 BLUE_GOAL_BOTTOM_POST_X, BLUE_GOAL_BOTTOM_POST_Y = (
     0.0, -(CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS) )

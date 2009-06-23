@@ -29,8 +29,8 @@ class Robot(Movable):
         self.hostname = burst.target.robotname # TODO - the whole hostname thing is very convoluted.
 
         # These are updated out of object, by Localization.
-        self.world_x = field.CENTER_FIELD_X
-        self.world_y = field.CENTER_FIELD_Y
+        self.world_x = field.MIDFIELD_X
+        self.world_y = field.MIDFIELD_Y
         self.world_heading = 0.0 # heading towards opponent goal
         self.world_update_time = -200.0 # in 200 seconds we can be in 20m radius - enough to say "I don't know shit"
 

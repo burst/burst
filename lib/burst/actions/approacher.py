@@ -49,8 +49,8 @@ class Approacher(Behavior):
         """
 
         if self._actions.isMotionInProgress():
-            self.log("motion still in progress, waiting on MotionBd")
-            self._actions.getCurrentMotionBD().onDone(self._approach)
+            self.log("motion still in progress, waiting for original onDone")
+            return
 
         if result_xy is None:
             self.log("WARNING: short circuited by returning None from target_pos_callback")
@@ -95,24 +95,26 @@ class Approacher(Behavior):
         type_to_msg = {MOVE_FORWARD:'Walking straight',
             MOVE_SIDEWAYS:'Side-stepping!', MOVE_TURN:'Turning!'}
 
+        action_selection = dict(sum(
+            [[(area, movement) for area in areas] for areas, movement in
+                (((BALL_FRONT_NEAR, BALL_FRONT_FAR), move_forward),
+                 ((BALL_BETWEEN_LEGS, BALL_SIDE_NEAR), move_sideways),
+                 ((BALL_DIAGONAL, BALL_SIDE_FAR), move_turn))]
+            , []))
+
         bd = None
-        for location_partition, movement in [
-            ((BALL_FRONT_NEAR, BALL_FRONT_FAR), move_forward),
-            ((BALL_BETWEEN_LEGS, BALL_SIDE_NEAR), move_sideways),
-            ((BALL_DIAGONAL, BALL_SIDE_FAR), move_turn)
-            ]:
-            if target_location in location_partition:
-                self._actions.setCameraFrameRate(10)
-                bd, movement_type = movement(target_location)
-                break
+        if area in action_selection:
+            self._actions.setCameraFrameRate(10)
+            bd, movement_type = action_selection[area](target_location)
         self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!"))
         bd.onDone(self._getTargetPos)
 
 def getTargetPosition(actions, x, y):
+    import pdb; pdb.set_trace()
     robot = actions._world.robot
     our_x, our_y, our_heading = robot.world_x, robot.world_y, robot.world_heading
     dx, dy = x - our_x, y - our_y
-    sh, ch = sin(our_heading), cos(our_heading)
+    sh, ch = sin(-our_heading), cos(-our_heading)
     rel_x, rel_y = dx * ch - dy * ch, dx * sh + dy * ch # TODO - check me
     print "getTargetPosition: rel_x = %3.2f cm, rel_y = %3.2f cm (dx %3.2f, dy %3.2f, head %3.2f)" % (
         rel_x, rel_y, dx, dy, our_heading)
