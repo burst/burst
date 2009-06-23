@@ -107,9 +107,9 @@ class BehaviorEventManager(object):
         self._registered.clear()
         self._cb_to_wrapper.clear()
 
-    def register(self, cb, event):
-        wrapper = lambda: self._behavior._applyIfNotStopped(cb, [], {})
-        self._cb_to_wrapper[cb] = wrapper
+    def register(self, callback, event):
+        wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
+        self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.register(wrapper, event)
         self._registered.add((wrapper, event))
 
