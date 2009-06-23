@@ -223,7 +223,7 @@ class Movement(object):
         motionProxy.walk()
 
     def run(self):
-        set_angles_to_walk_start()
+        #set_angles_to_walk_start()
         before_t= time.time()
         self.normalize()
         self.straight(Movement.x2,Movement.y2, Movement.yaw2)

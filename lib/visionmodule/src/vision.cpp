@@ -31,17 +31,14 @@ vision::vision( ALPtr<ALBroker> pBroker, std::string pName ): ALModule(pBroker ,
   functionName( "setCamera", "vision" ,  "select the current camera (0 - top, 1 - bottom)." );
   BIND_METHOD( vision::setCamera );
 
-  functionName( "getBall","vision", "Get the ball rect (within the field area!). To be used if the visionmodule is a local module." );
-  BIND_METHOD( vision::getBall );
+  functionName( "getBalls","vision", "Get the balls' rect (within the field area!). To be used if the visionmodule is a local module." );
+  BIND_METHOD( vision::getBalls );
 
   functionName( "start", "vision" ,  "Starts the vision task." );
   BIND_METHOD( vision::start );
 
   functionName( "stop", "vision" ,  "Stops the vision task." );
   BIND_METHOD( vision::stop );
-
-  functionName( "getBallRemote","vision", "Get the ball rect (within the field area!). To be used if the visionmodule is a remote module." );
-  BIND_METHOD( vision::getBallRemote );
 
   functionName( "testRemote","vision", "Test remote image acquisition." );
   BIND_METHOD( vision::testRemote );
@@ -435,13 +432,8 @@ printf("image saved\n");
   printf("image released\n");
 }
 
-
-// TODO: re-write cleaner
-CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect) {
-//printf("getLargestColoredContour 1\n");
-	CvSeq* seqhull = NULL;
-
-//printf("getHullByColor 1\n");
+CvSeq** vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect** rect, bool isField) {
+    CvSeq** seqhull = new CvSeq*[20];
 
 	CvSeq* contours = NULL; // = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint) , storageContours);
 	CvSeq* result = NULL;
@@ -451,14 +443,9 @@ CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int i
 	IplImage* tgray = NULL;
 	IplImage* img_hsv = NULL;
 
-	// select the maximum ROI in the image with the width and height divisible by 2
-	//cvSetImageROI( timg, cvRect( 0, 0, sz.width, sz.height ));
-
 	// down-scale and upscale the image to filter out the noise (much faster compared to cvSmooth)
 	cvPyrDown( timg, pyr, CV_GAUSSIAN_5x5 ); // pyr is temporarily used to keep the smaller (down-scaled) picture 7
 	cvPyrUp( pyr, timg, CV_GAUSSIAN_5x5 ); // pyr is upscaled and saved back to timg, with less noise.
-	//cvSmooth( timg, timg, CV_GAUSSIAN, 21, 21 );
-//    cvSmooth( timg, timg, CV_GAUSSIAN, 5, 5 );
 	tgray = cvCreateImage( sz, 8, 1 );
 
 	img_hsv = cvCloneImage( timg );
@@ -510,15 +497,6 @@ CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int i
 	cvThreshold( tgray, tgray, 0, 255, CV_THRESH_BINARY );
 	cvAnd(tBlackAndWhite,tgray,tgray,NULL);
 
-	// Show remaining pixles
-//	#if SHOW_REMAINING_PIXELS
-//	char windowname[50];
-//	sprintf(windowname,"Testing: remaining pixels%d", imageIndex);
-//	cvNamedWindow(windowname, 1);
-//	cvMoveWindow(windowname, 100, 100);
-//	cvShowImage(windowname, tgray);
-//	#endif
-
 	/*int iContourNumber = */
 	cvFindContours( tgray, storage, &contours, sizeof(CvContour),
 										 CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0) );
@@ -527,27 +505,16 @@ CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int i
 	int iMaxSize = -1;
 	int iCurrSize = 0;
 
-	//printf("Number of contours: %i\n", iContourNumber);
-
 	while (curr_contour) {
 		result = cvApproxPoly(curr_contour, sizeof(CvContour), storage,
-			CV_POLY_APPROX_DP, cvContourPerimeter(curr_contour)*0.02, 0 );
-
+		CV_POLY_APPROX_DP, cvContourPerimeter(curr_contour)*0.02, 0 );
 		iCurrSize = fabs(cvContourArea(result, CV_WHOLE_SEQ));
 
-		// For testing returned sizes:
-		//printf("size: %i\n", iCurrSize);
-
 		if (result) {
-//printf("getHullByColor 1.5\n");
 			cvClearSeq(result);
 		}
 
 		if (iCurrSize > iMinimalArea) {
-//			CvScalar color = CV_RGB( rand()&255, rand()&255, rand()&255 );
-//			cvDrawContours(src, result, color, color, -1, CV_FILLED, 8);
-//			CvScalar color = CV_RGB( rand()&255, rand()&255, rand()&255 );
-//			cvDrawContours(src, curr_contour, color, color, -1, CV_FILLED, 8);
 			if (iCurrSize >= iMaxSize) {
 				max_contour = curr_contour; //result
 				iMaxSize = iCurrSize;
@@ -559,39 +526,36 @@ CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int i
 		} else {
 			curr_contour = curr_contour->h_next;
 		}
-	} // while (curr_contour)
-
-//printf("getLargestColoredContour 2\n");
-	if (max_contour != NULL) {
-//printf("getLargestColoredContour 3\n");
-
-		rect = cvBoundingRect(max_contour);
-
-//printf("getLargestColoredContour 4\n");
-		seqhull = cvConvexHull2(max_contour, 0, CV_COUNTER_CLOCKWISE, 0); //0
-
-//printf("getLargestColoredContour 5\n");
-
-//		#if SHOW_RESULT
-//		IplImage* debugImage = cvCloneImage(src);
-//		CvScalar colorRED = CV_RGB(255, 0, 0);
-//		CvScalar colorGREEN = CV_RGB(0, 255, 0);
-//		cvDrawContours(debugImage, max_contour, colorGREEN, colorGREEN, -1, CV_FILLED, 8);
-//		char windowname[50];
-//		sprintf(windowname,"Hull Contours%d", imageIndex);
-//        cvNamedWindow(windowname, CV_WINDOW_AUTOSIZE);
-//		cvMoveWindow(windowname, 100, 100);
-//        cvShowImage(windowname, debugImage);
-//        cvReleaseImage(&debugImage);
-//		#endif
 	}
+    int iCount= 0;
+	if (max_contour != NULL) {
+		if(isField) {
+			(*rect)[iCount] = cvBoundingRect(max_contour);
+			seqhull[0] = cvConvexHull2(max_contour, 0, CV_COUNTER_CLOCKWISE, 0);
+		}  
+	}
+    if(!isField) {
+        if (contours != NULL) {
+            while(contours) {
+			    result = cvApproxPoly( contours, sizeof(CvContour), cvCreateMemStorage(0),
+						    CV_POLY_APPROX_DP, cvContourPerimeter(contours)*0.02, 0 );
 
-//printf("getLargestColoredContour 6\n");
+			    iCurrSize = fabs(cvContourArea(result, CV_WHOLE_SEQ));
 
-	// For testing returned max size:
-	//printf("iMaxSize: %i\n", iMaxSize);
+			    if (iCurrSize > iMinimalArea) {
+				    (*rect)[iCount] = cvBoundingRect(contours);
+				    seqhull[iCount] = cvConvexHull2(contours, 0, CV_COUNTER_CLOCKWISE, 0);
+				    iCount++;
+			    }
 
-//printf("getHullByColor 2\n");
+			    if (contours->h_next == NULL) {
+				    contours = NULL;
+			    } else {
+				    contours = contours->h_next;
+			    }
+		    }
+        }
+    }
 
 	// release memory
 	if (pyr) cvReleaseImage( &pyr );
@@ -612,166 +576,18 @@ CvSeq* vision::getLargestColoredContour(IplImage* src, int iBoxColorValue, int i
 	imgUnderTrimmed = NULL;
 
 	if (contours) {
-//printf("getHullByColor 3\n");
 		cvClearSeq(contours);
 		contours = NULL;
 	}
 
 	if (storage) {
-//printf("getHullByColor 5\n");
     	cvClearMemStorage(storage);
-//		cvReleaseMemStorage(&storage);
 	}
 
-//printf("getLargestColoredContour 7\n");
 	return seqhull;
 }
 
-
-ALValue vision::getBallRemote() {
-
-	ALValue resultBallRect;
-	resultBallRect.arraySetSize(4);
-
-	resultBallRect[0] = 0;
-	resultBallRect[1] = 0;
-	resultBallRect[2] = 0;
-	resultBallRect[3] = 0;
-
-	//Now you can get the pointer to the video structure.
-	ALValue results;
-	results.arraySetSize(7);
-
-	try {
-		results = ( camera->call<ALValue>( "getImageRemote", name ) );
-	} catch (ALError& e) {
-		log->error( "vision", "could not call the getImageRemote method of the NaoCam module" );
-	}
-
-	if (results.getType()!= ALValue::TypeArray) return resultBallRect;
-
-	const char* dataPointerIn =  static_cast<const char*>(results[6].GetBinary());
-	int size = results[6].getSize();
-
-	//You can get some informations of the image.
-	int width = (int) results[0];
-	int height = (int) results[1];
-	int nbLayers = (int) results[2];
-	int colorSpace = (int) results[3];
-	long long timeStamp = ((long long)(int)results[4])*1000000LL + ((long long)(int)results[5]);
-
-	IplImage* src = 0;
-	IplImage* mask = 0;
-	IplImage* imageClipped = 0;
-
-	// now you create an openCV image and you save it in a file.
-	src = cvCreateImage( cvSize( width, height ), 8, nbLayers );
-
-	src->imageData = ( char* ) dataPointerIn;
-
-	// Get field
-	CvRect fieldRect = cvRect(-1,-1,-1,-1);
-
-	// Green field
-	// parameters for pan/tilt camera
-	//CvSeq* field = getLargestColoredContour(src, 155, 5, 100, 300, fieldRect);
-	// parameters for Nao camera in lab
-    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect);
-
-    if (field != NULL) {
-    	printf("Field: %d, %d, %d, %d\n", fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
-
-		CvSize imageSize = cvSize(src->width, src->height);
-		mask = cvCreateImage( imageSize, 8, 1 );
-		cvZero(mask);
-
-		CvScalar colorWHITE = CV_RGB(255, 255, 255);
-
-		int elementCount = field->total;
-		CvPoint* temp = new CvPoint[elementCount];
-		CvPoint pt0 = **CV_GET_SEQ_ELEM( CvPoint*, field, elementCount - 1 );
-		for (int i = 0; i < elementCount; i++) {
-			CvPoint pt = **CV_GET_SEQ_ELEM( CvPoint*, field, i );
-			temp[i].x = pt.x;
-			temp[i].y = pt.y;
-		}
-		cvFillConvexPoly(mask, temp, elementCount, colorWHITE, 8, 0);
-
-		imageClipped = cvCreateImage( imageSize, 8, 3 );
-		cvZero(imageClipped);
-		cvCopy(src, imageClipped, mask);
-
-		// Get ball
-		CvRect ballRect;
-
-	    // parameters for pan/tilt camera
-	    //getLargestColoredContour(imageClipped, 17, 10, 100, 50, ballRect);
-	    // parameters for Nao camera in lab
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 25, 50, 30, ballRect);
-
-		if (ballHull != NULL) {
-			printf("ballrect: %d, %d, %d, %d\n", ballRect.x, ballRect.y, ballRect.width, ballRect.height);
-			resultBallRect[0] = ballRect.x;
-			resultBallRect[1] = ballRect.y;
-			resultBallRect[2] = ballRect.width;
-			resultBallRect[3] = ballRect.height;
-
-			printf("Clearing ball Hull\n");
-			cvClearSeq(ballHull);
-			printf("Ball Hull cleared\n");
-		} else {
-	    	printf("Ball not found!\n");
-			resultBallRect[0] = -2;
-			resultBallRect[1] = -2;
-			resultBallRect[2] = -2;
-			resultBallRect[3] = -2;
-		}
-    } else {
-    	printf("Field not found!\n");
-		resultBallRect[0] = -1;
-		resultBallRect[1] = -1;
-		resultBallRect[2] = -1;
-		resultBallRect[3] = -1;
-    }
-
-    printf("Saving data to memory\n");
-
-    memory->insertData("/BURST/Vision/BallX", resultBallRect[0], 0);
-    memory->insertData("/BURST/Vision/BallY", resultBallRect[1], 0);
-    memory->insertData("/BURST/Vision/BallWidth", resultBallRect[2], 0);
-    memory->insertData("/BURST/Vision/BallHeight", resultBallRect[3], 0);
-
-	// release the image
-	cvReleaseImage(&imageClipped);
-	cvReleaseImage(&mask);
-//	cvReleaseImage(&src);
-
-//	printf("Clearing field\n");
-
-	if (field) {
-//		printf("Clearing field Hull\n");
-		cvClearSeq(field);
-	}
-//	printf("Field Hull cleared\n");
-
-//	try
-//	{
-//	  results = ( camera->call<ALValue>( "releaseImage", name ) );
-//	}catch( ALError& e)
-//	{
-//	  log->error( "vision", "could not call the releaseImage method of the NaoCam module" );
-//	}
-//
-//	printf("image memory released\n");
-
-	cvReleaseImageHeader(&src);
-
-//	printf("image released\n");
-
-	return resultBallRect;
-}
-
-ALValue vision::getBall() {
+ALValue vision::getBalls() {
 
 	ALValue resultBallRect;
 	resultBallRect.arraySetSize(4);
@@ -785,12 +601,6 @@ ALValue vision::getBall() {
 	// ( definition included in alvisiondefinitions.h and alvisiondefinitions.cpp )
 	ALVisionImage* imageIn;
 
-//	log->info( "vision", "Trying to get local image" );
-//	printf("vision: Trying to get local image\n");
-
-//	struct timeval time_start;
-//	struct timeval time_to_get;
-//	gettimeofday (&time_start, 0);
 	//Now you can get the pointer to the video structure.
 	try
 	{
@@ -800,19 +610,6 @@ ALValue vision::getBall() {
 	log->error( "vision", "could not call the getImageLocal method of the NaoCam module" );
 	}
 
-//	log->info( "vision", "Got local image" );
-//	printf("vision: Got local image\n");
-
-//	gettimeofday (&time_to_get, 0);
-//	float time = ((float)(time_to_get.tv_sec - time_start.tv_sec)) + ((float)(time_to_get.tv_usec - time_start.tv_usec))/1000000.0;
-//
-//	char timeMessage[50];
-//	sprintf(timeMessage,"Got local image! [%f]", time);
-//	log->info( "vision", timeMessage);
-//	//log->info( "vision", "Got local image! [" + time + "]");
-//
-//	std::cout<< imageIn->toString();
-//
 	//You can get some informations of the image.
 	int width = imageIn->fWidth;
 	int height = imageIn->fHeight;
@@ -838,7 +635,7 @@ ALValue vision::getBall() {
 	IplImage* imageClipped = 0;
 
 	// Get field
-	CvRect fieldRect = cvRect(-1,-1,-1,-1);
+	CvRect* fieldRect = new CvRect[1];
 
 //printf("before getLargestColoredContour\n");
 	// Green field
@@ -847,7 +644,7 @@ ALValue vision::getBall() {
 	// parameters for Nao camera in lab
 //    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect);
     // Params for WEBOTS
-    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect);
+    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, &fieldRect, 1)[0];
 
     if (field != NULL) {
 //    	printf("Field: %d, %d, %d, %d\n", fieldRect.x, fieldRect.y, fieldRect.width, fieldRect.height);
@@ -875,7 +672,7 @@ ALValue vision::getBall() {
 		cvCopy(src, imageClipped, mask);
 
 		// Get ball
-		CvRect ballRect;
+		CvRect* ballRect= new CvRect[10];
 
 //log->info( "vision", "Searching ball2" );
 	    // parameters for pan/tilt camera
@@ -883,15 +680,26 @@ ALValue vision::getBall() {
 	    // parameters for Nao camera in lab
 //		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 25, 50, 30, ballRect);
 		// Params for webots
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 40, 10, 50, 30, ballRect);
+		CvSeq** ballHull = getLargestColoredContour(imageClipped, 55, 125, 50, 30, &ballRect, 0);
 
 //log->info( "vision", "Searching ball3" );
+        int* X_Arr= new int[10];
+        int* Y_Arr= new int[10];
+        int* Width_Arr= new int[10];
+        int* Height_Arr= new int[10];
+
+        for(int i=0; ballHull[i] != NULL; i++) {
+            X_Arr[i]= ballRect[i].x;
+            Y_Arr[i]= ballRect[i].y;
+            Width_Arr[i]= ballRect[i].width;
+            Height_Arr[i]= ballRect[i].height;
+        }
 		if (ballHull != NULL) {
 //			printf("ballrect: %d, %d, %d, %d\n", ballRect.x, ballRect.y, ballRect.width, ballRect.height);
-			resultBallRect[0] = ballRect.x;
-			resultBallRect[1] = ballRect.y;
-			resultBallRect[2] = ballRect.width;
-			resultBallRect[3] = ballRect.height;
+			resultBallRect[0] = X_Arr;
+			resultBallRect[1] = Y_Arr;
+			resultBallRect[2] = Width_Arr;
+			resultBallRect[3] = Height_Arr;
 
 //			printf("Clearing ball Hull\n");
 //			cvClearSeq(ballHull);
@@ -926,13 +734,6 @@ ALValue vision::getBall() {
 	cvReleaseImage(&imageClipped);
 	cvReleaseImage(&mask);
 	cvReleaseImage(&src);
-
-//	printf("Clearing field\n");
-//	if (field) {
-//		printf("Clearing field Hull\n");
-//		cvClearSeq(field);
-//	}
-//	printf("Field Hull cleared\n");
 
 //	log->info( "vision", "Trying to release local image" );
 //	printf("vision: Trying to release local image\n");

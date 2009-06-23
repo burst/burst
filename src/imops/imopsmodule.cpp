@@ -315,6 +315,7 @@ void ImopsModule::notifyNextVisionImage() {
 
     // Process current frame
     g_vision->notifyImage(g_sensors->getImage());
+
     //Release the camera image
     //if(camera_active)
     g_imageTranscriber->releaseImage();
