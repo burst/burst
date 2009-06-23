@@ -277,9 +277,19 @@ class BallKicker(Behavior):
         self.debugPrint('onGoalFound')
         if not self._is_strafing:
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
+
+            # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
+            # Note: using DEFAULT_NORMALIZED_CENTERING_Y_ERROR (instead of half of it), will cause more balls to go center-goal,
+            #       in exchange for less circle-strafing
+            if self.goalpost_to_track in (self._world.yglp, self._world.bglp):
+                self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR/2
+                self.alignRightLimit = 0
+            elif self.goalpost_to_track in (self._world.ygrp, self._world.bgrp):
+                self.alignLeftLimit = 0
+                self.alignRightLimit = DEFAULT_NORMALIZED_CENTERING_Y_ERROR/2
+
             g = self.goalpost_to_track
-            self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name,
-                g.centerX, g.centerY, g.seen))
+            self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name, g.centerX, g.centerY, g.seen))
             self.strafe()
 
     def strafe(self):
@@ -292,14 +302,15 @@ class BallKicker(Behavior):
             return
         self.debugPrint("strafe: goal post seen")
         # TODO: Add align-to-goal-center support
-        if self.goalpost_to_track.bearing < -DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
+        if self.goalpost_to_track.bearing < self.alignLeftLimit:
             strafeMove = self._actions.executeCircleStrafeClockwise
-        elif self.goalpost_to_track.bearing > DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
+        elif self.goalpost_to_track.bearing > self.alignRightLimit:
             strafeMove = self._actions.executeCircleStrafeCounterClockwise
         else:
             self._is_strafing = False
             self._is_strafing_init_done = False
             self.debugPrint("Aligned position reached! (starting ball search)")
+            self.debugPrint("%s bearing is %s. Left is %s, Right is %s" % (self.goalpost_to_track.name, self.goalpost_to_track.bearing, self.alignLeftLimit, self.alignRightLimit))
             self._aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
             self._goalFinder.stop().onDone(self.refindBall)
