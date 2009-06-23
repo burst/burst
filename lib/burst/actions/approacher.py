@@ -4,12 +4,14 @@ from twisted.internet.defer import log
 
 from burst.behavior import Behavior
 
+import burst.moves.walks as walks
+
 from burst.behavior_params import (calcTargetXY,
     # Area types (where is the ball, err, target, in relation to me)
     BALL_IN_KICKING_AREA, BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_BETWEEN_LEGS, BALL_SIDE_NEAR,
     BALL_DIAGONAL, BALL_SIDE_NEAR, BALL_SIDE_FAR,
     # Other stuff
-    MOVEMENT_PERCENTAGE_TURN,
+    MOVEMENT_PERCENTAGE_TURN, MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS,
     # Movement types (for logging)
     MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN
     )
@@ -46,6 +48,9 @@ class Approacher(Behavior):
     def _approach(self, result_xy):
         """
         do a single movement towards the target location given by target_pos_callback
+        
+        TODO: some control constants are involved that should be factored out:
+         all the MOVEMENT_X constants.
         """
 
         if self._actions.isMotionInProgress():
@@ -64,7 +69,7 @@ class Approacher(Behavior):
         self.log("_approach %3.2f, %3.2f" % (x, y))
 
         (side, kp_x, kp_y, kp_dist, kp_bearing, target_location,
-                kick_side_offset) = calcTargetXY(x, y)
+                kick_side_offset) = calcTargetXY(x, y) # TODO - we use calcTargetXY, but ignore the kp_x, kp_y
 
         ### DECIDE ON NEXT MOVEMENT ###
         # TODO? - remove BALL language and change to TARGET language?
@@ -75,7 +80,7 @@ class Approacher(Behavior):
             return
 
         def move_forward(target_location):
-            return (self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD), MOVE_FORWARD)
+            return (self._actions.changeLocationRelative(x), MOVE_FORWARD)
             # TODO - the obstacle thing
             if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
                 opposite_side_from_obstacle = self.getObstacleOppositeSide()
@@ -87,7 +92,7 @@ class Approacher(Behavior):
 
         def move_sideways(target_location):
             return (self._actions.changeLocationRelativeSideways(
-                0.0, kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
+                0.0, y, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
 
         def move_turn(target_location):
             return self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN), MOVE_TURN
@@ -103,10 +108,10 @@ class Approacher(Behavior):
             , []))
 
         bd = None
-        if area in action_selection:
+        if target_location in action_selection:
             self._actions.setCameraFrameRate(10)
-            bd, movement_type = action_selection[area](target_location)
-        self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!"))
+            bd, movement_type = action_selection[target_location](target_location)
+        self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! target location problematic!"))
         bd.onDone(self._getTargetPos)
 
 def getTargetPosition(actions, x, y):
@@ -120,8 +125,26 @@ def getTargetPosition(actions, x, y):
         rel_x, rel_y, dx, dy, our_heading)
     return succeed((rel_x, rel_y))
 
-def ApproacheXY(actions, x, y):
-    return Approacher(actions, lambda: succeed(getTargetPosition(actions, x, y)))
+def TurtleTurn(actions, x, y, steps):
+    """ Educational example, not actually useful.
+    
+    Equivalent roughly to the following
+    (assuming x,y -> r, theta in polar coordinates)
+    for i in xrange(steps):
+        forward(r)
+        right(theta)
+    
+    How to use:
+    >>> ApproachXY(actions, 100, 0).onDone(pr(""))
+    
+    """
+#    def doStep(steps=[steps])
+    def target_pos_callback(remaining):
+        if remaining[0] <= 0:
+            return None # signals stopping
+        else:
+            return x, y
+    return Approacher(actions, target_pos_callback)
 
 def ApproachXYActiveLocalization(actions, x, y):
     return Approacher(actions, lambda: actions.localize().getDeferred().addCallback(
