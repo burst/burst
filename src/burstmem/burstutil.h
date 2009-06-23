@@ -80,12 +80,14 @@ struct Counter {
 #define SONAR_MODULE "ALSonar"
 #define VIDEO_MODULE_SUBSCRIBE "subscribe"
 #define VIDEO_MODULE_UNSUBSCRIBE "unsubscribe"
+#define SONAR_EXTRACTOR_VARIABLE "extractors/alsonar/distances"
 #else
 #ifdef NAOQI_120
 #define VIDEO_MODULE "NaoCam"
 #define SONAR_MODULE "ALUltraSound"
 #define VIDEO_MODULE_SUBSCRIBE "register"
 #define VIDEO_MODULE_UNSUBSCRIBE "unregister"
+#define SONAR_EXTRACTOR_VARIABLE "extractors/alultrasound/distances"
 namespace AL {
 class ALVisionImage;
 typedef ALVisionImage ALImage;

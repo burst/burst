@@ -20,7 +20,7 @@ Makefile.local:
 	cp Makefile.local.template Makefile.local
 	exit 0
 
-.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload pyloc pylocatotal cleanpyc removewhitespace
+.PHONY: burstmem recordermodule imops colortable clean webots pynaoqi sizes autoload pyloc pylocatotal cleanpyc removewhitespace todo
 
 cleanpyc:
 	@echo "removing pyc files"
@@ -33,6 +33,9 @@ clean: cleanpyc
 
 removewhitespace:
 	find . -iname "*.cpp" -or -iname "*.h" -or -iname "*.py" -exec sed "s/\s\s*$$//" -i \{\} \;
+
+todo:
+	git grep TODO | less
 
 sizes:
 	ls -l $(MODULES)

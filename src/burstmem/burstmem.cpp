@@ -45,9 +45,11 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     , m_memory_mapped(false)
     , m_broker(pBroker)
     , m_mmap(NULL)
+    //, textToSpeechProxy(NULL) // How to set an ALPtr to NULL, how to check if it is
 {
 
     std::cout << "burstmem: Module starting" << std::endl;
+
     // Describe the module here
     setModuleDescription
         ("This is the burstmem module - designed to record a lot of stuff to a csv file, that's all.");
@@ -84,18 +86,23 @@ burstmem::burstmem (ALPtr < ALBroker > pBroker, std::string pName)
     }
     catch (ALError & e) {
         std::
-            cout << "could not create a proxy to ALLogger module" <<
+            cout << "burstmem: could not create a proxy to ALLogger module" <<
             std::endl;
     }
 
     //Create a proxy on memory module
     try {
         m_memory = getParentBroker ()->getMemoryProxy ();
+    }
+    catch (ALError & e) {
+        std::cout << "burstmem: could not create a proxy to ALMemory module" <<
+            std::endl;
+    }
+    try {
         textToSpeechProxy = getParentBroker()->getProxy("ALTextToSpeech");
     }
     catch (ALError & e) {
-        std::
-            cout << "could not create a proxy to ALMemory module" <<
+        std::cout << "burstmem: could not create a proxy to ALTextToSpeech module" <<
             std::endl;
     }
 
@@ -156,7 +163,12 @@ void burstmem::clearMappedVariables()
 //______________________________________________
 // addMappedVariable
 //______________________________________________
+
+#ifdef NAOQI_138
 void burstmem::addMappedVariable(const int &index, const std::string &var)
+#else
+void burstmem::addMappedVariable(int index, std::string var)
+#endif
 {
     m_varnames.resize(index+1);
     m_varnames[index] = var;
@@ -189,7 +201,11 @@ std::string burstmem::version ()
 //______________________________________________
 // get variable name by index
 //______________________________________________
+#ifdef NAOQI_138
 std::string burstmem::getVarNameByIndex (const int &i)
+#else
+std::string burstmem::getVarNameByIndex (int i)
+#endif
 {
     if (this->m_varnames.size() > static_cast<unsigned int>(i) && i >= 0)
         return this->m_varnames[i];
@@ -250,8 +266,10 @@ void burstmem::startMemoryMap ()
 
     this->m_copying = true;
 
+#if 0
     // Initialize sonar readings
     try {
+        std::cout << "burstmem: subscribing to " SONAR_MODULE << std::endl;
         const int DT_MS = 500;
         ALPtr<ALProxy> us = this->getParentBroker()->getProxy( SONAR_MODULE );
 #ifdef NAOQI_138
@@ -268,7 +286,7 @@ void burstmem::startMemoryMap ()
         std::cout << "burstmem: Failed to subscribe to " SONAR_MODULE ": " << e.toString () <<
             std::endl;
     }
-
+#endif
     // create fast memory access proxy
     try {
         m_memoryfastaccess =
@@ -368,7 +386,7 @@ burstmem::updateMemoryMappedVariables()
         // dump the third parameter (a string), and store the two
         // distances in floats
         try {
-            ALValue distanceUS = m_memory->call<ALValue>( "getData", string("extractors/alsonar/distances" ) );
+            ALValue distanceUS = m_memory->call<ALValue>( "getData", string(SONAR_EXTRACTOR_VARIABLE) );
             m_mmap[0] = distanceUS[0];
             m_mmap[1] = distanceUS[1];
         } catch (AL::ALError e) {
@@ -433,9 +451,9 @@ burstmem::checkBatteryStatus ()
 void
 burstmem::announceChargerChange( int status )
 {
-    if ( status == CHARGER_CONNECTED && ANNOUNCE_CONNECTED ) {
+    if ( status == CHARGER_CONNECTED && ANNOUNCE_CONNECTED && textToSpeechProxy ) {
         textToSpeechProxy->pCall("say", std::string("Connected"));
-    } else if ( status == CHARGER_DISCONNECTED ) {
+    } else if ( status == CHARGER_DISCONNECTED && textToSpeechProxy ) {
         textToSpeechProxy->pCall("say", std::string("Disconnected"));
     }
 }

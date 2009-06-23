@@ -202,7 +202,7 @@ crossinstall: $(ROBOT_BUILD_DIR)
 	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile crossinstall_helper BUILD=ROBOT DEBUG=0 srcdir=../ ROOT=../../../
 
 crossdebug: $(ROBOT_BUILD_DIR)
-	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=1
+	cd $(ROBOT_BUILD_DIR); $(MAKE) -f ../Makefile cross_helper BUILD=ROBOT DEBUG=1 srcdir=../ ROOT=../../../
 
 # These are run from within the ROBOT_BUILD_DIR directory
 cross_helper: $(TARGET_LIB)
