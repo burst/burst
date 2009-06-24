@@ -8,7 +8,10 @@ For instance, don't put any moves in here, or any parameters that are personal.
 import os # for HOME
 
 import math
+import random # for INITIAL_POSITION of SecondaryKicker on KickOff
 from math import tan
+
+from burst.field import * # field constants
 
 # Some stuff that is required first
 MESSI = 'messi'
@@ -74,6 +77,16 @@ ROBOT_NAME_TO_JERSEY_NUMBER = {
     WEBOTS: GOALIE_JERSEY, # TODO - overriding command line for robot number, required for webots.
 }
 
+# This is what the player script uses, that is to say what the default Player
+# uses. The key is the jersey number (1,2,3), the value is the import as in
+# toplevel_mod.lower_level_mod.class_name (last part is not the module,
+# but a symbol in lower_level_mod)
+JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS = {
+    GOALIE_JERSEY: 'players.goalie.Goalie',
+    KICKER_JERSEY: 'players.kicker.Kicker',
+    SECONDARY_JERSEY: 'players.kicker.Kicker',
+}
+
 ################################################################################
 # File locations, Shared memory
 ################################################################################
@@ -103,6 +116,19 @@ is_120 = NAOQI_VERSION == NAOQI_1_2_0
 # WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
 # 'initial_position' - world coordinates
 INITIAL_POSITION = 'initial_position'
+
+SECONDARY_ATTACK_LEFT_INITIAL_Y  = -CENTER_CIRCLE_RADIUS*1.5
+SECONDARY_ATTACK_RIGHT_INITIAL_Y =  CENTER_CIRCLE_RADIUS*1.5
+SECONDARY_ATTACK_INITIAL_Y = random.choice((SECONDARY_ATTACK_LEFT_INITIAL_Y, SECONDARY_ATTACK_RIGHT_INITIAL_Y))
+print "Secondary attacker INITIAL POSITION is %s" % ('LEFT' if
+    SECONDARY_ATTACK_INITIAL_Y == SECONDARY_ATTACK_LEFT_INITIAL_Y else 'RIGHT')
+
+GOALIE_DONT_HIDE_DIST = 40.0
+
+# TODO - video white line detection, remove those buffers (turn them into a behavior 'get as close as you can')
+WHITE_LINE_BUFFER = 20.0 # cm from white line we compensate for inaccuracy in localization and no white line detection
+PENALTEY_BUFFER = 20.0
+
 READY_INITIAL_LOCATIONS = {
     # We are the Kick off team - Attacking positions
     True: {
@@ -110,10 +136,10 @@ READY_INITIAL_LOCATIONS = {
             INITIAL_POSITION: (0.0, 0.0), # TODO - lambda that determines? would be pretty cool
         },
         KICKER_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (MIDFIELD_X - WHITE_LINE_BUFFER, 0.0),
         },
         SECONDARY_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (MIDFIELD_X - WHITE_LINE_BUFFER, SECONDARY_ATTACK_INITIAL_Y),
         },
     },
     False: {
@@ -121,10 +147,10 @@ READY_INITIAL_LOCATIONS = {
             INITIAL_POSITION: (0.0, 0.0),
         },
         KICKER_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (OUR_PENALTEY_X - PENALTEY_BUFFER, OUR_PENALTEY_Y - GOALIE_DONT_HIDE_DIST),
         },
         SECONDARY_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (OUR_PENALTEY_X - PENALTEY_BUFFER, OUR_PENALTEY_Y + GOALIE_DONT_HIDE_DIST),
         },
     }
 }

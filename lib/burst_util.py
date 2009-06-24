@@ -8,8 +8,15 @@ from math import cos, sin, sqrt, atan2, pi
 import linecache
 import glob
 import socket
+import logging
 
 import burst_consts
+
+################################################################################
+
+logging.basicConfig(level=logging.DEBUG)
+
+################################################################################
 
 # Data Structures
 
@@ -785,6 +792,14 @@ def set_robot_ip_from_argv():
                 return
 
 # Python language util
+
+def import_class(dotted_name):
+    """ import_class('kicker.Kicker') will import kicker, and return the Kicker
+    symbol from it, supposedly a class, but doesn't care.
+    """
+    module, symbol = dotted_name.rsplit('.',1)
+    mod = __import__(module, fromlist=['']) # get the right most module
+    return getattr(mod, symbol)
 
 def getfunc(f_or_m):
     if hasattr(f_or_m, 'im_func'):

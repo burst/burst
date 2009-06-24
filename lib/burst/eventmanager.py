@@ -7,11 +7,12 @@ import sys
 import os
 from time import time
 from heapq import heappush, heappop, heapify
+import logging
 
 from twisted.python import log
 
 import burst
-from burst_util import DeferredList, func_name, Profiler, succeed
+from burst_util import DeferredList, func_name, Profiler, succeed, import_class
 import burst_util
 import burst.actions
 from burst.player import Player
@@ -21,6 +22,10 @@ from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
 from burst_consts import NAOQI_1_3_8, NAOQI_VERSION
 
 import burst_consts
+
+################################################################################
+logger = logging.getLogger('burst.eventmanager')
+info = logger.info
 
 ################################################################################
 
@@ -46,10 +51,10 @@ def singletime(event):
                 except StopIteration:
                     pass
                 except Exception, e:
-                    print "CAUGHT EXCEPTION: %s" % e
+                    info( "CAUGHT EXCEPTION: %s" % e)
                 self._eventmanager.unregister(event, onEvent)
-                print "singletime: unregistering from %s" % event
-            print "singletime: registering to %s" % event
+                info( "singletime: unregistering from %s" % event)
+            info( "singletime: registering to %s" % event)
             self._eventmanager.register(event, onEvent)
         return wrapper
     return wrap
@@ -194,22 +199,22 @@ class EventManager(object):
             self._callbacks[callback] = set()
         if event in self._callbacks[callback]:
             if burst.options.verbose_reregister:
-                print "WARNING: harmless re-register of %s to %s" % (func_name(callback), event_name(event))
+                info( "WARNING: harmless re-register of %s to %s" % (func_name(callback), event_name(event)))
         self._callbacks[callback].add(event)
         # add to _events
         self._events[event].add(callback)
         if self.verbose:
-            print "EventManager: #_events[%d] = %s" % (event, len(self._events[event]))
+            info( "EventManager: #_events[%d] = %s" % (event, len(self._events[event])))
 
     def register_oneshot(self, callback, event):
         def on_one_event():
             if self.verbose:
-                print "EventManager: one shot removal, before: %s, %s" % (
-                            len(self._events[event]), self._events[event])
+                info( "EventManager: one shot removal, before: %s, %s" % (
+                            len(self._events[event]), self._events[event]))
             self.unregister(on_one_event, event)
             if self.verbose:
-                print "EventManager: one shot removal, after: %s, %s" % (
-                            len(self._events[event]), self._events[event])
+                info( "EventManager: one shot removal, after: %s, %s" % (
+                            len(self._events[event]), self._events[event]))
             callback()
         on_one_event.func_name = 'on_one_event__%s' % (func_name(callback))
         self.register(on_one_event, event)
@@ -225,7 +230,7 @@ class EventManager(object):
         to anything then nothing will happen.
         """
         if self.verbose:
-            print "EventManager: unregister %s" % callback
+            info( "EventManager: unregister %s" % callback)
         if callback in self._callbacks:
             # remove from _events
             for event in self._callbacks[callback]:
@@ -261,7 +266,7 @@ class EventManager(object):
         while len(current_call_later) > 0:
             next_time = current_call_later[0][0]
             if self.verbose:
-                print "EventManager: we have some callLaters"
+                info( "EventManager: we have some callLaters")
             if next_time <= self._world.time:
                 next_time, cb, args, kw = heappop(current_call_later)
                 call_laters_this_frame.append((cb, args, kw))
@@ -278,7 +283,7 @@ class EventManager(object):
         self._num_call_laters = len(call_laters_this_frame)
         self._num_cbs_in_round = self._num_deferreds + self._num_events + self._num_time_step + self._num_call_laters
         if self.verbose and self._num_cbs_in_round >= self.num_callbacks_to_report:
-            print 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown()
+            info( 'EventManager: you have %s = %s D + %s E + %s S + %s L cbs' % self.getPendingBreakdown())
 
     def getPendingBreakdown(self):
         return (self._num_cbs_in_round, self._num_deferreds, self._num_events, self._num_time_step,
@@ -316,24 +321,24 @@ class EventManager(object):
                 if cb in self._events[event]:  # handle possible removal
                     cb()
                 elif self.verbose:
-                    print "EventManager: %s removed by prior during step" % cb
+                    info( "EventManager: %s removed by prior during step" % cb)
         # EVENT_STEP registrators are always called (again, list used to create a temp copy)
         for cb in list(self._events[EVENT_STEP]):
             if cb in self._events[EVENT_STEP]: # handle possible removal
                 cb()
             elif self.verbose:
-                print "EventManager: %s removed by prior during step" % cb
+                info( "EventManager: %s removed by prior during step" % cb)
 
         # Handle call later's (we counted before, now we run and merge)
         for cb, args, kw in call_laters_this_frame:
             if self.verbose:
-                print "EventManager: calling callLater callback"
+                info( "EventManager: calling callLater callback")
             cb(*args, **kw)
 
         # now merge the new with the old
         if len(self._call_later) > 0:
             if self.verbose:
-                print "EventManager: callLater-cbs added callLaters! merging"
+                info( "EventManager: callLater-cbs added callLaters! merging")
             self._call_later = self._current_call_later + self._call_later
             heapify(self._call_later) # TODO - implement merge, this is faster.
         else:
@@ -349,7 +354,7 @@ class BasicMainLoop(object):
 
     __running_instance = None
 
-    def __init__(self, main_behavior_class):
+    def __init__(self, main_behavior_class=None):
         self._main_behavior_class = main_behavior_class
         self._ctrl_c_cb = None
         self._actions = None
@@ -390,6 +395,10 @@ class BasicMainLoop(object):
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
         self._actions = actions.Actions(eventmanager = self._eventmanager)
+        if self._main_behavior_class is None:
+            jersey = self._world.robot.jersey
+            self._main_behavior_class = import_class(burst_consts.JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS[jersey])
+            info('Jersey %d, Behavior %s' % (jersey, self._main_behavior_class.__name__))
         self._player = Player(actions = self._actions, main_behavior_class=self._main_behavior_class)
 
     def cleanup(self):
@@ -410,7 +419,7 @@ class BasicMainLoop(object):
         on if required, or None if nothing to wait on (maybe just replace with succeed - TODO
         """
         if self._on_normal_quit_called:
-            print "HARMLESS ERROR: second BaseMainLoop.onNormalQuit called"
+            info( "HARMLESS ERROR: second BaseMainLoop.onNormalQuit called")
             return
         self._on_normal_quit_called = True
         self._on_normal_quit__naoqi_ok = naoqi_ok
@@ -419,7 +428,7 @@ class BasicMainLoop(object):
             stop_deferred = self._player.onStop()
 
         # From this point onwards illegal moves (i.e. anything) are allowed.
-        print "MainLoop: ILLEGAL ROBOCUP moves ALLOWED from now on"
+        info( "MainLoop: ILLEGAL ROBOCUP moves ALLOWED from now on")
         burst.actions._use_legal = False
 
         if stop_deferred:
@@ -433,10 +442,10 @@ class BasicMainLoop(object):
         d = succeed(None)
         if self._actions:
             if burst.options.passive_ctrl_c:# or not self._world.connected_to_nao:
-                print "BasicMainLoop: exiting"
+                info( "BasicMainLoop: exiting")
             else:
                 if naoqi_ok:
-                    print "BasicMainLoop: sitting, removing stiffness and quitting."
+                    info( "BasicMainLoop: sitting, removing stiffness and quitting.")
                     d = self._actions.sitPoseAndRelax_returnDeferred()
             self._world._gameController.shutdown() # in parallel to sitting
         self.__running_instance = None
@@ -532,7 +541,7 @@ class BasicMainLoop(object):
         # Second, set stiffness, move to initial position, and queue player entrace.
         def setLegalAndCallPlayerOnStart():
             burst.actions._use_legal = True
-            print "MainLoop: only LEGAL ROBOCUP moves allowed from now on"
+            info( "MainLoop: only LEGAL ROBOCUP moves allowed from now on")
             self._player.onStart()
         if NAOQI_VERSION == NAOQI_1_3_8: # Workaround for camera switch bug. TODO - location?
             top = self._actions.switchToTopCamera
@@ -564,7 +573,7 @@ class BasicMainLoop(object):
         self.next_loop += self._eventmanager.dt
         self.cur_time = time()
         if self.cur_time > self.next_loop:
-#            print "WARNING: loop took %0.3f ms" % (
+#            info( "WARNING: loop took %0.3f ms" % ()
 #                (self.cur_time - self.next_loop + self.dt
 #                ) * 1000)
 #            self.next_loop = self.cur_time
@@ -605,7 +614,7 @@ class SimpleMainLoop(BasicMainLoop):
     socket requests) too much, that happens in World.update.
     """
 
-    def __init__(self, main_behavior_class):
+    def __init__(self, main_behavior_class=None):
         super(SimpleMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._keep_the_loop = True
 
@@ -632,11 +641,11 @@ class SimpleMainLoop(BasicMainLoop):
                     self._step_while_handling_non_player_exceptions())
             except RuntimeError, e:
                 if 'SOAP error:Connection refused' in str(e):
-                    print "naoqi quit, quitting"
+                    info( "naoqi quit, quitting")
                     import sys
                     sys.exit(-1)
             except Exception, e:
-                print "BasicMainLoop: caught player exception: %s" % e
+                info( "BasicMainLoop: caught player exception: %s" % e)
                 import traceback
                 import sys
                 traceback.print_tb(sys.exc_info()[2])
@@ -649,11 +658,11 @@ class SimpleMainLoop(BasicMainLoop):
         try:
             sleep_time = self.doSingleStep()
         except RuntimeError, e:
-            print "BasicMainLoop: naoqi exception caught:", e
-            print "BasicMainLoop: quitting"
+            info( "BasicMainLoop: naoqi exception caught: %s" % e)
+            info( "BasicMainLoop: quitting")
             naoqi_ok = False
             if 'SOAP:Connection refused' in str(e):
-                print "Naoqi quit (SOAP:Connection refused), exiting."
+                info( "Naoqi quit (SOAP:Connection refused), exiting.")
                 self.cleanupAfterNaoqi()
                 import sys
                 sys.exit(-1)
@@ -672,7 +681,7 @@ class SimpleMainLoop(BasicMainLoop):
         try:
             self._run_loop_helper()
         except KeyboardInterrupt:
-            print "BasicMainLoop: ctrl-c detected."
+            info( "BasicMainLoop: ctrl-c detected.")
             ctrl_c_pressed = True
         # No ctrl-c here I hope
         if ctrl_c_pressed:
@@ -680,7 +689,7 @@ class SimpleMainLoop(BasicMainLoop):
                 self.onCtrlCPressed()
                 self._run_loop_helper() # continue the loop, wait for pending moves etc.
             except KeyboardInterrupt:
-                print "BasicMainLoop: ctrl-c detected a second time. unclean exit."
+                info( "BasicMainLoop: ctrl-c detected a second time. unclean exit.")
                 raise SystemExit
 
     def _run_loop_helper(self):
@@ -710,7 +719,7 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, main_behavior_class, control_reactor=True, startRightNow=True):
+    def __init__(self, main_behavior_class=None, control_reactor=True, startRightNow=True):
         super(TwistedMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._do_cleanup = True
         self._control_reactor = control_reactor
@@ -720,14 +729,14 @@ class TwistedMainLoop(BasicMainLoop):
         self._ctrl_c_presses = 0
         def my_int_handler(reactor, *args):
             self._ctrl_c_presses += 1
-            print "TwistedMainLoop: SIGBREAK caught"
+            info( "TwistedMainLoop: SIGBREAK caught")
             if self._ctrl_c_presses == 1:
                 if self.quitting:
-                    print "TwistedMainLoop: SIGBREAK: quitting already in progress"
+                    info( "TwistedMainLoop: SIGBREAK: quitting already in progress")
                 else:
                     self._startShutdown(naoqi_ok=True, ctrl_c_pressed=True)
             else:
-                print "Two ctrl-c - shutting down uncleanly"
+                info( "Two ctrl-c - shutting down uncleanly")
                 orig_sigInt(*args)
 
         reactor.sigInt = my_int_handler
@@ -756,9 +765,9 @@ class TwistedMainLoop(BasicMainLoop):
         return self.con.connection_manager._returned
 
     def _twistedStart(self, _):
-        print "TwistedMainLoop: _twistedStart"
+        info( "TwistedMainLoop: _twistedStart")
         self.initMainObjectsAndPlayer()
-        print "TwistedMainLoop: created main objects"
+        info( "TwistedMainLoop: created main objects")
         from twisted.internet import reactor, task
         self.preMainLoopInit()
         self._startBanner("running TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000))
@@ -767,11 +776,11 @@ class TwistedMainLoop(BasicMainLoop):
 
     def _run_loop(self):
         if not self._control_reactor:
-            print "TwistedMainLoop: not in control of reactor"
+            info( "TwistedMainLoop: not in control of reactor")
             return
         from twisted.internet import reactor
         reactor.run() #installSignalHandlers=0)
-        print "TwistedMainLoop: event loop done"
+        info( "TwistedMainLoop: event loop done")
 
     def shutdown(self):
         """ helper method - this doesn't get called normally, only when debugging,
@@ -809,7 +818,7 @@ class TwistedMainLoop(BasicMainLoop):
         stop the single step task.
         reactor shutdown (if we control it)
         """
-        print "CompleteShutdown called:"
+        info( "CompleteShutdown called:")
         # stop the update task here
         # TODO - should I be worries if this is false?
         if hasattr(self, '_main_task') and self._main_task.running:
@@ -821,10 +830,10 @@ class TwistedMainLoop(BasicMainLoop):
         reactor.stop()
 
     def onTimeStep(self):
-        #print ">>>    twisted burst step     <<<"
+        #info( ">>>    twisted burst step     <<<")
         sleep_time = self.doSingleStep()
         if self._eventmanager._should_quit and not self.quitting:
-            print "TwistedMainLoop: event manager initiated quit"
+            info( "TwistedMainLoop: event manager initiated quit")
             self._startShutdown(naoqi_ok=True, ctrl_c_pressed=False)
 
 ################################################################################
