@@ -273,7 +273,7 @@ void burstmem::startMemoryMap ()
         const int DT_MS = 500;
         ALPtr<ALProxy> us = this->getParentBroker()->getProxy( SONAR_MODULE );
 #ifdef NAOQI_138
-        us->callVoid( "subscribe", getName(), DT_MS , 0.1 /* precision - TODO - what is the correct value here? */);
+        us->callVoid( "subscribe", getName(), DT_MS , SONAR_PRECISION /* precision - TODO - what is the correct value here? */);
 #elif NAOQI_120
         ALValue paramUS;
         paramUS.arrayPush( DT_MS ); // every DT_MS ms
