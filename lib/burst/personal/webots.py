@@ -10,6 +10,5 @@ params.MOVEMENT_PERCENTAGE_FORWARD = 0.9 # was 0.55, lets try 0.9...
 params.MOVEMENT_PERCENTAGE_SIDEWAYS = 0.9
 params.MOVEMENT_PERCENTAGE_TURN = 0.9
 
-
 import burst.actions.actionconsts as actionconsts
 actionconsts.DEFAULT_STEPS_FOR_TURN = 60

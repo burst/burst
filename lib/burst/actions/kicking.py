@@ -19,8 +19,8 @@ import burst.moves.walks as walks
 import burst.moves.poses as poses
 from burst.behavior import Behavior
 
-from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR,
-                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
+from burst.behavior_params import (calcTarget, MAX_FORWARD_WALK, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS,
+                                   BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
                                    MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS, MOVEMENT_PERCENTAGE_TURN,
                                    MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
 from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
@@ -228,7 +228,7 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
                 else:
-                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
+                    self._movement_deferred = self._actions.changeLocationRelative(min(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MAX_FORWARD_WALK))
             elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
                 self.debugPrint("Side-stepping!")
                 self._actions.setCameraFrameRate(10)
