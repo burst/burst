@@ -32,7 +32,6 @@ import burst.field as field
 from sharedmemory import *
 from objects import Ball, GoalPost, Goal
 from robot import Robot
-from team import Team
 from computed import Computed
 from objects import Locatable
 from localization import Localization
@@ -167,9 +166,6 @@ class World(object):
         # TODO - other robots
         # Buttons, Leds (TODO: sonar,
         self.robot = Robot(self)
-        # construct team after all the posts are constructed, it keeps a
-        # reference to them.
-        self.team = Team(self)
         # TODO - is computed used? should be renamed for legibility
         self.computed = Computed(self)
         # Self orientation and Location of self and other objects in field.

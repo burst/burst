@@ -238,7 +238,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
         d.addCallback(lambda _: self._startAction(method_attr='walk', args=tuple(), holder=holder, bd=bd)).addErrback(log.err)
         self._add_initiated(time=self._world.time, kind=KIND_WALK, description=description,
             event=EVENT_CHANGE_LOCATION_DONE, # TODO: This isn't actually used - why is it here?
-            duration=duration)
+            duration=duration, completion_bd=bd)
         return bd
 
     def shutdown(self):

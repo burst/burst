@@ -34,7 +34,7 @@ class Localization(object):
         # Location of ball
         self._ball_location = None
         # store bottom and top posts
-        self._bottom, self._top = self._world.team.target_posts.bottom_top
+        self._bottom, self._top = self._world.opposing_goal.bottom_top
         # read verboseness flag at construction time
         self.verbose = burst.options.verbose_localization
 

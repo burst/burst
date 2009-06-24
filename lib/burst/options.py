@@ -3,7 +3,7 @@ Command line and default config file for BURST robocup platform.
 """
 
 import os
-from burst_consts import (ROBOT_IP_TO_NAME, BLUE_TEAM)
+from burst_consts import (ROBOT_IP_TO_NAME, BLUE_TEAM, RED_TEAM)
 import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
@@ -95,6 +95,8 @@ def parse_command_line_arguments():
     ip = host_to_ip(ip)
     port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)
     port = int(port)
+    opts.starting_team_color = {'blue':BLUE_TEAM, 'yellow':RED_TEAM, 'red':RED_TEAM}.get(
+                opts.starting_team_color, opts.starting_team_color)
     # UGLY
     burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
     return opts, ip, port

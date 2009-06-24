@@ -10,8 +10,7 @@ from burst_util import (BurstDeferred, succeedBurstDeferred,
 
 # local imports
 import burst
-from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
-                          EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
+from burst_events import (EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 import burst.actions
 from burst.actions.target_finder import TargetFinder
 import burst.moves as moves

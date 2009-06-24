@@ -154,7 +154,7 @@ class BaseMoveCoordinator(object):
         self.verbose = burst.options.verbose_movecoordinator
         self.debug = burst.options.debug
 
-    def _add_initiated(self, time, kind, description, event, duration):
+    def _add_initiated(self, time, kind, description, event, duration, completion_bd=None):
         initiated = len(self._initiated)
         motion = (self._world.time, kind, description, event, duration)
         self._initiated.append(motion)
@@ -163,6 +163,8 @@ class BaseMoveCoordinator(object):
             motion = Motion(
                 start_time=self._world.time, description=description, estimated_duration=duration)
             self._onWalkInitiated(motion)
+            if completion_bd:
+                completion_bd.onDone(lambda: self._onWalkComplete(motion))
         return initiated, motion
 
     def _add_posted(self, postid, initiated):
@@ -282,10 +284,8 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         duration - expected duration of action
         """
         #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
-        initiated, motion = self._add_initiated(self._world.time, kind, description, event, duration)
         bd = self._make_bd(self)
-        if motion:
-            bd.onDone(lambda: self._onWalkComplete(motion))
+        initiated, motion = self._add_initiated(self._world.time, kind, description, event, duration, completion_bd=bd)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
             self._onPostId(postid, initiated, bd)).addErrback(log.err)
         return bd

@@ -22,18 +22,22 @@ class Approacher(Behavior):
      Missing: any way to say how often we will call target_pos_callback, or
      on what condition. (should be another callback, errback).
     """
-    def __init__(self, actions, target_pos_callback):
+    def __init__(self, actions, target_pos_callback, movement_callback=None):
         """
         Arguments:
          actions - reference to Actions
          target_pos_callback - a callable returning a Deferred, whose result is
           the relative target location as a tuple (x,y,heading) which means:
-         forward x, left y, turn heading (not neccessarily executed like this, but end result
-         the same). (So heading of 0 for no change, negative for right turn, positive for left turn).
+          forward x, left y, turn heading (not neccessarily executed like this, but end result
+          the same). (So heading of 0 for no change, negative for right turn, positive for left turn).
+         movement_callback - a callable returning a BurstDeferred, no which we wait for action
+          complete.
         """
         super(Approacher, self).__init__(actions, 'Approacher')
         assert(callable(target_pos_callback))
         self._target_pos_callback = target_pos_callback
+        self._movement_callback = (movement_callback if movement_callback is not None
+            else self._actions.changeLocationRelative)
 
     def _start(self, firstTime=False):
         self._getTargetPos()
@@ -66,7 +70,7 @@ class Approacher(Behavior):
         self.log("Step: %3.2f, %3.2f, %3.2f" % (x, y, h))
 
         self._actions.setCameraFrameRate(10).onDone(lambda:
-            self._actions.changeLocationRelative(delta_x=x, delta_y=y, delta_theta=h).onDone(self._getTargetPos))
+            self._movement_callback(delta_x=x, delta_y=y, delta_theta=h).onDone(self._getTargetPos))
 
     def _kickerMovementFromRelativeTarget(self, x, y, h):
         """ Temporary - this is the kicker strategy, here as a reference. We'll start

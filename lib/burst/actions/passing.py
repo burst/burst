@@ -3,7 +3,7 @@ from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
 
 # local imports
 import burst
-from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
+from burst_events import EVENT_BALL_IN_FRAME
 import burst.actions
 import burst.moves as moves
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT,
@@ -64,9 +64,6 @@ class passBall(BurstDeferred):
         self.doNextAction()
 
     def onKickDone(self):
-#        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN,
-#                        EVENT_CHANGE_LOCATION_DONE]:
-#            self._eventmanager.unregister(event)
         self.callOnDone()
 
     def searchBallAndGoal(self):
