@@ -24,9 +24,8 @@ from burst_consts import NAOQI_1_3_8, NAOQI_VERSION
 import burst_consts
 
 ################################################################################
-logger = logging.getLogger('burst.eventmanager')
+logger = logging.getLogger('eventmanager')
 info = logger.info
-
 ################################################################################
 
 # Event handling utilities and decorators

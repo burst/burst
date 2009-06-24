@@ -23,7 +23,7 @@ import burst.field as field
 
 ################################################################################
 
-logger = logging.getLogger('burst.world.objects')
+logger = logging.getLogger('objects')
 info = logger.info
 
 ################################################################################

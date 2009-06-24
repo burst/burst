@@ -32,7 +32,7 @@ class Approacher(Behavior):
          the same). (So heading of 0 for no change, negative for right turn, positive for left turn).
         """
         super(Approacher, self).__init__(actions, 'Approacher')
-
+        assert(callable(target_pos_callback))
         self._target_pos_callback = target_pos_callback
 
     def _start(self, firstTime=False):

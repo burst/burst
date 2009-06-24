@@ -43,11 +43,13 @@ class Odometry(object):
         if len(self._walks_initiated) == 0:
             print "Odometry: no movement recorded"
             return
-        print "Odometry Summary:"
-        print "================="
+        s = "Odometry Summary: (end time = %4.1f)" % (self._world.time)
+        print s+"\n"+"="*len(s)
         for motion in self._walks_initiated:
             start, end, description, estimated_duration = (
                 motion.start_time, motion.end_time, motion.description, motion.estimated_duration)
+            if end is None:
+                end = self._world.time
             duration = end - start
             # TODO - real duration, from the end event, or using a deferred (onDone for odometry)
             print "%3.1f..%3.1f (%2.1f/est %2.1f): %s" % (start, end, duration, estimated_duration, description)

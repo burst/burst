@@ -12,6 +12,8 @@ which is created from the main_behavior_class (or factory) given.
 
 '''
 
+import logging
+
 from twisted.python import log
 
 from burst_events import *
@@ -27,7 +29,12 @@ from burst_consts import (InitialRobotState,
     UNKNOWN_GAME_STATE, gameStateToString,
     team_to_defending_goal_color)
 
-from burst.actions.approacher import Approacher
+from burst.actions.approacher import ApproachXYHActiveLocalization
+
+################################################################################
+logger = logging.getLogger("player")
+info = logger.info
+################################################################################
 
 def overrideme(f):
     return f
@@ -214,8 +221,9 @@ class Player(object):
         gameStatus = self._world.gameStatus
         weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
         jersey = self._world.robot.jersey
-        ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
-        self._approacher = Approacher(self._actions, ready_location)
+        x, y = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey][burst_consts.INITIAL_POSITION] # XXX - no idea what that last dict is good for, contains one item right now.
+        info("onReady: #%d going to %2.1f, %2.1f" % (jersey, x, y))
+        self._approacher = ApproachXYHActiveLocalization(self._actions, x, y, 0.0) # heading towards opposing goal
         self._approacher.start()
         self._approacher.onDone(self._onReadyDone)
         return self._approacher
