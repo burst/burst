@@ -16,6 +16,8 @@ WAITING = 6
 debug = True
 isWebots = False
 realLeap = False
+debugLeapRight = False
+debugLeapLeft = False
 
 '''
 0. Make sure the current goalie and goalieTester work as expected.
@@ -69,16 +71,16 @@ class Goalie(InitialBehavior):
 
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
-        self.targetFinder.stop()
+        #self.targetFinder.stop()
         print self._world.ball.dy
         if self._world.ball.dy < 0:
-            if realLeap:
+            if realLeap or debugLeapRight:
                 self._actions.executeLeapRight().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
         else:
-            if realLeap:
+            if realLeap or debugLeapLeft:
                 self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")
@@ -90,13 +92,13 @@ class Goalie(InitialBehavior):
         if isWebots:
             self._eventmanager.unregister(self.returnHead)
         #print self._world.ball.body_isect
-        if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH):
+        if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapRight:
             if realLeap:
                 self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
-        elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH):
+        elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapLeft:
             if realLeap:
                 self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
             else:
