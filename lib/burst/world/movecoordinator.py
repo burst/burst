@@ -188,6 +188,9 @@ class BaseMoveCoordinator(object):
     def isHeadMotionInProgress(self):
         return False
 
+    def isWalkInProgress(self):
+        return False
+
     def shutdown(self):
         """ called by world on quit """
         pass
@@ -272,6 +275,9 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
 
     def isHeadMotionInProgress(self):
         return self._head_posts.isNotEmpty()
+
+    def isWalkInProgress(self):
+        return self._walk_posts.isNotEmpty()
 
     def _waitOnPostid(self, d, description, kind, event, duration):
         """ Wait on a postid given a Deferred. Records

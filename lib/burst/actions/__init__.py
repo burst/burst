@@ -685,6 +685,9 @@ class Actions(object):
     def isHeadMotionInProgress(self):
         return self._movecoordinator.isHeadMotionInProgress()
 
+    def isWalkInProgress(self):
+        return self._movecoordinator.isWalkInProgress()
+
     #================================================================================
     #  Utilities and things that shouldn't be here
     #================================================================================
