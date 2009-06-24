@@ -21,23 +21,23 @@ class Computed(object):
         """
         # Blue goal:
         if burst_events.EVENT_BGLP_IN_FRAME in events and burst_events.EVENT_BGRP_IN_FRAME in events:
-            events.add(burst_events.EVENT_ALL_BLUE_GOAL_IN_FRAME)
+            events.add(burst_events.EVENT_ALL_OUR_GOAL_IN_FRAME)
             if not self._blueGoalSeen:
-                events.add(burst_events.EVENT_ALL_BLUE_GOAL_SEEN)
+                events.add(burst_events.EVENT_ALL_OUR_GOAL_SEEN)
                 self._blueGoalSeen = True
         else:
             if self._blueGoalSeen:
-                events.add(burst_events.EVENT_ALL_BLUE_GOAL_LOST)
+                events.add(burst_events.EVENT_ALL_OUR_GOAL_LOST)
                 self._blueGoalSeen = False
         # Yellow goal:
         if burst_events.EVENT_YGLP_IN_FRAME in events and burst_events.EVENT_YGRP_IN_FRAME in events:
-            events.add(burst_events.EVENT_ALL_YELLOW_GOAL_IN_FRAME)
+            events.add(burst_events.EVENT_ALL_OPPOSING_GOAL_IN_FRAME)
             if not self._yellowGoalSeen:
-                events.add(burst_events.EVENT_ALL_YELLOW_GOAL_SEEN)
+                events.add(burst_events.EVENT_ALL_OPPOSING_GOAL_SEEN)
                 self._yellowGoalSeen = True
         else:
             if self._yellowGoalSeen:
-                events.add(burst_events.EVENT_ALL_YELLOW_GOAL_LOST)
+                events.add(burst_events.EVENT_ALL_OPPOSING_GOAL_LOST)
                 self._yellowGoalSeen = False
 
     def calc_kicking_point(self, events, deferreds):

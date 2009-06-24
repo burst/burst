@@ -107,12 +107,12 @@ class Localization(object):
                 events.add(EVENT_WORLD_LOCATION_UPDATED)
 
         #seeing blue goal - yellow is unseen
-        if self._world.bglp.seen and self._world.bgrp.seen:
-            self.calc_goal_coord(self._world.bglp,self._world.bgrp, self._world.yglp, self._world.ygrp)
+        if self._world.our_lp.seen and self._world.our_rp.seen:
+            self.calc_goal_coord(self._world.our_lp,self._world.our_rp, self._world.opposing_lp, self._world.opposing_rp)
 
         #seeing yellow goal - blue is unseen
-        if self._world.yglp.seen and self._world.ygrp.seen:
-            self.calc_goal_coord(self._world.yglp,self._world.ygrp, self._world.bglp, self._world.bgrp)
+        if self._world.opposing_lp.seen and self._world.opposing_rp.seen:
+            self.calc_goal_coord(self._world.opposing_lp,self._world.opposing_rp, self._world.our_lp, self._world.our_rp)
 
     def updatePoseAndCalcDistance(self, obj):
         body_angles = self._world.getBodyAngles()

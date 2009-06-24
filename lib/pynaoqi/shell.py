@@ -187,15 +187,21 @@ class PlayerRunner(object):
         self.fullname = fullname
         self._players = players
         self._player = None
+        self._main = None
 
     def make(self):
         global user_ns
         self.loop = makeplayerloop(self.fullname)
         self._players.last = self.loop
         if hasattr(self.loop, '_player'): # why? network problems?
-            self._players.player = self.loop._player
-            user_ns['player'] = self.loop._player
-            user_ns['main'] = self.loop._player._main_behavior
+            user_ns['player'] = self._player = self.loop._player
+            user_ns['main'] = self._main = self.loop._player._main_behavior
+    
+    def switch_color(self):
+        # TODO - simulate chest button (change the AL_MEMORY var?)
+        if not self._player: return
+        self._main._world.playerSettings.toggleteamColor()
+        print str(self._main._world.playerSettings)
 
     def start(self):
         self.make()
@@ -409,6 +415,7 @@ def make_shell_namespace(use_pylab):
         moves = moves,
         field = field,
         consts = consts,
+        burst_consts = consts,
         vision_definitions = vision_definitions,
         image = image,
         # utilities

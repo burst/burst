@@ -3,7 +3,7 @@ from burst_util import (BurstDeferred, calculate_middle, calculate_relative_pos,
 
 # local imports
 import burst
-from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
+from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE)
 import burst.actions
 import burst.moves as moves
 from burst.behavior_params import (KICK_X_OPT, KICK_Y_OPT,
@@ -67,7 +67,7 @@ class passBall(BurstDeferred):
         #self._actions.executeMove(moves.STABLE_WALK_INITIAL_POSE).onDone(self.doNextAction)
 
     def onKickDone(self):
-#        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN,
+#        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN,
 #                        EVENT_CHANGE_LOCATION_DONE]:
 #            self._eventmanager.unregister(event)
         self.callOnDone()
@@ -75,7 +75,7 @@ class passBall(BurstDeferred):
     def searchBallAndGoal(self):
         self._actions.tracker.stop()
         # TODO - self._world.opponent_goal
-        self._actions.search([self._world.ball, self._world.yglp, self._world.ygrp]).onDone(self.onSearchOver)
+        self._actions.search([self._world.ball, self._world.opposing_lp, self._world.opposing_rp]).onDone(self.onSearchOver)
 
     def onSearchOver(self):
         # searched for ball and goal, goal is available - calculate middle point for kick point calculation.

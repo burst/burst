@@ -3,7 +3,7 @@ Command line and default config file for BURST robocup platform.
 """
 
 import os
-from burst_consts import ROBOT_IP_TO_NAME
+from burst_consts import (ROBOT_IP_TO_NAME, BLUE_TEAM)
 import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
@@ -41,6 +41,9 @@ def parse_command_line_arguments():
     main.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
     main.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
     main.add_option('', '--jersey', dest='jersey', help='override default per-host-name jersey number in burst_consts')
+    main.add_option('', '--color', dest='starting_team_color', default=BLUE_TEAM,
+            help='override default start team color - for testing. in game the chest button will be used')
+    main.add_option('', '--opposing', dest='opposing', default='yellow', help='override default opposing goal color')
     main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change')
     main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')

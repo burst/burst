@@ -18,8 +18,8 @@ class Kicker(InitialBehavior):
         return self._ballkicker.stop()
 
     def kick(self):
-        target_left_right_posts = [self._world.yglp, self._world.ygrp]
-#        target_left_right_posts = [self._world.bglp, self._world.bgrp]
+        target_left_right_posts = [self._world.opposing_lp, self._world.opposing_rp]
+#        target_left_right_posts = [self._world.our_lp, self._world.our_rp]
         return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):

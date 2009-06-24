@@ -10,7 +10,7 @@ from burst_util import (BurstDeferred, succeedBurstDeferred,
 
 # local imports
 import burst
-from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_YELLOW_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
+from burst_events import (EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN, EVENT_CHANGE_LOCATION_DONE,
                           EVENT_OBSTACLE_SEEN, EVENT_OBSTACLE_LOST, EVENT_OBSTACLE_IN_FRAME)
 import burst.actions
 from burst.actions.target_finder import TargetFinder
@@ -279,10 +279,10 @@ class BallKicker(Behavior):
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
 
             # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
-            if self.goalpost_to_track in (self._world.yglp, self._world.bglp):
+            if self.goalpost_to_track in (self._world.opposing_lp, self._world.our_lp):
                 self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR
                 self.alignRightLimit = 0
-            elif self.goalpost_to_track in (self._world.ygrp, self._world.bgrp):
+            elif self.goalpost_to_track in (self._world.opposing_rp, self._world.our_rp):
                 self.alignLeftLimit = 0
                 self.alignRightLimit = DEFAULT_NORMALIZED_CENTERING_Y_ERROR
 

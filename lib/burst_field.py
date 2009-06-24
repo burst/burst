@@ -7,6 +7,12 @@ other files in nao-man repository:
 http://github.com/northern-bites
 """
 
+# Some constants that are not related to the field itself, but
+# used later - to be read by burst_consts too
+
+OUR_TEAM, OPPOSING_TEAM = 'our', 'opposing'
+
+
 # IMPORTANT NOTE: This file is imported by burst_consts. So it cannot
 # rely on /anything/ (except non burst imports of course, but try to avoid
 # those too)
@@ -80,19 +86,19 @@ MIDFIELD_Y = 0.0
 PENALTEY_GOAL_DIST = 180.0
 
 OUR_PENALTEY_X, OUR_PENALTEY_Y = PENALTEY_GOAL_DIST, 0.0
-TARGET_PENALTEY_X, TARGET_PENALTEY_Y = FIELD_WIDTH - PENALTEY_GOAL_DIST, 0.0
+OPPOSING_PENALTEY_X, OPPOSING_PENALTEY_Y = FIELD_WIDTH - PENALTEY_GOAL_DIST, 0.0
 
 MIDFIELD_POINT = MIDFIELD_X, MIDFIELD_Y
 OUR_PENALTEY_POINT = OUR_PENALTEY_X, OUR_PENALTEY_Y
-TARGET_PENALTEY_POINT = TARGET_PENALTEY_X, TARGET_PENALTEY_Y
+OPPOSING_PENALTEY_POINT = OPPOSING_PENALTEY_X, OPPOSING_PENALTEY_Y
 
 OUR_GOAL_BOTTOM_POST_X, OUR_GOAL_BOTTOM_POST_Y = (
     0.0, -(CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS) )
 OUR_GOAL_TOP_POST_X, OUR_GOAL_TOP_POST_Y = (
     0.0, CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS)
-TARGET_GOAL_BOTTOM_POST_X, TARGET_GOAL_BOTTOM_POST_Y = (
+OPPOSING_GOAL_BOTTOM_POST_X, OPPOSING_GOAL_BOTTOM_POST_Y = (
     FIELD_WIDTH, -(CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS) )
-TARGET_GOAL_TOP_POST_X, TARGET_GOAL_TOP_POST_Y = (
+OPPOSING_GOAL_TOP_POST_X, OPPOSING_GOAL_TOP_POST_Y = (
     FIELD_WIDTH, CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS)
 
 FIELD_GREEN_LEFT_SIDELINE_X = -GREEN_PAD_X
@@ -167,19 +173,19 @@ landmarks = [Landmark(*lm) for lm in
     [(OUR_GOAL_BOTTOM_POST_X,
      OUR_GOAL_BOTTOM_POST_Y,
      GOAL_POST_RADIUS,
-     'blue'),
+     OUR_TEAM),
     (OUR_GOAL_TOP_POST_X,
      OUR_GOAL_TOP_POST_Y,
      GOAL_POST_RADIUS,
-     'blue'),
-    (TARGET_GOAL_BOTTOM_POST_X,
-     TARGET_GOAL_BOTTOM_POST_Y,
+     OUR_TEAM),
+    (OPPOSING_GOAL_BOTTOM_POST_X,
+     OPPOSING_GOAL_BOTTOM_POST_Y,
      GOAL_POST_RADIUS,
-     'yellow'),
-    (TARGET_GOAL_TOP_POST_X,
-     TARGET_GOAL_TOP_POST_Y,
+     OPPOSING_TEAM),
+    (OPPOSING_GOAL_TOP_POST_X,
+     OPPOSING_GOAL_TOP_POST_Y,
      GOAL_POST_RADIUS,
-     'yellow'),
+     OPPOSING_TEAM),
     (MIDFIELD_X,
      MIDFIELD_Y,
      2.0,
@@ -188,14 +194,14 @@ landmarks = [Landmark(*lm) for lm in
      OUR_PENALTEY_Y,
      2.0,
      'red'),
-    (TARGET_PENALTEY_X,
-     TARGET_PENALTEY_Y,
+    (OPPOSING_PENALTEY_X,
+     OPPOSING_PENALTEY_Y,
      2.0,
      'red'),
      ]]
 
-blue_goal = Goal(landmarks[0], landmarks[1])
-yellow_goal   = Goal(landmarks[2], landmarks[3])
+our_goal      = Goal(landmarks[0], landmarks[1])
+opposing_goal = Goal(landmarks[2], landmarks[3])
 
 white_field = (
     ((FIELD_WHITE_LEFT_SIDELINE_X,

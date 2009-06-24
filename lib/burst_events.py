@@ -57,12 +57,20 @@ EVENT_BGLP_IN_FRAME = counter; counter+=1
 EVENT_BGRP_IN_FRAME = counter; counter+=1
 EVENT_YGLP_IN_FRAME = counter; counter+=1
 EVENT_YGRP_IN_FRAME = counter; counter+=1
-EVENT_ALL_BLUE_GOAL_SEEN = counter; counter+=1
-EVENT_ALL_YELLOW_GOAL_SEEN = counter; counter+=1
-EVENT_ALL_BLUE_GOAL_LOST = counter; counter+=1
-EVENT_ALL_YELLOW_GOAL_LOST = counter; counter+=1
-EVENT_ALL_BLUE_GOAL_IN_FRAME = counter; counter+=1
-EVENT_ALL_YELLOW_GOAL_IN_FRAME = counter; counter+=1
+EVENT_OUR_LP_POSITION_CHANGED = counter; counter+=1
+EVENT_OUR_RP_POSITION_CHANGED = counter; counter+=1
+EVENT_OPPOSING_LP_POSITION_CHANGED = counter; counter+=1
+EVENT_OPPOSING_RP_POSITION_CHANGED = counter; counter+=1
+EVENT_OUR_LP_IN_FRAME = counter; counter+=1
+EVENT_OUR_RP_IN_FRAME = counter; counter+=1
+EVENT_OPPOSING_LP_IN_FRAME = counter; counter+=1
+EVENT_OPPOSING_RP_IN_FRAME = counter; counter+=1
+EVENT_ALL_OUR_GOAL_SEEN = counter; counter+=1
+EVENT_ALL_OPPOSING_GOAL_SEEN = counter; counter+=1
+EVENT_ALL_OUR_GOAL_LOST = counter; counter+=1
+EVENT_ALL_OPPOSING_GOAL_LOST = counter; counter+=1
+EVENT_ALL_OUR_GOAL_IN_FRAME = counter; counter+=1
+EVENT_ALL_OPPOSING_GOAL_IN_FRAME = counter; counter+=1
 
 # GameController Events:
 # Goals:
@@ -115,5 +123,5 @@ LAST_EVENT_NUM = counter
 the_items = [(event, name) for name, event in globals().items() if name == name.upper() and isinstance(event, int)]
 event_name_d = dict(the_items)
 def event_name(event):
-    return event_name_d[event]
+    return event_name_d.get(event, 'no such event %s' % event)
 

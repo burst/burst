@@ -199,20 +199,6 @@ class GameStatus(object):
         self.world.robot.leds.chestButtonLED.turnOn(constants.robotStateToChestButtonColor[self.myRobotState()])
 
 
-
-class EmptyGameStatus(object):
-    '''
-    An empty GameStatus object.
-    '''
-    def __init__(*args, **kw): pass
-    def reset(*args, **kw): pass
-    def readMessage(*args, **kw): pass
-    def calc_events(*args, **kw): pass
-    def getScore(*args, **kw): return 0
-    def getMyPlayerStatus(*args, **kw): return Standard
-
-
-
 if __name__ == '__main__':
     welcome = "Testing the gamestatus module."
     print len(welcome)*"*" + "\n" + welcome + "\n" + len(welcome)*"*"

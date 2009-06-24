@@ -18,7 +18,7 @@ import burst.actions
 from burst.player import Player
 
 from burst_events import (FIRST_EVENT_NUM, LAST_EVENT_NUM,
-    EVENT_STEP, EVENT_TIME_EVENT, event_name)
+    EVENT_STEP, EVENT_TIME_EVENT, EVENT_WORLD_LOCATION_UPDATED, event_name)
 from burst_consts import NAOQI_1_3_8, NAOQI_VERSION
 
 import burst_consts
@@ -475,22 +475,22 @@ class BasicMainLoop(object):
 
     def _printTraceTicker(self):
         """ debugging helper. prints a one line (up to overflow) state. """
-        world_location_updated = (EVENT_WORLD_LOCATION_UPDATED in self._pending_events and 'p' or ' ')
+        world_location_updated = (EVENT_WORLD_LOCATION_UPDATED in self._eventmanager._pending_events and 'p' or ' ')
         ball = self._world.ball.seen and 'B' or ' '
-        yglp = self._world.yglp.seen and 'L' or ' '
-        ygrp = self._world.ygrp.seen and 'R' or ' '
-        unknown_yellow = self._world.yellow_goal.unknown.seen and 'U' or ' '
-        bglp = self._world.bglp.seen and 'l' or ' '
-        bgrp = self._world.bgrp.seen and 'r' or ' '
-        unknown_blue = self._world.blue_goal.unknown.seen and 'u' or ' '
+        opposing_lp = self._world.opposing_lp.seen and 'L' or ' '
+        opposing_rp = self._world.opposing_rp.seen and 'R' or ' '
+        unknown_opposing = self._world.opposing_goal.unknown.seen and 'U' or ' '
+        our_lp = self._world.our_lp.seen and 'l' or ' '
+        our_rp = self._world.our_rp.seen and 'r' or ' '
+        unknown_our = self._world.our_goal.unknown.seen and 'u' or ' '
         targets = self._actions.searcher.targets
         def getjoints(obj):
             if obj not in targets: return False
             r = obj.centered_self
             if not r.sighted: return '             '
             return ('%0.2f %0.2f %s' % (r.head_yaw, r.head_pitch, r.sighted_centered and 'T' or 'F')).rjust(11)
-        left_joints = getjoints(self._world.yglp) or getjoints(self._world.bglp) or '-------------'
-        right_joints = getjoints(self._world.ygrp) or getjoints(self._world.bgrp) or '-------------'
+        left_joints = getjoints(self._world.opposing_lp) or getjoints(self._world.our_lp) or '-------------'
+        right_joints = getjoints(self._world.opposing_rp) or getjoints(self._world.our_rp) or '-------------'
         ball_joints = getjoints(self._world.ball)
         num_out = self._getNumberOutgoingMessages()
         num_in = self._getNumberIncomingMessages()
@@ -500,8 +500,8 @@ class BasicMainLoop(object):
         print ("%4.1f %s%s%s%s%s%s%s%s-%02d|%02d|%02d|%s|%s|%s|%3d|%3d|%s D %s E %s S %s L|%s" % (
             self.cur_time - self.main_start_time,
             world_location_updated, ball,
-            yglp, ygrp, unknown_yellow,
-            bglp, bgrp, unknown_blue,
+            opposing_lp, opposing_rp, unknown_opposing,
+            our_lp, our_rp, unknown_our,
             len(self._eventmanager._call_later),
             len(self._world._movecoordinator._initiated),
             len(self._world._movecoordinator._posted),

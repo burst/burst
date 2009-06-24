@@ -18,7 +18,7 @@ class Localizer(Behavior):
 
         self.log("Starting")
 
-        targets = [self._world.yglp, self._world.ygrp]
+        targets = [self._world.opposing_lp, self._world.opposing_rp]
 
         robot = self._world.robot
         (world_x, world_y, world_heading, world_update_time) = (

@@ -34,23 +34,24 @@ class Robot(Movable):
         self.world_heading = 0.0 # heading towards opponent goal
         self.world_update_time = -200.0 # in 200 seconds we can be in 20m radius - enough to say "I don't know shit"
 
-    def get_state(self):
+    @property
+    def state(self):
         """ return the RobotState - one of gamecontroller.constants.{Initial,Ready,Set,Penalized,Play}RobotState
         """
         # TODO - the interface is fine, the implementation is very cumbersome
         return self._world.gameStatus.myRobotState()
 
-    state = property(get_state)
-
-    def get_status(self):
+    @property
+    def status(self):
         return self._world.gameStatus.getMyPlayerStatus()
 
-    status = property(get_status)
-
-    def get_jersey(self):
+    @property
+    def jersey(self):
         return self._world.gameStatus.mySettings.playerNumber
 
-    jersey = property(get_jersey)
+    @property
+    def team_color(self):
+        return self._world.gameStatus.mySettings.teamColor
 
     def calc_events(self, events, deferreds):
         self.bumpers.calc_events(events, deferreds)

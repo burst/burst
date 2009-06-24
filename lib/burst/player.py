@@ -24,7 +24,8 @@ from burst_consts import (InitialRobotState,
     ReadyRobotState,
     InitialGameState, ReadyGameState, FinishGameState,
     SetGameState, PlayGameState, FinishGameState,
-    UNKNOWN_GAME_STATE, gameStateToString)
+    UNKNOWN_GAME_STATE, gameStateToString,
+    team_to_defending_goal_color)
 
 from burst.actions.approacher import Approacher
 
@@ -59,10 +60,10 @@ class Player(object):
         self._seeingAllBlueGoal = False
         self._seeingAllYellowGoal = False
         self._announceSeeingNoGoal()
-        self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_YELLOW_GOAL_SEEN)
-        self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
-        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
-        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
+        self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_OPPOSING_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_OUR_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_OPPOSING_GOAL_LOST)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_OUR_GOAL_LOST)
         self._main_behavior = main_behavior_class(actions) # doesn't start here
 
     def registerFallHandling(self):
@@ -172,6 +173,7 @@ class Player(object):
             self._onChestButtonPressed]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
+        self._world.configure(our_color=team_to_defending_goal_color(self._world.robot.team_color))
         # register for future changes
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
 
