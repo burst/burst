@@ -1,4 +1,5 @@
 import burst_consts as consts
+import burst
 from world.robot import LEDs
 
 class PlayerSettings(object):
@@ -8,7 +9,7 @@ class PlayerSettings(object):
 
     def __init__(self, world, teamColor=0, teamNumber=consts.BURST_TEAM_NUMBER):
         self.world = world
-        self.playerNumber = consts.ROBOT_NAME_TO_JERSEY_NUMBER[world.robot.hostname]
+        self.playerNumber = burst.options.jersey
         self.teamColor = teamColor
         self.teamNumber = teamNumber
         self.setColors()

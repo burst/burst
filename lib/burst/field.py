@@ -7,6 +7,10 @@ other files in nao-man repository:
 http://github.com/northern-bites
 """
 
+# IMPORTANT NOTE: This file is imported by burst_consts. So it cannot
+# rely on /anything/ (except non burst imports of course, but try to avoid
+# those too)
+
 # LENGTH constants - don't care what the coordinate system
 # is, there are constant.
 
@@ -25,6 +29,8 @@ FIELD_GREEN_WIDTH = FIELD_WHITE_WIDTH + 2.0 * GREEN_PAD_Y
 FIELD_GREEN_HEIGHT = FIELD_WHITE_HEIGHT + 2.0 * GREEN_PAD_X
 FIELD_WIDTH = FIELD_WHITE_WIDTH   #  XXX: Northern use GREEN
 FIELD_HEIGHT = FIELD_WHITE_HEIGHT #        -"-
+
+CENTER_CIRCLE_RADIUS = 62.5 # Not scaled
 
 # LANDMARK CONSTANTS
 
@@ -64,17 +70,29 @@ B is the Blue goal.
 "|-;" are line chars for the white borders or for the green 'edge'
 """
 
+# TODO - not correct positions because of line widths maybe, and
+# reading the diagram about distances from midline or line end. - double check. (not critical)
+
 # Center of field, where ball is placed on kick-off.
 MIDFIELD_X = FIELD_WIDTH * .5
 MIDFIELD_Y = 0.0
 
-BLUE_GOAL_BOTTOM_POST_X, BLUE_GOAL_BOTTOM_POST_Y = (
+PENALTEY_GOAL_DIST = 180.0
+
+OUR_PENALTEY_X, OUR_PENALTEY_Y = PENALTEY_GOAL_DIST, 0.0
+TARGET_PENALTEY_X, TARGET_PENALTEY_Y = FIELD_WIDTH - PENALTEY_GOAL_DIST, 0.0
+
+MIDFIELD_POINT = MIDFIELD_X, MIDFIELD_Y
+OUR_PENALTEY_POINT = OUR_PENALTEY_X, OUR_PENALTEY_Y
+TARGET_PENALTEY_POINT = TARGET_PENALTEY_X, TARGET_PENALTEY_Y
+
+OUR_GOAL_BOTTOM_POST_X, OUR_GOAL_BOTTOM_POST_Y = (
     0.0, -(CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS) )
-BLUE_GOAL_TOP_POST_X, BLUE_GOAL_TOP_POST_Y = (
+OUR_GOAL_TOP_POST_X, OUR_GOAL_TOP_POST_Y = (
     0.0, CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS)
-YELLOW_GOAL_BOTTOM_POST_X, YELLOW_GOAL_BOTTOM_POST_Y = (
+TARGET_GOAL_BOTTOM_POST_X, TARGET_GOAL_BOTTOM_POST_Y = (
     FIELD_WIDTH, -(CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS) )
-YELLOW_GOAL_TOP_POST_X, YELLOW_GOAL_TOP_POST_Y = (
+TARGET_GOAL_TOP_POST_X, TARGET_GOAL_TOP_POST_Y = (
     FIELD_WIDTH, CROSSBAR_CM_WIDTH/2.0 + GOAL_POST_RADIUS)
 
 FIELD_GREEN_LEFT_SIDELINE_X = -GREEN_PAD_X
@@ -128,8 +146,6 @@ def NB():
 
     return locals()
 
-CENTER_CIRCLE_RADIUS = 62.5 # Not scaled
-
 class Landmark(object):
     def __init__(self, x, y, radius, color):
         self.xy = (x, y)
@@ -148,26 +164,35 @@ class Goal(object):
         self.bottom_post = bottom_post
 
 landmarks = [Landmark(*lm) for lm in
-    [(BLUE_GOAL_BOTTOM_POST_X,
-     BLUE_GOAL_BOTTOM_POST_Y,
+    [(OUR_GOAL_BOTTOM_POST_X,
+     OUR_GOAL_BOTTOM_POST_Y,
      GOAL_POST_RADIUS,
      'blue'),
-    (BLUE_GOAL_TOP_POST_X,
-     BLUE_GOAL_TOP_POST_Y,
+    (OUR_GOAL_TOP_POST_X,
+     OUR_GOAL_TOP_POST_Y,
      GOAL_POST_RADIUS,
      'blue'),
-    (YELLOW_GOAL_BOTTOM_POST_X,
-     YELLOW_GOAL_BOTTOM_POST_Y,
+    (TARGET_GOAL_BOTTOM_POST_X,
+     TARGET_GOAL_BOTTOM_POST_Y,
      GOAL_POST_RADIUS,
      'yellow'),
-    (YELLOW_GOAL_TOP_POST_X,
-     YELLOW_GOAL_TOP_POST_Y,
+    (TARGET_GOAL_TOP_POST_X,
+     TARGET_GOAL_TOP_POST_Y,
      GOAL_POST_RADIUS,
      'yellow'),
     (MIDFIELD_X,
      MIDFIELD_Y,
      2.0,
-     'red'),]]
+     'red'),
+    (OUR_PENALTEY_X,
+     OUR_PENALTEY_Y,
+     2.0,
+     'red'),
+    (TARGET_PENALTEY_X,
+     TARGET_PENALTEY_Y,
+     2.0,
+     'red'),
+     ]]
 
 blue_goal = Goal(landmarks[0], landmarks[1])
 yellow_goal   = Goal(landmarks[2], landmarks[3])

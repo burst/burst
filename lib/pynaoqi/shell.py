@@ -183,14 +183,14 @@ def get_list_of_tests():
 
 class PlayerRunner(object):
 
-    def __init__(self, players, name):
-        self.name = name
+    def __init__(self, players, fullname):
+        self.fullname = fullname
         self._players = players
         self._player = None
 
     def make(self):
         global user_ns
-        self.loop = makeplayerloop(self.name)
+        self.loop = makeplayerloop(self.fullname)
         self._players.last = self.loop
         if hasattr(self.loop, '_player'): # why? network problems?
             self._players.player = self.loop._player
@@ -210,19 +210,22 @@ class Players(object):
     def __init__(self, thelist):
         self.players_list = thelist
         for player in self.players_list:
-            self.__dict__[player] = PlayerRunner(self, player)
+            self.__dict__[player.rsplit('.',1)[-1]] = PlayerRunner(self, player)
 
-players = Players(get_list_of_players())
-tests = Players(get_list_of_tests())
+# Keep lists of players and tests for easy running.
+import players as players_mod
+players = Players('players.%s' % x for x in get_submodules(players_mod))
+import players.tests as tests_mod
+tests = Players('players.tests.%s' % x for x in get_submodules(tests_mod))
 
 def makeplayerloop(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
     """
     import burst.behavior
+    base, last = name.rsplit('.', 1)
     try:
-        mod = __import__('players.%s' % name)
-        playermod = getattr(mod, name)
+        playermod = __import__(name, fromlist=[''])
     except SyntaxError, e:
         raise # Ipython catches, clear win.
     except ImportError:
