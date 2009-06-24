@@ -21,6 +21,10 @@ VOVA_OFFSET = 50.0
 
 #######################################################################################################################
 
+#TODO: Align according to opposite goal.
+
+#######################################################################################################################
+
 def log(string):
     if debug:
         print string
@@ -28,7 +32,7 @@ def log(string):
 
 def debugged(f):
     def wrapper(*args, **kw):
-        print f.__name__#, args, kw
+        print f.__name__, args, kw
         return f(*args, **kw)
     return wrapper
 
@@ -43,35 +47,47 @@ class Goalie(InitialBehavior):
     # TODO: Once you've leaped and got up, this takes place:
 #    @debugged
     def _start(self, firstTime=False):
+        print "_start"
         # On having gotten up, turn to the other side until you've found goal.
         # TODO: We might want to prop the head a little higher.
-        self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.closedLoopFindOppositeOwnPost)
- #   @debugged
+#        self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.closedLoopFindOppositeOwnPost)
+        self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
 
-    def closedLoopFindOppositeOwnPost(self):
-        print self._world.our_goal.unknown.seen, self._world.our_lp.seen, self._world.our_rp.seen
-        # Decide which goal post you're looking for:
+#    @debugged
+    def findOppositeOwnPost(self):
+        print "findOppositeOwnPost"
+        self._eventmanager.register(self.vova, EVENT_STEP)
+        self._actions.turn(-self.sideLeaptTo*2*pi)
+
+#    @debugged
+    def vova(self):
         lookedForGoalPost = self._world.our_goal.unknown
         if self._world.our_lp.seen: lookedForGoalPost = self._world.our_lp
         if self._world.our_rp.seen: lookedForGoalPost = self._world.our_rp
-        # If you see that goal post, AND it's close enough to be directly perpendicular to you, :
-#        print lookedForGoalPost.seen, lookedForGoalPost.centerX, self.sideLeaptTo*burst_consts.IMAGE_CENTER_X
-        print lookedForGoalPost.seen, lookedForGoalPost.bearing, -self.sideLeaptTo*pi/2
-        # TODO: I shouldn't use the bearing, as it's more susceptible to noise and miscalculation. Use cetnerX instead.
         pastCenter = lookedForGoalPost.bearing < pi/2 if self.sideLeaptTo == right else lookedForGoalPost.bearing > -pi/2
         if lookedForGoalPost.seen and pastCenter:
-            self.onFocusedOnOppositeOwnPost(lookedForGoalPost)
-        else:
-            self._actions.turn(-STEP_SIZE*self.sideLeaptTo).onDone(self.closedLoopFindOppositeOwnPost)
+            print "vova (triggered)"
+            self._eventmanager.unregister(self.vova, EVENT_STEP)
+            self._actions.clearFootsteps().onDone(lambda e, lookedForGoalPost=lookedForGoalPost: self.onFocusedOnOppositeOwnPost(lookedForGoalPost))
 
-  #  @debugged
+#    @debugged
     def onFocusedOnOppositeOwnPost(self, goalpost):
+        print "onFocusedOnOppositeOwnPost"
         print "DISTANCE:", goalpost.dist
-        self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
-            self.onVova)
+        '''
+        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+            lambda: self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(
+            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
+            self.onVova)))
+        '''
+        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+            lambda: self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(
+            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
+            self.onVova)))
 
+#    @debugged
     def onVova(self):
-        print "VOVA"
+        print "onVova"
         self._eventmanager.quit()
 
 #######################################################################################################################
