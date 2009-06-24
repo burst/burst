@@ -6,7 +6,7 @@ from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
-from alignment_after_leap import left, right
+from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
@@ -16,7 +16,7 @@ WAITING = 6
 
 debug = True
 isWebots = False
-realLeap = False
+realLeap = True
 debugLeapRight = False
 debugLeapLeft = False
 
@@ -27,7 +27,6 @@ class Goalie(InitialBehavior):
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
-        self._alignmentAfterLeapBehavior = AlignmentAfterLeap()
 
     def _start(self, firstTime=False):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
@@ -125,14 +124,14 @@ class Goalie(InitialBehavior):
     def getUpBelly(self, side):
         self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
 
-    def onLeapComplete(self):
+    def onLeapComplete(self, side):
         if realLeap:
-            self._alignmentAfterLeapBehavior.start().onDone(self.whichBehavior)
+            AlignmentAfterLeap(self._actions, side).start().onDone(self.whichBehavior)
         else:
             self._restart()
 
 
 if __name__ == '__main__':
-    import burst
     from burst.eventmanager import MainLoop
     MainLoop(Goalie).run()
+

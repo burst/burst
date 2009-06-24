@@ -3,7 +3,7 @@
 #######################################################################################################################
 
 import player_init
-from burst.behavior import InitialBehavior
+from burst.behavior import Behavior
 from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
@@ -42,7 +42,7 @@ class AlignmentAfterLeap(Behavior):
 
 #    @debugged
     def __init__(self, actions, side):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
+        Behavior.__init__(self, actions=actions, name=self.__class__.__name__)
         self.sideLeaptTo = side
 
     # TODO: Once you've leaped and got up, this takes place:
