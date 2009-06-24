@@ -337,7 +337,8 @@ class Player(object):
         if self._configuring: return # 
 
         self._world.gameStatus.getMyPlayerStatus().onChestButtonPressed()
-        info("Penalized After  = %s, %s" % (self._world.robot.penalized, self._world.gameStatus.getMyPlayerStatus()))
+        info((self._world.robot.penalized and 'Penalized' or 'Unpenalized').center(20) +
+            str(self._world.gameStatus.getMyPlayerStatus()))
 
         # TODO - penalize me, also make sure that if I am penalized from chest
         # then I remain so until either I am unpenalized from chest, OR the game
