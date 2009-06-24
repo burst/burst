@@ -646,7 +646,7 @@ class ALMotionExtended(NaoQiModule):
             joints = self._joint_names[2:]
 
         n_joints = len(joints)
-        angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
+        angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
         durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
         duration = max(col[-1] for col in durations_matrix)
         #print repr((joints, angles_matrix, durations_matrix))
@@ -657,7 +657,7 @@ class ALMotionExtended(NaoQiModule):
     def executeMoveHead(self, moves, interp_type, return_instead=False):
         joints = self._joint_names[:2]
         n_joints = len(joints)
-        angles_matrix = transpose([[x*DEG_TO_RAD for x in head] for head, interp_time in moves])
+        angles_matrix = transpose([[x for x in head] for head, interp_time in moves])
         durations_matrix = [list(cumsum(interp_time for head, interp_time in moves))] * n_joints
         if return_instead:
             return (joints, angles_matrix, durations_matrix, interp_type)
