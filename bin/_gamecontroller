@@ -1,0 +1,16 @@
+#!/bin/bash
+
+blue=$1
+red=$2
+
+# b-human is 3, burst is 4 - from teams.cfg
+
+cd ~/src/burst/gamecontroller/GameController
+if [ ! -e GameController.jar ]; then
+ cd src
+ make
+ cp GameController.jar ../
+ cd ..
+fi
+# -quiet - should stop the ticking (the sound!)
+java -jar GameController.jar -quiet -numplayers 3 ${blue} ${red}

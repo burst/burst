@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec _gamecontroller 3 4
