@@ -1,0 +1,329 @@
+root@Maldini [0] [~/burst/lib/players]# ./kicker.py
+________________________________________________________________________________
+You are running with robotname = maldini
+--------------------------------------------------------------------------------
+Loading Personalization for maldini.. MoveCoordinator: using IsRunningMoveCoordinator
+Done
+inaoqi-broker: construct at 127.0.0.1:10234, parent : 127.0.0.1:9559
+..::: THIS IS A RELEASE VERSION :::..
+sh: can't open /bin/ip.sh
+broker.setCurrentIP: ERROR: couldn't get data (file empty or ...)
+World: Using DCM for body angles
+world will record (if asked) 176 vars
+__init__
+world: using SharedMemoryReader
+SharedMemory: asked burstmem to map 102 variables
+SharedMemory: burstmem says it has 102 variables
+SharedMemory: _completeOpen: memory mapped = True (if True then previous session didn't close it)
+world: shared memory opened successfully
+Checking for Man module by getting a vision variable: ['/BURST/Vision/Ball/BearingDeg']
+Man found
+================================================================================
+=       running custom event loop with sleep time of 100.0 milliseconds        =
+================================================================================
+MainLoop: only LEGAL ROBOCUP moves allowed from now on
+NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing
+NOTICE: PLEASE FIX BEFORE GAME
+Team number 4, Team color 0, Player number 3, game state UNKNOWN
+SwitchToFinder: calling ['Ball'] Finder.start
+TargetFinder looking for: Ball (first time: True)
+targets not seen (['Ball']), searching for it
+Searcher: search started for Ball with centering for one.
+CENTERING 2
+CENTERING 1
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+TargetFinder looking for: Ball (first time: False)
+targets not seen (['Ball']), searching for it
+Searcher: search started for Ball with centering for one.
+Kicking: _stopOngoingMovement: current movement CONTINUES (forceStop = False)
+CENTERING 2
+CENTERING 1
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+TargetFinder looking for: Ball (first time: False)
+targets not seen (['Ball']), searching for it
+Searcher: search started for Ball with centering for one.
+Kicking: _stopOngoingMovement: current movement CONTINUES (forceStop = False)
+CENTERING 2
+CENTERING 1
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+TargetFinder looking for: Ball (first time: False)
+targets not seen (['Ball']), searching for it
+Searcher: search started for Ball with centering for one.
+Kicking: _stopOngoingMovement: current movement CONTINUES (forceStop = False)
+Obstacle seen (on right, distance of 0.360000)!
+CENTERING 2
+Obstacle lost!
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+TargetFinder looking for: Ball (first time: False)
+will track Ball
+
+Approaching Ball: (recently seen True, dist: 56.270, distSmoothed: 55.164, bearing: -0.530)
+----------------------------------------------------------------------------------------------------
+target_x: 47.602cm, target_y: -27.875cm
+Designated kick leg: RIGHT
+kp_x: 31.602cm   kp_y: -22.625cm
+kp_dist: 38.867cm   kp_bearing: -0.621
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): -0.559205
+Movement STARTING!
+Obstacle seen (on right, distance of 0.390000)!
+NOTE: Obstacle seen while a movement is in progress, movement CONTINUES
+Obstacle lost!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 57.192, distSmoothed: 57.226, bearing: -0.012)
+----------------------------------------------------------------------------------------------------
+target_x: 57.222cm, target_y: -0.673cm
+Designated kick leg: RIGHT
+kp_x: 41.222cm   kp_y: 4.577cm
+kp_dist: 41.475cm   kp_bearing: 0.111
+TARGET_FRONT_FAR
+Kicking: Walking straight!
+Movement STARTING!
+Obstacle seen (on right, distance of 0.240000)!
+NOTE: Obstacle seen while a movement is in progress, movement STOPPED
+CLEARING FOOTSTEPS!
+Kicking: _stopOngoingMovement: current movement STOPPED (forceStop = True)
+
+Approaching Ball: (recently seen True, dist: 51.646, distSmoothed: 57.893, bearing: -0.053)
+----------------------------------------------------------------------------------------------------
+target_x: 57.812cm, target_y: -3.075cm
+Designated kick leg: RIGHT
+kp_x: 41.812cm   kp_y: 2.175cm
+kp_dist: 41.868cm   kp_bearing: 0.052
+TARGET_FRONT_FAR
+Kicking: Walking straight!
+opposite_side_from_obstacle: 1
+changeLocationRelativeSideways (delta_x: 0.000 delta_y: 30.000)
+WALKING SIDEWAYS (0.300)
+Estimated duration: 0.500
+Movement STARTING!
+Obstacle lost!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 55.475, distSmoothed: 55.324, bearing: 0.142)
+----------------------------------------------------------------------------------------------------
+target_x: 54.768cm, target_y: 7.823cm
+Designated kick leg: LEFT
+kp_x: 38.768cm   kp_y: 2.823cm
+kp_dist: 38.871cm   kp_bearing: 0.073
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.065409
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 54.688, distSmoothed: 54.688, bearing: 0.130)
+----------------------------------------------------------------------------------------------------
+target_x: 54.228cm, target_y: 7.083cm
+Designated kick leg: LEFT
+kp_x: 38.228cm   kp_y: 2.083cm
+kp_dist: 38.284cm   kp_bearing: 0.054
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.048998
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 56.019, distSmoothed: 56.009, bearing: 0.118)
+----------------------------------------------------------------------------------------------------
+target_x: 55.620cm, target_y: 6.588cm
+Designated kick leg: LEFT
+kp_x: 39.620cm   kp_y: 1.588cm
+kp_dist: 39.652cm   kp_bearing: 0.040
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.036064
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 56.223, distSmoothed: 56.223, bearing: 0.112)
+----------------------------------------------------------------------------------------------------
+target_x: 55.868cm, target_y: 6.305cm
+Designated kick leg: LEFT
+kp_x: 39.868cm   kp_y: 1.305cm
+kp_dist: 39.889cm   kp_bearing: 0.033
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.029457
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 57.362, distSmoothed: 56.384, bearing: 0.119)
+----------------------------------------------------------------------------------------------------
+target_x: 55.983cm, target_y: 6.712cm
+Designated kick leg: LEFT
+kp_x: 39.983cm   kp_y: 1.712cm
+kp_dist: 40.020cm   kp_bearing: 0.043
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.038518
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 55.396, distSmoothed: 56.463, bearing: 0.116)
+----------------------------------------------------------------------------------------------------
+target_x: 56.080cm, target_y: 6.562cm
+Designated kick leg: LEFT
+kp_x: 40.080cm   kp_y: 1.562cm
+kp_dist: 40.111cm   kp_bearing: 0.039
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.035053
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 57.549, distSmoothed: 57.469, bearing: 0.054)
+----------------------------------------------------------------------------------------------------
+target_x: 57.386cm, target_y: 3.100cm
+Designated kick leg: LEFT
+kp_x: 41.386cm   kp_y: -1.900cm
+kp_dist: 41.429cm   kp_bearing: -0.046
+TARGET_FRONT_FAR
+Kicking: Walking straight!
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 22.333, distSmoothed: 22.079, bearing: 0.336)
+----------------------------------------------------------------------------------------------------
+target_x: 20.844cm, target_y: 7.281cm
+Designated kick leg: LEFT
+kp_x: 4.844cm   kp_y: 2.281cm
+kp_dist: 5.354cm   kp_bearing: 0.440
+TARGET_DIAGONAL
+Kicking: Turning!
+1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80
+ADD TURN (deltaTheta): 0.396084
+Movement STARTING!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+
+Approaching Ball: (recently seen True, dist: 22.488, distSmoothed: 22.375, bearing: -0.053)
+----------------------------------------------------------------------------------------------------
+target_x: 22.344cm, target_y: -1.188cm
+Designated kick leg: RIGHT
+kp_x: 6.344cm   kp_y: 4.062cm
+kp_dist: 7.533cm   kp_bearing: 0.570
+TARGET_FRONT_NEAR
+Kicking: Aligning to goal! (switching to goal finder)
+STOPPING ['Ball'] Finder
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks,no callbacks,no callbacks]
+SwitchToFinder: calling ['BGLP', 'BGRP'] Finder.start
+TargetFinder looking for: BGLP,BGRP (first time: True)
+targets not seen (['BGLP', 'BGRP']), searching for it
+Searcher: search started for BGLP,BGRP with centering for one.
+Searcher: search completed for BGLP,BGRP with centering for one. Seen: [BGRP]
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+TargetFinder looking for: BGLP,BGRP (first time: False)
+will track BGRP
+Kicking: onGoalFound
+Kicking: onGoalFound: found BGRP at 153.0, 37.0 (True)
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 1.00722084007. Left is 0, Right is 0.2
+Kicking: Aligning and strafing...
+Movement STARTING! (strafing)
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.748401929008. Left is 0, Right is 0.2
+Kicking: Strafing...
+Movement STARTING! (strafing)
+Obstacle seen (on right, distance of 0.230000)!
+NOTE: Obstacle seen while a movement is in progress, movement CONTINUES
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.531458529634. Left is 0, Right is 0.2
+Kicking: Strafing...
+Movement STARTING! (strafing)
+Obstacle lost!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.44841058078. Left is 0, Right is 0.2
+Kicking: Strafing...
+Movement STARTING! (strafing)
+Obstacle seen (on right, distance of 0.230000)!
+NOTE: Obstacle seen while a movement is in progress, movement CONTINUES
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.419403663213. Left is 0, Right is 0.2
+Kicking: Strafing...
+Movement STARTING! (strafing)
+Obstacle lost!
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.268776137486. Left is 0, Right is 0.2
+Kicking: Strafing...
+Movement STARTING! (strafing)
+>>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<
+Movement DONE!
+Kicking: strafe: goal post seen
+Kicking: BGRP bearing is 0.147608566316. Left is 0, Right is 0.2
+Kicking: Aligned position reached! (starting ball search)
+BA.clearFutureCallbacks: removing [no callbacks]
+SwitchToFinder: calling ['Ball'] Finder.start
+TargetFinder looking for: Ball (first time: True)
+will track Ball
+
+Approaching Ball: (recently seen True, dist: 16.843, distSmoothed: 16.843, bearing: -0.232)
+----------------------------------------------------------------------------------------------------
+target_x: 16.393cm, target_y: -3.867cm
+Designated kick leg: RIGHT
+kp_x: 0.393cm   kp_y: 1.383cm
+kp_dist: 1.438cm   kp_bearing: 1.294
+TARGET_IN_KICKING_AREA
+Kicking: Kicking!
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks,no callbacks,no callbacks]
+Kicking: kick_side_offset: 0.866
+Obstacle seen (on right, distance of 0.230000)!
+NOTE: Obstacle seen while a movement is in progress, movement CONTINUES
+Obstacle lost!
+Obstacle seen (on right, distance of 0.240000)!
+NOTE: Obstacle seen while a movement is in progress, movement CONTINUES
+kick complete - TODO: don't quit
+Odometry Summary:
+=================
+48.4..49.4 (1.0): ('turn', -0.55920458105875204, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+67.0..68.0 (1.0): ('journey last leg', 0.37099747645831066, 0.0, 0.0)
+69.1..69.6 (0.5): ('sideway', 0.0, 30.0, 1.74532925199, 0.174532925199, 0.349065850399, 0.174532925199, 4.5, -4.5, 0.19, 5.0, 0.02, 0.015, 0.04, 0.3, 0.015, 0.02, 25)
+86.3..87.3 (1.0): ('turn', 0.065408876489285547, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+99.2..100.2 (1.0): ('turn', 0.04899770651143371, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+111.5..112.5 (1.0): ('turn', 0.036064420885216927, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+123.9..124.9 (1.0): ('turn', 0.029456756843847146, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+136.2..137.2 (1.0): ('turn', 0.038517833527560247, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+148.5..149.5 (1.0): ('turn', 0.035053471419281133, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+160.8..161.8 (1.0): ('journey last leg', 0.37247071492564748, 0.0, 0.0)
+166.5..167.5 (1.0): ('turn', 0.3960842210123231, 1.74532925199, 0.261799387799, 0.523598775598, 0.174532925199, 4.5, -4.5, 0.22, 3.4, 0.07, 0.043, 0.03, 0.3, 0.01, 0.0, 80)
+Stopping Kicker
+BA.clearFutureCallbacks: removing [<Behavior BallKicker: no callbacks>]
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_OBSTACLE_SEEN-><l> (instancemethod) _behavior,EVENT_OBSTACLE_IN_FRAME-><l> (instancemethod) _behavior,EVENT_OBSTACLE_LOST-><l> (instancemethod) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks,no callbacks]
+KICKING STOPS!!!
+STOPPING CURRENT FINDER: ['Ball'] Finder
+MainLoop: ILLEGAL ROBOCUP moves ALLOWED from now on
+BasicMainLoop: sitting, removing stiffness and quitting.
+

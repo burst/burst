@@ -11,7 +11,8 @@ import math
 import random # for INITIAL_POSITION of SecondaryKicker on KickOff
 from math import tan
 
-from burst.field import * # field constants
+from burst_field import * # field constants
+from burst_events import * # event constants
 
 # Some stuff that is required first
 MESSI = 'messi'
@@ -302,6 +303,44 @@ RIGHT = 1
 DOWN = 2
 UP = 3
 
+# Team Constants, and corresponding Color constants for Goal Posts
+
+BLUE_TEAM, RED_TEAM = 0, 1 # XXX we use numbers since player_settings.py uses addition on this
+def team_color_str(team):
+    return {BLUE_TEAM:'blue', RED_TEAM:'red'}[team]
+
+YELLOW_GOAL, BLUE_GOAL = 'yellow_goal', 'blue_goal'
+def opposite_color(color):
+    return YELLOW_GOAL if color == BLUE_GOAL else BLUE_GOAL
+def team_to_defending_goal_color(team):
+    return {BLUE_TEAM:BLUE_GOAL, RED_TEAM:YELLOW_GOAL}[team]
+
+YGLP, YGRP, BGLP, BGRP = 'YGLP', 'YGRP', 'BGLP', 'BGRP'
+VISION_POSTS_NAMES = [YGLP, YGRP, BGLP, BGRP]
+
+goal_events = {
+    YELLOW_GOAL: {
+        'left': {
+            'position_changed': EVENT_YGLP_POSITION_CHANGED,
+            'in_frame': EVENT_YGLP_IN_FRAME,
+        },
+        'right': {
+            'position_changed': EVENT_YGRP_POSITION_CHANGED,
+            'in_frame': EVENT_YGRP_IN_FRAME,
+        }
+    },
+    BLUE_GOAL: {
+        'left': {
+            'position_changed': EVENT_BGLP_POSITION_CHANGED,
+            'in_frame': EVENT_BGLP_IN_FRAME,
+        },
+        'right': {
+            'position_changed': EVENT_BGRP_POSITION_CHANGED,
+            'in_frame': EVENT_BGRP_IN_FRAME,
+        }
+    }
+}
+
 #############################################################
 # Lists of variable names exported by us to ALMemory
 
@@ -485,7 +524,7 @@ UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything oth
 
 # Colors for the LEDs
 RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
-TeamColors = {0: BLUE, 1: RED}
+TeamColors = {BLUE_TEAM: BLUE, RED_TEAM: RED}
 
 # add all the gamecontroller constants (happens at the end since
 # gamecontroller_consts uses some consts from here, for led colors)

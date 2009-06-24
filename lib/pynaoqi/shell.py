@@ -187,15 +187,21 @@ class PlayerRunner(object):
         self.fullname = fullname
         self._players = players
         self._player = None
+        self._main = None
 
     def make(self):
         global user_ns
         self.loop = makeplayerloop(self.fullname)
         self._players.last = self.loop
         if hasattr(self.loop, '_player'): # why? network problems?
-            self._players.player = self.loop._player
-            user_ns['player'] = self.loop._player
-            user_ns['main'] = self.loop._player._main_behavior
+            user_ns['player'] = self._player = self.loop._player
+            user_ns['main'] = self._main = self.loop._player._main_behavior
+    
+    def switch_color(self):
+        # TODO - simulate chest button (change the AL_MEMORY var?)
+        if not self._player: return
+        self._main._world.playerSettings.toggleteamColor()
+        print str(self._main._world.playerSettings)
 
     def start(self):
         self.make()
@@ -348,6 +354,8 @@ r=[x.result for x in r]
 # show all events
 players.template_player.start()
 loop(lambda: succeed(player._world._events), dt=0.1)
+# in nicer form (also looks at eventmanager and not world - same thing I think)
+loop(lambda: succeed(map(burst_events.event_name, main._eventmanager._pending_events)), dt=0.1)
 
 """
 
@@ -379,6 +387,7 @@ def make_shell_namespace(use_pylab):
     import burst
     import burst_util
     import burst_consts as consts
+    import burst_events
     import burst.image as image
     import vision_definitions
     from twisted.internet import task
@@ -409,6 +418,8 @@ def make_shell_namespace(use_pylab):
         moves = moves,
         field = field,
         consts = consts,
+        burst_consts = consts,
+        burst_events = burst_events,
         vision_definitions = vision_definitions,
         image = image,
         # utilities

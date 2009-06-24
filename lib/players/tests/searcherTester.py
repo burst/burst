@@ -10,7 +10,7 @@ class SearchTester(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
-        self.targets=[self._world.yglp, self._world.ygrp]
+        self.targets=[self._world.opposing_lp, self._world.opposing_rp]
         self._actions.searcher.search(self.targets).onDone(self.onFound)
 
     def onFound(self):

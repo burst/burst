@@ -33,8 +33,8 @@ class Donothing(InitialBehavior):
         if self._count < self._max: return
         self._count = 0
         print "donothing: ball dist is %s" % self._world.ball.dist
-        print "donothing: top_yellow dist is %s" % self._world.ygrp.dist
-        print "donothing: bottom_yellow dist is %s" % self._world.yglp.dist
+        print "donothing: top_yellow dist is %s" % self._world.opposing_rp.dist
+        print "donothing: bottom_yellow dist is %s" % self._world.opposing_lp.dist
 
     def onTimeout(self):
         print "timed out at t = %s" % self._world.time

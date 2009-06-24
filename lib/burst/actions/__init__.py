@@ -224,7 +224,7 @@ class Actions(object):
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         print "ADD TURN (deltaTheta): %f" % (deltaTheta)
-        dgens.append(lambda _: self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN))
+        dgens.append(lambda _: self._motion.addTurn(deltaTheta, walk.defaultSpeed))
 
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens)
@@ -232,6 +232,7 @@ class Actions(object):
                             description=('turn', deltaTheta, walk))
         return self._current_motion_bd
 
+    # TODO: Change to walkSideways()
     @returnsbd
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):

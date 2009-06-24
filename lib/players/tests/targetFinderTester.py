@@ -10,7 +10,7 @@ class TargetFinderTester(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
-        #self.targets=[self._world.yglp, self._world.ygrp]
+        #self.targets=[self._world.opposing_lp, self._world.opposing_rp]
         self.targets=[self._world.ball]
 
         self._ballFinder = TargetFinder(actions=self._actions, targets=self.targets, start=True)

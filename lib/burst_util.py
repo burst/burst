@@ -10,8 +10,6 @@ import glob
 import socket
 import logging
 
-import burst_consts
-
 ################################################################################
 
 logging.basicConfig(level=logging.DEBUG)
@@ -291,7 +289,7 @@ class BurstDeferred(object):
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:
-                print ">>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<"
+                #print ">>>>>>>>>>>>> BD one arg %s (%s) <<<<<<<<<<<<<<" % (self, self._data)
                 ret = cb(self._data)
             # is it a deferred? if so tell it to execute the deferred
             # we handed out once it is done.
@@ -781,6 +779,8 @@ def is64():
 # Shell Utils
 
 def set_robot_ip_from_argv():
+    import burst_consts
+
     # check the actual name of the executable - use it as "--ip bla" if it
     # exists in burst_consts.ROBOT_IP_TO_NAME.values()
     exec_name = os.path.split(sys.argv[0])[-1]
@@ -834,6 +834,7 @@ class CallLogger(object):
         self._f = f
 
     def __call__(self, *args, **kw):
+        import burst_consts
         start = time()
         ret = self._f(*args, **kw)
         end = time()

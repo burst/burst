@@ -16,13 +16,14 @@ import linecache
 
 from twisted.python import log
 
-from burst_consts import US_DISTANCES_VARNAME, is_120
+from burst_consts import (US_DISTANCES_VARNAME, is_120, opposite_color, OUR_TEAM, OPPOSING_TEAM,
+    VISION_POSTS_NAMES)
+import burst_consts
 import burst
-from burst_events import (EVENT_ALL_BLUE_GOAL_SEEN, EVENT_ALL_YELLOW_GOAL_SEEN,
-    EVENT_ALL_BLUE_GOAL_IN_FRAME,
-    EVENT_ALL_YELLOW_GOAL_IN_FRAME,
-    EVENT_BGLP_POSITION_CHANGED, EVENT_BGRP_POSITION_CHANGED,
-    EVENT_YGLP_POSITION_CHANGED, EVENT_YGRP_POSITION_CHANGED)
+from burst_events import (EVENT_ALL_OUR_GOAL_SEEN, EVENT_ALL_OPPOSING_GOAL_SEEN,
+    EVENT_ALL_OUR_GOAL_IN_FRAME,
+    EVENT_ALL_OPPOSING_GOAL_IN_FRAME,
+    )
 from burst_util import running_average, LogCalls, cross, gethostname, nicefloats
 
 from burst.deferreds import BurstDeferredMaker
@@ -31,7 +32,6 @@ import burst.field as field
 from sharedmemory import *
 from objects import Ball, GoalPost, Goal
 from robot import Robot
-from team import Team
 from computed import Computed
 from objects import Locatable
 from localization import Localization
@@ -53,7 +53,7 @@ class World(object):
     """
     Main access to any information about the world around the robot,
     including other robots. Generally access is done through attributes
-    that are themselves objects, such as ball, yglp, (TODO: opponent_goal,
+    that are themselves objects, such as ball, opposing_lp, (TODO: opponent_goal,
     our_goal, teammate1, teammate2, opponent{1,2,3})
     """
 
@@ -144,32 +144,28 @@ class World(object):
         # underscore
         #  * Vision recognized objects
         self.ball = Ball(self)
-        # ULTRA MAJOR TODO: coordinate consistency. The BLUE goal is not always our
-        # goal. Actually, it is so only half the time. Our system says that OUR
-        # goal is at 0.0, so we should look at TEAM, see who we are, and only
-        # then UPDATE THE GOALS COORDINATES.
-        bglp_xy = field.blue_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
-        bgrp_xy = field.blue_goal.bottom_post.xy
-        yglp_xy = field.yellow_goal.bottom_post.xy
-        ygrp_xy = field.yellow_goal.top_post.xy
-        self.blue_goal = Goal(name='BlueGoal', world=self, left_name='BGLP', right_name='BGRP',
-            left_pos_changed_event=EVENT_BGLP_POSITION_CHANGED,
-            right_pos_changed_event=EVENT_BGRP_POSITION_CHANGED,
-            left_world=bglp_xy, right_world=bgrp_xy)
-        self.bglp = self.blue_goal.left
-        self.bgrp = self.blue_goal.right
-        self.yellow_goal = Goal(name='YellowGoal', world=self, left_name='YGLP', right_name='YGRP',
-            left_pos_changed_event=EVENT_YGLP_POSITION_CHANGED,
-            right_pos_changed_event=EVENT_YGRP_POSITION_CHANGED,
-            left_world=yglp_xy, right_world=ygrp_xy)
-        self.yglp = self.yellow_goal.left
-        self.ygrp = self.yellow_goal.right
+        # Goals Notes: We start at UNCONFIGURED State, we record all the variables
+        # but only start using them once we configure all the goal according to our team and
+        # goal color.
+        our_lp_xy = field.our_goal.top_post.xy        # left is from pov of goalie looking at opponent goal.
+        our_rp_xy = field.our_goal.bottom_post.xy
+        opposing_lp_xy = field.opposing_goal.bottom_post.xy
+        opposing_rp_xy = field.opposing_goal.top_post.xy
+        self.our_goal = Goal(name='OurGoal', which_team=OUR_TEAM,
+            world=self, left_name='OurLeftPost', right_name='OurRightPost',
+            left_world=our_lp_xy, right_world=our_rp_xy)
+        self.our_lp = self.our_goal.left
+        self.our_rp = self.our_goal.right
+        self.opposing_goal = Goal(name='OpposingGoal', which_team=OPPOSING_TEAM,
+            world=self, left_name='OpposingLeftPost', right_name='OpposingRightPost',
+            left_world=opposing_lp_xy, right_world=opposing_rp_xy)
+        self.opposing_lp = self.opposing_goal.left
+        self.opposing_rp = self.opposing_goal.right
+        for name in VISION_POSTS_NAMES:
+            self.addMemoryVars(GoalPost.getVarsForName(name))
         # TODO - other robots
         # Buttons, Leds (TODO: sonar,
         self.robot = Robot(self)
-        # construct team after all the posts are constructed, it keeps a
-        # reference to them.
-        self.team = Team(self)
         # TODO - is computed used? should be renamed for legibility
         self.computed = Computed(self)
         # Self orientation and Location of self and other objects in field.
@@ -199,7 +195,7 @@ class World(object):
             # All basic objects that rely on just naoproxies should be in the
             # first list
             [self._movecoordinator,
-             self.ball, self.blue_goal, self.yellow_goal,
+             self.ball, self.our_goal, self.opposing_goal,
              self.robot, self._gameController],
             [self.gameStatus],
             # anything that relies on basics but nothing else should go next
@@ -236,6 +232,11 @@ class World(object):
                 print "world: using ALMemory"
 
         self.checkManModule()
+
+    def configure(self, our_color):
+        """ called when entering CONFIGURED state """
+        self.our_goal.configure(color=our_color)
+        self.opposing_goal.configure(color=burst_consts.opposite_color(our_color))
 
     def _switchToSharedMemory(self, _):
         if set(self.vars.keys()) != set(self._shm.vars.keys()):
@@ -370,10 +371,10 @@ class World(object):
         may set some events / variables needed by the computed object)
         """
         # TODO - move these to the Goal objects (which already exist)
-        if self.bglp.seen and self.bgrp.seen:
-            events.add(EVENT_ALL_BLUE_GOAL_IN_FRAME)
-        if self.yglp.seen and self.ygrp.seen:
-            events.add(EVENT_ALL_YELLOW_GOAL_IN_FRAME)
+        if self.our_lp.seen and self.our_rp.seen:
+            events.add(EVENT_ALL_OUR_GOAL_IN_FRAME)
+        if self.opposing_lp.seen and self.opposing_rp.seen:
+            events.add(EVENT_ALL_OPPOSING_GOAL_IN_FRAME)
 
     def addMemoryVars(self, vars):
         # slow? but retains the order of the registration

@@ -14,7 +14,7 @@ class GoalAlignerTester(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
-        self.goalposts = [self._world.yglp, self._world.ygrp]
+        self.goalposts = [self._world.opposing_lp, self._world.opposing_rp]
         self.movement_deferred = None
         self.searchGoalPosts()
 

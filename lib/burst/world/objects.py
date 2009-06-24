@@ -1,5 +1,6 @@
 from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from textwrap import wrap
+import logging
 
 from burst_util import nicefloat
 from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
@@ -7,15 +8,25 @@ from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
     DEFAULT_NORMALIZED_CENTERING_X_ERROR, DEFAULT_NORMALIZED_CENTERING_Y_ERROR,
     CONSOLE_LINE_LENGTH, CENTERING_MINIMUM_PITCH, ID_NOT_SURE, ID_SURE,
-    IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y)
+    IMAGE_CENTER_X, IMAGE_CENTER_Y, PIX_TO_RAD_X, PIX_TO_RAD_Y,
+    YELLOW_GOAL)
+import burst_consts
 from burst_events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
-    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY)
+    EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY,
+    event_name)
 from burst_util import running_median, RingBuffer, Nameable
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
 import burst_events
 import burst.field as field
+
+################################################################################
+
+logger = logging.getLogger('objects')
+info = logger.info
+
+################################################################################
 
 
 class CenteredLocatable(object):
@@ -143,8 +154,10 @@ class Locatable(Nameable):
         # This is the world x coordinate. Our x axis is to the right of our goal
         # center, and our y is towards the enemy gate^H^H^Hoal. The enemy goal is up.
         # (screw Ender)
-        self.world_x = world_x or field.MIDFIELD_X # default to estimating everything is in center of field.
-        self.world_y = world_y or field.MIDFIELD_Y # TODO - is't wise?
+
+        # default to estimating everything is in center of field.
+        self.world_x = world_x if world_x is not None else field.MIDFIELD_X
+        self.world_y = world_y if world_y is not None else field.MIDFIELD_Y # TODO - is't wise?
         self.world_heading = 0.0 # default to pointing towards target goal
 
         self.history = RingBuffer(Locatable.HISTORY_SIZE) # stores history for last
@@ -562,20 +575,24 @@ class Goal(Locatable):
     This calc_events replaces the calc_events for the respective posts
     """
 
-    def __init__(self, name, world, left_name, right_name, left_pos_changed_event,
-        right_pos_changed_event, left_world, right_world):
+    def __init__(self, name, world, which_team, left_name, right_name, left_world, right_world):
         mid_x, mid_y = ((left_world[0]+right_world[0])/2.0,
                         (left_world[1]+right_world[1])/2)
         super(Goal, self).__init__(name, world,
             real_length=burst.field.CROSSBAR_CM_WIDTH, world_x=mid_x, world_y=mid_y)
-        self.left = GoalPost(name=left_name, world=world,
-            position_changed_event = left_pos_changed_event, world_x=left_world[0],
+        self.left = GoalPost(name=left_name, which_team=which_team, world=world, world_x=left_world[0],
                 world_y=left_world[1])
-        self.right = GoalPost(name=right_name, world=world,
-            position_changed_event = right_pos_changed_event, world_x=right_world[0],
+        self.right = GoalPost(name=right_name, which_team=which_team, world=world, world_x=right_world[0],
                 world_y=right_world[1])
-        self.unknown = GoalPost(name='%s_UnknownPost' % name, world=world,
-            position_changed_event=-1, world_x=mid_x, world_y=mid_y, real_post=False)
+        self.unknown = GoalPost(name='%s_UnknownPost' % name, which_team=which_team, world=world, world_x=mid_x,
+                world_y=mid_y, real_post=False)
+        self.bottom_top = (self.left, self.right) if self.left.world_y < self.right.world_y else (self.right, self.left)
+
+    def configure(self, color):
+        """ called when entering CONFIGURED state """
+        for post in [self.left, self.right, self.unknown]:
+            post.configure(color=color)
+        # TODO - calculate the in_frame event for this goal
 
     def calc_events(self, events, deferreds):
         left = self.left.calc_events(events, deferreds)
@@ -587,20 +604,25 @@ class Goal(Locatable):
                 print "%s: updated unknown: %s" % (self.name, left and 'left' or 'right')
         else:
             self.unknown.seen = False
+        self.seen = self.left.seen or self.right.seen or self.unknown.seen
+        # TODO - thrown the team event here? instead of world.__init__
 
 class GoalPost(Locatable):
+    """ We turned things around - now the goal posts and the goals know if they
+    are opposing or our from the start, they just don't know the color until configured.
+    This means the eyes won't show the color right now until we are configured.
+    """
 
-    def __init__(self, name, world, position_changed_event, world_x, world_y, real_post=True):
+    def __init__(self, name, which_team, world, world_x, world_y, real_post=True):
+        """
+        name - printable name
+        which_team - 'Opposing' or 'Our' - used to deduce left or right (TODO - the
+        situation of deduced and assumed information is convoluted).
+        """
         super(GoalPost, self).__init__(name, world,
             real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
-        self._position_changed_event = position_changed_event
-        template = '/BURST/Vision/%s/%%s' % name
-        self._vars = [template % s for s in ['AngleXDeg', 'AngleYDeg',
-            'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
-         'FocDist', 'Height', 'Width', 'X', 'Y', 'IDCertainty']]
-        if real_post: # if not, don't try to fetch variables for it, they ain't there.
-            self._world.addMemoryVars(self._vars)
-
+        self.real_post = real_post
+        self.which_team = which_team
         self.angleX = 0.0
         self.angleY = 0.0
         self.centerX = 0.0
@@ -611,12 +633,44 @@ class GoalPost(Locatable):
         self.x = 0.0
         self.y = 0.0
         self.id_certainty = ID_NOT_SURE
-        self.in_frame_event = position_changed_event # TODO? seen event? yes for uniformity
-        if real_post:
-            on_seen_event = getattr(burst_events, "EVENT_"+self.name+"_IN_FRAME")
-        else:
-            on_seen_event = -1
-        self._on_seen_event = on_seen_event
+        # Stuff that is defined only after Player.onConfigured is called:
+        self.color = None
+        self.in_frame_event = None
+        self._vars = None
+
+    @staticmethod
+    def getVarsForName(name):
+        template = '/BURST/Vision/%s/%%s' % name
+        return [template % s for s in ['AngleXDeg', 'AngleYDeg',
+            'BearingDeg', 'CenterX', 'CenterY', 'Distance', 'ElevationDeg',
+         'FocDist', 'Height', 'Width', 'X', 'Y', 'IDCertainty']]
+
+    def is_left(self):
+        return ((self.world_y < 0 and self.which_team == field.OUR_TEAM)
+                or (self.world_y > 0 and self.which_team == field.OPPOSING_TEAM))
+
+    def fourLetterPostName(self):
+        return '%sG%sP' % ('Y' if self.color == YELLOW_GOAL else 'B',
+            'L' if self.is_left() else 'R')
+
+    def configure(self, color):
+        """ called from onConfigure """
+        self.color = color
+        event_data = burst_consts.goal_events[color]['left' if self.is_left() else 'right']
+        self._position_changed_event = event_data['position_changed'] if self.real_post else -1
+        self.in_frame_event = event_data['in_frame'] if self.real_post else -1
+        self._vars = self.getVarsForName(self.fourLetterPostName())
+        info('Configuring %s' % str(self))
+
+    def __str__(self):
+        return ('%(name)s %(color)s, %(which)s, (%(x)3.2f, %(y)3.2f), %(left)s, %(four)s' %
+                dict(name=self.name,
+                    color=self.color,
+                    which=self.which_team,
+                    x=self.world_x,
+                    y=self.world_y,
+                    left='left' if self.is_left() else 'right',
+                    four=self.fourLetterPostName()))
 
     def get_new_state(self):
         return self._world.getVars(self._vars)
@@ -636,7 +690,7 @@ class GoalPost(Locatable):
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and new_id_certainty == ID_SURE)
 
         if new_seen:
-            if events is not None: events.add(self._on_seen_event)
+            if events is not None: events.add(self.in_frame_event)
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
@@ -669,5 +723,6 @@ class GoalPost(Locatable):
         """ get new values from proxy, return set of events """
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
+        if self.color is None: return
         return self.update_from_new_state(self.get_new_state(), events, deferreds)
 
