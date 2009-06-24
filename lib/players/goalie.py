@@ -16,7 +16,7 @@ WAITING = 6
 
 debug = True
 isWebots = False
-realLeap = False
+realLeap = True
 debugLeapRight = False
 debugLeapLeft = False
 
@@ -126,7 +126,7 @@ class Goalie(InitialBehavior):
 
     def onLeapComplete(self, side):
         if realLeap:
-            AlignmentAfterLeap(side).start().onDone(self.whichBehavior)
+            AlignmentAfterLeap(self._actions, side).start().onDone(self.whichBehavior)
         else:
             self._restart()
 
