@@ -10,9 +10,9 @@ params.KICK_Y_MAX = [10.5,-9]
 ## Choreograph moves
 import burst.moves.choreograph as choreograph
 (jointCodes, angles, times) = choreograph.CIRCLE_STRAFE_CLOCKWISE
-angles[jointCodes.index("RHipRoll")] = -0.21642
+angles[jointCodes.index("RHipRoll")][1] = -0.21642
 (jointCodes, angles, times) = choreograph.CIRCLE_STRAFE_COUNTER_CLOCKWISE
-angles[jointCodes.index("LHipRoll")] = 0.235
+angles[jointCodes.index("LHipRoll")][1] = 0.235
 
 ## General moves
 import burst.moves.poses as poses
