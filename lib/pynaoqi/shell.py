@@ -354,6 +354,8 @@ r=[x.result for x in r]
 # show all events
 players.template_player.start()
 loop(lambda: succeed(player._world._events), dt=0.1)
+# in nicer form (also looks at eventmanager and not world - same thing I think)
+loop(lambda: succeed(map(burst_events.event_name, main._eventmanager._pending_events)), dt=0.1)
 
 """
 
@@ -385,6 +387,7 @@ def make_shell_namespace(use_pylab):
     import burst
     import burst_util
     import burst_consts as consts
+    import burst_events
     import burst.image as image
     import vision_definitions
     from twisted.internet import task
@@ -416,6 +419,7 @@ def make_shell_namespace(use_pylab):
         field = field,
         consts = consts,
         burst_consts = consts,
+        burst_events = burst_events,
         vision_definitions = vision_definitions,
         image = image,
         # utilities

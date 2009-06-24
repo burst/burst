@@ -65,6 +65,13 @@ EVENT_OUR_LP_IN_FRAME = counter; counter+=1
 EVENT_OUR_RP_IN_FRAME = counter; counter+=1
 EVENT_OPPOSING_LP_IN_FRAME = counter; counter+=1
 EVENT_OPPOSING_RP_IN_FRAME = counter; counter+=1
+# TODO - not SEEN, but IN_FRAME - be consistent!
+EVENT_ALL_BLUE_GOAL_SEEN = counter; counter+=1
+EVENT_ALL_YELLOW_GOAL_SEEN = counter; counter+=1
+EVENT_ALL_BLUE_GOAL_IN_FRAME = counter; counter+=1
+EVENT_ALL_YELLOW_GOAL_IN_FRAME = counter; counter+=1
+EVENT_ALL_BLUE_GOAL_LOST = counter; counter+=1
+EVENT_ALL_YELLOW_GOAL_LOST = counter; counter+=1
 EVENT_ALL_OUR_GOAL_SEEN = counter; counter+=1
 EVENT_ALL_OPPOSING_GOAL_SEEN = counter; counter+=1
 EVENT_ALL_OUR_GOAL_LOST = counter; counter+=1

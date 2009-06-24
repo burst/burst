@@ -586,11 +586,13 @@ class Goal(Locatable):
                 world_y=right_world[1])
         self.unknown = GoalPost(name='%s_UnknownPost' % name, which_team=which_team, world=world, world_x=mid_x,
                 world_y=mid_y, real_post=False)
+        self.bottom_top = (self.left, self.right) if self.left.world_y < self.right.world_y else (self.right, self.left)
 
     def configure(self, color):
         """ called when entering CONFIGURED state """
         for post in [self.left, self.right, self.unknown]:
             post.configure(color=color)
+        # TODO - calculate the in_frame event for this goal
 
     def calc_events(self, events, deferreds):
         left = self.left.calc_events(events, deferreds)
@@ -602,6 +604,8 @@ class Goal(Locatable):
                 print "%s: updated unknown: %s" % (self.name, left and 'left' or 'right')
         else:
             self.unknown.seen = False
+        self.seen = self.left.seen or self.right.seen or self.unknown.seen
+        # TODO - thrown the team event here? instead of world.__init__
 
 class GoalPost(Locatable):
     """ We turned things around - now the goal posts and the goals know if they

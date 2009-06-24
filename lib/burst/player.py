@@ -67,10 +67,10 @@ class Player(object):
         self._seeingAllBlueGoal = False
         self._seeingAllYellowGoal = False
         self._announceSeeingNoGoal()
-        self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_OPPOSING_GOAL_SEEN)
-        self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_OUR_GOAL_SEEN)
-        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_OPPOSING_GOAL_LOST)
-        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_OUR_GOAL_LOST)
+        self._eventmanager.register(self._announceSeeingYellowGoal, EVENT_ALL_YELLOW_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingBlueGoal, EVENT_ALL_BLUE_GOAL_SEEN)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
+        self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
         self._main_behavior = main_behavior_class(actions) # doesn't start here
 
     def registerFallHandling(self):
@@ -165,12 +165,19 @@ class Player(object):
                     print "testing Ready: Done with Ready"
                 self._onReady().onDone(onReadyDone)
             else:
-                self._main_behavior.start()
+                self._startMainBehavior()
         else:
             print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
                 self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
                     fireOnOneCallback=True).addCallback(self._onConfigured).addErrback(log.err)
+
+    def _startMainBehavior(self):
+        print "="*80
+        print "= %s =" % (('starting %s' % self._main_behavior.name).center(76))
+        print "="*80
+        self._main_behavior.start()
+        return self._main_behavior
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -207,7 +214,8 @@ class Player(object):
 
     def _onPlay(self):
         print "Player: OnPlay"
-        self._main_behavior.start().onDone(self._onMainBehaviorDone)
+        self._startMainBehavior()
+        self._main_behavior.onDone(self._onMainBehaviorDone)
 
     def _onMainBehaviorDone(self):
         print "Player: Main Behavior is done (%s)" % (self._main_behavior)
