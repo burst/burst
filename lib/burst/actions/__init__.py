@@ -486,7 +486,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     @legal_any
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, headIncluded=True, description=('executemove',)):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('executemove',), headIncluded=True):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
