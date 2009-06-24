@@ -289,7 +289,7 @@ class BurstDeferred(object):
             if expected_argument_count(cb) == 0:
                 ret = cb()
             else:
-                print ">>>>>>>>>>>>> BD using One Argument <<<<<<<<<<<<<<"
+                #print ">>>>>>>>>>>>> BD one arg %s (%s) <<<<<<<<<<<<<<" % (self, self._data)
                 ret = cb(self._data)
             # is it a deferred? if so tell it to execute the deferred
             # we handed out once it is done.
