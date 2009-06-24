@@ -27,7 +27,6 @@ class Localizer(Behavior):
             and not self._world.odometry.movedBetweenTimes(world_update_time, self._world.time)):
             self.log("position is fine right now")
             self.stop()
-            self.callOnDone()
 
         # else go forth and localize!
         # we do a little extra work compared to previous versions: we don't just
@@ -35,15 +34,15 @@ class Localizer(Behavior):
         # actually fires.
         def onLocationUpdated():
             self.log("got EVENT_WORLD_LOCATION_UPDATED")
-            self.stop()
             if not self._actions.searcher.stopped():
                 self.log("Stopping Searcher (wasn't stopped)")
                 self._actions.searcher.stop()
-            self.callOnDone()
+            self.stop()
         self._eventmanager.registerOneShotBD(EVENT_WORLD_LOCATION_UPDATED).onDone(onLocationUpdated)
 
         self._actions.search(targets).onDone(self._start)
 
     def _stop(self):
         self.log("Stopping")
+        return self._actions.succeed(self)
 

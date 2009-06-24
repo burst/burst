@@ -86,7 +86,7 @@ class BallKicker(Behavior):
 
     def _stop(self):
         print "KICKING STOPS!!!"
-        self._clearMovement(clearFootsteps = False)
+        self._clearMovement(clearFootsteps = True)
 
         stop_bd = succeedBurstDeferred(self)
         if self._currentFinder:
@@ -203,7 +203,7 @@ class BallKicker(Behavior):
             else:
                 self._movement_deferred = self._actions.adjusted_straight_kick(side, kick_side_offset)
 
-            self._movement_deferred.onDone(self.callOnDone)
+            self._movement_deferred.onDone(self.stop)
             return
         else:
             if target_location in (BALL_FRONT_NEAR, BALL_FRONT_FAR):
