@@ -10,6 +10,7 @@ import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
 from math import pi
 from burst_consts import DEG_TO_RAD
+from burst_util import succeedBurstDeferred
 
 #######################################################################################################################
 
@@ -29,7 +30,6 @@ def log(string):
     if debug:
         print string
 
-
 def debugged(f):
     def wrapper(*args, **kw):
         print f.__name__, args, kw
@@ -38,12 +38,12 @@ def debugged(f):
 
 #######################################################################################################################
 
-class Goalie(InitialBehavior):
+class AlignmentAfterLeap(Behavior):
 
 #    @debugged
-    def __init__(self, actions):
+    def __init__(self, actions, side):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
-        self.sideLeaptTo = left # TODO: Get this from the previous states, since you'll be incorporated into goalie.py.
+        self.sideLeaptTo = side
 
     # TODO: Once you've leaped and got up, this takes place:
 #    @debugged
@@ -52,6 +52,9 @@ class Goalie(InitialBehavior):
         # On having gotten up, turn to the other side until you've found goal.
         # TODO: We might want to prop the head a little higher.
         self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
+
+    def _stop(self):
+        return self._actions.clearFootSteps()
 
 #    @debugged
     def findOppositeOwnPost(self):
@@ -98,20 +101,18 @@ class Goalie(InitialBehavior):
 
 #    @debugged
     def onAligned(self):
-        print "ALIGNED!"
-        # Intentionaly, no self._eventmanager.quit()
-
-
+        self.stop()
 
 #######################################################################################################################
 
-#for attribute in dir(Goalie):
-#    if callable(getattr(Goalie, attribute)):
-#        setattr(Goalie, attribute, debugged(getattr(Goalie, attribute)))
+#for attribute in dir(AlignmentAfterLeap):
+#    if callable(getattr(AlignmentAfterLeap, attribute)):
+#        setattr(AlignmentAfterLeap, attribute, debugged(getattr(AlignmentAfterLeap, attribute)))
 
 #######################################################################################################################
 
 if __name__ == '__main__':
     import burst
     from burst.eventmanager import MainLoop
-    MainLoop(Goalie).run()
+#    MainLoop(AlignmentAfterLeap).run()
+    print "TODO"

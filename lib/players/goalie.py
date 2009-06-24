@@ -6,6 +6,7 @@ from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
+from alignment_after_leap import left, right
 
 GOAL_BORDER = 57
 ERROR_IN_LENGTH = 0
@@ -19,13 +20,6 @@ realLeap = False
 debugLeapRight = False
 debugLeapLeft = False
 
-'''
-0. Make sure the current goalie and goalieTester work as expected.
-1. Merge goalie and goalieTester.
-2. Make sure one can turn off/on the calculation of the intersection, since not all players need this functionality, and for them, it results
-   in wasted CPU cycles.
-
-'''
 
 
 class Goalie(InitialBehavior):
@@ -33,6 +27,7 @@ class Goalie(InitialBehavior):
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
+        self._alignmentAfterLeapBehavior = AlignmentAfterLeap()
 
     def _start(self, firstTime=False):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
@@ -117,23 +112,22 @@ class Goalie(InitialBehavior):
 
     def gettingUpRight(self):
         if realLeap:
-            self._actions.executeToBellyFromLeapRight().onDone(self.getUpBelly)
+            self._actions.executeToBellyFromLeapRight().onDone(lambda: self.getUpBelly(right))
         else:
             self.onLeapComplete()
 
     def gettingUpLeft(self):
         if realLeap:
-            self._actions.executeToBellyFromLeapLeft().onDone(self.getUpBelly)
+            self._actions.executeToBellyFromLeapLeft().onDone(lambda: self.getUpBelly(left))
         else:
             self.onLeapComplete()
 
-    def getUpBelly(self):
-        self._actions.executeGettingUpBelly().onDone(self.onLeapComplete)
+    def getUpBelly(self, side):
+        self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
 
     def onLeapComplete(self):
         if realLeap:
-            self._report("Leap complete.")
-            self._eventmanager.quit()
+            self._alignmentAfterLeapBehavior.start().onDone(self.whichBehavior)
         else:
             self._restart()
 
