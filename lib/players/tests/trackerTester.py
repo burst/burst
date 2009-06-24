@@ -10,13 +10,13 @@ from burst_util import polar2cart
 class trackerTester(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.STRAIGHT_WALK_INITIAL_POSE)
 
     def _start(self, firstTime=False):
         self.count = 1
         self._actions.setCameraFrameRate(20)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
-        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).onDone(self.track)
+        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(self.track)
 
     def track(self):
         #print "trackerTester: TRACKING %s" % (self.count)

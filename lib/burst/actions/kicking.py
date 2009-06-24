@@ -82,7 +82,7 @@ class BallKicker(Behavior):
 
         self._actions.setCameraFrameRate(20)
         # kicker initial position
-        self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
 
     def _stop(self):
@@ -279,14 +279,12 @@ class BallKicker(Behavior):
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
 
             # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
-            # Note: using DEFAULT_NORMALIZED_CENTERING_Y_ERROR (instead of half of it), will cause more balls to go center-goal,
-            #       in exchange for less circle-strafing
             if self.goalpost_to_track in (self._world.yglp, self._world.bglp):
-                self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR/2
+                self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR
                 self.alignRightLimit = 0
             elif self.goalpost_to_track in (self._world.ygrp, self._world.bgrp):
                 self.alignLeftLimit = 0
-                self.alignRightLimit = DEFAULT_NORMALIZED_CENTERING_Y_ERROR/2
+                self.alignRightLimit = DEFAULT_NORMALIZED_CENTERING_Y_ERROR
 
             g = self.goalpost_to_track
             self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name, g.centerX, g.centerY, g.seen))
@@ -301,6 +299,7 @@ class BallKicker(Behavior):
             self._eventmanager.callLater(self._eventmanager.dt, self.strafe)
             return
         self.debugPrint("strafe: goal post seen")
+        self.debugPrint("%s bearing is %s. Left is %s, Right is %s" % (self.goalpost_to_track.name, self.goalpost_to_track.bearing, self.alignLeftLimit, self.alignRightLimit))
         # TODO: Add align-to-goal-center support
         if self.goalpost_to_track.bearing < self.alignLeftLimit:
             strafeMove = self._actions.executeCircleStrafeClockwise
@@ -310,7 +309,6 @@ class BallKicker(Behavior):
             self._is_strafing = False
             self._is_strafing_init_done = False
             self.debugPrint("Aligned position reached! (starting ball search)")
-            self.debugPrint("%s bearing is %s. Left is %s, Right is %s" % (self.goalpost_to_track.name, self.goalpost_to_track.bearing, self.alignLeftLimit, self.alignRightLimit))
             self._aligned_to_goal = True
             self._actions.setCameraFrameRate(20)
             self._goalFinder.stop().onDone(self.refindBall)

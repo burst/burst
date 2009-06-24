@@ -18,16 +18,16 @@ class WalkTester(InitialBehavior):
     def _start(self, firstTime=False):
         self.movesList = [
 #                     ('Walk straight - Asaf''s version (Stable walk)',
-#                      lambda: self._actions.executeMoveRadians(poses.STABLE_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.executeMove(poses.STABLE_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STABLE_WALK))),
 
 
 #                      ('Walk straight',
-#                      lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
 
                       ('Walk arc',
-                      lambda: self._actions.executeMoveRadians(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
                       lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
 
 #                     ('Walk sideways',
