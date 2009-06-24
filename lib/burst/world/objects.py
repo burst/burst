@@ -646,8 +646,8 @@ class GoalPost(Locatable):
          'FocDist', 'Height', 'Width', 'X', 'Y', 'IDCertainty']]
 
     def is_left(self):
-        return ((self.world_y < 0 and self.which_team == field.OUR_TEAM)
-                or (self.world_y > 0 and self.which_team == field.OPPOSING_TEAM))
+        return ((self.world_y > 0 and self.which_team == field.OUR_TEAM)
+                or (self.world_y < 0 and self.which_team == field.OPPOSING_TEAM))
 
     def fourLetterPostName(self):
         return '%sG%sP' % ('Y' if self.color == YELLOW_GOAL else 'B',
