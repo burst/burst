@@ -9,7 +9,7 @@ class PlayerSettings(object):
 
     def __init__(self, world):
         self.world = world
-        self.playerNumber = burst.options.jersey
+        self.playerNumber = burst.options.jersey - 1 # XXX - Jersey is 1-based, PlayerNumber is 0-based
         self.teamColor = burst.options.starting_team_color
         self.teamNumber = burst_consts.BURST_TEAM_NUMBER
         self.setColors()

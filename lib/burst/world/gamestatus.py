@@ -3,6 +3,7 @@
 
 __all__ = ['GameStatus', 'EmptyGameStatus']
 
+import logging
 
 import burst
 from burst_consts import GAME_CONTROLLER_NUM_PLAYERS, GAME_CONTROLLER_NUM_TEAMS
@@ -14,6 +15,11 @@ from gamecontroller_consts import *
 from burst.world.robot import LEDs
 import burst_consts
 
+################################################################################
+logger = logging.getLogger('gamestatus')
+info = logger.info
+################################################################################
+
 class PlayerStatus(object):
     '''
     Keeps track of the status of a single player.
@@ -21,18 +27,46 @@ class PlayerStatus(object):
     def __init__(self, teamColor, playerNumber):
         self.config(teamColor, playerNumber)
         self.status = UNKNOWN_PLAYER_STATUS
+        self.penalized = False # This is the actual penalized state - since
+                        # it can be set from two different sources, we need
+                        # to keep track of it.
+        self._game_state_when_chest_penalized = None
 
     def config(self, teamColor, playerNumber):
         self.teamColor = teamColor
         self.playerNumber = playerNumber
 
     def setStatus(self, status, remainingTimeForPenalty):
-        self.status = status
         self.remainingTimeForPenalty = remainingTimeForPenalty
+        if self.status is status:
+            return
+        self.status = status
+        # we become penalized if we were not penalized and the status
+        # says we are. ChestButton presses also change this value,
+        # so we
+        if self._game_state_when_chest_penalized and state == self._game_state_when_chest_penalized:
+            # game controller state remains as it was when the chest button was pressed - we
+            # will just ignore it
+            return
+        if self.penalized:
+            info("Moving from penalized to not from gamestate")
+        # back to gamecontroller-control
+        self._game_state_when_chest_penalized = None
+        self.penalized = self.stateIsPenalized()
 
-    def isPenalized(self):
+    def onChestButtonPressed(self):
+        self.penalized = not self.penalized
+        self._game_state_when_chest_penalized = self.status
+
+    def stateIsPenalized(self):
         return self.status in constants.Penalties
 
+    def isPenalized(self):
+        return self.penalized
+
+    def __str__(self):
+        return '<PlayerStatus %s %s %d>' % ((self.penalized and 'T') or 'F',
+            (self.stateIsPenalized() and 'T') or 'F', self.status)
 
 
 class GameStatus(object):
@@ -55,7 +89,7 @@ class GameStatus(object):
 
     def reset(self):
         if self.verbose:
-            print "GameStatus: reseting"
+            info("GameStatus: reseting")
         self.firstMessageReceived = False
         self.myTeamScore = -1 # Signal that it is unknown, as long as no message has been received from the game controller.
         self.opposingTeamScore = -1 # Signal that it is unknown, as long as no message has been received from the game controller.
