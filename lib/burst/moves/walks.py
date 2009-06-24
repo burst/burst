@@ -2,10 +2,7 @@ from burst_consts import DEG_TO_RAD
 from .. import walkparameters; WalkParameters = walkparameters.WalkParameters
 import poses
 
-# Parameter for "Vova Trick" - first two slow steps.
-# For the slow walk we need this, for the faster we turn this off (in
-# personalization).
-FIRST_TWO_SLOW_STEPS = True
+FIRST_TWO_SLOW_STEPS = False
 
 class Walk(object):
 
@@ -80,23 +77,22 @@ TURN_WALK = Walk(WalkParameters([
            80          # 20ms count per step
     )
 
-
 STRAIGHT_WALK = Walk(WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
-           15.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian
-           10.0 * DEG_TO_RAD,  # ElbowAmplitude
-           4.5,                   # LHipRoll(degrees)
-           -4.5,                  # RHipRoll(degrees)
-           0.22,                  # HipHeight(meters)
-           3.4,                   # TorsoYOrientation(degrees)
-           0.070,                  # StepLength
-           0.043,                  # StepHeight
-           0.03,                  # StepSide
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude
+           5,                   # LHipRoll(degrees)
+           -5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           -4.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better
+           0.055,                  # StepLength
+           0.015,                  # StepHeight
+           0.02,                  # StepSide
            0.3,                   # MaxTurn
-           0.01,                  # ZmpOffsetX
-           0.00]),                  # ZmpOffsetY
-           80          # 20ms count per step
+           0.013,                  # ZmpOffsetX
+           0.015]),                  # ZmpOffsetY
+           25          # 20ms count per step
     )
 
 SIDESTEP_WALK = Walk(WalkParameters([

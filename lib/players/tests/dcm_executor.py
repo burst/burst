@@ -47,9 +47,9 @@ class DCMExecutor(InitialBehavior):
         self._world._motion.setBodyStiffness(0.9)
         self._memory = self._world._memory
         self.createMovementJointsAlias()
-        self._actions.executeMoveRadians(domove_constants.INITIALPOSJOINTVALUES,1).onDone(self.onDoneInitialPosture)
+        self._actions.executeMove(domove_constants.INITIALPOSJOINTVALUES,1).onDone(self.onDoneInitialPosture)
 
-        #self._actions.executeMoveRadians(domove_constants.INITIALPOSJOINTVALUES,1)
+        #self._actions.executeMove(domove_constants.INITIALPOSJOINTVALUES,1)
         # self.doOne("Device/SubDeviceList/LShoulderPitch/Position/Actuator/Value", 1.0)
         #t = self.dcmProxy.getTime(0)
         #print "got t = %s" % t
