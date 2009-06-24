@@ -61,7 +61,7 @@ class Tracker(object):
         # don't erase any deferreds here! stop is called
         # before issuing the callbacks, allowing deferred's callee to
         # correctly check that tracker is not operating.
-        if self.stopped(): return self._actions._succeed(self)
+        if self.stopped(): return self._actions.succeed(self)
         if self.verbose:
             print "Tracker: Stopping current action - %s" % (
                 self._on_centered_bd and 'centering' or 'tracking')
@@ -307,7 +307,7 @@ class CenteringCommand(object):
         )
     def __call__(self):
         self._actions.moveHead(self._yaw, self._pitch).onDone(self.onCenteringDone)
-        self._bd = self._actions._make(self)
+        self._bd = self._actions.make(self)
         return self._bd
 
 class TurnCommand(object):
@@ -445,7 +445,7 @@ class Searcher(object):
         """ stops the searcher if active and returns a BD for user to act
         on, BD will be called when stoppage is complete. This may be immediate
         if already stopped, or based on the current head bd from actions """
-        if self.stopped(): return self._actions._succeed(self)
+        if self.stopped(): return self._actions.succeed(self)
         self._unregisterAllEvents()
         self._search_count[1] += 1
         self._stopped = True

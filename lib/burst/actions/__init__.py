@@ -96,9 +96,10 @@ class Actions(object):
         self._eventmanager = eventmanager
         self._world = world = eventmanager._world
         self.burst_deferred_maker = self._world.burst_deferred_maker
-        self._make = self.burst_deferred_maker.make
-        self._wrap = self.burst_deferred_maker.wrap
-        self._succeed = self.burst_deferred_maker.succeed
+        # shortcuts to BurstDeferred factory. NOTE: don't get wrapped by BehaviorActions - should they?
+        self.make = self.burst_deferred_maker.make
+        self.wrap = self.burst_deferred_maker.wrap
+        self.succeed = self.burst_deferred_maker.succeed
 
         self._motion = world.getMotionProxy()
         self._speech = world.getSpeechProxy()
@@ -114,8 +115,8 @@ class Actions(object):
         self.localizer = Localizer(self)    # when you stop the InitialBehavior. Thank you.
 
         # we keep track of the last head bd
-        self._current_head_bd = self._succeed(self)
-        self._current_motion_bd = self._succeed(self)
+        self._current_head_bd = self.succeed(self)
+        self._current_motion_bd = self.succeed(self)
 
         # slight changes between 1.3.8 and 1.2.0
         if is_120:
@@ -337,7 +338,7 @@ class Actions(object):
     @returnsbd
     @legal_any
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
-        self._current_motion_bd = self._wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
+        self._current_motion_bd = self.wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
         return self._current_head_bd
 
     def sitPoseAndRelax_returnDeferred(self): # TODO: This appears to be a blocking function!
@@ -410,13 +411,13 @@ class Actions(object):
     def switchToTopCamera(self):
         print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_TOP_CAMERA
-        return self._wrap(self._imops.switchToTopCamera(), self)
+        return self.wrap(self._imops.switchToTopCamera(), self)
 
     @returnsbd
     def switchToBottomCamera(self):
         print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        return self._wrap(self._imops.switchToBottomCamera(), self)
+        return self.wrap(self._imops.switchToBottomCamera(), self)
 
     # don't wrap - calls two wrapped routines
     def setCamera(self, whichCamera):
@@ -431,7 +432,7 @@ class Actions(object):
 
     @returnsbd
     def setCameraFrameRate(self, fps):
-        bd = self._make(self)
+        bd = self.make(self)
         self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
         self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
         return bd
@@ -548,12 +549,12 @@ class Actions(object):
         return self._motion.clearFootsteps()
 
     def clearFootsteps(self):
-        return self._wrap(self._motion.clearFootsteps(), data=self)
+        return self.wrap(self._motion.clearFootsteps(), data=self)
 #        def debugme(result):
 #            import pdb; pdb.set_trace()
 #        d = self._motion.clearFootsteps()
 #        d.addCallback(debugme)
-#        return self._wrap(d, data=self)
+#        return self.wrap(d, data=self)
 
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within
@@ -649,7 +650,7 @@ class Actions(object):
         Returns a BurstDeferred.
         """
         # TODO - BurstDeferredList? just phase out the whole BurstDeferred in favor of t.i.d.Deferred?
-        bd = self._make(self)
+        bd = self.make(self)
         def doMove(_):
             if pose:
                 DeferredList([

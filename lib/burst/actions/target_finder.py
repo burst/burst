@@ -69,7 +69,7 @@ class TargetFinder(ContinuousBehavior):
             # NOTE: to make the behavior happy we need to always keep the deferred we are
             # waiting on at self._bd ; because Tracker doesn't provide any bd we create
             # one using self._actions._make
-            self._bd = self._actions._make(self)
+            self._bd = self._actions.make(self)
             self._bd.onDone(lambda _, self=self: self._start())
             self._actions.track(target, lostCallback=self._bd.callOnDone)
             self._callOnTargetFoundCB()
@@ -90,5 +90,5 @@ class TargetFinder(ContinuousBehavior):
         bd2 = self._actions.searcher.stop()
         # TODO: I could/should return the self._actions.getCurrentHeadBD(), but that is buggy - it calls
         # Stopped twice. So for now this works.
-        return self._actions._wrap(DeferredList([bd1.getDeferred(), bd2.getDeferred()]), data=self)
+        return self._actions.wrap(DeferredList([bd1.getDeferred(), bd2.getDeferred()]), data=self)
 

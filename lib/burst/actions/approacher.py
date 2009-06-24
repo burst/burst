@@ -62,7 +62,6 @@ class Approacher(Behavior):
         if result_xyh is None:
             self.log("Done")
             self.stop()
-            self.callOnDone()
             return
 
         x, y, h = result_xyh # TODO - take heading into account..
@@ -99,7 +98,6 @@ class Approacher(Behavior):
         if target_location == BALL_IN_KICKING_AREA:
             self.log("Done from self")
             self.stop()
-            self.callOnDone()
             return
 
         def move_forward(target_location):

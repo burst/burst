@@ -178,7 +178,9 @@ class Behavior(BurstDeferred, Nameable):
         self._stopped = True
         self._eventmanager.clearFutureCallbacks()
         self._actions.clearFutureCallbacks()
-        return self._stop() # User cb - should return a BurstDeferred.
+        bd = self._stop()
+        assert(bd)
+        return bd.onDone(self.callOnDone) # User cb - should return a BurstDeferred.
 
     def stopped(self):
         return self._stopped
