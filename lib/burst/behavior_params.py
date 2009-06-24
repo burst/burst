@@ -52,6 +52,8 @@ KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_M
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
+MAX_FORWARD_WALK = 200 # 200cm is the farthest we can stably go without stopping
+MAX_SIDESTEP_WALK = 20 # 20 cm is the farthest we go on side-stepping without stopping
 
 def calcTarget(distSmoothed, bearing):
     target_x, target_y = polar2cart(distSmoothed, bearing)

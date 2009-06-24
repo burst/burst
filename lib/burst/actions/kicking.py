@@ -19,11 +19,11 @@ import burst.moves.walks as walks
 import burst.moves.poses as poses
 from burst.behavior import Behavior
 
-from burst.behavior_params import (calcTarget, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR,
-                                   BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
+from burst.behavior_params import (calcTarget, MAX_FORWARD_WALK, MAX_SIDESTEP_WALK, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS,
+                                   BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
                                    MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS, MOVEMENT_PERCENTAGE_TURN,
                                    MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
-from burst_consts import (LEFT, RIGHT, DEFAULT_NORMALIZED_CENTERING_Y_ERROR, IMAGE_CENTER_X, IMAGE_CENTER_Y,
+from burst_consts import (LEFT, RIGHT, IMAGE_CENTER_X, IMAGE_CENTER_Y,
     PIX_TO_RAD_X, PIX_TO_RAD_Y, DEG_TO_RAD)
 import burst_consts
 import random
@@ -228,14 +228,14 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
                 else:
-                    self._movement_deferred = self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD)
-            elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
+                    self._movement_deferred = self._actions.changeLocationRelative(min(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MAX_FORWARD_WALK))
+            elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR) or self._aligned_to_goal:
                 self.debugPrint("Side-stepping!")
                 self._actions.setCameraFrameRate(10)
                 self._movement_type = MOVE_SIDEWAYS
                 self._movement_location = target_location
                 self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                    0.0, kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS, walk=walks.SIDESTEP_WALK)
+                    0.0, min(kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS,MAX_SIDESTEP_WALK), walk=walks.SIDESTEP_WALK)
             elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
                 self.debugPrint("Turning!")
                 self._actions.setCameraFrameRate(10)
@@ -279,12 +279,17 @@ class BallKicker(Behavior):
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
 
             # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
+<<<<<<< HEAD:lib/burst/actions/kicking.py
             if self.goalpost_to_track in (self._world.opposing_lp, self._world.our_lp):
                 self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR
+=======
+            if self.goalpost_to_track in (self._world.yglp, self._world.bglp):
+                self.alignLeftLimit = -0.2
+>>>>>>> 82eb0c514547c39befcb4c6f675fdaeda4777701:lib/burst/actions/kicking.py
                 self.alignRightLimit = 0
             elif self.goalpost_to_track in (self._world.opposing_rp, self._world.our_rp):
                 self.alignLeftLimit = 0
-                self.alignRightLimit = DEFAULT_NORMALIZED_CENTERING_Y_ERROR
+                self.alignRightLimit = 0.2
 
             g = self.goalpost_to_track
             self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name, g.centerX, g.centerY, g.seen))

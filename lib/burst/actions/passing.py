@@ -63,9 +63,6 @@ class passBall(BurstDeferred):
         #self._actions.initPoseAndStiffness().onDone(self.initKickerPosition)
         self.doNextAction()
 
-    #def initKickerPosition(self):
-        #self._actions.executeMove(moves.STABLE_WALK_INITIAL_POSE).onDone(self.doNextAction)
-
     def onKickDone(self):
 #        for event in [EVENT_BALL_IN_FRAME, EVENT_ALL_OPPOSING_GOAL_SEEN,
 #                        EVENT_CHANGE_LOCATION_DONE]:
