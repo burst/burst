@@ -1080,8 +1080,8 @@ class PynaoqiPose(Pose):
         from burst.position import xyt_from_two_dist_one_angle
         if top is not None or bottom is not None:
             raise NotIMplementedError('Not done yet')
-        yglp, ygrp = self._v.YGLP, self._v.YGRP
-        if yglp.distance != 0.0 and ygrp.distance != 0.0:
+        opposing_lp, opposing_rp = self._v.YGLP, self._v.YGRP
+        if opposing_lp.distance != 0.0 and opposing_rp.distance != 0.0:
             (e_left, r1), (e_right, r2) = (
                 self._estimates['YGLP'],
                 self._estimates['YGRP'])
@@ -1091,7 +1091,7 @@ class PynaoqiPose(Pose):
             # XXX: I think the YGLP is the BOTTOM, not the TOP
             if e_right.dist == 0.0:
                 #print "using given bearing"
-                a1 = ygrp.bearingdeg * pi / 180.0
+                a1 = opposing_rp.bearingdeg * pi / 180.0
             else:
                 a1 = e_right.bearing
             x, y, theta = xyt_from_two_dist_one_angle(

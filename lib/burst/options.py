@@ -3,7 +3,7 @@ Command line and default config file for BURST robocup platform.
 """
 
 import os
-from burst_consts import ROBOT_IP_TO_NAME
+from burst_consts import (ROBOT_IP_TO_NAME, BLUE_TEAM)
 import burst_consts
 
 __all__ = ['running_on_nao', 'connecting_to_webots', 'connecting_to_nao',
@@ -21,7 +21,6 @@ def running_on_nao():
 
 def connecting_to_webots():
     """ True if we are connecting to webots """
-    global ip
     #is_nao = os.popen("uname -m").read().strip() == 'i586'
     return not running_on_nao() and ip == LOCALHOST_IP or ip == 'localhost'
 
@@ -41,7 +40,12 @@ def parse_command_line_arguments():
     main = OptionGroup(parser, "main")
     main.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
     main.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
+    main.add_option('', '--jersey', dest='jersey', help='override default per-host-name jersey number in burst_consts')
+    main.add_option('', '--color', dest='starting_team_color', default=BLUE_TEAM,
+            help='override default start team color - for testing. in game the chest button will be used')
+    main.add_option('', '--opposing', dest='opposing', default='yellow', help='override default opposing goal color')
     main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change')
+    main.add_option('', '--testready', action='store_true', dest='test_ready', default=False, help='test ready state without gamecontroller')
     main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     main.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
@@ -91,11 +95,9 @@ def parse_command_line_arguments():
     ip = host_to_ip(ip)
     port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)
     port = int(port)
-    globals()['ip'] = ip
-    globals()['port'] = port
-    globals()['options'] = opts
     # UGLY
     burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
+    return opts, ip, port
 
 LOCALHOST_IP = '127.0.0.1'
 
@@ -118,11 +120,9 @@ def host_to_ip(ip):
         print "Warning: can't resolve %r, assuming ip" % ip
     return ip
 
-# defaults - suitable for a locally running naoqi, like on a robot.
+# defaults are suitable for a locally running naoqi, like on a robot.
 ip = get_default_ip()
-port = 9559
-# now override them (possibly)
-parse_command_line_arguments()
+options, ip, port = parse_command_line_arguments()
 
 # TODO: an ugly twist.
 # TODO: just another note that this sucks. Also, target.ip is 'localhost' for pynaoqi,
@@ -153,7 +153,9 @@ elif port == 9560:
 else:
     robotname = ROBOT_IP_TO_NAME.get(ip, ip)
 
+options.jersey = jersey = int(options.jersey or burst_consts.ROBOT_NAME_TO_JERSEY_NUMBER[robotname])
 burst_target.robotname = robotname
+burst_target.jersey = jersey
 
 def set_all_verbose():
     options.verbose_tracker = True

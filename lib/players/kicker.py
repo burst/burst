@@ -3,12 +3,13 @@
 # import player_init MUST BE THE FIRST LINE
 import player_init
 from burst.behavior import InitialBehavior
+import burst.moves.poses as poses
 import burst
 
 class Kicker(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.STRAIGHT_WALK_INITIAL_POSE)
 
     def _start(self, firstTime=False):
         self._ballkicker = self.kick()
@@ -18,8 +19,7 @@ class Kicker(InitialBehavior):
         return self._ballkicker.stop()
 
     def kick(self):
-        target_left_right_posts = [self._world.yglp, self._world.ygrp]
-#        target_left_right_posts = [self._world.bglp, self._world.bgrp]
+        target_left_right_posts = [self._world.opposing_lp, self._world.opposing_rp]
         return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):

@@ -8,8 +8,13 @@ from math import cos, sin, sqrt, atan2, pi
 import linecache
 import glob
 import socket
+import logging
 
-import burst_consts
+################################################################################
+
+logging.basicConfig(level=logging.DEBUG)
+
+################################################################################
 
 # Data Structures
 
@@ -774,6 +779,8 @@ def is64():
 # Shell Utils
 
 def set_robot_ip_from_argv():
+    import burst_consts
+
     # check the actual name of the executable - use it as "--ip bla" if it
     # exists in burst_consts.ROBOT_IP_TO_NAME.values()
     exec_name = os.path.split(sys.argv[0])[-1]
@@ -785,6 +792,14 @@ def set_robot_ip_from_argv():
                 return
 
 # Python language util
+
+def import_class(dotted_name):
+    """ import_class('kicker.Kicker') will import kicker, and return the Kicker
+    symbol from it, supposedly a class, but doesn't care.
+    """
+    module, symbol = dotted_name.rsplit('.',1)
+    mod = __import__(module, fromlist=['']) # get the right most module
+    return getattr(mod, symbol)
 
 def getfunc(f_or_m):
     if hasattr(f_or_m, 'im_func'):
@@ -819,6 +834,7 @@ class CallLogger(object):
         self._f = f
 
     def __call__(self, *args, **kw):
+        import burst_consts
         start = time()
         ret = self._f(*args, **kw)
         end = time()

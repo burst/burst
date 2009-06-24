@@ -8,7 +8,11 @@ For instance, don't put any moves in here, or any parameters that are personal.
 import os # for HOME
 
 import math
+import random # for INITIAL_POSITION of SecondaryKicker on KickOff
 from math import tan
+
+from burst_field import * # field constants
+from burst_events import * # event constants
 
 # Some stuff that is required first
 MESSI = 'messi'
@@ -74,6 +78,16 @@ ROBOT_NAME_TO_JERSEY_NUMBER = {
     WEBOTS: GOALIE_JERSEY, # TODO - overriding command line for robot number, required for webots.
 }
 
+# This is what the player script uses, that is to say what the default Player
+# uses. The key is the jersey number (1,2,3), the value is the import as in
+# toplevel_mod.lower_level_mod.class_name (last part is not the module,
+# but a symbol in lower_level_mod)
+JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS = {
+    GOALIE_JERSEY: 'players.goalie.Goalie',
+    KICKER_JERSEY: 'players.kicker.Kicker',
+    SECONDARY_JERSEY: 'players.kicker.Kicker',
+}
+
 ################################################################################
 # File locations, Shared memory
 ################################################################################
@@ -103,6 +117,19 @@ is_120 = NAOQI_VERSION == NAOQI_1_2_0
 # WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
 # 'initial_position' - world coordinates
 INITIAL_POSITION = 'initial_position'
+
+SECONDARY_ATTACK_LEFT_INITIAL_Y  = -CENTER_CIRCLE_RADIUS*1.5
+SECONDARY_ATTACK_RIGHT_INITIAL_Y =  CENTER_CIRCLE_RADIUS*1.5
+SECONDARY_ATTACK_INITIAL_Y = random.choice((SECONDARY_ATTACK_LEFT_INITIAL_Y, SECONDARY_ATTACK_RIGHT_INITIAL_Y))
+print "Secondary attacker INITIAL POSITION is %s" % ('LEFT' if
+    SECONDARY_ATTACK_INITIAL_Y == SECONDARY_ATTACK_LEFT_INITIAL_Y else 'RIGHT')
+
+GOALIE_DONT_HIDE_DIST = 40.0
+
+# TODO - video white line detection, remove those buffers (turn them into a behavior 'get as close as you can')
+WHITE_LINE_BUFFER = 20.0 # cm from white line we compensate for inaccuracy in localization and no white line detection
+PENALTEY_BUFFER = 20.0
+
 READY_INITIAL_LOCATIONS = {
     # We are the Kick off team - Attacking positions
     True: {
@@ -110,10 +137,10 @@ READY_INITIAL_LOCATIONS = {
             INITIAL_POSITION: (0.0, 0.0), # TODO - lambda that determines? would be pretty cool
         },
         KICKER_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (MIDFIELD_X - WHITE_LINE_BUFFER, 0.0),
         },
         SECONDARY_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (MIDFIELD_X - WHITE_LINE_BUFFER, SECONDARY_ATTACK_INITIAL_Y),
         },
     },
     False: {
@@ -121,10 +148,10 @@ READY_INITIAL_LOCATIONS = {
             INITIAL_POSITION: (0.0, 0.0),
         },
         KICKER_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (OUR_PENALTEY_X - PENALTEY_BUFFER, OUR_PENALTEY_Y - GOALIE_DONT_HIDE_DIST),
         },
         SECONDARY_JERSEY: {
-            INITIAL_POSITION: (0.0, 0.0),
+            INITIAL_POSITION: (OUR_PENALTEY_X - PENALTEY_BUFFER, OUR_PENALTEY_Y + GOALIE_DONT_HIDE_DIST),
         },
     }
 }
@@ -275,6 +302,44 @@ LEFT = 0
 RIGHT = 1
 DOWN = 2
 UP = 3
+
+# Team Constants, and corresponding Color constants for Goal Posts
+
+BLUE_TEAM, RED_TEAM = 0, 1 # XXX we use numbers since player_settings.py uses addition on this
+def team_color_str(team):
+    return {BLUE_TEAM:'blue', RED_TEAM:'red'}[team]
+
+YELLOW_GOAL, BLUE_GOAL = 'yellow_goal', 'blue_goal'
+def opposite_color(color):
+    return YELLOW_GOAL if color == BLUE_GOAL else BLUE_GOAL
+def team_to_defending_goal_color(team):
+    return {BLUE_TEAM:BLUE_GOAL, RED_TEAM:YELLOW_GOAL}[team]
+
+YGLP, YGRP, BGLP, BGRP = 'YGLP', 'YGRP', 'BGLP', 'BGRP'
+VISION_POSTS_NAMES = [YGLP, YGRP, BGLP, BGRP]
+
+goal_events = {
+    YELLOW_GOAL: {
+        'left': {
+            'position_changed': EVENT_YGLP_POSITION_CHANGED,
+            'in_frame': EVENT_YGLP_IN_FRAME,
+        },
+        'right': {
+            'position_changed': EVENT_YGRP_POSITION_CHANGED,
+            'in_frame': EVENT_YGRP_IN_FRAME,
+        }
+    },
+    BLUE_GOAL: {
+        'left': {
+            'position_changed': EVENT_BGLP_POSITION_CHANGED,
+            'in_frame': EVENT_BGLP_IN_FRAME,
+        },
+        'right': {
+            'position_changed': EVENT_BGRP_POSITION_CHANGED,
+            'in_frame': EVENT_BGRP_IN_FRAME,
+        }
+    }
+}
 
 #############################################################
 # Lists of variable names exported by us to ALMemory
@@ -459,7 +524,7 @@ UNKNOWN = object() # Ensures uniqueness, and won't test as equal to anything oth
 
 # Colors for the LEDs
 RED = 0xFF0000; GREEN = 0x00FF00; BLUE = 0x0000FF; OFF = 0x000000; YELLOW = 0xFFFF00; PURPLE = 0xFF00FF; WHITE = 0xFFFFFF; LIGHT_BLUE = 0x00FFFF
-TeamColors = {0: BLUE, 1: RED}
+TeamColors = {BLUE_TEAM: BLUE, RED_TEAM: RED}
 
 # add all the gamecontroller constants (happens at the end since
 # gamecontroller_consts uses some consts from here, for led colors)

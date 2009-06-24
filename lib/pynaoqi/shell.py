@@ -183,19 +183,25 @@ def get_list_of_tests():
 
 class PlayerRunner(object):
 
-    def __init__(self, players, name):
-        self.name = name
+    def __init__(self, players, fullname):
+        self.fullname = fullname
         self._players = players
         self._player = None
+        self._main = None
 
     def make(self):
         global user_ns
-        self.loop = makeplayerloop(self.name)
+        self.loop = makeplayerloop(self.fullname)
         self._players.last = self.loop
         if hasattr(self.loop, '_player'): # why? network problems?
-            self._players.player = self.loop._player
-            user_ns['player'] = self.loop._player
-            user_ns['main'] = self.loop._player._main_behavior
+            user_ns['player'] = self._player = self.loop._player
+            user_ns['main'] = self._main = self.loop._player._main_behavior
+    
+    def switch_color(self):
+        # TODO - simulate chest button (change the AL_MEMORY var?)
+        if not self._player: return
+        self._main._world.playerSettings.toggleteamColor()
+        print str(self._main._world.playerSettings)
 
     def start(self):
         self.make()
@@ -210,19 +216,22 @@ class Players(object):
     def __init__(self, thelist):
         self.players_list = thelist
         for player in self.players_list:
-            self.__dict__[player] = PlayerRunner(self, player)
+            self.__dict__[player.rsplit('.',1)[-1]] = PlayerRunner(self, player)
 
-players = Players(get_list_of_players())
-tests = Players(get_list_of_tests())
+# Keep lists of players and tests for easy running.
+import players as players_mod
+players = Players('players.%s' % x for x in get_submodules(players_mod))
+import players.tests as tests_mod
+tests = Players('players.tests.%s' % x for x in get_submodules(tests_mod))
 
 def makeplayerloop(name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
     """
     import burst.behavior
+    base, last = name.rsplit('.', 1)
     try:
-        mod = __import__('players.%s' % name)
-        playermod = getattr(mod, name)
+        playermod = __import__(name, fromlist=[''])
     except SyntaxError, e:
         raise # Ipython catches, clear win.
     except ImportError:
@@ -345,6 +354,8 @@ r=[x.result for x in r]
 # show all events
 players.template_player.start()
 loop(lambda: succeed(player._world._events), dt=0.1)
+# in nicer form (also looks at eventmanager and not world - same thing I think)
+loop(lambda: succeed(map(burst_events.event_name, main._eventmanager._pending_events)), dt=0.1)
 
 """
 
@@ -376,6 +387,7 @@ def make_shell_namespace(use_pylab):
     import burst
     import burst_util
     import burst_consts as consts
+    import burst_events
     import burst.image as image
     import vision_definitions
     from twisted.internet import task
@@ -406,6 +418,8 @@ def make_shell_namespace(use_pylab):
         moves = moves,
         field = field,
         consts = consts,
+        burst_consts = consts,
+        burst_events = burst_events,
         vision_definitions = vision_definitions,
         image = image,
         # utilities

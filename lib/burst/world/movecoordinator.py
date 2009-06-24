@@ -158,13 +158,22 @@ class BaseMoveCoordinator(object):
         initiated = len(self._initiated)
         motion = (self._world.time, kind, description, event, duration)
         self._initiated.append(motion)
+        motion = None
         if kind is KIND_WALK:
-            self._world.odometry.onWalkInitiated(Motion(
-                start_time=self._world.time, description=description, estimated_duration=duration))
-        return initiated
+            motion = Motion(
+                start_time=self._world.time, description=description, estimated_duration=duration)
+            self._onWalkInitiated(motion)
+        return initiated, motion
 
     def _add_posted(self, postid, initiated):
         self._posted.append((postid, self._initiated[initiated]))
+
+    # odometry interface - to be used by implementations (IsRunning / Threaded)
+    def _onWalkInitiated(self, motion):
+        self._world.odometry.onWalkInitiated(motion)
+
+    def _onWalkComplete(self, motion):
+        self._world.odometry.onWalkComplete(motion)
 
     # Part that inheriting class should reimplement
 
@@ -273,8 +282,10 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         duration - expected duration of action
         """
         #TODO: a MoveCommand object.. end up copying northernbites after all, just in the hard way.
-        initiated = self._add_initiated(self._world.time, kind, description, event, duration)
+        initiated, motion = self._add_initiated(self._world.time, kind, description, event, duration)
         bd = self._make_bd(self)
+        if motion:
+            bd.onDone(lambda: self._onWalkComplete(motion))
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
             self._onPostId(postid, initiated, bd)).addErrback(log.err)
         return bd

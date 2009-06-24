@@ -224,7 +224,7 @@ class Actions(object):
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
         print "ADD TURN (deltaTheta): %f" % (deltaTheta)
-        dgens.append(lambda _: self._motion.addTurn(deltaTheta, DEFAULT_STEPS_FOR_TURN))
+        dgens.append(lambda _: self._motion.addTurn(deltaTheta, walk.defaultSpeed))
 
         duration = 1.0 # TODO - compute duration correctly
         d = chainDeferreds(dgens)
@@ -232,6 +232,7 @@ class Actions(object):
                             description=('turn', deltaTheta, walk))
         return self._current_motion_bd
 
+    # TODO: Change to walkSideways()
     @returnsbd
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
@@ -483,8 +484,9 @@ class Actions(object):
                                             description=('choreograph', whatmove))
         return self._current_motion_bd
 
+    # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     @legal_any
-    def executeMoveRadians(self, moves, interp_type = INTERPOLATION_SMOOTH,
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH,
             description=('moveradians',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
@@ -511,39 +513,6 @@ class Actions(object):
         #print repr((joints, angles_matrix, durations_matrix))
         self._current_motion_bd = self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
             interp_type, description = description)
-        return self._current_motion_bd
-
-    # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
-    # TODO: combine executeMove & executeMoveRadians (by adding default parameter)
-    @returnsbd
-    @legal_any
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('move',)):
-        """ Go through a list of body angles, works like northern bites code:
-        moves is a list, each item contains:
-        head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
-
-        interp_type - 1 for SMOOTH, 0 for Linear
-        interp_time - time in seconds for interpolation
-
-        NOTE: currently this is SYNCHRONOUS - it takes at least
-        sum(interp_time) to execute.
-        """
-
-        if len(moves[0]) == 6:
-            def getangles((head, larm, lleg, rleg, rarm, interp_time)):
-                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
-            joints = self._joint_names
-        else:
-            def getangles((larm, lleg, rleg, rarm, interp_time)):
-                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
-            joints = self._joint_names[2:]
-
-        n_joints = len(joints)
-        angles_matrix = transpose([[x*DEG_TO_RAD for x in getangles(move)] for move in moves])
-        durations_matrix = [list(cumsum(move[-1] for move in moves))] * n_joints
-        #print repr((joints, angles_matrix, durations_matrix))
-        self._current_motion_bd = self._movecoordinator.doMove(joints, angles_matrix, durations_matrix,
-            interp_type, description=description)
         return self._current_motion_bd
 
     @returnsbd

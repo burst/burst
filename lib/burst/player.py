@@ -12,6 +12,8 @@ which is created from the main_behavior_class (or factory) given.
 
 '''
 
+import logging
+
 from twisted.python import log
 
 from burst_events import *
@@ -24,9 +26,15 @@ from burst_consts import (InitialRobotState,
     ReadyRobotState,
     InitialGameState, ReadyGameState, FinishGameState,
     SetGameState, PlayGameState, FinishGameState,
-    UNKNOWN_GAME_STATE, gameStateToString)
+    UNKNOWN_GAME_STATE, gameStateToString,
+    team_to_defending_goal_color)
 
-from burst.actions.approacher import Approacher
+from burst.actions.approacher import ApproachXYHActiveLocalization
+
+################################################################################
+logger = logging.getLogger("player")
+info = logger.info
+################################################################################
 
 def overrideme(f):
     return f
@@ -148,15 +156,28 @@ class Player(object):
         #   wait for either chest button or game state change
         #    when that happens call self._onConfigured
         if not burst_consts.ALWAYS_CONFIGURE and game_state is UNKNOWN_GAME_STATE:
-            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
+            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to %s" % (
+                'Ready' if burst.options.test_ready else 'Playing')
             print "NOTICE: PLEASE FIX BEFORE GAME"
             self._onConfigured()
-            self._main_behavior.start()
+            if burst.options.test_ready:
+                def onReadyDone():
+                    print "testing Ready: Done with Ready"
+                self._onReady().onDone(onReadyDone)
+            else:
+                self._startMainBehavior()
         else:
             print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
                 self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
                     fireOnOneCallback=True).addCallback(self._onConfigured).addErrback(log.err)
+
+    def _startMainBehavior(self):
+        print "="*80
+        print "= %s =" % (('starting %s' % self._main_behavior.name).center(76))
+        print "="*80
+        self._main_behavior.start()
+        return self._main_behavior
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -172,6 +193,7 @@ class Player(object):
             self._onChestButtonPressed]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
+        self._world.configure(our_color=team_to_defending_goal_color(self._world.robot.team_color))
         # register for future changes
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
 
@@ -192,7 +214,8 @@ class Player(object):
 
     def _onPlay(self):
         print "Player: OnPlay"
-        self._main_behavior.start().onDone(self._onMainBehaviorDone)
+        self._startMainBehavior()
+        self._main_behavior.onDone(self._onMainBehaviorDone)
 
     def _onMainBehaviorDone(self):
         print "Player: Main Behavior is done (%s)" % (self._main_behavior)
@@ -206,11 +229,12 @@ class Player(object):
         gameStatus = self._world.gameStatus
         weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
         jersey = self._world.robot.jersey
-        ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
-        import pdb; pdb.set_trace()
-        self._approacher = Approacher(self._actions, ready_location)
+        x, y = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey][burst_consts.INITIAL_POSITION] # XXX - no idea what that last dict is good for, contains one item right now.
+        info("onReady: #%d going to %2.1f, %2.1f" % (jersey, x, y))
+        self._approacher = ApproachXYHActiveLocalization(self._actions, x, y, 0.0) # heading towards opposing goal
         self._approacher.start()
         self._approacher.onDone(self._onReadyDone)
+        return self._approacher
 
     def _onReadyDone(self):
         print "INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey)

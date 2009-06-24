@@ -24,15 +24,16 @@ class DiagonalTester(InitialBehavior):
     def find_goal(self):
         self._actions.localize().onDone(self.found_goal)
 
-    def found_goal(self):
-        yglp, ygrp = self._world.yglp, self._world.ygrp
+    def foundGoal(self):
+        opposing_lp, opposing_rp = self._world.opposing_lp, self._world.opposing_rp
         t = self._world.time
-        dtl, dtr = t - yglp.update_time, t - ygrp.update_time
+        dtl, dtr = t - opposing_lp.update_time, t - opposing_rp.update_time
         print "Goal Posts Bearings: %3.2f, %3.2f (seens %s, %s), (updated %3.2f seconds ago)" % (
-                yglp.bearing, ygrp.bearing, yglp.seen, ygrp.seen, max(dtl, dtr))
+                opposing_lp.bearing, opposing_rp.bearing, opposing_lp.seen, opposing_rp.seen, max(dtl, dtr))
         
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
             lambda: self._eventmanager.callLater(0.5, self._ballFinder.start))
+        #self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
 
     def ball_found(self):
         print "BALL FOUND"

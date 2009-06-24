@@ -366,14 +366,15 @@ class Joints(BaseWindow):
         # XXX - import burst here so it doesn't parse sys.argv
         import burst.moves as moves
         import burst.moves.poses as poses
+        import burst.moves.walks as walks
         import burst
 
         moves_buttons_data = [(move_name, lambda _, move=getattr(poses, move_name):
             self.con.ALMotion.executeMove(move))
                 for move_name in moves.NAOJOINTS_EXECUTE_MOVE_MOVES]
 
-        self._walkconfig = burst.moves.walks.STRAIGHT_WALK.walkParameters
-        self._default_walk_speed = burst.moves.walks.STRAIGHT_WALK.defaultSpeed
+        self._walkconfig = walks.STRAIGHT_WALK.walkParameters
+        self._default_walk_speed = walks.STRAIGHT_WALK.defaultSpeed
 
         def updateWalkConfig(_):
             self.con.ALMotion.getWalkConfig().addCallback(self.setWalkConfig)

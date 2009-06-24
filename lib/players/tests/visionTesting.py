@@ -11,18 +11,18 @@ if os.getcwd() == in_tree_dir:
 from burst.behavior import InitialBehavior
 from burst_events import EVENT_BALL_IN_FRAME
 import burst.moves as moves
+import burst.moves.poses as poses
 from burst_util import polar2cart
 
 class visionTesting(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
 
     def _start(self, firstTime=False):
         self.initPos()
 
     def initPos(self):
-        self._actions.executeMove(moves.SIT_POS)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
 
     def printBall(self):

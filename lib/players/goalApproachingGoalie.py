@@ -26,8 +26,8 @@ class Goalie(InitialBehavior):
 #        super(Goalie, self).onStart()
         self._reset()
         # TODO: ownGoal according to my own team color.
-        self.ownGoal = [self._world.ygrp, self._world.yglp]
-        self.oppositeGoal = [self._world.ygrp, self._world.yglp]
+        self.ownGoal = [self._world.opposing_rp, self._world.opposing_lp]
+        self.oppositeGoal = [self._world.opposing_rp, self._world.opposing_lp]
         self._actions.setCameraFrameRate(10)
 
         # TODO: This will no longer be the case once we make sure that our own goal, regardless of the color, is at (0, 0).
@@ -109,7 +109,7 @@ class Goalie(InitialBehavior):
 
     def onArrivedNextToOneGoalPostOfOwnGoal(self):
         self._report("onArrivedNextToOneGoalPostOfOwnGoal")
-        direction = 1 if self.closest_goalpost in [self._world.yglp, self._world.bglp] else -1
+        direction = 1 if self.closest_goalpost in [self._world.opposing_lp, self._world.our_lp] else -1
         self._actions.turn(direction*math.pi/4).onDone(self.findOtherGoalPostOfOwnGoalTurnStep)
 
 #alignAccordingToOppositeGoalSearchingStep

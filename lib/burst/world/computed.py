@@ -1,15 +1,20 @@
+import logging
 from math import cos, sin, sqrt, atan2
+
 from burst_events import EVENT_BALL_IN_FRAME #EVENT_KP_CHANGED
 import burst_events
 
+################################################################################
+logger = logging.getLogger('computed')
+info = logger.info
+################################################################################
+
 class Computed(object):
-    """ place holder for any computed value, currently just the kicking point, that
-    doesn't naturally belong to any other object, like ball speed etc
+    """ place holder for any computed value that can't find another home.
     """
 
     def __init__(self, world):
         self._world = world
-        self._team = world.team
         self._blueGoalSeen = False
         self._yellowGoalSeen = False
 
@@ -51,8 +56,8 @@ class Computed(object):
         self.kp_valid = False
         self.kp_k = 30.0
         """
-        if (self._team.target_goal_seen_event in events
-                    and EVENT_BALL_IN_FRAME in events):
+        if self._world.opposing_goal.seen and self._world.ball.seen:
+            info('calculating kick point')
             new_kp = self.calculate_kp()
 
             if not self.kp_valid or (new_kp[0] - self.kp[0] > 1e-5 or new_kp[1] - self.kp[1] > 1e-5):
@@ -79,8 +84,8 @@ class Computed(object):
          kp - kicking point (x, y, bearing)
         """
         # left - l, right - r, bearing - b, dist - d
-        team = self._team
-        left_post, right_post, ball = team.left_post, team.right_post, self._world.ball
+        goal = self._world.opposing_goal
+        left_post, right_post, ball = goal.left, goal.right, self._world.ball
         left_alpha, left_dist, right_alpha, right_dist = (
             left_post.bearing, left_post.dist, right_post.bearing, right_post.dist)
 

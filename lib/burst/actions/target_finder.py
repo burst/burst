@@ -55,6 +55,8 @@ class TargetFinder(ContinuousBehavior):
 
         if len(seen_objects) > 0:
             if len(seen_objects) > 1:
+                #for t in seen_objects:
+                #    print "name: %s bearing: %f" % (t.name, t.bearing)
                 # if more than 1 object seen, select the one with minimal bearing
                 # we also reset the _targets so we'll track the same target if target lost
                 bearings = [abs(t.bearing) for t in seen_objects]
