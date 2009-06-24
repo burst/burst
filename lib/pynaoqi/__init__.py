@@ -36,6 +36,14 @@ from burst_consts import (INTERPOLATION_SMOOTH, INTERPOLATION_LINEAR,
 
 WEBOTS_LOCALHOST_URL = "http://localhost:9560/"
 
+foot = lambda foot: ['Device/SubDeviceList/%sFoot/Bumper/%s/Sensor/Value' % (a,foot) for a in ['L', 'R']]
+
+BUTTON_VARS = dict(left_foot = foot('Left'), right_foot = foot('Right'),
+                chest = ['Device/SubDeviceList/ChestBoard/Button/Sensor/Value'])
+ON, OFF = 1.0, 0.0
+LIFESPAN_INFINITE = 0
+
+
 ################################################################################
 # Image Ops
 
@@ -1028,6 +1036,31 @@ class NaoQiConnection(BaseNaoQiConnection):
 
     def switchToTopCamera(self):
         self.setCameraParameter(CAMERA_WHICH_PARAM, CAMERA_WHICH_TOP_CAMERA)
+
+    def pressLeftBumpers(self):
+        self.toggleVars(BUTTON_VARS['left_foot'])
+
+    def pressRightBumpers(self):
+        self.toggleVars(BUTTON_VARS['right_foot'])
+
+    def pressChest(self):
+        self.toggleVars(BUTTON_VARS['chest'])
+
+    def toggleVars(self, vars, vals=[ON, OFF]):
+        import twisted.internet.reactor as reactor
+        self.setIt(vars, vals[0])
+        reactor.callLater(0.5, self.setIt, vars, vals[1])
+
+    def setIt(self, vars, val):
+        for var in vars:
+            self.ALMemory.insertData(var, val, LIFESPAN_INFINITE)
+
+def simulateButtonsPress(con, vars):
+    setIt(con, vars, ON)
+    reactor.callLater(0.5, setIt, con, vars, OFF)
+    reactor.callLater(1.0, reactor.stop)
+
+
 
 #########################################################################
 # Main and Tests
