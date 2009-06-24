@@ -65,8 +65,8 @@ class PlayerStatus(object):
         return self.penalized
 
     def __str__(self):
-        return '<PlayerStatus %s %s %d>' % ((self.penalized and 'T') or 'F',
-            (self.stateIsPenalized() and 'T') or 'F', self.status)
+        return '<PlayerStatus %s %s %s>' % ((self.penalized and 'T') or 'F',
+            (self.stateIsPenalized() and 'T') or 'F', self.status if str(self.status).isdigit() else 'no gc')
 
 
 class GameStatus(object):
