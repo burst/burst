@@ -18,6 +18,7 @@ isWebots = False
 realLeap = False
 debugLeapRight = False
 debugLeapLeft = False
+
 '''
 0. Make sure the current goalie and goalieTester work as expected.
 1. Merge goalie and goalieTester.
