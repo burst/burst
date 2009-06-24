@@ -279,13 +279,8 @@ class BallKicker(Behavior):
             self.goalpost_to_track = self._goalFinder.getTargets()[0]
 
             # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
-<<<<<<< HEAD:lib/burst/actions/kicking.py
             if self.goalpost_to_track in (self._world.opposing_lp, self._world.our_lp):
-                self.alignLeftLimit = -DEFAULT_NORMALIZED_CENTERING_Y_ERROR
-=======
-            if self.goalpost_to_track in (self._world.yglp, self._world.bglp):
                 self.alignLeftLimit = -0.2
->>>>>>> 82eb0c514547c39befcb4c6f675fdaeda4777701:lib/burst/actions/kicking.py
                 self.alignRightLimit = 0
             elif self.goalpost_to_track in (self._world.opposing_rp, self._world.our_rp):
                 self.alignLeftLimit = 0

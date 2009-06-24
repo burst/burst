@@ -45,6 +45,7 @@ def parse_command_line_arguments():
             help='override default start team color - for testing. in game the chest button will be used')
     main.add_option('', '--opposing', dest='opposing', default='yellow', help='override default opposing goal color')
     main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change')
+    main.add_option('', '--testready', action='store_true', dest='test_ready', default=False, help='test ready state without gamecontroller')
     main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     main.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')

@@ -149,10 +149,16 @@ class Player(object):
         #   wait for either chest button or game state change
         #    when that happens call self._onConfigured
         if not burst_consts.ALWAYS_CONFIGURE and game_state is UNKNOWN_GAME_STATE:
-            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to Playing"
+            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to %s" % (
+                'Ready' if burst.options.test_ready else 'Playing')
             print "NOTICE: PLEASE FIX BEFORE GAME"
             self._onConfigured()
-            self._main_behavior.start()
+            if burst.options.test_ready:
+                def onReadyDone():
+                    print "testing Ready: Done with Ready"
+                self._onReady().onDone(onReadyDone)
+            else:
+                self._main_behavior.start()
         else:
             print "Player: waiting for configuration event (change in game state, or chest button)"
             DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
@@ -209,10 +215,10 @@ class Player(object):
         weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
         jersey = self._world.robot.jersey
         ready_location = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey]
-        import pdb; pdb.set_trace()
         self._approacher = Approacher(self._actions, ready_location)
         self._approacher.start()
         self._approacher.onDone(self._onReadyDone)
+        return self._approacher
 
     def _onReadyDone(self):
         print "INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey)
