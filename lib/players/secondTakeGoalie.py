@@ -17,7 +17,7 @@ debug = True
 right = -1
 left  = +1
 STEP_SIZE = 0.30
-VOVA_OFFSET = 50.0
+VOVA_OFFSET = 70.0
 
 #######################################################################################################################
 
@@ -74,10 +74,9 @@ class Goalie(InitialBehavior):
     def onFocusedOnOppositeOwnPost(self, goalpost):
         print "onFocusedOnOppositeOwnPost"
         print "DISTANCE:", goalpost.dist
-        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
-            lambda: self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(
+        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False).onDone(
             lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
-            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova))))
+            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova)))
 
 #    @debugged
     def onVova(self):
@@ -89,11 +88,15 @@ class Goalie(InitialBehavior):
     def alignmentAgainstOppositeGoalTester(self):
 #        print 'alignmentAgainstOppositeGoalTester'
         seenOppositePosts = filter(lambda obj: obj.seen, [self._world.opposing_goal.unknown, self._world.opposing_lp, self._world.opposing_rp])
-        aligned = lambda obj: obj.centerX > burst_consts.IMAGE_CENTER_X if self.sideLeaptTo == left else obj.centerX < burst_consts.IMAGE_CENTER_X
+        aligned = (lambda obj: 
+            obj.centerX > 0.25*burst_consts.IMAGE_CENTER_X 
+            if self.sideLeaptTo == left else 
+            obj.centerX < 0.75*burst_consts.IMAGE_CENTER_X)
         if any(map(aligned, seenOppositePosts)):
             self._eventmanager.unregister(self.alignmentAgainstOppositeGoalTester, EVENT_STEP)
             self._actions.clearFootsteps().onDone(lambda e: self.onAligned())
 
+#    @debugged
     def onAligned(self):
         print "ALIGNED!"
         # Intentionaly, no self._eventmanager.quit()
