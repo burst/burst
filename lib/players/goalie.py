@@ -65,7 +65,7 @@ class Goalie(InitialBehavior):
 
     def leapPenalty(self):
         self._eventmanager.unregister(self.leapPenalty)
-        #self.targetFinder.stop()
+        self.targetFinder.stop()
         print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
