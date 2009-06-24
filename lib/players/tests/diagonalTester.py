@@ -7,7 +7,8 @@ from burst_events import EVENT_BALL_IN_FRAME
 import burst.moves.poses as poses
 from burst_util import polar2cart
 from burst.actions.target_finder import TargetFinder
-from diagonalkicker import *
+from burst.actions.diagonalkicker import *
+import burst.behavior_params as params
 
 class DiagonalTester(InitialBehavior):
     
@@ -34,15 +35,18 @@ class DiagonalTester(InitialBehavior):
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
             lambda: self._eventmanager.callLater(0.5, self._ballFinder.start))
         #self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
+        print "So, goal center is ", (opposing_lp.bearing + opposing_rp.bearing)/2
 
     def ball_found(self):
         print "BALL FOUND"
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
-        (side, kick_parameter) = getKickingType(yglp.bearing, ball_y)
-        if side == None or kick_parameter == None:
-            print "ERROR: could not find the right kicking parameter"
+        goal = (opposing_lp.bearing + opposing_rp.bearing)/2        
+        (side, kick_parameter) = getKickingType(goal, ball_y)
+        if side == None or kick_parameter == None or ball_x > params.KICK_X_MAX[0]:
+            print "ERROR: could not find the right kicking parameter, side: ", side, ", parameter: ", kick_parameter, " x: ", ball_x
         else:
-            self._actions.adjusted_straight_kick(side , kick_parameter)
+            print "KICKING"            
+            self._ballFinder.stop().onDone(lambda: self._actions.adjusted_straight_kick(side , kick_parameter))
         
     def ball_lost(self):
         print "BALL LOST"
