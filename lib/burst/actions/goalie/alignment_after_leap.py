@@ -3,7 +3,7 @@
 #######################################################################################################################
 
 import player_init
-from burst.behavior import InitialBehavior
+from burst.behavior import Behavior
 from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
