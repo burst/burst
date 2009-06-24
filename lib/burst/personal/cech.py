@@ -4,8 +4,8 @@
 import burst.behavior_params as params
 params.KICK_X_MIN = [14.0, 14.0]
 params.KICK_X_MAX = [20.0, 20.0]
-params.KICK_Y_MIN = [2.0, -3.5]
-params.KICK_Y_MAX = [5.0, -6.5]
+params.KICK_Y_MIN = [2, -3.5]
+params.KICK_Y_MAX = [5, -6.5]
 
 ## Choreograph moves
 import burst.moves.choreograph as choreograph

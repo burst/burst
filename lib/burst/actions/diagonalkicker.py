@@ -1,6 +1,6 @@
 import player_init # remove before inserting into code
 import burst.behavior_params as params
-    
+from burst_consts import (LEFT, RIGHT)    
 """ returns the correct foot and kicking type (if any) for a given goal angle and ball position relative to body.
     If a kick is not possible, it returns none as the kicking foot.
 """
@@ -12,12 +12,17 @@ def getKickingType(goal_bearing, ball_y):
     if delta_y == None:
         return None, None
     foot_y = delta_y + ball_y
+    print "ball is at ", ball_y, ", delta is ", delta_y, ", so foot needs to be at ", foot_y
+    print "Left foot range is [", params.KICK_Y_MIN[0], ",", params.KICK_Y_MAX[0], "]"
+    print "Right foot range is [", params.KICK_Y_MAX[1], ",", params.KICK_Y_MIN[1], "]"
     if foot_y >= params.KICK_Y_MIN[0] and foot_y <= params.KICK_Y_MAX[0]:
         kick_parameter = 1 - (foot_y - params.KICK_Y_MIN[0])/(params.KICK_Y_MAX[0] - params.KICK_Y_MIN[0])
-        return "left", kick_parameter
+        print "LEFT side, with parameter: ", kick_parameter         
+        return LEFT, kick_parameter
     if foot_y >= params.KICK_Y_MAX[1] and foot_y <= params.KICK_Y_MIN[1]:
         kick_parameter = (foot_y - params.KICK_Y_MAX[1])/(params.KICK_Y_MIN[1] - params.KICK_Y_MAX[1])
-        return "right", kick_parameter
+        print "RIGHT side, with parameter: ", kick_parameter
+        return RIGHT, kick_parameter
     return None, None
 
 def lookUpDelta(goal_bearing):
