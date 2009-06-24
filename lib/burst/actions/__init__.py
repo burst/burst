@@ -486,8 +486,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     @legal_any
-    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH,
-            description=('moveradians',)):
+    def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, headIncluded=True, description=('executemove',)):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
         head (the only optional, tuple of 2), larm (tuple of 4), lleg (tuple of 6), rleg, rarm, interp_time
@@ -499,9 +498,14 @@ class Actions(object):
         sum(interp_time) to execute.
         """
         if len(moves[0]) == 6:
-            def getangles((head, larm, lleg, rleg, rarm, interp_time)):
-                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
-            joints = self._joint_names
+            if headIncluded:
+                def getangles((head, larm, lleg, rleg, rarm, interp_time)):
+                    return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+                joints = self._joint_names
+            else:
+                def getangles((head, larm, lleg, rleg, rarm, interp_time)):
+                    return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+                joints = self._joint_names[2:]
         else:
             def getangles((larm, lleg, rleg, rarm, interp_time)):
                 return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
