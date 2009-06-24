@@ -121,13 +121,14 @@ class Player(object):
         setup led changers - video debug and team color and kickoff presentation (TODO kickoff)
         """
         self._world._sentinel.enableDefaultActionSimpleClick(False)
+        self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
         Player._announceNotSeeingBall(self)
         Player._announceSeeingNoGoal(self)
-        Player._onUnknownGameState(self)
+        Player._initAsUnconfigured(self)
 
     #####
 
-    def _onUnknownGameState(self):
+    def _initAsUnconfigured(self):
         """ This is called when we want to configure the robot. We have just been turned
         on, but the game can be in any of several states:
          * no game controller running (tests)
@@ -141,11 +142,6 @@ class Player(object):
         # Buttons:
         self._eventmanager.register(self._onLeftBumperPressed, EVENT_LEFT_BUMPER_PRESSED)
         self._eventmanager.register(self._onRightBumperPressed, EVENT_RIGHT_BUMPER_PRESSED)
-        self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
-        # Game Controller:
-        self._onUnconfigured()
-
-    def _onUnconfigured(self):
         game_state = self._world.gameStatus.gameState
         if self.verbose:
             self._actions.say("Player: Unconfigured: Game state = %s" % game_state)
@@ -155,22 +151,24 @@ class Player(object):
         #  else:
         #   wait for either chest button or game state change
         #    when that happens call self._onConfigured
+        if burst.options.test_configure:
+            info("NOTICE: testing configure with buttons - ignoring game controller.")
+            return
         if not burst_consts.ALWAYS_CONFIGURE and game_state is UNKNOWN_GAME_STATE:
-            print "NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to %s" % (
-                'Ready' if burst.options.test_ready else 'Playing')
-            print "NOTICE: PLEASE FIX BEFORE GAME"
+            info("NOTICE: No game controller and ALWAYS_CONFIGURE is False - going straight to %s" % (
+                'Ready' if burst.options.test_ready else 'Playing'))
+            info("NOTICE: PLEASE FIX BEFORE GAME")
             self._onConfigured()
             if burst.options.test_ready:
                 def onReadyDone():
-                    print "testing Ready: Done with Ready"
+                    info("testing Ready: Done with Ready")
                 self._onReady().onDone(onReadyDone)
             else:
                 self._startMainBehavior()
         else:
-            print "Player: waiting for configuration event (change in game state, or chest button)"
-            DeferredList([self._eventmanager.registerOneShotBD(EVENT_GAME_STATE_CHANGED).getDeferred(),
-                self._eventmanager.registerOneShotBD(EVENT_CHEST_BUTTON_PRESSED).getDeferred()],
-                    fireOnOneCallback=True).addCallback(self._onConfigured).addErrback(log.err)
+            info("Player: waiting for configuration event (change in game state, or chest button)")
+            self._eventmanager.firstEventDeferred(EVENT_GAME_STATE_CHANGED,
+                EVENT_CHEST_BUTTON_PRESSED).addCallback(self._onConfigured).addErrback(log.err)
 
     def _startMainBehavior(self):
         print "="*80
@@ -189,8 +187,7 @@ class Player(object):
         print "Team number %d, Team color %d, Player number %d, game state %s" % (
             settings.teamNumber, settings.teamColor, settings.playerNumber,
             gameStateToString(state))
-        for callback in [self._onLeftBumperPressed, self._onRightBumperPressed,
-            self._onChestButtonPressed]:
+        for callback in [self._onLeftBumperPressed, self._onRightBumperPressed]:
             self._eventmanager.unregister(callback)
         self._world.gameStatus.reset() # TODO: Reconsider.
         self._world.configure(our_color=team_to_defending_goal_color(self._world.robot.team_color))
@@ -201,7 +198,7 @@ class Player(object):
         """ we only register here after we have actually been configured - simplifies the logic """
         state = self._world.gameStatus.gameState
         if self.verbose:
-            print "Player: entered %s Game State" % gameStateToString(state)
+            info("Player: entered %s Game State" % gameStateToString(state))
         {InitialGameState   :self._onInitial,
          SetGameState       :self._onSet,
          ReadyGameState     :self._onReady,
@@ -213,15 +210,15 @@ class Player(object):
         self.onStop() # TODO - can this be called twice right now, from a ctrl-c / eventmanager.quit and from FinishGameState?
 
     def _onPlay(self):
-        print "Player: OnPlay"
+        info("Player: OnPlay")
         self._startMainBehavior()
         self._main_behavior.onDone(self._onMainBehaviorDone)
 
     def _onMainBehaviorDone(self):
-        print "Player: Main Behavior is done (%s)" % (self._main_behavior)
+        info("Player: Main Behavior is done (%s)" % (self._main_behavior))
 
     def _onSet(self):
-        print "Player: On Set: TODO"
+        info("Player: On Set: TODO")
         self._main_behavior.stop()
 
     def _onReady(self):
@@ -237,10 +234,10 @@ class Player(object):
         return self._approacher
 
     def _onReadyDone(self):
-        print "INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey)
+        info("INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey))
 
     def _onInitial(self):
-        print "Player: On Initial"
+        info("Player: On Initial")
         self._main_behavior.stop()
 
     def onStop(self):
@@ -287,14 +284,14 @@ class Player(object):
         self._actions.say("Getting up done (from back)")
         self.registerFallHandling()
 
-        print "Player: onGottenUpFromBack"
+        info("Player: onGottenUpFromBack")
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
 
     def onGottenUpFromBelly(self):
         self._actions.say("Getting up done (from belly)")
         self.registerFallHandling()
 
-        print "Player: onGottenUpFromBelly"
+        info("Player: onGottenUpFromBelly")
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
 
     def onRightSide(self):
@@ -325,20 +322,24 @@ class Player(object):
     def _onLeftBumperPressed(self):
         self._world.playerSettings.toggleteamColor()
         if self.verbose:
-            print "Team color: %d" % (self._world.playerSettings.teamColor)
+            info("Team color: %d" % (self._world.playerSettings.teamColor))
 
     def _onRightBumperPressed(self):
 #        self._actions.say("hello. don't worry, be happy!")
-        print "hello. don't worry, be happy!"
+        info(str(self))
 
     def _onChestButtonPressed(self):
         """ This callback is registered only after start - when
         the chest button has been pressed we stop being in the configure
         state, and call onConfigured
         """
-        print "Player: onChestButtonPressed"
-        if self._configuring:
-            self._onConfigured()
+        info("Player: onChestButtonPressed")
+        if self._configuring: return # 
+
+        self._world.gameStatus.getMyPlayerStatus().onChestButtonPressed()
+        info((self._world.robot.penalized and 'Penalized' or 'Unpenalized').center(20) +
+            str(self._world.gameStatus.getMyPlayerStatus()))
+
         # TODO - penalize me, also make sure that if I am penalized from chest
         # then I remain so until either I am unpenalized from chest, OR the game
         # state changes to Penalized (for me), and THEN Unpenalized from game state.

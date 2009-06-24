@@ -43,9 +43,12 @@ def parse_command_line_arguments():
     main.add_option('', '--jersey', dest='jersey', help='override default per-host-name jersey number in burst_consts')
     main.add_option('', '--color', dest='starting_team_color', default=BLUE_TEAM,
             help='override default start team color - for testing. in game the chest button will be used')
+    main.add_option('', '--red', action="store_const", dest="starting_team_color", const=RED_TEAM, help="set starting team color to red")
+    main.add_option('', '--blue', action="store_const", dest="starting_team_color", const=BLUE_TEAM, help="set starting team color to blue")
     main.add_option('', '--opposing', dest='opposing', default='yellow', help='override default opposing goal color')
     main.add_option('', '--ticker', action='store_true', dest='ticker', default=False, help='print every dt if there is a change')
     main.add_option('', '--testready', action='store_true', dest='test_ready', default=False, help='test ready state without gamecontroller')
+    main.add_option('', '--testconfigure', action='store_true', dest='test_configure', default=False, help='test unconfigured state, disregarding gamecontroller')
     main.add_option('', '--traceproxies', action='store_true', dest='trace_proxies', default=False, help='trace proxy calls')
     main.add_option('', '--console-line-length', action='store', dest='console_line_length', default=burst_consts.CONSOLE_LINE_LENGTH, help='allow for wider/leaner screen debugging')
     main.add_option('', '--passivectrlc', action='store_true', dest='passive_ctrl_c', default=False, help='Don\'t do initPoseAndRelax on Ctrl-C')
@@ -96,7 +99,7 @@ def parse_command_line_arguments():
     port = opts.port or ((ip == '127.0.0.1' and connecting_to_webots() and 9560) or 9559)
     port = int(port)
     opts.starting_team_color = {'blue':BLUE_TEAM, 'yellow':RED_TEAM, 'red':RED_TEAM}.get(
-                opts.starting_team_color, opts.starting_team_color)
+                str(opts.starting_team_color).lower(), opts.starting_team_color)
     # UGLY
     burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
     return opts, ip, port

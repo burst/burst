@@ -15,7 +15,7 @@ __all__ = ['Robot']
 
 class Robot(Movable):
 
-    debug = burst.options.debug # TODO: Use debug_flags? Or is this a command-line argument?
+    debug = burst.options.debug
 
     def __init__(self, world):
         super(Robot, self).__init__(name='Robot', world=world,
@@ -42,12 +42,17 @@ class Robot(Movable):
         return self._world.gameStatus.myRobotState()
 
     @property
+    def penalized(self):
+        return self._world.gameStatus.getMyPlayerStatus().isPenalized()
+    
+    @property
     def status(self):
+        # TODO - doesn't change after configured - so set on configured. not critical.
         return self._world.gameStatus.getMyPlayerStatus()
 
     @property
     def jersey(self):
-        return self._world.gameStatus.mySettings.playerNumber
+        return self._world.gameStatus.mySettings.playerNumber + 1
 
     @property
     def team_color(self):

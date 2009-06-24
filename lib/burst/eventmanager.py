@@ -223,6 +223,10 @@ class EventManager(object):
         self.register_oneshot(bd.callOnDone, event)
         return bd
 
+    def firstEventDeferred(self, *events):
+        return DeferredList([self.registerOneShotBD(event).getDeferred() for event in events]
+                            ,fireOnOneCallback=True) 
+
     def unregister(self, callback, event=None):
         """Unregister the callback function callback, if event is given then from that
         event only, otherwise from all events it is registered for. If it isn't registered
