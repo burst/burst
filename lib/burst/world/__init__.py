@@ -134,7 +134,7 @@ class World(object):
             'Device/SubDeviceList/InertialSensor/AngleY/Sensor/Value']
         self.addMemoryVars(self._inclination_vars)
 
-        self._recorded_vars = self.getRecorderVariableNames()
+        self._recorded_vars = self._getRecorderVariableNames()
 
         print "world will record (if asked) %s vars" % len(self._recorded_vars)
         self._recorded_header = self._recorded_vars
@@ -212,7 +212,6 @@ class World(object):
         if self._do_log_positions:
             self._openPositionLogs()
 
-
         if burst.options.no_memory_updates:
             print "world: NO MEMORY UPDATES.. N-O   M-E-M-O-R-Y   U-P-D-A-T-E-S"
             self._updateMemoryVariables = self._updateMemoryVariables_noop
@@ -233,11 +232,6 @@ class World(object):
 
         self.checkManModule()
 
-    def configure(self, our_color):
-        """ called when entering CONFIGURED state """
-        self.our_goal.configure(color=our_color)
-        self.opposing_goal.configure(color=burst_consts.opposite_color(our_color))
-
     def _switchToSharedMemory(self, _):
         if set(self.vars.keys()) != set(self._shm.vars.keys()):
             num_world, num_shared = len(self.vars), len(self._shm.vars)
@@ -246,46 +240,56 @@ class World(object):
         self.vars = self._shm.vars
         self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
 
-    def getRecorderVariableNames(self):
-        joints = self.jointnames
-        chains = self.chainnames
+    # ########################################
+    # EventManager API
+    # ########################################
 
-        # Recording of joints / sensors
-        dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
-        self._record_file = self._record_csv = None
-        # Center of mass (computed)
-        com = ['Motion/Spaces/World/Com/%s/%s' % args for args in cross(
-            ['Sensor', 'Command'], 'XYZ')] + ['Motion/BodyCommandAngles']
-        # various dcm stuff
-        dcm = ['DCM/Realtime', 'DCM/Time', 'DCM/TargetCycleTime',
-           'DCM/CycleTime', 'DCM/Simulation', 'DCM/hardnessMode',
-           'DCM/CycleTimeWarning']
-        # Joint positions
-        jsense = ['Device/SubDeviceList/%s/Position/Sensor/Value' % j for j in
-            joints]
-        # Actuator commanded position
-        actsense = ['Device/SubDeviceList/%s/%s/Value' % args for args in cross(
-            joints, ['ElectricCurrent/Sensor',
-                'Hardness/Actuator', 'Position/Actuator'])]
-        # inertial sensors
-        inert = ['Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % sense
-            for sense in [
-                'AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY',
-                'GyrRef', 'GyrX', 'GyrY']]
-        # Force SensoR
-        force = ['Device/SubDeviceList/%s/FSR/%s/Sensor/Value' % args for args in
-            cross(['RFoot', 'LFoot'],
-            ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'])]
-        # position of chains and __?
-        poschains = ['Motion/Spaces/Body/%s/Sensor/Position/%s' % args
-            for args in cross(chains, ['WX', 'WY', 'WZ', 'X', 'Y', 'Z'])]
-        transform = ['Motion/Spaces/World/Transform/%s' % coord for coord in
-            ['WX', 'WY', 'WZ', 'X', 'Y', 'Z']]
-        # Various other stuff
-        various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
-               'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
-        return (com + dcm + jsense + actsense + inert + force +
-                poschains + transform + various)
+    def collectNewUpdates(self, cur_time):
+        if self.time == cur_time - self.start_time:
+            print "TIME ERROR: World.collectNewUpdates called with the same time twice. Ignoring"
+            return
+        self.time = cur_time - self.start_time
+        # BodyAngles Note: if using ALMotion, this completed using a deferred - meaning with twisted not
+        # during this callback, so doRecord will record previous time frame values
+        self._updateBodyAngles()
+        self._updateMemoryVariables() # must be first in update
+        self._doRecord()
+        # TODO: automatic calculation of event dependencies (see constructor)
+        for objlist in self._objects:
+            for obj in objlist:
+                obj.calc_events(self._events, self._deferreds)
+        if self._do_log_positions:
+            self._logPositions()
+        # some debugging tests TODO - put under some flag
+        if burst.options.verbose_goals: # verbose == debug in my book. ok, in this instance of life.
+            g = self.opposing_goal
+            if abs(g.left.bearing - g.right.bearing) < 1e-4 and self.opposing_lp.bearing != 0.0:
+                import pdb; pdb.set_trace()
+
+    def getEventsAndDeferreds(self):
+        events, deferreds = self._events, self._deferreds
+        self._events = set()
+        self._deferreds = []
+        return events, deferreds
+
+    def cleanup(self):
+        if self._do_log_positions:
+            self._closePositionLogs()
+        self.odometry.cleanup()
+
+    # ########################################
+    # Player API
+    # ########################################
+
+    def configure(self, our_color):
+        """ called when entering CONFIGURED state """
+        self.our_goal.configure(color=our_color)
+        self.opposing_goal.configure(color=burst_consts.opposite_color(our_color))
+
+    # ########################################
+    # Player/Behavior API (in addition to all
+    # the exported variables)
+    # ########################################
 
     # Accessors
 
@@ -313,12 +317,6 @@ class World(object):
         return ['Device/SubDeviceList/%s/Position/Sensor/Value' % joint
             for joint in self.jointnames]
 
-    def getEventsAndDeferreds(self):
-        events, deferreds = self._events, self._deferreds
-        self._events = set()
-        self._deferreds = []
-        return events, deferreds
-
     # accessors that wrap the ALMemory - you can also
     # use world.vars
     def getAngle(self, jointname):
@@ -342,39 +340,29 @@ class World(object):
     def getRemainingFootstepCount(self):
         return self._motion.getRemainingFootStepCount()
 
-    # Utility
+    def startRecordAll(self, filename):
+        import csv
+        import gzip
 
-    def checkManModule(self):
-        """ report to user if the Man module isn't loaded. Since recently Man stopped being
-        logged as a module, we look for some of the variables we export.
-        """
-        # note - blocking
-        print "Checking for Man module by getting a vision variable: %s" % self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES
-        self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults).addErrback(log.err)
+        self.addMemoryVars(self._recorded_vars)
+        self._record_file_name = '%s/%s.csv.gz' % (self._record_basename, filename)
+        self._record_file = gzip.open(self._record_file_name, 'a+')
+        self._record_csv = csv.writer(self._record_file)
+        self._record_csv.writerow(self._recorded_header)
+        self._record_line_num = 0
 
-    def onCheckManModuleResults(self, result):
-        #print "onCheckManModuleResults: %r" % (result,)
-        if result[0] == 'None':
-            print "WARNING " + "*"*60
-            print "WARNING"
-            print "WARNING >>>>>>> Man Isn't Running - naoload && naoqi restart <<<<<<<"
-            print "WARNING"
-            print "WARNING " + "*"*60
-        else:
-            print "Man found"
+    def stopRecord(self):
+        if self._record_file:
+            print "file stored in %s, writing to disk (closing file).." % self._record_file_name
+            sys.stdout.flush()
+            self._record_file.close()
+            print "done"
+            sys.stdout.flush()
+        self._record_file = None
+        self._record_csv = None
+        self.removeMemoryVars(self._recorded_vars)
 
     # ALMemory and Shared memory functions
-
-    def calc_events(self, events, deferreds):
-        """ World treats itself as a regular object by having an update function,
-        this is called after the basic objects and before the computed object (it
-        may set some events / variables needed by the computed object)
-        """
-        # TODO - move these to the Goal objects (which already exist)
-        if self.our_lp.seen and self.our_rp.seen:
-            events.add(EVENT_ALL_OUR_GOAL_IN_FRAME)
-        if self.opposing_lp.seen and self.opposing_rp.seen:
-            events.add(EVENT_ALL_OPPOSING_GOAL_IN_FRAME)
 
     def addMemoryVars(self, vars):
         # slow? but retains the order of the registration
@@ -436,27 +424,16 @@ class World(object):
 
     # Callbacks
 
-    def collectNewUpdates(self, cur_time):
-        if self.time == cur_time - self.start_time:
-            print "TIME ERROR: World.collectNewUpdates called with the same time twice. Ignoring"
-            return
-        self.time = cur_time - self.start_time
-        # BodyAngles Note: if using ALMotion, this completed using a deferred - meaning with twisted not
-        # during this callback, so doRecord will record previous time frame values
-        self._updateBodyAngles()
-        self._updateMemoryVariables() # must be first in update
-        self._doRecord()
-        # TODO: automatic calculation of event dependencies (see constructor)
-        for objlist in self._objects:
-            for obj in objlist:
-                obj.calc_events(self._events, self._deferreds)
-        if self._do_log_positions:
-            self._logPositions()
-
-    def cleanup(self):
-        if self._do_log_positions:
-            self._closePositionLogs()
-        self.odometry.cleanup()
+    def calc_events(self, events, deferreds):
+        """ World treats itself as a regular object by having an update function,
+        this is called after the basic objects and before the computed object (it
+        may set some events / variables needed by the computed object)
+        """
+        # TODO - move these to the Goal objects (which already exist)
+        if self.our_lp.seen and self.our_rp.seen:
+            events.add(EVENT_ALL_OUR_GOAL_IN_FRAME)
+        if self.opposing_lp.seen and self.opposing_rp.seen:
+            events.add(EVENT_ALL_OPPOSING_GOAL_IN_FRAME)
 
     # Logging Functions
 
@@ -482,16 +459,47 @@ class World(object):
             fd.close()
 
     # record robot state
-    def startRecordAll(self, filename):
-        import csv
-        import gzip
 
-        self.addMemoryVars(self._recorded_vars)
-        self._record_file_name = '%s/%s.csv.gz' % (self._record_basename, filename)
-        self._record_file = gzip.open(self._record_file_name, 'a+')
-        self._record_csv = csv.writer(self._record_file)
-        self._record_csv.writerow(self._recorded_header)
-        self._record_line_num = 0
+    def _getRecorderVariableNames(self):
+        joints = self.jointnames
+        chains = self.chainnames
+
+        # Recording of joints / sensors
+        dcm_one_time_vars = ['DCM/HeatLogPath', 'DCM/I2Cpath', 'DCM/RealtimePriority']
+        self._record_file = self._record_csv = None
+        # Center of mass (computed)
+        com = ['Motion/Spaces/World/Com/%s/%s' % args for args in cross(
+            ['Sensor', 'Command'], 'XYZ')] + ['Motion/BodyCommandAngles']
+        # various dcm stuff
+        dcm = ['DCM/Realtime', 'DCM/Time', 'DCM/TargetCycleTime',
+           'DCM/CycleTime', 'DCM/Simulation', 'DCM/hardnessMode',
+           'DCM/CycleTimeWarning']
+        # Joint positions
+        jsense = ['Device/SubDeviceList/%s/Position/Sensor/Value' % j for j in
+            joints]
+        # Actuator commanded position
+        actsense = ['Device/SubDeviceList/%s/%s/Value' % args for args in cross(
+            joints, ['ElectricCurrent/Sensor',
+                'Hardness/Actuator', 'Position/Actuator'])]
+        # inertial sensors
+        inert = ['Device/SubDeviceList/InertialSensor/%s/Sensor/Value' % sense
+            for sense in [
+                'AccX', 'AccY', 'AccZ', 'AngleX', 'AngleY',
+                'GyrRef', 'GyrX', 'GyrY']]
+        # Force SensoR
+        force = ['Device/SubDeviceList/%s/FSR/%s/Sensor/Value' % args for args in
+            cross(['RFoot', 'LFoot'],
+            ['FrontLeft', 'FrontRight', 'RearLeft', 'RearRight'])]
+        # position of chains and __?
+        poschains = ['Motion/Spaces/Body/%s/Sensor/Position/%s' % args
+            for args in cross(chains, ['WX', 'WY', 'WZ', 'X', 'Y', 'Z'])]
+        transform = ['Motion/Spaces/World/Transform/%s' % coord for coord in
+            ['WX', 'WY', 'WZ', 'X', 'Y', 'Z']]
+        # Various other stuff
+        various = ['Motion/SupportMode', 'Motion/Synchro', 'Motion/Walk/Active',
+               'MotorAngles', 'WalkIsActive', 'extractors/alinertial/position']
+        return (com + dcm + jsense + actsense + inert + force +
+                poschains + transform + various)
 
     def _doRecord(self):
         if not self._record_csv: return
@@ -501,14 +509,25 @@ class World(object):
         if self._record_line_num % 10 == 0:
             print "(%3.3f) written csv line %s" % (self.time - self.start_time, self._record_line_num)
 
-    def stopRecord(self):
-        if self._record_file:
-            print "file stored in %s, writing to disk (closing file).." % self._record_file_name
-            sys.stdout.flush()
-            self._record_file.close()
-            print "done"
-            sys.stdout.flush()
-        self._record_file = None
-        self._record_csv = None
-        self.removeMemoryVars(self._recorded_vars)
+    # Utility
+
+    def checkManModule(self):
+        """ report to user if the Man module isn't loaded. Since recently Man stopped being
+        logged as a module, we look for some of the variables we export.
+        """
+        # note - blocking
+        print "Checking for Man module by getting a vision variable: %s" % self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES
+        self._memory.getListData(self.MAN_ALMEMORY_EXISTANCE_TEST_VARIABLES).addCallback(self.onCheckManModuleResults).addErrback(log.err)
+
+    def onCheckManModuleResults(self, result):
+        #print "onCheckManModuleResults: %r" % (result,)
+        if result[0] == 'None':
+            print "WARNING " + "*"*60
+            print "WARNING"
+            print "WARNING >>>>>>> Man Isn't Running - naoload && naoqi restart <<<<<<<"
+            print "WARNING"
+            print "WARNING " + "*"*60
+        else:
+            print "Man found"
+
 

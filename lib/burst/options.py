@@ -75,6 +75,7 @@ def parse_command_line_arguments():
 
     debug.add_option('', '--nomemoryupdates', action='store_true', dest='no_memory_updates', default=False, help='trace proxy calls')
 
+    debug.add_option('', '--verbose-goals', action='store_true', dest='verbose_goals', default=False, help='Verbose objects.Goal, objects.GoalPost')
     debug.add_option('', '--verbose-tracker', action='store_true', dest='verbose_tracker', default=False, help='Verbose tracker/searcher/center')
     debug.add_option('', '--verbose-eventmanager', action='store_true', dest='verbose_eventmanager', default=False, help='Verbose event manager')
     debug.add_option('', '--verbose-localization', action='store_true', dest='verbose_localization', default=False, help='Verbose localization')

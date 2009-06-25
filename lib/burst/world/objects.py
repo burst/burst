@@ -112,6 +112,10 @@ class CenteredLocatable(object):
 #        if self.centerX == None or self.centerY == None:
 #            import pdb; pdb.set_trace()
 
+        try:
+            float(self.centerX)
+        except:
+            import pdb; pdb.set_trace()
         delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
         delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
         yaw = self.head_yaw + delta_yaw
@@ -600,7 +604,7 @@ class Goal(Locatable):
         if left or right:
             state = left or right
             self.unknown.update_from_new_state(state, events=None, deferreds=None)
-            if burst.options.debug and self.unknown.seen:
+            if burst.options.verbose_goals and self.unknown.seen:
                 print "%s: updated unknown: %s" % (self.name, left and 'left' or 'right')
         else:
             self.unknown.seen = False
@@ -683,9 +687,6 @@ class GoalPost(Locatable):
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state
-
-        # TODO: REMOVE ME OR DIE
-        new_id_certainty = ID_SURE
 
         new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and new_id_certainty == ID_SURE)
 

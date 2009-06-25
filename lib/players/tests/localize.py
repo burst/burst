@@ -31,13 +31,16 @@ class LocalizeTester(InitialBehavior):
         world_pos = (robot.world_x, robot.world_y, robot.world_heading)
         def get_my_dist(t):
             return (hasattr(t, 'my_dist') and t.my_dist) or -1e10
+        bottom_top = self._world.opposing_goal.bottom_top
         dists = tuple(nicefloats([get_my_dist(x), x.dist, x.focDist])
-                    for x in self._world.team.target_posts.bottom_top)
+                    for x in bottom_top)
+        bearings = nicefloats([x.bearing for x in bottom_top])
         if not all(isinstance(x, float) for x in world_pos):
-            self.log("ERROR: world position not computed. It is %r. dists are %s" % (world_pos, dists))
+            result = "ERROR: world position not computed. It is %r. dists are %s" % (world_pos, dists)
         else:
-            self.log("position = (x = %3.3f cm | y = %3.3f cm | th = %3.3f deg), dists %s" % (
-                robot.world_x, robot.world_y, robot.world_heading * RAD_TO_DEG, dists))
+            result = "position = (x = %3.3f cm | y = %3.3f cm | th = %3.3f deg), dists %s" % (
+                robot.world_x, robot.world_y, robot.world_heading * RAD_TO_DEG, dists)
+        self.log('bearing: %s, %s' % (bearings, result))
         self._eventmanager.quit()
 
 if __name__ == '__main__':
