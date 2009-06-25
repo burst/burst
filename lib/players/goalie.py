@@ -30,7 +30,7 @@ class Goalie(InitialBehavior):
 
     def _start(self, firstTime=False):
 #        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
-        self.isPenalty = True # TODO: Use the gameStatus object.
+        self.isPenalty = False # TODO: Use the gameStatus object.
         self._restart()
 
     def _restart(self):
