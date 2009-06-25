@@ -66,7 +66,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
                 print "     : Allowing head move (queued after current move)"
             elif what == 'WALK':
                 print "     : clearing footsteps"
-                self._actions.clearFootsteps()
+                self._world._actions.clearFootsteps()
             else:
                 print "     : Allowing body move (queued after current move)"
 
@@ -195,4 +195,5 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
         print "ThreadedMoveCoordinator: closing all threads"
         for holder in (self._head_move_holder, self._body_move_holder, self._walk_holder):
             holder.thread.quit()
+        print "ThreadedMoveCoordinator: threads closed"
 

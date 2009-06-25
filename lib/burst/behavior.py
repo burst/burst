@@ -4,8 +4,10 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
+from twisted.python import log
+
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
-    func_name)
+    func_name, Deferred, deferredToCondensedString)
 import burst.moves.poses as poses
 from burst_events import event_name
 
@@ -147,13 +149,17 @@ class BehaviorEventManager(object):
         # everything else goes to eventmanager directly
         return getattr(self._eventmanager, k)
 
-class Behavior(BurstDeferred, Nameable):
+class Behavior(Nameable):
+    # No longer inherits from BurstDeferred - reimplementation with Deferred. no chains.
+
+    _reset_count = 0
 
     def __init__(self, actions, name, *args, **kw):
         """  Note to inheriting folk: this constructor must be the /last/
         call in your constructor, since it calls your start method
         """
-        BurstDeferred.__init__(self, self, *args, **kw)
+        #BurstDeferred.__init__(self, self, *args, **kw)
+        self._resetDeferred()
         Nameable.__init__(self, name)
         self._actions = BehaviorActions(actions, self)
         self._world = actions._world
@@ -161,41 +167,117 @@ class Behavior(BurstDeferred, Nameable):
         self._make = self._eventmanager.burst_deferred_maker.make
         self._succeed = self._eventmanager.burst_deferred_maker.succeed
         self._bd = None # if we are waiting on a single bd, this should be it. If we are waiting on more - split behavior?
-        self._stopped = True
+        self.stopped = True
+
+    def _resetDeferred(self):
+        self._reset_count += 1
+        self._d = Deferred()
+        self.log("reset %s, %s" % (self._reset_count, id(self._d)))
+
+    @property
+    def stopped(self):
+        return self._stopped
+
+    @stopped.setter
+    def stopped(self, k):
+        #print "Behavior %s: stopped = %s" % (self.name, k)
+        self._stopped = k
 
     def _applyIfNotStopped(self, f, args, kw):
-        if self.stopped():
+        if self.stopped:
             print "%s, %s: Who is calling me at this time? I am stopped" % (self, func_name(f))
             return
         return apply(f, args, kw)
 
+    # BurstDeffered like behavior
+
+    def toCondensedString(self):
+        return deferredToCondensedString(self._d)
+
+    def clear(self):
+        self.log("WARNING: clear does nothing")
+        #self._resetDeferred()
+
+    def onDone(self, cb):
+        chained = self._actions.make(self)
+        def callAndCallBD(_, cb=cb, chained=chained):
+            try:
+                ret = cb()
+            except TypeError, e:
+                import pdb; pdb.set_trace()
+            if not hasattr(ret, 'onDone'):
+                return ret
+            return ret.onDone(chained.callOnDone)
+        self._d.addCallback(callAndCallBD).addErrback(log.err)
+        return chained
+
+    def callOnDone(self):
+        # hack - TODO remove me
+        # we are getting sporious callOnDone from a head move (in Centerer, but can happen
+        # in any Behavior) that are called by the IsRunningMoveCoordinator when an action
+        # is complete. Since this is happening when the Behavior is running (not stopped)
+        # we have a simple solution, but the actual problem remains not solved.
+        # The actual problem (probably): when we call clear we are not clearing our parent
+        # we can also do that, but lets try to do both.
+        err = None
+        if self.stopped:
+            if self._d.called:
+                err = "callOnDone where _d is already called"
+                import pdb; pdb.set_trace()
+            else:
+                #print "Behavior: callOnDone ok"
+                self._d.callback(None)
+                # XXX tell the super to remove us from the parent? or have all BurstDeferreds
+                # act like that? i.e. breaking parent-child when child has fired?
+        else:
+            err= "callOnDone being called while running - ignored. Probably IsRunningMoveCoordinator bug (see comment above)"
+        if err:
+            self.log("Error: %s" % err)
+
     def stop(self):
-        """ Doesn't call any callbacks (by convention), so safe to call first when overriding """
-        if self._stopped: return self._succeed(self)
-        if self._bd:
+        """ Stops the behavior, and returns a BD for stoppage complete. If already stopped,
+        returns a succeedBD.
+
+        Stopping also sets ourselves to complete, by calling callOnDone.
+        """
+        if self.stopped:
+            if self._d.called:
+                self.log("WARNING: self._d already called")
+                return self._succeed(self)
+            if len(self._d.callbacks) > 0:
+                self.log("WARNING: calling stop when already stopped, with callbacks waiting: %s" %
+                    self.toCondensedString())
+            return self._succeed(self).onDone(self.callOnDone)
+        if self._bd: # This is the customary bd for any action we are waiting on. TODO - stop using this, BehaviorActions makes it obsolete.
             self._bd.clear()
             self._bd = None
-        self._stopped = True
         self._eventmanager.clearFutureCallbacks()
         self._actions.clearFutureCallbacks()
+        #self.log("Calling _stop")
         bd = self._stop()
+        self.stopped = True # after self._stop we are really stopping, but better then before.
         assert(bd)
-        return bd.onDone(self.callOnDone) # User cb - should return a BurstDeferred.
+        # Hack to get out of a recursion right now:
+        # if bd._ondone[0][0].im_self==self we will be calling ourselves.
+        # even simpler, this happens only if bd is already done.
+        if bd.completed():
+            ret = self._actions.succeed(self).onDone(self.callOnDone)
+        else:
+            ret = bd.onDone(self.callOnDone)
+        return ret
 
-    def stopped(self):
-        return self._stopped
-
-    def start(self):
-        if not self._stopped: return self
+    def start(self, **kw):
+        if not self.stopped: return self
         # DISCUSSION: (talking to yourself again? and storing distributed copies?!)
         # every Behavior is a BurstDeferred. That means users will onDone on it, and
         # getDeferred() from it. Whenever they call start() they expect this to be "renewed",
         # so basically we should do a clear here.. no?
-        if len(self._ondone) > 0:
-            self.log("Questionable: Removing some callbacks and setting completed to false (cbs=%s)" % self)
-        self.clear()
-        self._stopped = False
-        self._start(firstTime=True)
+        if len(self._d.callbacks) > 0:
+            self.log("Questionable: Removing some callbacks and setting completed to false")
+            self.log("              %s" % self)
+        self._resetDeferred()
+        self.stopped = False
+        self._start(firstTime=True, **kw)
         return self
 
     def log(self, msg):
@@ -203,7 +285,7 @@ class Behavior(BurstDeferred, Nameable):
 
     #####  Override by Inheritance  #####
 
-    def _start(self, firstTime=False):
+    def _start(self, firstTime=False, **kw):
         pass # defaults to empty behavior
 
     def _stop(self):
@@ -227,12 +309,11 @@ class ContinuousBehavior(Behavior):
 
 class InitialBehavior(Behavior):
 
+    """ InitialBehavior's are what Player uses as the main_behavior object, they
+    are the actualy "main" of our program, when all robocup rules / gamecontroller stuff
+    is taken out of the way. """
+
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose
-
-    def stop(self):
-        if not self.stopped():
-            print "Stopping %s" % (self.name)
-        return super(InitialBehavior, self).stop()
 

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from __future__ import with_statement
 
 import os
@@ -232,6 +233,9 @@ class BurstDeferred(object):
      >>> bd = BurstDeferred(None)
      >>> bd.onDone(lambda: somefunc().onDone(otherfunc))
 
+    Fix: Now if somefunc returns a simple value, otherfunc is still called (it is the
+    same as if they were side by side onDone's, like in Deferred)
+
     Twisted users:
 
         Sort of like Deferred, only geared towards chainable deferreds, which
@@ -249,11 +253,14 @@ class BurstDeferred(object):
         self._parent = parent # DEBUG only
         self._allow_chaining = allow_chaining
 
+    def completed(self):
+        return self._completed
+
     def clear(self):
         for cb, chain_deferred in self._ondone:
             # recursively clear all child deferreds
             chain_deferred.clear()
-        self._ondone = []
+        del self._ondone[:]
         self._being_called = False
         self._completed = False
 
@@ -280,24 +287,33 @@ class BurstDeferred(object):
 
     def callOnDone(self):
         self._completed = True
-        if self._being_called: return
+        if self._being_called:
+            print "BurstDeferred: Recursion detected"
+            import pdb; pdb.set_trace()
+            return
         self._being_called = True
         if len(self._ondone) >= 2:
             if self.verbose:
                 print "BurstDeferred: using multiple onDone on %s (may be ok)" % (self)
+        #print "OMEGA: BurstDeferred: calling %s callbacks - %s" % (len(self._ondone), str(self._ondone))
         for cb, chain_deferred in self._ondone:
             if expected_argument_count(cb) == 0:
+                #print "CALLING cb %s AAAAAAAAAAAAAAAAA" % func_name(cb)
                 ret = cb()
             else:
                 #print ">>>>>>>>>>>>> BD one arg %s (%s) <<<<<<<<<<<<<<" % (self, self._data)
                 ret = cb(self._data)
-            # is it a deferred? if so tell it to execute the deferred
-            # we handed out once it is done.
             if isinstance(ret, BurstDeferred) and chain_deferred and ret._allow_chaining:
+                # chain to returned BD
                 ret.onDone(chain_deferred.callOnDone)
             elif isinstance(ret, Deferred):
+                # chain to returned Deferred
                 ret.addCallback(lambda _: chain_deferred.callOnDone())
-        self._ondone = [] # zero the callback - don't call twice
+            else:
+                # call immediately (on stack)
+                chain_deferred.callOnDone()
+                
+        del self._ondone[:] # zero the callback - don't call twice
         self._being_called = False
 
     def onDoneCallDeferred(self, d):
@@ -800,6 +816,18 @@ def set_robot_ip_from_argv():
 
 # Python language util
 
+class trackedlist(list):
+    c = 0
+    def append(self, k):
+        print "trackedlist, appending %s" % str(k)
+        return super(trackedlist, self).append(k)
+    def __delslice__(self, a, b):
+        self.c += 1
+        if self.c >= 3:
+            import pdb; pdb.set_trace()
+        print "trackedlist, deleting slice %s:%s" % (a, b)
+        return super(trackedlist, self).__delslice__(a, b)
+
 def import_class(dotted_name):
     """ import_class('kicker.Kicker') will import kicker, and return the Kicker
     symbol from it, supposedly a class, but doesn't care.
@@ -982,4 +1010,19 @@ def ensure_table(cur, tablename, tablecontents):
         pass
 
     cur.execute('create table %s (%s)' % (tablename, tablecontents))
+
+def test():
+    print "Test chaining - this should print 1,2,3 three times"
+    for meth in [lambda: lambda _=None,i=i: x.append(i+1),
+                 lambda: lambda _=None,i=i: (x.append(i+1), succeedBurstDeferred(None))[1],
+                 lambda: lambda _=None,i=i: (x.append(i+1), succeed(i*10))[1]]:
+        x = []
+        bdfirst = bd = BurstDeferred(None)
+        for i in xrange(3):
+            bd.onDone(meth())
+        bdfirst.callOnDone()
+        print ','.join(map(str,x))
+
+if __name__ == '__main__':
+    test()
 

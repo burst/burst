@@ -260,14 +260,12 @@ class BallKicker(Behavior):
             # --- DONT DO THIS UNTIL IMOPS CODE DOES THE SWITCHING, or segfault for you ---
             #self._actions.setCamera(burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
             pass
-        stop_bd = succeedBurstDeferred(self)
-        if not from_finder.stopped():
-            print "STOPPING %s" % from_finder.name
-            stop_bd = from_finder.stop()
-
+        stop_bd = from_finder.stop()
         print "SwitchToFinder: calling %s.start" % (to_finder.name)
         self._currentFinder = to_finder
-        stop_bd.onDone(to_finder.start)
+        # TODO: Yet More Hacks
+        doit = lambda f: self._eventmanager.callLater(0.0, f) if not stop_bd.completed() else stop_bd.onDone(f)
+        doit(to_finder.start)
 
     ################################################################################
     # Strafing
@@ -331,7 +329,6 @@ class BallKicker(Behavior):
 
         print "Movement STARTING! (strafing)"
         self._movement_deferred.onDone(nextAction)
-
 
     def refindBall(self):
         self._currentFinder = None
