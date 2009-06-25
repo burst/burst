@@ -180,7 +180,9 @@ FSR_HISTORY = 10
 
 ################################################################################
 ################################################################################
-SONAR_PRECISION = 0.1 # only required for newer Naoqi, 1.3.8
+SONAR_PRECISION = 1.0 # only required for newer Naoqi, 1.3.8, value betwewen 0.0
+                      # and 1.0 that sets the precision of the extraction for
+                      # every extractor. Presumably 1.0 is best.
 
 if NAOQI_VERSION == NAOQI_1_3_8:
     VIDEO_MODULE = 'ALVideoDevice'

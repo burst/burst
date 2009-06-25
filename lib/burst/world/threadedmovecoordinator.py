@@ -1,6 +1,3 @@
-from threading import Thread
-from Queue import Queue
-
 from twisted.python import log
 
 from burst_util import (DeferredList, succeed, func_name)
@@ -12,52 +9,7 @@ import burst_target
 from burst_events import (EVENT_HEAD_MOVE_DONE, EVENT_BODY_MOVE_DONE,
     EVENT_CHANGE_LOCATION_DONE)
 from movecoordinator import KIND_WALK
-
-class ALProxyThread(Thread):
-    """ New input from aldebaran suggests that ALProxy is blocking,
-    but using multiple ALProxys, one per thread, should work. So
-    the former ActionThread becomes ALProxyThread, and it won't be
-    joined until the very end of the program (which is better anyhow),
-    and it will now have an incoming queue to be fed new moves.
-    """
-
-    QUIT = False
-
-    def __init__(self, *args, **kw):
-        super(ALProxyThread, self).__init__(*args, **kw)
-        # XXX First place where Deferred code isn't used - this will blocks..
-        self._motion = burst.ALProxy('ALMotion', burst_target.ip, burst_target.port)
-        self.in_queue = Queue()
-        self.out_queue = Queue()
-        self.verbose = burst.options.verbose_movecoordinator
-
-    def start(self, _=None):
-        """ convenience for using with Deferred.addCallback """
-        return super(ALProxyThread, self).start()
-
-    def run(self):
-        while True:
-            method_getter, args, bd, description = self.in_queue.get()
-            if method_getter == self.QUIT:
-                # TODO: need to close the ALProxy somehow
-                return
-            meth = method_getter(self._motion)
-            if self.verbose:
-                print "%s: starting  %s" % (self.getName(), description)
-            try:
-                apply(meth, args)
-            except Exception, e:
-                print "ActionThread: EXCEPTION: %s" % e
-                self.out_queue.put((False, bd, e))
-            if self.verbose:
-                print "%s: done      %s" % (self.getName(), description)
-            self.out_queue.put((True, bd, None))
-
-    def put(self, method_getter, args, bd, description):
-        self.in_queue.put((method_getter, args, bd, description))
-
-    def quit(self):
-        self.in_queue.put((self.QUIT, None, None, None))
+from burst.burst_threading import ALProxyThread
 
 class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
     """ A different strategy for handling moves:
@@ -145,9 +97,7 @@ class ThreadedMoveCoordinator(movecoordinator.BaseMoveCoordinator):
                 (self._body_move_holder, EVENT_BODY_MOVE_DONE),
                 (self._walk_holder, EVENT_CHANGE_LOCATION_DONE)):
             thread, cleaner = holder.thread, holder.cleaner
-            while not thread.out_queue.empty(): # TODO - limit this? (throttle results for easy debug? for cpu?)
-                # we have something.
-                success, bd, exception = thread.out_queue.get()
+            for success, bd, exception in thread: # TODO - limit this? (throttle results for easy debug? for cpu?)
                 if not success:
                     print "ThreadedMoveCoordinator: Caught Exception (bd=%s): %s" % (bd, exception)
                 if self.verbose:

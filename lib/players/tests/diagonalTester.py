@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import player_init
-
+from math import fabs
 from burst.behavior import InitialBehavior
 from burst_events import EVENT_BALL_IN_FRAME
 import burst.moves.poses as poses
@@ -13,7 +13,7 @@ import burst.behavior_params as params
 class DiagonalTester(InitialBehavior):
     
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.STRAIGHT_WALK_INITIAL_POSE)
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self.ball_found)
         self._ballFinder.setOnTargetLostCB(self.ball_lost)
@@ -25,20 +25,25 @@ class DiagonalTester(InitialBehavior):
     def find_goal(self):
         self._actions.localize().onDone(self.found_goal)
 
-    def foundGoal(self):
-        opposing_lp, opposing_rp = self._world.opposing_lp, self._world.opposing_rp
-        t = self._world.time
-        dtl, dtr = t - opposing_lp.update_time, t - opposing_rp.update_time
-        print "Goal Posts Bearings: %3.2f, %3.2f (seens %s, %s), (updated %3.2f seconds ago)" % (
-                opposing_lp.bearing, opposing_rp.bearing, opposing_lp.seen, opposing_rp.seen, max(dtl, dtr))
-        
-        self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
-            lambda: self._eventmanager.callLater(0.5, self._ballFinder.start))
-        #self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
-        print "So, goal center is ", (opposing_lp.bearing + opposing_rp.bearing)/2
+    def found_goal(self):
+        if fabs(self._world.opposing_lp.bearing - self._world.opposing_rp.bearing)<0.05:
+            print "ERROR: Goal posts are the same one..., left post is: ", self._world.opposing_lp.bearing, " right post is: ", self._world.opposing_rp.bearing
+            lambda: self._eventmanager.callLater(0.5, self._start)
+        else:            
+            opposing_lp, opposing_rp = self._world.opposing_lp, self._world.opposing_rp
+            t = self._world.time
+            dtl, dtr = t - opposing_lp.update_time, t - opposing_rp.update_time
+            print "Goal Posts Bearings: %3.2f, %3.2f (seens %s, %s), (updated %3.2f seconds ago)" % (
+                    opposing_lp.bearing, opposing_rp.bearing, opposing_lp.seen, opposing_rp.seen, max(dtl, dtr))
+            
+            self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(
+                lambda: self._eventmanager.callLater(0.5, self._ballFinder.start))
+            #self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
+            print "So, goal center is ", (opposing_lp.bearing + opposing_rp.bearing)/2
 
     def ball_found(self):
         print "BALL FOUND"
+        opposing_lp, opposing_rp = self._world.opposing_lp, self._world.opposing_rp
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
         goal = (opposing_lp.bearing + opposing_rp.bearing)/2        
         (side, kick_parameter) = getKickingType(goal, ball_y)

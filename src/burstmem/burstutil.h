@@ -81,6 +81,7 @@ struct Counter {
 #define VIDEO_MODULE_SUBSCRIBE "subscribe"
 #define VIDEO_MODULE_UNSUBSCRIBE "unsubscribe"
 #define SONAR_EXTRACTOR_VARIABLE "extractors/alsonar/distances"
+#define SONAR_PRECISION 1.0
 #else
 #ifdef NAOQI_120
 #define VIDEO_MODULE "NaoCam"
