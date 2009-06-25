@@ -54,7 +54,7 @@ class AlignmentAfterLeap(Behavior):
         self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
 
     def _stop(self):
-        return self._actions.clearFootSteps()
+        return self._actions.clearFootsteps()
 
 #    @debugged
     def findOppositeOwnPost(self):

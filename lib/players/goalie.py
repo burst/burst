@@ -63,9 +63,11 @@ class Goalie(InitialBehavior):
         self._eventmanager.unregister(self.returnHead)
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR)
 
-    def leapPenalty(self):
+    def leapPenalty(self, stopped=False):
         self._eventmanager.unregister(self.leapPenalty)
-        #self.targetFinder.stop()
+        if not stopped:
+            self.targetFinder.stop().onDone(lambda: self.leapPenalty(True))
+            return
         print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
@@ -80,7 +82,10 @@ class Goalie(InitialBehavior):
                 self._actions.say("Leap left.")
                 self.waitingOnLeft()
 
-    def leap(self):
+    def leap(self, stopped=False):
+        if not stopped:
+            self.targetFinder.stop().onDone(lambda: self.leap(True))
+            return
         self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.targetFinder.stop()
         if isWebots:
@@ -126,7 +131,7 @@ class Goalie(InitialBehavior):
 
     def onLeapComplete(self, side):
         if realLeap:
-            AlignmentAfterLeap(self._actions, side).start().onDone(self.whichBehavior)
+            AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.whichBehavior))
         else:
             self._restart()
 
