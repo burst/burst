@@ -1530,7 +1530,6 @@ void ObjectFragments::createObject(int c) {
     case ORANGE:
         // the ball
 #ifdef USE_ANYBALL
-        std::cout << "ANYBALLS: createObject" << std::endl;
         anyballs(c, vision->ball);
 #else
         balls(c, vision->ball);
