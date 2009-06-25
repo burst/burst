@@ -12,8 +12,8 @@ class Localizer(Behavior):
 
     def start(self, targets=None):
         if self.stopped():
-            self._targets = targets if targets is not None or [self._world.opposing_lp, self._world.opposing_rp]
-        super(Localizer, self).start()
+            self._targets = targets if targets is not None else [self._world.opposing_lp, self._world.opposing_rp]
+        return super(Localizer, self).start()
 
     def _start(self, firstTime=False):
         # first check if we are already localized. If so return succeed
@@ -53,7 +53,7 @@ class Localizer(Behavior):
         # search, we search and search again! we stop only when the EVENT_WORLD_LOCATION_UPDATED
         # actually fires.
 
-        self._actions.search(targets).onDone(self._start)
+        self._actions.search(targets).onDone(self._doSearch)
 
     def _stop(self):
         self.log("Stopping")
