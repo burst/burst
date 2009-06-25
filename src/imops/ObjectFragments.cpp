@@ -4291,6 +4291,10 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 		CvRect ballRect= cvRect(-1,-1,-1,-1);
 		// HSV color of the ball, +- range, saturation cuttoff, minimal ball size.
 		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0); - WEBOTS PARAMETERS!
+	    if (field) {
+	    	cvClearSeq(field);
+	    	field= NULL;
+	    }
 		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0);
 
 #ifdef OFFLINE
@@ -4302,6 +4306,11 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 			ballY= ballRect.y;
 			ballWidth= ballRect.width;
 			ballHeight= ballRect.height;
+
+			if (ballHull) {
+				cvClearSeq(ballHull);
+				ballHull= NULL;
+			}
 		}
 		else {
 			// Didn't find a ball.
@@ -4343,6 +4352,15 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
                                           thisBall->getCenterY(),
                                           static_cast<float>(thisBall->
                                                              getFocDist())));
+
+    if (src) cvReleaseImage( &src );
+    if (mask) cvReleaseImage( &mask );
+    if (imageClipped) cvReleaseImage( &imageClipped );
+
+    src= NULL;
+    mask= NULL;
+    imageClipped= NULL;
+
     // Everything is ok.
     return 0;
 }
@@ -4499,17 +4517,29 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 		} else {
 			curr_contour = curr_contour->h_next;
 		}
+		if (curr_contour) {
+			cvClearSeq(curr_contour);
+			curr_contour= NULL;
+		}
 	}
     if(isField) {
     	if (max_contour != NULL) {
 			rect = cvBoundingRect(max_contour);
 			seqhull = cvConvexHull2(max_contour, 0, CV_COUNTER_CLOCKWISE, 0);
+			if (max_contour) {
+				cvClearSeq(max_contour);
+				max_contour= NULL;
+			}
 		}
 	}
     else {
 		if(min_contour_ball != NULL) {
 			rect = cvBoundingRect(min_contour_ball);
 			seqhull = cvConvexHull2(min_contour_ball, 0, CV_COUNTER_CLOCKWISE, 0);
+			if (min_contour_ball) {
+				cvClearSeq(min_contour_ball);
+				min_contour_ball= NULL;
+			}
 		}
     }
 
@@ -4518,7 +4548,9 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	if (tgray) cvReleaseImage( &tgray );
 	if (timg) cvReleaseImage( &timg );
 	if (img_hsv) cvReleaseImage( &img_hsv );
-
+	if (twhite) cvReleaseImage( &twhite );
+	if (twhite1) cvReleaseImage( &twhite1 );
+	if (twhite2) cvReleaseImage( &twhite2 );
 	if (tBlackAndWhite) cvReleaseImage( &tBlackAndWhite );
 	if (imgOverTrimmed) cvReleaseImage( &imgOverTrimmed );
 	if (imgUnderTrimmed) cvReleaseImage( &imgUnderTrimmed );
@@ -4527,6 +4559,9 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	tgray = NULL;
 	timg = NULL;
 	img_hsv = NULL;
+	twhite= NULL;
+	twhite1= NULL;
+	twhite2= NULL;
 	tBlackAndWhite = NULL;
 	imgOverTrimmed = NULL;
 	imgUnderTrimmed = NULL;
@@ -4535,7 +4570,6 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 		cvClearSeq(contours);
 		contours = NULL;
 	}
-
 	if (storage) {
     	cvClearMemStorage(storage);
 	}
