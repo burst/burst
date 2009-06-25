@@ -46,9 +46,14 @@ class DiagonalTester(InitialBehavior):
         opposing_lp, opposing_rp = self._world.opposing_lp, self._world.opposing_rp
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
         goal = (opposing_lp.bearing + opposing_rp.bearing)/2        
-        (side, kick_parameter) = getKickingType(goal, ball_y)
-        if side == None or kick_parameter == None or ball_x > params.KICK_X_MAX[0]:
+        (side, kick_parameter) = getKickingType(goal, ball_y, 0)
+        if side == None or kick_parameter == None or not isInEllipse(ball_x, ball_y, side, 0):
             print "ERROR: could not find the right kicking parameter, side: ", side, ", parameter: ", kick_parameter, " x: ", ball_x
+            (side, kick_parameter) = getKickingType(goal, ball_y, 1)
+            if side == None or kick_parameter == None or not isInEllipse(ball_x, ball_y, side, 1):
+                print "ERROR: STILL could not find the right kicking parameter, side: ", side, ", parameter: ", kick_parameter, " x: ", ball_x
+            else:
+                self._ballFinder.stop().onDone(lambda: self._actions.adjusted_straight_kick(side , kick_parameter))
         else:
             print "KICKING"            
             self._ballFinder.stop().onDone(lambda: self._actions.adjusted_straight_kick(side , kick_parameter))
