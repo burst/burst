@@ -174,14 +174,12 @@ class Behavior(Nameable):
         self._d = Deferred()
         self.log("reset %s, %s" % (self._reset_count, id(self._d)))
 
-    @property
-    def stopped(self):
+    def get_stopped(self):
         return self._stopped
-
-    @stopped.setter
-    def stopped(self, k):
+    def set_stopped(self, k):
         #print "Behavior %s: stopped = %s" % (self.name, k)
         self._stopped = k
+    stopped = property(get_stopped, set_stopped)
 
     def _applyIfNotStopped(self, f, args, kw):
         if self.stopped:
