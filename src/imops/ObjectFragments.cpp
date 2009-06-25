@@ -4571,7 +4571,7 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 		contours = NULL;
 	}
 	if (storage) {
-    	cvClearMemStorage(storage);
+    	cvClearMemStorage( &storage );
 	}
 
 	return seqhull;
