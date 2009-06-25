@@ -4223,7 +4223,10 @@ void ObjectFragments::yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_s
     }
 }
 
-// Our function, we rule.
+// topValueWhite - Minimal white value in sat channel 3.
+// topValueWhite - Maximal black value in sat channel 2.
+// ratioThresh - Ratio between width and height.
+// areaThresh - Ratio between actual area and the area of the bounding rectangle.
 int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     const char* constyuvImg;
     int ballX= 0;
@@ -4254,7 +4257,8 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     // Get field
     CvRect fieldRect = cvRect(-1,-1,-1,-1);
     // HSV color of the field, +- range, saturation cuttoff, minimal field size.
-    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1);
+    //CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1); - WEBOTS PARAMETERS!
+    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1);
 
     if (field != NULL) {
 #ifdef OFFLINE
@@ -4286,7 +4290,8 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 		// Get ball
 		CvRect ballRect= cvRect(-1,-1,-1,-1);
 		// HSV color of the ball, +- range, saturation cuttoff, minimal ball size.
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0);
+		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0); - WEBOTS PARAMETERS!
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0);
 
 #ifdef OFFLINE
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
@@ -4439,14 +4444,19 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	int iMaxSize = -1;
 	int iMinFocal= 99999;
 	int iCurrSize = 0;
+	double iArea= 0;
 	int iCount= 0;
 	double iCurrFocal= 0;
-	double ratioThresh= 2;
+	// Ratio between width and height
+	double ratioThresh= 1.4;
+	// Ratio between real area and rect area of the object.
+	double areaThresh= 0.6;
 
 	while (curr_contour) {
 		result = cvApproxPoly(curr_contour, sizeof(CvContour), storage,
 		CV_POLY_APPROX_DP, cvContourPerimeter(curr_contour)*0.02, 0 );
 		iCurrSize = fabs(cvContourArea(result, CV_WHOLE_SEQ));
+		iArea= (double)cvBoundingRect(contours).width * (double)cvBoundingRect(contours).height;
 		int amount= 0;
 		if(cvBoundingRect(contours).width>cvBoundingRect(contours).height)
 			amount= cvBoundingRect(contours).width;
@@ -4471,11 +4481,13 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 			if((double)cvBoundingRect(contours).width/cvBoundingRect(contours).height<ratioThresh &&
 				(double)cvBoundingRect(contours).height/cvBoundingRect(contours).width<ratioThresh) {
 				if(iCurrFocal <= iMinFocal) {
-					min_contour_ball = curr_contour;
-					iMinFocal = iCurrFocal;
+					if(iCurrSize/iArea>areaThresh) {
+						min_contour_ball = curr_contour;
+						iMinFocal = iCurrFocal;
 #ifdef OFFLINE
-					std::cout << "Selected ball index: " << iCount << std::endl;
+						std::cout << "Selected ball index: " << iCount << std::endl;
 #endif
+					}
 				}
 			}
 		}
