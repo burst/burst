@@ -4,6 +4,8 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
+import sys
+
 from twisted.python import log
 
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
@@ -225,6 +227,7 @@ class Behavior(Nameable):
             else:
                 #print "Behavior: callOnDone ok"
                 self._d.callback(None)
+                self._d._frame = sys._getframe()
                 # XXX tell the super to remove us from the parent? or have all BurstDeferreds
                 # act like that? i.e. breaking parent-child when child has fired?
         else:

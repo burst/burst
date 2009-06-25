@@ -122,9 +122,10 @@ class Player(object):
         """
         self._world._sentinel.enableDefaultActionSimpleClick(False)
         self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
-        Player._announceNotSeeingBall(self)
-        Player._announceSeeingNoGoal(self)
-        Player._initAsUnconfigured(self)
+        self._announceNotSeeingBall()
+        self._announceSeeingNoGoal()
+        self._actions.switchToBottomCamera() # XXX Don't bother onDoning - takes long enough for behavior to start.
+        self._initAsUnconfigured()
 
     #####
 
@@ -193,6 +194,8 @@ class Player(object):
         self._world.configure(our_color=team_to_defending_goal_color(self._world.robot.team_color))
         # register for future changes
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
+        self._eventmanager.register(self._onPenalized, EVENT_I_GOT_PENALIZED)
+        self._eventmanager.register(self._onUnpenalized, EVENT_I_GOT_PENALIZED)
 
     def _onNewGameState(self):
         """ we only register here after we have actually been configured - simplifies the logic """
@@ -343,6 +346,12 @@ class Player(object):
         # TODO - penalize me, also make sure that if I am penalized from chest
         # then I remain so until either I am unpenalized from chest, OR the game
         # state changes to Penalized (for me), and THEN Unpenalized from game state.
+
+    def _onPenalized(self):
+        print "<"*20 + " P E N A L I Z E D " + ">"*20
+
+    def _onUnpenalized(self):
+        print "<"*20 + " u n p e n a l i z e d " + ">"*20
 
     #############
     # Utilities #

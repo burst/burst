@@ -294,6 +294,9 @@ class World(object):
     # the exported variables)
     # ########################################
 
+    def singleGoal(self, targets):
+        return len(targets) == 2 and set(self.opposing_goal.bottom_top) == set(targets) or set(self.our_goal.bottom_top) == set(targets)
+
     # Accessors
 
     def getMemoryProxy(self):
