@@ -112,6 +112,10 @@ class CenteredLocatable(object):
 #        if self.centerX == None or self.centerY == None:
 #            import pdb; pdb.set_trace()
 
+        try:
+            float(self.centerX)
+        except:
+            import pdb; pdb.set_trace()
         delta_yaw   = - PIX_TO_RAD_X * (self.centerX - IMAGE_CENTER_X)
         delta_pitch =   PIX_TO_RAD_Y * (self.centerY - IMAGE_CENTER_Y)
         yaw = self.head_yaw + delta_yaw
