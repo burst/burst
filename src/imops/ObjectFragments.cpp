@@ -36,9 +36,6 @@
 #include <vector>
 using namespace std;
 
-#define SHOW_RESULT 0
-#define SHOW_SOURCE 0
-
 ObjectFragments::ObjectFragments(Vision* vis, Threshold* thr, int _color)
     : vision(vis), thresh(thr), color(_color), runsize(1)
 {
@@ -4252,21 +4249,18 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 
     src->imageData = rgbImg;
 
-	#if SHOW_SOURCE
-		cvSaveImage("/home/shlatchz/Desktop/cam_pics/img_capture.jpg",src);
-	#endif
-
     IplImage* mask = 0;
     IplImage* imageClipped = 0;
 
     // Get field
     CvRect fieldRect = cvRect(-1,-1,-1,-1);
+    // HSV color of the field, +- range, saturation cuttoff, minimal field size.
     CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1);
-    //CvSeq* field = getLargestColoredContour(src, 80, 30, 25, 100, fieldRect, 1);
 
     if (field != NULL) {
-
+#ifdef OFFLINE
     	std::cout << "fieldRect: " << fieldRect.x << ", " << fieldRect.y << ", " << fieldRect.width << ", " << fieldRect.height << std::endl;
+#endif
 
 		CvSize imageSize = cvSize(src->width, src->height);
 		mask = cvCreateImage( imageSize, 8, 1 );
@@ -4292,10 +4286,12 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 
 		// Get ball
 		CvRect ballRect= cvRect(-1,-1,-1,-1);
-		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 305, 150, 0, 5, ballRect, 0);
+		// HSV color of the ball, +- range, saturation cuttoff, minimal ball size.
 		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0);
 
+#ifdef OFFLINE
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
+#endif
 
 		if (ballHull != NULL) {
 			ballX= ballRect.x;
@@ -4348,6 +4344,10 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 }
 
 CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField) {
+	// Minimal white value in sat channel 3.
+	int topValueWhite= 180;
+	// Maximal black value in sat channel 2.
+	int bottomValueWhite= 110;
     CvSeq* seqhull= NULL;
     CvMemStorage* storage= cvCreateMemStorage(0);
 	CvSeq* contours = NULL; // = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint) , storageContours);
@@ -4357,11 +4357,17 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	IplImage* pyr = cvCreateImage( cvSize(sz.width/2, sz.height/2), 8, 3 );
 	IplImage* tgray = NULL;
 	IplImage* img_hsv = NULL;
+    IplImage* twhite;
+    IplImage* twhite1;
+    IplImage* twhite2;
 
 	// down-scale and upscale the image to filter out the noise (much faster compared to cvSmooth)
 	cvPyrDown( timg, pyr, CV_GAUSSIAN_5x5 ); // pyr is temporarily used to keep the smaller (down-scaled) picture 7
 	cvPyrUp( pyr, timg, CV_GAUSSIAN_5x5 ); // pyr is upscaled and saved back to timg, with less noise.
 	tgray = cvCreateImage( sz, 8, 1 );
+    twhite1 = cvCreateImage( sz, 8, 1 );
+    twhite2 = cvCreateImage( sz, 8, 1 );
+    twhite = cvCreateImage( sz, 8, 1 );
 	img_hsv = cvCloneImage( timg );
 	cvCvtColor(img_hsv, timg, CV_RGB2HSV);
 
@@ -4371,11 +4377,20 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	// Remove low saturation colors from image (black & white, shadows, highlights)
 	IplImage* tBlackAndWhite = cvCreateImage( sz, 8, 1 );
 	cvZero(tBlackAndWhite);
+	cvZero(twhite1);
+	cvZero(twhite2);
 
+	cvSetImageCOI(timg, 3);
+	cvCopy(timg, twhite1, 0);//since COI is not supported
 	cvSetImageCOI(timg, 2);
-	cvCopy(timg, tBlackAndWhite, 0);//since COI is not supported
+	cvCopy(timg, twhite2, 0);//since COI is not supported
+	cvCopy(timg, tBlackAndWhite, 0);
 
 	cvThreshold(tBlackAndWhite, tBlackAndWhite, iBoxSaturationCutoff, 255, CV_THRESH_BINARY);
+	// Recognize white color in the field.
+	cvThreshold(twhite1, twhite1, topValueWhite, 255, CV_THRESH_BINARY);
+	cvThreshold(twhite2, twhite2, bottomValueWhite, 255, CV_THRESH_BINARY_INV);
+	cvAnd(twhite1, twhite2, twhite, NULL);
 
 	// extract the H color plane
 	cvSetImageCOI(timg, 1);
@@ -4412,6 +4427,9 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 
 	cvThreshold( tgray, tgray, 0, 255, CV_THRESH_BINARY );
 	cvAnd(tBlackAndWhite,tgray,tgray,NULL);
+	// Add white to field.
+	if(isField)
+		cvOr(twhite, tgray, tgray, NULL);
 
 	/*int iContourNumber = */
 	cvFindContours( tgray, storage, &contours, sizeof(CvContour),
@@ -4456,20 +4474,13 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 				if(iCurrFocal <= iMinFocal) {
 					min_contour_ball = curr_contour;
 					iMinFocal = iCurrFocal;
+#ifdef OFFLINE
 					std::cout << "Selected ball index: " << iCount << std::endl;
+#endif
 				}
 			}
 		}
 
-		#if SHOW_RESULT
-			IplImage* debugImage = cvCloneImage(src);
-			CvScalar colorRED = CV_RGB(255, 0, 0);
-			cvDrawContours(debugImage, curr_contour, colorRED, colorRED, -1, CV_FILLED, 8);
-			char buff[90];
-			sprintf(buff, "/home/shlatchz/Desktop/cam_pics/img_capture_debug_%d_%d.jpg", isField, iCount );
-			cvSaveImage(buff,debugImage);
-			cvReleaseImage(&debugImage);
-		#endif
 		iCount= iCount + 1;
 
 		if (curr_contour->h_next == NULL) {

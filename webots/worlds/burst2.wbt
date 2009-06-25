@@ -9,8 +9,8 @@ WorldInfo {
   basicTimeStep 40
 }
 Viewpoint {
-  orientation 0.0245427 0.740294 0.671835 3.19398
-  position 1.36929 1.66368 0.201569
+  orientation 0.017827 0.997608 0.0667841 2.23743
+  position 2.88108 0.458258 -2.1973
 }
 Background {
   skyColor [
@@ -243,14 +243,14 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation 1.32869 0.0428038 0.00187238
+  translation -1.50589 0.0428038 -0.085912
   rotation -0.000377075 1.51739e-05 -1 2.72067
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
         material Material {
           ambientIntensity 0.7
-          diffuseColor 1 0.392157 0
+          diffuseColor 1 0 0.8
           shininess 0.5
           specularColor 1 0.392157 0
         }
