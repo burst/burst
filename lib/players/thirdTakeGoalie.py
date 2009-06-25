@@ -9,19 +9,6 @@ from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
 from math import pi
 
-GOAL_BORDER = 57
-ERROR_IN_LENGTH = 0
-TIME_WAITING = 3 #time to wait when finishing the leap for getting up
-WAITING_FOR_HEAD = 5
-WAITING = 6
-
-debug = True
-isWebots = False
-realLeap = True
-debugLeapRight = False
-debugLeapLeft = False
-
-
 
 class Goalie(InitialBehavior):
 
