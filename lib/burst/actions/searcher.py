@@ -87,6 +87,12 @@ def searchMoveIterWithoutAnythingButHeadMovements(searcher):
                                 (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
+def finiteSearchMoveIterWithoutAnythingButHeadMovements(searcher):
+    while True:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
+                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+
 def searchMovesIterWithCameraSwitching(searcher):
     while True:
         if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
@@ -106,13 +112,13 @@ class SearchPlanner(object):
     pattern when we center on targets - then temporarily the tracker
     takes care of both actions and seen events """
 
-    def __init__(self, searcher, center=False, baseIter=searchMovesIter):
+    def __init__(self, searcher, center_on_targets=False, baseIter=searchMovesIter):
         self.verbose = burst.options.verbose_tracker
         self._searcher = searcher
         self._baseIter = baseIter(searcher)
         self._nextTargets = []
 #            self._lastPosition = searcher.self. # TODO: return to the last position after a chain of targets.
-        if center:
+        if center_on_targets:
             self._centerCommand = CenteringCommand
         else:
             self._centerCommand = (lambda actions, yaw, pitch, target:
@@ -138,6 +144,18 @@ class SearchPlanner(object):
     def _report(self, string):
         if self.verbose:
             print "Planner: %s" % string
+
+# Various other strategies for the searcher
+
+# Finite
+# Don't turn the body, just the head.
+def NoBodyMovesSearchPlanner(searcher, center_on_targets):
+    return SearchPlanner(searcher=searcher, center_on_targets=center_on_targets,
+        baseIter=finiteSearchMoveIterWithoutAnythingButHeadMovements)
+
+# Infinite
+# Start with head turns, then turn the body
+WithBodyMovesSearchPlanner=SearchPlanner
 
 # TODO: Have the head turned the way we're turning. # Setting pi/2 to -pi/2 should have solved this, for now.
 # TODO: Clear foot steps if found while turning.
@@ -173,13 +191,13 @@ class Searcher(Behavior):
             self.log("%s: %s" % (self._search_count, '\n'.join(strings)))
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
-            searchPlannerMaker=SearchPlanner):
+            searchPlannerMaker=NoBodyMovesSearchPlanner):
         self._seenTargets = self._seenOne
         return self.start(targets=targets, center_on_targets=center_on_targets, timeout=timeout,
             timeoutCallback=timeoutCallback, searchPlannerMaker=searchPlannerMaker)
 
     def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
-            searchPlannerMaker=SearchPlanner):
+            searchPlannerMaker=NoBodyMovesSearchPlanner):
         self._seenTargets = self._seenAll
         return self.start(targets=targets, center_on_targets=center_on_targets,
             timeout=timeout, timeoutCallback=timeoutCallback,
