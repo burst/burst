@@ -8,7 +8,7 @@ delta_table = [(-0.55,4),(-0.44,3.5),(-0.38,3),(-0.31,2.5),(-0.24,2),(-0.14,1.5)
 
 def getKickingType(goal_bearing, ball_y, margin):
     # checks left foot then right foot - can't be both    
-    print "Starting to think iagonally"
+    print "Starting to think diagonally"
     delta_y = lookUpDelta(goal_bearing)
     if delta_y == None:
         return None, None
@@ -48,7 +48,7 @@ def lookUpDelta(goal_bearing):
             return (delta_table[i-1][1] - 0.5*(delta_table[i][0]-goal_bearing)/(delta_table[i][0]-delta_table[i-1][0]))
     return None
 
-def isInEllipse(ball_x, ball_y, foot, margin):
+def isInEllipse(ball_x, ball_y, foot, margin=0):
     #TODO: check if margin is legit
     radius = (params.KICK_Y_MAX[foot]-params.KICK_Y_MIN[foot])/2
     y_center = (params.KICK_Y_MAX[foot]+params.KICK_Y_MIN[foot])/2    

@@ -173,7 +173,7 @@ class BallKicker(Behavior):
             return
 
         if not self._target.recently_seen:
-            print "TARGET NOT RECENTLY SEEN???"
+            print "TARGET LOST, RELYING ON SEARCHER"
             # TODO: searcher / searcher CB should take care of finding target, behavior should take care of turning when search fails
             #import pdb; pdb.set_trace()
             return
@@ -252,9 +252,9 @@ class BallKicker(Behavior):
         self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
 
     def switchToFinder(self, to_goal_finder=False):
-        from_finder, to_finder = self._goalFinder_left, self._ballFinder
+        from_finder, to_finder = self._goalFinder, self._ballFinder
         if to_goal_finder:
-            from_finder, to_finder = self._ballFinder, self._goalFinder_left
+            from_finder, to_finder = self._ballFinder, self._goalFinder
         else:
             # switch to bottom camera when we look for the ball
             # --- DONT DO THIS UNTIL IMOPS CODE DOES THE SWITCHING, or segfault for you ---
@@ -277,11 +277,11 @@ class BallKicker(Behavior):
 
             # Add offset to the goalpost align (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
             if self.goalpost_to_track in (self._world.opposing_lp, self._world.our_lp):
-                self.alignLeftLimit = -0.2
+                self.alignLeftLimit = -0.5
                 self.alignRightLimit = 0
             elif self.goalpost_to_track in (self._world.opposing_rp, self._world.our_rp):
                 self.alignLeftLimit = 0
-                self.alignRightLimit = 0.2
+                self.alignRightLimit = 0.5 # TODO: Move to const, calibrate value (cover half-goal? goal? differs for different distances?)
 
             g = self.goalpost_to_track
             self.debugPrint('onGoalFound: found %s at %s, %s (%s)' % (g.name, g.centerX, g.centerY, g.seen))
