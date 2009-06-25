@@ -70,6 +70,7 @@ ifeq ($(USE_ANYBALL), 1)
 $(info =================================== Building ANYBALLS imops ==================================)
 CFLAGS+=-DUSE_ANYBALL
 LDFLAGS_WEBOTS+=-lcv -lhighgui
+LDFLAGS_PYNAOQI+=-lcv -lhighgui
 # TODO - 64 bit
 LDFLAGS_NAO+=-lcv
 endif
