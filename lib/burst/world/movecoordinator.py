@@ -74,8 +74,8 @@ class SerialPostQueue(object):
     def isNotEmpty(self):
         return len(self._posts) > 0
 
-    def add(self, postid, event, duration):
-        deferred = self._make_bd(data=postid)
+    def add(self, postid, event, duration, motion):
+        deferred = self._make_bd(data=(postid, motion))
         # we keep for each move: postid -> (event code, deferred, start time, duration)
         if self._start_time is None:
             self._start_time = self._world.time
@@ -259,16 +259,16 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         for serial_posts in (self._motion_posts, self._head_posts, self._walk_posts):
             serial_posts.calc_events(events, deferreds)
 
-    def _add_expected_motion_post(self, postid, event, duration):
-        return self._motion_posts.add(postid, event, duration)
+    def _add_expected_motion_post(self, postid, event, duration, motion):
+        return self._motion_posts.add(postid, event, duration, motion)
 
-    def _add_expected_head_post(self, postid, event, duration):
-        return self._head_posts.add(postid, event, duration)
+    def _add_expected_head_post(self, postid, event, duration, motion):
+        return self._head_posts.add(postid, event, duration, motion)
 
-    def _add_expected_walk_post(self, postid, event, duration):
+    def _add_expected_walk_post(self, postid, event, duration, motion):
         if self.verbose:
             print "IsRunningMoveCoordinator: adding walk %s, duration %s" % (postid, duration)
-        return self._walk_posts.add(postid, event, duration)
+        return self._walk_posts.add(postid, event, duration, motion)
 
     def isMotionInProgress(self):
         return self._motion_posts.isNotEmpty()
@@ -293,10 +293,10 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
         bd = self._make_bd(self)
         initiated, motion = self._add_initiated(self._world.time, kind, description, event, duration, completion_bd=bd)
         d.addCallback(lambda postid, initiated=initiated, bd=bd:
-            self._onPostId(postid, initiated, bd)).addErrback(log.err)
+            self._onPostId(postid, initiated, motion, bd)).addErrback(log.err)
         return bd
 
-    def _onPostId(self, postid, initiated, bd):
+    def _onPostId(self, postid, initiated, motion, bd):
         if not isinstance(postid, int):
             print "ERROR: IsRunningMoveCoordinator: onPostId with Bad PostId: %s" % repr(postid)
             print "ERROR: IsRunningMoveCoordinator: Did you forget to enable ALMotion perhaps? quitting."
@@ -304,7 +304,7 @@ class IsRunningMoveCoordinator(BaseMoveCoordinator):
             sys.exit(-1)
         initiate_time, kind, description, event, duration = self._initiated[initiated]
         self._add_posted(postid, initiated)
-        self._post_handler[kind](postid, event, duration).onDone(bd.callOnDone)
+        self._post_handler[kind](postid, event, duration, motion).onDone(bd.callOnDone)
 
     # Movement initiation api
 

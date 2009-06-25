@@ -44,14 +44,15 @@ class CenteredLocatable(object):
 
     def clear(self):
         # 3d based estimates
-        self.elevation, self.dist, self.bearing = None, None, None
+        self.elevation, self.dist, self.bearing = 0.0, 0.0, 0.0
         # image based
-        self.centerX, self.centerY = None, None
-        self.normalized2_centerX, self.normalized2_centerY = None, None
-        #
+        self.centerX, self.centerY = 0.0, 0.0
+        self.normalized2_centerX, self.normalized2_centerY = 0.0, 0.0
+        # body angles (body space?)
+        self.head_yaw, self.head_pitch = 0.0, 0.0
         self.sighted = False
         self.sighted_centered = False # is True if last sighting was centered
-        self.update_time = 0.0
+        self.update_time = -1000.0
 
     def __str__(self):
         return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
@@ -189,7 +190,7 @@ class Locatable(Nameable):
         self.recently_seen = False          # Was the object seen within MISSING_FRAMES_MINIMUM
         self.centered = False               # whether the distance from the center is smaller then XXX
         self.centered_at_pitch_limit = False # centered on X axis, on pitch low limit (looking most upwardly)
-        self.missingFramesCounter = 0
+        self.missingFramesCounter = MISSING_FRAMES_MINIMUM # start as "not seen for inifinity". This is close enough.
 
         # smoothed variables
         self.distSmoothed = 0.0
@@ -253,12 +254,22 @@ class Locatable(Nameable):
                 new_recently_seen = True
         return new_recently_seen
 
-    HISTORY_LABELS = ['time', 'distance', 'bearing']
+    # History related stuff
+
+    HISTORY_LABELS = ['time', 'distance', 'bearing', 'head_yaw', 'head_pitch']
+    HIST_TIME, HIST_DIST, HIST_BEARING, HIST_YAW, HIST_PITCH = range(5)
     def _record_current_state(self):
         """ pushes new values into the history buffer. called from
         update_location_body_coordinates
         """
-        self.history.ring_append([self.update_time, self.dist, self.bearing])
+        self.history.ring_append([self.update_time, self.dist, self.bearing,
+            self.centered_self.head_yaw, self.centered_self.head_pitch])
+
+    @property
+    def seenWithinOneFrame(self):
+        min_dt = 0.2 # TODO - constant this. Also - eventmanager dependency?
+        return self.seen or (
+             self._world.time - self.history[-1][self.HIST_TIME] <= min_dt if self.history[-1] else False)
 
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
@@ -599,13 +610,28 @@ class Goal(Locatable):
         # TODO - calculate the in_frame event for this goal
 
     def calc_events(self, events, deferreds):
-        left = self.left.calc_events(events, deferreds)
-        right = self.right.calc_events(events, deferreds)
-        if left or right:
-            state = left or right
-            self.unknown.update_from_new_state(state, events=None, deferreds=None)
-            if burst.options.verbose_goals and self.unknown.seen:
-                print "%s: updated unknown: %s" % (self.name, left and 'left' or 'right')
+        """ Try to get the location of the left/right posts from the unknown harder.
+        """
+        left_seen_uncertain = self.left.calc_events(events, deferreds)
+        right_seen_uncertain = self.right.calc_events(events, deferreds)
+        if left_seen_uncertain or right_seen_uncertain:
+            state = left_seen_uncertain or right_seen_uncertain
+            # First, try to use the unknown to update the one closest. We don't actually compute anything,
+            # we just assume that if in the previous frame we saw only one then we can update it.
+            # TODO: If we saw both in the previous frame (very possible) we need to take the one with closest heading
+            target = self.unknown
+            for target in [self.left, self.right]:
+                if self.left.seenWithinOneFrame:
+                    break
+            else:
+                target = self.unknown
+            if target is self.unknown:
+                self.unknown.update_from_new_state(state, events=None, deferreds=None, require_sure=False)
+                # try heading
+                #print "TODO TRY HEADING"
+            target.update_from_new_state(state, events=None, deferreds=None, require_sure=False)
+            if target.seen and burst.options.verbose_goals:
+                print "%s: updated %s from an unknown" % (self.name, target.name)
         else:
             self.unknown.seen = False
         self.seen = self.left.seen or self.right.seen or self.unknown.seen
@@ -679,7 +705,7 @@ class GoalPost(Locatable):
     def get_new_state(self):
         return self._world.getVars(self._vars)
 
-    def update_from_new_state(self, new_state, events, deferreds):
+    def update_from_new_state(self, new_state, events, deferreds, require_sure=True):
         """ returns the new_state if the special "seen but not certain" case holds.
         """
         # calculate events
@@ -688,7 +714,7 @@ class GoalPost(Locatable):
                 new_width, new_x, new_y, new_id_certainty
                 ) = new_state
 
-        new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and new_id_certainty == ID_SURE)
+        new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and (not require_sure or new_id_certainty == ID_SURE))
 
         if new_seen:
             if events is not None: events.add(self.in_frame_event)

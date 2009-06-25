@@ -28,14 +28,13 @@ class Goalie(InitialBehavior):
         self._world.ball.shouldComputeIntersection = True
 
     def _start(self, firstTime=False):
-#        super(Goalie, self).onStart() # Either this or the self.enterGame() at the end of this event, but not both.
         self.isPenalty = False # TODO: Use the gameStatus object.
         self._restart()
 
     def _restart(self):
         self._report("in play")
         self._actions.setCameraFrameRate(20)
-        self.whichBehavior() # Either this or the super(Goalie, self).onStart() at the start of this event, but not both.
+        self.whichBehavior()
 
     def _report(self, string):
         if debug:

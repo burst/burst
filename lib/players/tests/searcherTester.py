@@ -2,7 +2,7 @@
 
 import player_init
 from burst.behavior import InitialBehavior
-from burst.actions.headtracker import Searcher
+from burst.actions.searcher import Searcher
 
 class SearchTester(InitialBehavior):
 

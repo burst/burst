@@ -71,24 +71,21 @@ class TargetFinder(ContinuousBehavior):
             # one using self._actions._make
             self._bd = self._actions.make(self)
             self._bd.onDone(lambda _, self=self: self._start())
-            self._actions.track(target, lostCallback=self._bd.callOnDone)
+            self._actions.track(target=target, lostCallback=self._bd.callOnDone)
             self._callOnTargetFoundCB()
         else:
             # none of our targets are currently seen, start a new search.
             print "targets not seen (%s), searching for it" % [t.name for t in self._targets]
             self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
-            self._bd.onDone(lambda _, self=self: self._start())
+            self._bd.onDone(self._start)
             if not firstTime:
                 self._callOnTargetLostCB()
 
-    def stop(self):
+    def _stop(self):
         """ stops the finder (and internal tracker/searcher).
         returns a burst deferred on the completion of the stop (based on a possible
         current head movement """
-        super(TargetFinder, self).stop()
-        bd1 = self._actions.tracker.stop()
-        bd2 = self._actions.searcher.stop()
-        # TODO: I could/should return the self._actions.getCurrentHeadBD(), but that is buggy - it calls
-        # Stopped twice. So for now this works.
-        return self._actions.wrap(DeferredList([bd1.getDeferred(), bd2.getDeferred()]), data=self)
+        self._actions.tracker.stop()
+        self._actions.searcher.stop()
+        return self._actions.getCurrentHeadBD()
 

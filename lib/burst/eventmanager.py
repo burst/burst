@@ -132,6 +132,8 @@ class EventManager(object):
     you lazy bum)
     """
 
+    _break_on_next_deferred = False
+
     def __init__(self, world):
         """ In charge of computing when certain events happen, keeping track
         of callbacks, and calling them.
@@ -241,6 +243,7 @@ class EventManager(object):
                 self._events[event].remove(callback)
             # remove from _callbacks
             del self._callbacks[callback]
+        assert(callback not in self._callbacks)
 
     def unregister_all(self):
         for k in self._events.keys():
@@ -350,7 +353,20 @@ class EventManager(object):
 
         # Handle deferreds
         for deferred in deferreds:
+            if burst.options.debug:
+                d = deferred._data
+                if hasattr(d, '__len__') and len(d) == 2:
+                    print "EventManager: handle*: deferred._data = %s" % (str(d))
+            if self._break_on_next_deferred:
+                self._break_on_next_deferred = False
+                import pdb; pdb.set_trace()
             deferred.callOnDone()
+
+    def _D_breakOnNextDeferred(self):
+        self._break_on_next_deferred = True
+
+    def debug_methods(self):
+        print '\n'.join([x for x in dir(self) if x[:3] == '_D_'])
 
 ################################################################################
 
@@ -399,6 +415,7 @@ class BasicMainLoop(object):
         self._world = world.World()
         self._eventmanager = EventManager(world = self._world)
         self._actions = actions.Actions(eventmanager = self._eventmanager)
+        self._world._setActions(self._actions) # they shall never part now (nor be garbage collected. ti's ok)
         if self._main_behavior_class is None:
             jersey = self._world.robot.jersey
             self._main_behavior_class = import_class(burst_consts.JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS[jersey])

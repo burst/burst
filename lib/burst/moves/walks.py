@@ -77,7 +77,25 @@ STRAIGHT_WALK = Walk(WalkParameters([
            25          # 20ms count per step
     )
 
-SIDESTEP_WALK = STRAIGHT_WALK
+SIDESTEP_WALK = Walk(WalkParameters([
+           100.0 * DEG_TO_RAD, # ShoulderMedian
+           20.0 * DEG_TO_RAD,  # ShoulderAmplitude
+           30.0 * DEG_TO_RAD,  # ElbowMedian
+           20.0 * DEG_TO_RAD,  # ElbowAmplitude
+           4.5,                   # LHipRoll(degrees)
+           -4.5,                  # RHipRoll(degrees)
+           0.19,                  # HipHeight(meters)
+           5.0,                   # TorsoYOrientation(degrees) - stopped adjusting to the negative direction - there is a possibility that a little bit more negative is better
+           0.02,                  # StepLength
+           0.015,                  # StepHeight
+           0.04,                  # StepSide
+           0.3,                   # MaxTurn
+           0.015,                  # ZmpOffsetX
+           0.02]),                  # ZmpOffsetY
+           25          # 20ms count per step
+    )
+
+
 
 ## PREVIOUS TURN / SIDESTEP ROUTINES
 
