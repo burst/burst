@@ -2,7 +2,7 @@ import player_init # remove before inserting into code
 import burst.behavior_params as params
 from burst_consts import (LEFT, RIGHT)    
 """ returns the correct foot and kicking type (if any) for a given goal angle and ball position relative to body.
-    If a kick is not possible, it returns none as the kicking foot.
+    If a kick is not possible, it returns None as the kicking foot.
 """
 delta_table = [(-0.55,4),(-0.44,3.5),(-0.38,3),(-0.31,2.5),(-0.24,2),(-0.14,1.5),(-0.09,1),(-0.03,0.5),(0,0),(0.07,-0.5),(0.1,-1),(0.12,-1.5),(0.19,-2),(0.24,-2.5),(0.33,-3),(0.42,-3.5),(0.52,-4)]
 
