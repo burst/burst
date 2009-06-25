@@ -252,9 +252,9 @@ class BallKicker(Behavior):
         self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
 
     def switchToFinder(self, to_goal_finder=False):
-        from_finder, to_finder = self._goalFinder, self._ballFinder
+        from_finder, to_finder = self._goalFinder_left, self._ballFinder
         if to_goal_finder:
-            from_finder, to_finder = self._ballFinder, self._goalFinder
+            from_finder, to_finder = self._ballFinder, self._goalFinder_left
         else:
             # switch to bottom camera when we look for the ball
             # --- DONT DO THIS UNTIL IMOPS CODE DOES THE SWITCHING, or segfault for you ---
