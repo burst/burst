@@ -11,7 +11,7 @@ class Localizer(Behavior):
         self._my_completed = False
 
     def start(self, targets=None):
-        if self.stopped():
+        if self.stopped:
             self._targets = targets if targets is not None else [self._world.opposing_lp, self._world.opposing_rp]
         return super(Localizer, self).start()
 
@@ -30,7 +30,7 @@ class Localizer(Behavior):
 
         def onLocationUpdated():
             self.log("got EVENT_WORLD_LOCATION_UPDATED")
-            if not self._actions.searcher.stopped():
+            if not self._actions.searcher.stopped:
                 self.log("Stopping Searcher (wasn't stopped)")
                 self._actions.searcher.stop()
             self.stop()

@@ -232,6 +232,9 @@ class World(object):
 
         self.checkManModule()
 
+    def _setActions(self, actions):
+        self._actions = actions
+
     def _switchToSharedMemory(self, _):
         if set(self.vars.keys()) != set(self._shm.vars.keys()):
             num_world, num_shared = len(self.vars), len(self._shm.vars)

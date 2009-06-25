@@ -19,11 +19,12 @@ class trackerTester(InitialBehavior):
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(self.track)
 
     def track(self):
-        #print "trackerTester: TRACKING %s" % (self.count)
+        print "trackerTester: TRACKING %s" % (self.count)
         self.count += 1
-        self._actions.tracker.track(self._world.ball, lostCallback=self.trackNextFrame)
+        self._actions.tracker.start(target=self._world.ball, lostCallback=self.trackNextFrame)
 
     def trackNextFrame(self):
+        #print "A"*50
         self._eventmanager.callLater(0.0, self.track)
 
     def wrapUp(self):
@@ -36,9 +37,9 @@ class trackerTester(InitialBehavior):
 # minimal printing for spreadshit
 #        print "%s, %3.3f, %3.3f, %3.3f, %3.3f, %3.3f" % (self._world.ball.seen, self._world.ball.dist,              self._world.ball.distSmoothed, self._world.ball.bearing, ball_x, ball_y)
 # legible printing
-        print "Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
+        print "          Ball seen!: (ball seen %s, dist: %3.3f, distSmoothed: %3.3f, ball bearing: %3.3f)" % (self._world.ball.seen, self._world.ball.dist, self._world.ball.distSmoothed, self._world.ball.bearing)
         (ball_x, ball_y) = polar2cart(self._world.ball.distSmoothed, self._world.ball.bearing)
-        print "Ball x: %3.3f, Ball y: %3.3f" % (ball_x, ball_y)
+        print "          Ball x: %3.3f, Ball y: %3.3f" % (ball_x, ball_y)
 
 
 if __name__ == '__main__':

@@ -1,8 +1,9 @@
 from math import atan2, asin
 from twisted.internet.defer import log
+
 import burst
 from burst_consts import *
-from burst_util import (transpose, cumsum, succeed,
+from burst_util import (transpose, cumsum, succeed, func_name,
     Deferred, DeferredList, chainDeferreds, returnsbd)
 from burst_events import *
 import burst.moves.choreograph as choreograph
@@ -16,7 +17,8 @@ from burst.image import normalized2_image_width, normalized2_image_height
 from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
-from headtracker import Tracker, Searcher
+from headtracker import Tracker, Centerer
+from searcher import Searcher
 from passing import passBall
 from localizer import Localizer
 
@@ -24,6 +26,16 @@ from burst_consts import (InitialRobotState,
     ReadyRobotState, SetRobotState, PlayRobotState,
     FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS,
     is_120)
+
+def stopped(behaviors):
+    def wrap(f):
+        def wrapper(self, *args, **kw):
+            not_stopped = [k for k in behaviors if not getattr(self, k).stopped]
+            if len(not_stopped) > 0:
+                raise Exception("Can't start %s while %s" % (func_name(f), ','.join(str(x) for x in not_stopped)))
+            return f(self, *args, **kw)
+        return wrapper
+    return wrap
 
 #######
 
@@ -110,9 +122,12 @@ class Actions(object):
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        self.tracker = Tracker(self)        # Please remember to stop
+        self.tracker = Tracker(self)        # Please remember to stop # Todo - Locking
+        self.centerer = Centerer(self)       # Please remember to stop 
         self.searcher = Searcher(self)      # all of these behaviors
         self.localizer = Localizer(self)    # when you stop the InitialBehavior. Thank you.
+
+        self.headControllers = [self.tracker, self.centerer, self.searcher]
 
         # we keep track of the last head bd
         self._current_head_bd = self.succeed(self)
@@ -161,14 +176,13 @@ class Actions(object):
     def track(self, target, lostCallback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
-        if not self.searcher.stopped():
+        if not self.searcher.stopped or not self.centerer.stopped:
             raise Exception("Can't start tracking while searching")
-        self.tracker.track(target, lostCallback=lostCallback)
+        return self.tracker.start(target=target, lostCallback=lostCallback)
 
+    @stopped(['tracker', 'centerer'])
     @returnsbd
     def search(self, targets, center_on_targets=True, stop_on_first=False):
-        if not self.tracker.stopped():
-            raise Exception("Can't start searching while tracking")
         if stop_on_first:
             return self.searcher.search_one_of(targets, center_on_targets)
         else:
@@ -178,6 +192,8 @@ class Actions(object):
     # is too inflexible.
     def executeTracking(self, target, normalized_error_x=0.05, normalized_error_y=0.05,
             return_exact_error=False):
+        if not all(x.stopped for x in self.headControllers):
+            raise Exception("Can't start searching while tracking")
         return self.tracker.executeTracking(target,
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
