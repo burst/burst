@@ -90,9 +90,6 @@ class Goalie(InitialBehavior):
                 self.waitingOnLeft()
 
     def leap(self, stopped=False):
-        if not stopped:
-            self.targetFinder.stop().onDone(lambda: self.leap(True))
-            return
         self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
         self.targetFinder.stop()
         #if isWebots:
@@ -125,13 +122,13 @@ class Goalie(InitialBehavior):
         if realLeap:
             self._actions.executeToBellyFromLeapRight().onDone(lambda: self.getUpBelly(right))
         else:
-            self.onLeapComplete()
+            self.onLeapComplete(right)
 
     def gettingUpLeft(self):
         if realLeap:
             self._actions.executeToBellyFromLeapLeft().onDone(lambda: self.getUpBelly(left))
         else:
-            self.onLeapComplete()
+            self.onLeapComplete(left)
 
     def getUpBelly(self, side):
         self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
