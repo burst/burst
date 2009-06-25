@@ -310,12 +310,19 @@ class BurstDeferred(object):
         writing another BurstDeferred version. Returns a Deferred that is called
         when callOnDone is called.
         """
+        import twisted.internet.defer as defer
         if self.verbose:
             print "BurstDeferred: getDeferred"
         if self._completed:
             self._d = succeed(None)
         else:
             self._d = Deferred()
+            def callDeferred():
+                try:
+                    self._d.callback(None)
+                except defer.AlreadyCalledError:
+                    print "ERROR: AlreadyCalledError in getDeferred callback. Dropping to pdb."
+                    import pdb; pdb.set_trace()
             self.onDone(lambda: self._d.callback(None))
         return self._d
 
