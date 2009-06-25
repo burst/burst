@@ -194,6 +194,7 @@ class EventManager(object):
         """ set a callback on an event.
         """
         # add to _callbacks
+        assert(callable(callback))
         if callback not in self._callbacks:
             self._callbacks[callback] = set()
         if event in self._callbacks[callback]:
