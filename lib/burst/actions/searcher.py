@@ -3,6 +3,7 @@ from math import pi
 import burst
 import burst_events
 from burst.behavior import Behavior
+import burst_consts
 
 ############################################################################
 
@@ -88,23 +89,33 @@ def searchMoveIterWithoutAnythingButHeadMovements(searcher):
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def finiteSearchMoveIterWithoutAnythingButHeadMovements(searcher):
-    while True:
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
-                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
-            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
+                            (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def searchMovesIterWithCameraSwitching(searcher):
     while True:
-        if not searcher._actions.currentCamera == consts.CAMERA_WHICH_BOTTOM_CAMERA:
-            yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_BOTTOM_CAMERA)
+        if not searcher._actions.currentCamera == burst_consts.CAMERA_WHICH_BOTTOM_CAMERA:
+            yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
         for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
                                 (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
-        yield SwitchCameraCommand(searcher._actions, consts.CAMERA_WHICH_TOP_CAMERA)
+        yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_TOP_CAMERA)
         for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
                                 (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
+
+def goalSearchIter(searcher):
+    yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_TOP_CAMERA)
+    for headCoordinates in [(-1.0, -0.5), (1.0, -0.5), (1.0, 0.0), (-1.0, 0.0)]:
+        yield HeadMovementCommand(searcher._actions, *headCoordinates)
+
+def ballSearchIter(searcher):
+    yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
+    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
+                            (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 class SearchPlanner(object):
     """ The planner determines the next actions, but the searcher
@@ -147,15 +158,42 @@ class SearchPlanner(object):
 
 # Various other strategies for the searcher
 
-# Finite
-# Don't turn the body, just the head.
 def NoBodyMovesSearchPlanner(searcher, center_on_targets):
+    """
+    Finite
+    Don't turn the body, just the head.
+    """
     return SearchPlanner(searcher=searcher, center_on_targets=center_on_targets,
         baseIter=finiteSearchMoveIterWithoutAnythingButHeadMovements)
 
 # Infinite
 # Start with head turns, then turn the body
 WithBodyMovesSearchPlanner=SearchPlanner
+
+def TargetsAndLocalizationBasedSearchPlanner(searcher, center_on_targets):
+    """
+    Infinite
+    Searches using knowledge of the relation between the targets (left and right posts)
+    and based on availability of localization data
+    """
+    # Basic decision: return an iterator already suited for the targets
+    targets = searcher.targets
+    world = searcher._world
+    for baseIter, predicate, msg in [
+        (goalSearchIter, world.singleGoal,
+            "Looking for a Goal, using specific search interator"),
+        (ballSearchIter, lambda targets: set(targets) == set([world.ball]),
+            "Looking for a Ball, using specific search iterator")
+        ]:
+        if predicate(targets):
+            baseIter = baseIter
+            break
+    else:
+        msg = "Not looking for a goal, nor for the ball - using general iterator"
+        baseIter = finiteSearchMoveIterWithoutAnythingButHeadMovements
+    print "Searcher: %s" % msg
+    return SearchPlanner(searcher=searcher, center_on_targets=center_on_targets,
+        baseIter=baseIter)
 
 # TODO: Have the head turned the way we're turning. # Setting pi/2 to -pi/2 should have solved this, for now.
 # TODO: Clear foot steps if found while turning.
@@ -191,13 +229,13 @@ class Searcher(Behavior):
             self.log("%s: %s" % (self._search_count, '\n'.join(strings)))
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
-            searchPlannerMaker=NoBodyMovesSearchPlanner):
+            searchPlannerMaker=TargetsAndLocalizationBasedSearchPlanner):
         self._seenTargets = self._seenOne
         return self.start(targets=targets, center_on_targets=center_on_targets, timeout=timeout,
             timeoutCallback=timeoutCallback, searchPlannerMaker=searchPlannerMaker)
 
     def search(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
-            searchPlannerMaker=NoBodyMovesSearchPlanner):
+            searchPlannerMaker=TargetsAndLocalizationBasedSearchPlanner):
         self._seenTargets = self._seenAll
         return self.start(targets=targets, center_on_targets=center_on_targets,
             timeout=timeout, timeoutCallback=timeoutCallback,
@@ -242,8 +280,9 @@ class Searcher(Behavior):
             self._eventmanager.register(callback, event)
             self._eventToCallbackMapping[event] = callback
 
-        # Launch the search, according to some search strategy.
-        self._searchPlanner = searchPlannerMaker(self, center_on_targets) # TODO: Give that function the world+search state, so it makes informed decisions.
+        # Launch the search, according to some search strategy. Do this after setting self.targets, so it can decide
+        # based on the searched for targets.
+        self._searchPlanner = searchPlannerMaker(self, center_on_targets)
         self._eventmanager.callLater(0, self._nextSearchMove) # The centered_selves have just been cleared. # TODO: Necessary.
 
         # shortcut if we already see some or all of the targets
@@ -279,7 +318,7 @@ class Searcher(Behavior):
                     self._report("%s, %s" % (self.targets,
                         self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
                 except StopIteration:
-                    raise Exception("Search iterators are expected to be never-ending.")
+                    self.stop() # TODO - say "failed"
             else:
                 self.stop()
 

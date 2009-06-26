@@ -10,17 +10,12 @@ class Localizer(Behavior):
         super(Localizer, self).__init__(actions=actions, name='Localizer')
         self._my_completed = False
 
-    def start(self, targets=None):
-        if self.stopped:
-            self._targets = targets if targets is not None else [self._world.opposing_lp, self._world.opposing_rp]
-        return super(Localizer, self).start()
-
-    def _start(self, firstTime=False):
+    def _start(self, firstTime, targets=None):
         # first check if we are already localized. If so return succeed
 
         # TODO - yellow gate isn't right. We should use "last seen", try to minimize time to localize.
-        # TODO - change these to team based
 
+        self._targets = targets if targets is not None else [self._world.opposing_lp, self._world.opposing_rp]
         if not firstTime:
             # we won't need to reregister our bd
             print "ERROR: Don't call Localizer _start directly!"

@@ -82,7 +82,8 @@ def calcTargetXY(target_x, target_y):
 
 
 def calcBallArea(ball_x, ball_y, side):
-    if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] <
+    if isInEllipse(ball_x, ball_y, side):
+#    if (ball_x <= KICK_X_MAX[side]) and (abs(KICK_Y_MIN[side]) < abs(ball_y) <= abs(KICK_Y_MAX[side])): #KICK_X_MIN[side] <
         return BALL_IN_KICKING_AREA
     elif KICK_Y_MAX[RIGHT] < ball_y < KICK_Y_MAX[LEFT]:
         if ball_x <= KICK_X_MAX[side]:
@@ -100,3 +101,14 @@ def calcBallArea(ball_x, ball_y, side):
         else: #ball_x > KICK_X_MAX[side]
             return BALL_DIAGONAL
 
+def isInEllipse(ball_x, ball_y, side, margin=0):
+    #TODO: check if margin is legit
+    radius = (KICK_Y_MAX[side]-KICK_Y_MIN[side])/2
+    y_center = (KICK_Y_MAX[side]+KICK_Y_MIN[side])/2
+    a = radius + margin
+    b = KICK_X_MAX[side]-KICK_X_MIN[side]
+    if ((ball_y-y_center)**2)/(a**2)+((ball_x-KICK_X_MIN[side])**2)/(b**2)<=1:
+        print "IN ELLIPSE: ball close enough"
+        return True
+    print "OUT OF ELLIPSE: ball too far"
+    return False
