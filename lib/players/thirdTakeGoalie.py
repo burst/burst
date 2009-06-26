@@ -15,7 +15,7 @@ debug = True
 class Goalie(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
         self.side = left
 
     def _start(self, firstTime=False):
@@ -32,32 +32,31 @@ class Goalie(InitialBehavior):
 
     def positionHead(self):
         print "positionHead"
-        self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onHeadPositioned)
+        self._actions.moveHead(-self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onHeadPositioned)
 
     def onHeadPositioned(self):
         print "onHeadPositioned"
         self._eventmanager.register(self.monitorForFirstOwnGoalPost, EVENT_STEP) # TODO: We could see it beforehand.
+        self.cb = self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD)
+        self.cb.onDone(self.onHeadSweeped)
+
+    def onHeadSweeped(self):
+        print "onHeadSweeped"
         self._actions.turn(self.side*2*pi)
 
     def monitorForFirstOwnGoalPost(self):
 #        print "monitorForFirstOwnGoalPost"
-        # Get the closest currently seen goal post of our own goal:
         for goalpost in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
-            # If that goal post is past the middle of what we see, stop and focus on it:
-            if not goalpost is None:
-                readyForCentering = (
-                    goalpost.centerX > burst_consts.IMAGE_CENTER_X
-                    if self.side == left
-                    else goalpost.centerX < burst_consts.IMAGE_CENTER_X)
-                if readyForCentering:
-                    self._eventmanager.unregister(self.monitorForFirstOwnGoalPost, EVENT_STEP)
-                    self.onGoalPostFoundAndReadyForCentering(goalpost)
+            if (goalpost.centerX > burst_consts.IMAGE_CENTER_X if self.side == left else goalpost.centerX < burst_consts.IMAGE_CENTER_X):
+                self.cb.clear() # TODO: Is this OK even if the cb has already been called? Is being called?
+                self._eventmanager.unregister(self.monitorForFirstOwnGoalPost, EVENT_STEP)
+                self.onGoalPostFoundAndReadyForCentering(goalpost)
 
     def onGoalPostFoundAndReadyForCentering(self, goalpost):
         print "onGoalPostFoundAndReadyForCentering"
         self._actions.clearFootsteps().onDone(
-        lambda _=None, goalpost=goalpost: self._actions.centerer.start(target=goalpost).onDone(
-        lambda _=None, goalpost=goalpost: self.onCenteredOnFirstGoalpost(goalpost)))
+            lambda _=None, goalpost=goalpost: self._actions.centerer.start(target=goalpost).onDone(
+            lambda _=None, goalpost=goalpost: self.onCenteredOnFirstGoalpost(goalpost)))
 
     def onCenteredOnFirstGoalpost(self, goalpost):
         print "onCenteredOnFirstGoalpost"
