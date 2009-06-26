@@ -89,6 +89,8 @@ class NotesWindow(BaseWindow):
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
         buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
+        # hack - clicking when not focused doesn't set the cursor
+        self._cur = None
 
     def on_textview_button_press_event(self, *args):
         #import pdb; pdb.set_trace()
@@ -96,11 +98,13 @@ class NotesWindow(BaseWindow):
         txt = buff.get_text(buff.get_start_iter(),buff.get_end_iter())
         cur = buff.get_property('cursor_position')
         if cur == len(txt): return
-        print "cur = %s, %s" % (cur, len(txt))
+        if self._cur == cur: return
+        self._cur = cur
+        #print "cur = %s, %s" % (cur, len(txt))
         b, e = txt.rfind('\n',0,cur)+1, txt.find('\n',cur)
         line = txt[b:e]
         if len(line) >= len(txt): return
-        print 'running %s' % line
+        #print 'running %s' % line
         sh = pynaoqi.shell.shell
         buff.select_range(buff.get_iter_at_offset(b), buff.get_iter_at_offset(e))
         try:
@@ -109,6 +113,7 @@ class NotesWindow(BaseWindow):
             print "problem with %r: %s" % (line, e)
         else:
             sh.runsource(line)
+            self._w.set_title('%s...' % line[:20])
 
 class TaskBaseWindow(BaseWindow):
 
