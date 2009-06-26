@@ -19,6 +19,7 @@ right = -1
 left  = +1
 STEP_SIZE = 0.30
 VOVA_OFFSET = 70.0
+VOVA_TURNING_OFFSET = 0.45
 
 #######################################################################################################################
 
@@ -57,6 +58,7 @@ class AlignmentAfterLeap(Behavior):
         self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
 #        self.findOppositeOwnPost()
 
+#    @debugged
     def _stop(self):
         return self._actions.clearFootsteps()
 
@@ -71,8 +73,11 @@ class AlignmentAfterLeap(Behavior):
         lookedForGoalPost = self._world.our_goal.unknown
         if self._world.our_lp.seen: lookedForGoalPost = self._world.our_lp
         if self._world.our_rp.seen: lookedForGoalPost = self._world.our_rp
-        pastCenter = lookedForGoalPost.bearing < pi/2 if self.sideLeaptTo == right else lookedForGoalPost.bearing > -pi/2
-        if lookedForGoalPost.seen and pastCenter:
+        inRightPosition = (
+            lookedForGoalPost.centerX < VOVA_TURNING_OFFSET * burst_consts.IMAGE_WIDTH_INT
+            if self.sideLeaptTo == left 
+            else lookedForGoalPost.centerX > (1 - VOVA_TURNING_OFFSET) * burst_consts.IMAGE_CENTER_X)
+        if lookedForGoalPost.seen and inRightPosition:
             print "vova (triggered)"
             self._eventmanager.unregister(self.vova, EVENT_STEP)
             self._actions.clearFootsteps().onDone(lambda e, lookedForGoalPost=lookedForGoalPost: self.onFocusedOnOppositeOwnPost(lookedForGoalPost))
@@ -80,16 +85,14 @@ class AlignmentAfterLeap(Behavior):
 #    @debugged
     def onFocusedOnOppositeOwnPost(self, goalpost):
         print "onFocusedOnOppositeOwnPost"
-#        print "DISTANCE:", goalpost.dist
         def debug1():
             print goalpost.dist
             return -0.1
         self._actions.centerer.start(target=goalpost).onDone(
+            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(
             lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False).onDone(
-#            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
             lambda: self._actions.changeLocationRelative(max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
-            self.onVova)))
-#            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova))))
+            self.onVova))))
 
 #    @debugged
     def onVova(self):
