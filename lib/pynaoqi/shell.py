@@ -11,6 +11,8 @@ import urllib2
 from math import log10
 import math
 
+from twisted.internet.defer import Deferred, succeed
+
 # add path of burst library
 burst_lib = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), '../lib'))
 sys.path.append(burst_lib)
@@ -67,7 +69,8 @@ from burst import field
 
 if using_gtk:
     from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
-        CanvasTicker, VideoWindow, PlottingWindow, Calibrator, NotesWindow)
+        CanvasTicker, VideoWindow, PlottingWindow, Calibrator, NotesWindow,
+        GtkTextCompactingLogger)
 
     from pynaoqi.gui import Joints
 
@@ -197,6 +200,16 @@ class PlayerRunner(object):
         if hasattr(self.loop, '_player'): # why? network problems?
             user_ns['player'] = self._player = self.loop._player
             user_ns['main'] = self._main = self.loop._player._main_behavior
+            user_ns['world'] = self._main._world
+            user_ns['actions'] = self._main._actions._actions
+            user_ns['eventmanager'] = self._main._eventmanager._eventmanager
+            for k in ['searcher', 'centerer', 'localizer', 'tracker']:
+                user_ns[k] = getattr(self._main._actions._actions, k)
+            for k in ['ball', 'our_goal', 'opposing_goal', 'our_lp', 'our_rp',
+                'opposing_lp', 'opposing_rp']:
+                user_ns[k] = getattr(self._main._world, k)
+            user_ns['our_unknown'] = self._main._world.our_goal.unknown
+            user_ns['opposing_unknown'] = self._main._world.opposing_goal.unknown
     
     def switch_color(self):
         # TODO - simulate chest button (change the AL_MEMORY var?)
@@ -265,6 +278,27 @@ def makeplayerloop(name, clazz=None):
     loop = eventmanager.TwistedMainLoop(ctor, control_reactor=False, startRightNow=False)
     loop.initMainObjectsAndPlayer()
     return loop
+
+################################################################################
+
+def fps(c, dt):
+    first=c()
+    while True:
+        cur=c()
+        yield((cur-first)/dt)
+        first = cur
+
+f=fps(lambda: user_ns['eventmanager'].frame, 1.0)
+fps = lambda: checking_loop(lambda: f.next())
+
+def checking_loop(f, widget=GtkTextLogger, **kw):
+    first = f()
+    if isinstance(first, Deferred):
+        widget(f, **kw)
+    else:
+        widget(lambda: succeed(f()), **kw)
+
+compacting_loop = lambda f: checking_loop(f, widget=GtkTextCompactingLogger, dt=0.1)
 
 #############################################################################
 
@@ -367,9 +401,6 @@ def strange_ones():
     """ Slightly weirder examples """
     print STRANGE_ONES
 
-def f():
-    return 42
-
 def start_names_request(my_ns):
     # get the list of all variables - this can take a little
     # while on the robot, but it is async, so it should be fine
@@ -438,7 +469,9 @@ def make_shell_namespace(use_pylab):
         import gtk
         my_ns.update(dict(
             naojoints = Joints,
-            loop = GtkTextLogger,
+            fps = fps,
+            loop = checking_loop,
+            compact = compacting_loop,
             watch = watch,
             plottime = plottime,
             canvaspairs = canvaspairs,

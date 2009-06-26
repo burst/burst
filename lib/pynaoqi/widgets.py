@@ -212,8 +212,9 @@ class GtkTextLogger(TaskBaseWindow):
     @dt - time between calls.
     @title - title of window.
     """
-    def __init__(self, tick_cb, title=None, dt=1.0):
+    def __init__(self, tick_cb, title=None, dt=1.0, filter=lambda x: True):
         super(GtkTextLogger, self).__init__(tick_cb=tick_cb, title=title, dt=dt)
+        self._filter = filter
         self._tv = tv = gtk.TextView()
         self._tb = tb = gtk.TextBuffer()
         self._sw = gtk.ScrolledWindow()
@@ -228,6 +229,7 @@ class GtkTextLogger(TaskBaseWindow):
 
     def _update(self, result):
         #if not self._w.is_active(): return
+        if not self._filter(result): return
         tb = self._tb
         t = time.time() - self._start
         self._times.append(t)
@@ -247,6 +249,14 @@ class GtkTextLogger(TaskBaseWindow):
     def plotme(self):
         from pylab import plot, array
         plot(array(self._times), array(self._values))
+
+def GtkTextCompactingLogger(tick_cb, title=None, dt=1.0):
+    def filter(new, old=[None]):
+        if new != old[0]:
+            old[0] = new
+            return True
+        return False
+    return GtkTextLogger(tick_cb=tick_cb, title=title, dt=dt, filter=filter)
 
 def make_ellipse(parent, x, y, radius, fill_color):
     return goocanvas.Ellipse(parent = parent,

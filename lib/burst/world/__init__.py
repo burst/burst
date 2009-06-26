@@ -206,6 +206,9 @@ class World(object):
             [self.computed],
         ]
 
+        # Another useful collection
+        self.vision_objects = [self.ball, self.our_lp, self.our_rp, self.opposing_lp, self.opposing_rp]
+
         # logging variables
         self._logged_objects = [[obj, None] for obj in [self.ball]]
         self._object_to_filename = {self.ball: 'ball'}
@@ -297,6 +300,11 @@ class World(object):
 
     def singleGoal(self, targets):
         return len(targets) == 2 and set(self.opposing_goal.bottom_top) == set(targets) or set(self.our_goal.bottom_top) == set(targets)
+
+    def seenObjects(self):
+        for o in self.vision_objects:
+            if o.seen:
+                yield o
 
     # Accessors
 

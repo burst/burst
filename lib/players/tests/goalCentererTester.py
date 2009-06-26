@@ -10,13 +10,18 @@ class centerTester(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
 
     def _start(self, firstTime=False):
-        target = self._world.opposing_goal.left
+        # use the currently seen object, randomly (or not) the first
+        possible_targets = list(set(self._world.seenObjects())&set(self._world.all_posts))
+        if len(possible_targets) == 0:
+            self.log("No targets to center on, no visible posts")
+            return self.stop()
+        self.log("Centering on %s" % possible_targets[0])
         self._actions.switchToTopCamera().onDone(lambda:
-            self._actions.centerer.start(target=target, lostCallback=self.onLost).onDone(self.wrapUp))
+            self._actions.centerer.start(target=possible_targets[0], lostCallback=self.onLost).onDone(self.wrapUp))
 
     def onLost(self):
         self.log("lost ball")
-        self._eventmanager.quit()
+        self.stop()
 
     def wrapUp(self):
         self.log("calling center again to make sure it works when already centered")
@@ -24,7 +29,7 @@ class centerTester(InitialBehavior):
 
     def reallyWrapUp(self):
         self.log("centered again!")
-        self._eventmanager.quit()
+        self.stop()
 
 
 if __name__ == '__main__':
