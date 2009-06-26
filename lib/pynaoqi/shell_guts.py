@@ -177,6 +177,7 @@ class PlayerRunner(object):
         self._main = None
 
     def make(self):
+        import shell
         user_ns = shell.user_ns
         self.loop = makeplayerloop(self.fullname)
         self._players.last = self.loop
