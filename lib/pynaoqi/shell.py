@@ -282,17 +282,14 @@ def main_twisted(con, my_ns):
     tshell.mainloop()
 
 def installgtkreactor():
-    import threading
-    print threading.enumerate()
     import pynaoqi
     options = pynaoqi.getDefaultOptions()
-    print threading.enumerate()
     if options.twisted:
         # Try to throw in gtk support
         using_gtk = False
         try:
-            #from twisted.internet import gtk2reactor
-            #gtk2reactor.install()
+            from twisted.internet import gtk2reactor
+            gtk2reactor.install()
             using_gtk = True
         except AssertionError, e:
             using_gtk = True

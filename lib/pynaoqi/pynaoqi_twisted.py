@@ -3,7 +3,6 @@ from xml.dom import minidom
 
 from twisted.internet.protocol import Protocol, ClientFactory, ClientCreator
 from twisted.internet.defer import Deferred
-import twisted.internet.reactor as reactor
 
 import twisted.internet.error
 
@@ -24,6 +23,7 @@ class SoapConnectionManager(object):
             self.con.log = open('headers.txt', 'a+')
 
     def _makeNewProtocol(self, tosend):
+        import twisted.internet.reactor as reactor
         deferred = Deferred()
         def makeProtocol():
             return SoapProtocol(con=self.con)
