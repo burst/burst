@@ -67,7 +67,7 @@ from burst import field
 
 if using_gtk:
     from pynaoqi.widgets import (GtkTextLogger, GtkTimeTicker,
-        CanvasTicker, VideoWindow, PlottingWindow, Calibrator)
+        CanvasTicker, VideoWindow, PlottingWindow, Calibrator, NotesWindow)
 
     from pynaoqi.gui import Joints
 
@@ -102,8 +102,9 @@ def one_window(name, ctor):
         obj.onClose.addCallback(onClose)
     return glob[name]
 
-video = lambda: one_window('video_window', lambda: VideoWindow(con))
+video = lambda dt=0.5: one_window('video_window', lambda: VideoWindow(con=con, dt=dt))
 calibrator = lambda: one_window('calibrator_window', lambda: Calibrator(con))
+notes = lambda: one_window('notes_window', lambda: NotesWindow())
 
 #########################################################
 
@@ -123,7 +124,7 @@ def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
 
 def fieldshow(callback=None, limits=field.green_limits):
     if callback is None:
-        import burst.kinematics as kinematics
+        import burst.world.kinematics as kinematics
         callback = lambda: kinematics.pose.updateLocations(con)
     return CanvasTicker(callback, limits=limits,
         statics=list(field.rects) + map(list, field.landmarks))
@@ -445,6 +446,7 @@ def make_shell_namespace(use_pylab):
             fieldshow = fieldshow,
             video = video,
             calibrator = calibrator,
+            notes = notes,
             CanvasTicker = CanvasTicker,
             gtk = gtk,
         ))

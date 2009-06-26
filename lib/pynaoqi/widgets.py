@@ -13,6 +13,7 @@ from twisted.internet.defer import Deferred, succeed
 
 from pynaoqi.consts import *
 from pynaoqi import options
+import pynaoqi
 
 try:
     import matplotlib
@@ -74,6 +75,45 @@ class BaseWindow(object):
     def hide(self):
         self._w.hide()
 
+class NotesWindow(BaseWindow):
+    def __init__(self):
+        super(NotesWindow, self).__init__(builder_file='notes.glade',
+            top_level_widget_name='window1')
+        self._w.set_size_request(500,600)
+        self._w.show_all()
+        self._textview = self._builder.get_object('textview')
+        from gtkcodebuffer import CodeBuffer, SyntaxLoader, add_syntax_path
+        # comment-out if CodeBuffer is installed
+        add_syntax_path("%s/syntax" % os.path.dirname(__file__))
+        lang = SyntaxLoader("python")
+        self._textbuffer = buff = CodeBuffer(lang=lang)
+        self._textview.set_buffer(self._textbuffer)
+        buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
+        # hack - clicking when not focused doesn't set the cursor
+        self._cur = None
+
+    def on_textview_button_press_event(self, *args):
+        #import pdb; pdb.set_trace()
+        buff = self._textbuffer
+        txt = buff.get_text(buff.get_start_iter(),buff.get_end_iter())
+        cur = buff.get_property('cursor_position')
+        if cur == len(txt): return
+        if self._cur == cur: return
+        self._cur = cur
+        #print "cur = %s, %s" % (cur, len(txt))
+        b, e = txt.rfind('\n',0,cur)+1, txt.find('\n',cur)
+        line = txt[b:e]
+        if len(line) >= len(txt): return
+        #print 'running %s' % line
+        sh = pynaoqi.shell.shell
+        buff.select_range(buff.get_iter_at_offset(b), buff.get_iter_at_offset(e))
+        try:
+            compile(line,'','exec')
+        except Exception, e:
+            print "problem with %r: %s" % (line, e)
+        else:
+            sh.runsource(line)
+            self._w.set_title('%s...' % line[:20])
 
 class TaskBaseWindow(BaseWindow):
 
@@ -533,8 +573,8 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
     self._yuv, self._rgb, self._thresholded
     """
 
-    def __init__(self, con):
-        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=0.5)
+    def __init__(self, con, dt=0.5):
+        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=dt)
         if not self.init_imops_mixin(con):
             return
 

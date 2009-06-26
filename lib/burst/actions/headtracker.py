@@ -95,6 +95,8 @@ class Centerer(Behavior, TrackMixin):
 
     """ center on target by moving the head """
 
+    movehead = False
+
     def __init__(self, actions):
         super(Centerer, self).__init__(actions=actions, name="Centerer")
         self._ondone = trackedlist()
@@ -174,10 +176,13 @@ class Centerer(Behavior, TrackMixin):
             self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
         else: # target.recently_seen is True
             # Out path 2: try to move to the pitch limit (we lost it, let's try finding it the cheap way)
-            self.log("Out #2: Moving head up")
-            self._actions.changeHeadAnglesRelative(0.0, -0.1).onDone(self._centeringStep)
-            # old path 2: wait a little
-            #self._eventmanager.callLater(self._eventmanager.dt, self._centeringStep)
+            if self.movehead:
+                self.log("Out #2-move: Moving head up")
+                self._actions.changeHeadAnglesRelative(0.0, -0.1).onDone(self._centeringStep)
+            else:
+                # old path 2: wait a little
+                #self.log("Out #2-wait: Waiting one frame")
+                self._eventmanager.callLater(self._eventmanager.dt, self._centeringStep)
 
 ############################################################################
 

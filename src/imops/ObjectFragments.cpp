@@ -4253,12 +4253,13 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 
     IplImage* mask = 0;
     IplImage* imageClipped = 0;
+    CvMemStorage* storage= cvCreateMemStorage(0);
 
     // Get field
     CvRect fieldRect = cvRect(-1,-1,-1,-1);
     // HSV color of the field, +- range, saturation cuttoff, minimal field size.
     //CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1); - WEBOTS PARAMETERS!
-    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1);
+    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1, &storage);
 
     if (field != NULL) {
 #ifdef OFFLINE
@@ -4295,7 +4296,7 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 	    	cvClearSeq(field);
 	    	field= NULL;
 	    }
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0);
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0, &storage);
 
 #ifdef OFFLINE
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
@@ -4356,22 +4357,23 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     if (src) cvReleaseImage( &src );
     if (mask) cvReleaseImage( &mask );
     if (imageClipped) cvReleaseImage( &imageClipped );
+    if (storage) cvReleaseMemStorage( &storage );
 
     src= NULL;
     mask= NULL;
     imageClipped= NULL;
+    storage= NULL;
 
     // Everything is ok.
     return 0;
 }
 
-CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField) {
+CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField, CvMemStorage** storage) {
 	// Minimal white value in sat channel 3.
 	int topValueWhite= 180;
 	// Maximal black value in sat channel 2.
 	int bottomValueWhite= 110;
     CvSeq* seqhull= NULL;
-    CvMemStorage* storage= cvCreateMemStorage(0);
 	CvSeq* contours = NULL; // = cvCreateSeq(CV_SEQ_ELTYPE_POINT, sizeof(CvSeq), sizeof(CvPoint) , storageContours);
 	CvSeq* result = NULL;
 	CvSize sz = cvSize( src->width & -2, src->height & -2 );
@@ -4454,7 +4456,7 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 		cvOr(twhite, tgray, tgray, NULL);
 
 	/*int iContourNumber = */
-	cvFindContours( tgray, storage, &contours, sizeof(CvContour),
+	cvFindContours( tgray, *storage, &contours, sizeof(CvContour),
 										 CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0) );
 	CvSeq* max_contour = NULL;
 	CvSeq* min_contour_ball = NULL;
@@ -4471,20 +4473,20 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	double areaThresh= 0.6;
 
 	while (curr_contour) {
-		result = cvApproxPoly(curr_contour, sizeof(CvContour), storage,
+		result = cvApproxPoly(curr_contour, sizeof(CvContour), *storage,
 		CV_POLY_APPROX_DP, cvContourPerimeter(curr_contour)*0.02, 0 );
 		iCurrSize = fabs(cvContourArea(result, CV_WHOLE_SEQ));
-		iArea= (double)cvBoundingRect(contours).width * (double)cvBoundingRect(contours).height;
+		iArea= (double)cvBoundingRect(curr_contour).width * (double)cvBoundingRect(curr_contour).height;
 		int amount= 0;
-		if(cvBoundingRect(contours).width>cvBoundingRect(contours).height)
-			amount= cvBoundingRect(contours).width;
+		if(cvBoundingRect(curr_contour).width>cvBoundingRect(curr_contour).height)
+			amount= cvBoundingRect(curr_contour).width;
 		else
-			amount= cvBoundingRect(contours).height;
+			amount= cvBoundingRect(curr_contour).height;
 		iCurrFocal = sqrt(static_cast<float>(pow(
-				static_cast<float>(160-(cvBoundingRect(contours).x+amount/2)),
+				static_cast<float>(160-(cvBoundingRect(curr_contour).x+amount/2)),
 				static_cast<int>(2)))
 				+
-				static_cast<float>(pow(static_cast<float>(240-(cvBoundingRect(contours).y + amount/2)),
+				static_cast<float>(pow(static_cast<float>(240-(cvBoundingRect(curr_contour).y + amount/2)),
 					static_cast<int>(2))));
 
 		if (result) {
@@ -4496,8 +4498,8 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 				max_contour = curr_contour; //result
 				iMaxSize = iCurrSize;
 			}
-			if((double)cvBoundingRect(contours).width/cvBoundingRect(contours).height<ratioThresh &&
-				(double)cvBoundingRect(contours).height/cvBoundingRect(contours).width<ratioThresh) {
+			if((double)cvBoundingRect(curr_contour).width/cvBoundingRect(curr_contour).height<ratioThresh &&
+				(double)cvBoundingRect(curr_contour).height/cvBoundingRect(curr_contour).width<ratioThresh) {
 				if(iCurrFocal <= iMinFocal) {
 					if(iCurrSize/iArea>areaThresh) {
 						min_contour_ball = curr_contour;
@@ -4517,29 +4519,17 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 		} else {
 			curr_contour = curr_contour->h_next;
 		}
-		if (curr_contour) {
-			cvClearSeq(curr_contour);
-			curr_contour= NULL;
-		}
 	}
     if(isField) {
     	if (max_contour != NULL) {
 			rect = cvBoundingRect(max_contour);
 			seqhull = cvConvexHull2(max_contour, 0, CV_COUNTER_CLOCKWISE, 0);
-			if (max_contour) {
-				cvClearSeq(max_contour);
-				max_contour= NULL;
-			}
 		}
 	}
     else {
 		if(min_contour_ball != NULL) {
 			rect = cvBoundingRect(min_contour_ball);
 			seqhull = cvConvexHull2(min_contour_ball, 0, CV_COUNTER_CLOCKWISE, 0);
-			if (min_contour_ball) {
-				cvClearSeq(min_contour_ball);
-				min_contour_ball= NULL;
-			}
 		}
     }
 
@@ -4565,14 +4555,6 @@ CvSeq* ObjectFragments::getLargestColoredContour(IplImage* src, int iBoxColorVal
 	tBlackAndWhite = NULL;
 	imgOverTrimmed = NULL;
 	imgUnderTrimmed = NULL;
-
-	if (contours) {
-		cvClearSeq(contours);
-		contours = NULL;
-	}
-	if (storage) {
-		cvReleaseMemStorage( &storage );
-	}
 
 	return seqhull;
 }

@@ -4,6 +4,8 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
+import sys
+
 from twisted.python import log
 
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
@@ -158,7 +160,6 @@ class Behavior(Nameable):
         """  Note to inheriting folk: this constructor must be the /last/
         call in your constructor, since it calls your start method
         """
-        #BurstDeferred.__init__(self, self, *args, **kw)
         self._resetDeferred()
         Nameable.__init__(self, name)
         self._actions = BehaviorActions(actions, self)
@@ -220,17 +221,23 @@ class Behavior(Nameable):
         err = None
         if self.stopped:
             if self._d.called:
-                err = "callOnDone where _d is already called"
-                import pdb; pdb.set_trace()
+                err = "callOnDone where _d is already called - will probably stop here.."
+                #import pdb; pdb.set_trace()
             else:
                 #print "Behavior: callOnDone ok"
                 self._d.callback(None)
+                self._d._frame = sys._getframe()
                 # XXX tell the super to remove us from the parent? or have all BurstDeferreds
                 # act like that? i.e. breaking parent-child when child has fired?
         else:
             err= "callOnDone being called while running - ignored. Probably IsRunningMoveCoordinator bug (see comment above)"
         if err:
             self.log("Error: %s" % err)
+
+    def getDeferred(self):
+        return self._d
+
+    # Core Behavior API
 
     def stop(self):
         """ Stops the behavior, and returns a BD for stoppage complete. If already stopped,

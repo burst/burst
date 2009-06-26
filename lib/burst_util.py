@@ -10,6 +10,7 @@ import linecache
 import glob
 import socket
 import logging
+import traceback
 
 ################################################################################
 
@@ -458,6 +459,29 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
 # Various Decorators
 
 # Debugging
+
+def whocalledme(f, which=lambda stack, *args, **kw: stack[-2]):
+    def wrap(*args, **kw):
+        stack = traceback.extract_stack(sys._getframe())
+        caller = which(stack, *args, **kw)
+        print "%s was called by %r" % (func_name(f), caller)
+        return f(*args, **kw)
+    wrap.func_name = f.func_name
+    wrap.func_doc = f.func_doc
+    return wrap
+
+def first_out_of_class(stack, self, *args, **kw):
+    # Assume that the class is in one file
+    # assume that same file and func of same name is enough
+    self_file = os.path.splitext(sys.modules[self.__class__.__module__].__file__)[0]
+    dir_self = dir(self)
+    for rev_i, (filename, lineno, funcname, line) in enumerate(reversed(stack)):
+        if self_file == os.path.splitext(filename)[0] and funcname in dir_self:
+            return stack[len(stack)-rev_i-2]
+    return stack[-2]
+
+def whocalledme_outofclass(f):
+    return whocalledme(f, which=first_out_of_class)
 
 def timeit(tmpl):
     def wrapper(f):
