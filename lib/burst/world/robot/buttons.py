@@ -37,9 +37,22 @@ class ChestButton(object):
         self.oldVal = 0.0
 
     def calc_events(self, events, deferreds):
+        # Throw EVENT_I_GOT_PENALIZED and EVENT_I_GOT_UNPENALIZED, but calculation
+        # done in PlayerStatus.
         newVal, = self._world.getVars(self._vars)
         if newVal > 0.5 and self.oldVal < 0.5:
             events.add(burst_events.EVENT_CHEST_BUTTON_PRESSED)
+            events.add(self._onChestButtonPressed())
         if newVal < 0.5 and self.oldVal > 0.5:
             events.add(burst_events.EVENT_CHEST_BUTTON_RELEASED)
         self.oldVal = newVal
+
+    def _onChestButtonPressed(self):
+        self._world.gameStatus.getMyPlayerStatus().onChestButtonPressed()
+        #info((self._world.robot.penalized and 'Penalized' or 'Unpenalized').center(20) +
+        #    str(self._world.gameStatus.getMyPlayerStatus()))
+        if self._world.robot.penalized:
+            return burst_events.EVENT_I_GOT_PENALIZED
+        else:
+            return burst_events.EVENT_I_GOT_UNPENALIZED
+

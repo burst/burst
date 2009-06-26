@@ -121,7 +121,6 @@ class Player(object):
         setup led changers - video debug and team color and kickoff presentation (TODO kickoff)
         """
         self._world._sentinel.enableDefaultActionSimpleClick(False)
-        self._eventmanager.register(self._onChestButtonPressed, EVENT_CHEST_BUTTON_PRESSED)
         self._announceNotSeeingBall()
         self._announceSeeingNoGoal()
         self._actions.switchToBottomCamera() # XXX Don't bother onDoning - takes long enough for behavior to start.
@@ -331,27 +330,14 @@ class Player(object):
 #        self._actions.say("hello. don't worry, be happy!")
         info(str(self))
 
-    def _onChestButtonPressed(self):
-        """ This callback is registered only after start - when
-        the chest button has been pressed we stop being in the configure
-        state, and call onConfigured
-        """
-        info("Player: onChestButtonPressed")
-        if self._configuring: return # 
-
-        self._world.gameStatus.getMyPlayerStatus().onChestButtonPressed()
-        info((self._world.robot.penalized and 'Penalized' or 'Unpenalized').center(20) +
-            str(self._world.gameStatus.getMyPlayerStatus()))
-
-        # TODO - penalize me, also make sure that if I am penalized from chest
-        # then I remain so until either I am unpenalized from chest, OR the game
-        # state changes to Penalized (for me), and THEN Unpenalized from game state.
-
     def _onPenalized(self):
         print "<"*20 + " P E N A L I Z E D " + ">"*20
+        self._main_behavior.stop()
+        self._actions._motion.killAll()
 
     def _onUnpenalized(self):
         print "<"*20 + " u n p e n a l i z e d " + ">"*20
+        self._main_behavior.start()
 
     #############
     # Utilities #
