@@ -124,7 +124,7 @@ def fieldpairs(l, limits=(-1000.0, 1000.0, -1000.0, 1000.0)):
 
 def fieldshow(callback=None, limits=field.green_limits):
     if callback is None:
-        import burst.kinematics as kinematics
+        import burst.world.kinematics as kinematics
         callback = lambda: kinematics.pose.updateLocations(con)
     return CanvasTicker(callback, limits=limits,
         statics=list(field.rects) + map(list, field.landmarks))

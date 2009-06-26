@@ -108,7 +108,7 @@ def searchMovesIterWithCameraSwitching(searcher):
 
 def goalSearchIter(searcher):
     yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_TOP_CAMERA)
-    for headCoordinates in [(-1.0, -0.5), (1.0, -0.5), (1.0, 0.0), (-1.0, 0.0)]:
+    for headCoordinates in [(pi/2, 0.0), (-pi/2, 0.0)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def ballSearchIter(searcher):

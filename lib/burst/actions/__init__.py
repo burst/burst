@@ -118,6 +118,8 @@ class Actions(object):
         #self._video = world.getALVideoDeviceProxy()
         self._imops = world.getImopsProxy()
 
+        self._current_camera = None # This is based on our commands only - we are the only ones changing it
+
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
@@ -440,10 +442,14 @@ class Actions(object):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
         """
-        if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
-            bd = self.switchToBottomCamera()
+        if self._current_camera == whichCamera:
+            bd = self.succeed(self)
         else:
-            bd = self.switchToTopCamera()
+            if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
+                bd = self.switchToBottomCamera()
+            else:
+                bd = self.switchToTopCamera()
+            self._current_camera = whichCamera
         return bd
 
     @returnsbd
