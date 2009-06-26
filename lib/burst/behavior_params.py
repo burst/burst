@@ -112,3 +112,44 @@ def isInEllipse(ball_x, ball_y, side, margin=0):
         return True
     print "OUT OF ELLIPSE: ball too far"
     return False
+
+delta_table = [(-0.55,4),(-0.44,3.5),(-0.38,3),(-0.31,2.5),(-0.24,2),(-0.14,1.5),(-0.09,1),(-0.03,0.5),(0,0),(0.07,-0.5),(0.1,-1),(0.12,-1.5),(0.19,-2),(0.24,-2.5),(0.33,-3),(0.42,-3.5),(0.52,-4)]
+
+def getKickingType(self, goal_bearing, ball_y, side, margin=0):
+    def lookUpDelta(goal_bearing):
+        for i in range(len(delta_table)):
+            if goal_bearing == delta_table[i][0]:
+                return delta_table[i][1]
+            if goal_bearing < delta_table[i][0]:
+                if i==0:
+                    return None
+                return (delta_table[i-1][1] - 0.5*(delta_table[i][0]-goal_bearing)/(delta_table[i][0]-delta_table[i-1][0]))
+        return None
+
+    print "Starting to think diagonally"
+    delta_y = lookUpDelta(goal_bearing)
+    if delta_y == None:
+        print "DIAGONAL KICK NOT VIABLE!"
+        return None
+    foot_y = delta_y + ball_y
+    print "ball is at ", ball_y, ", delta is ", delta_y, ", so foot needs to be at ", foot_y
+    
+    if side == LEFT: 
+        if foot_y >= KICK_Y_MIN[LEFT]-margin and foot_y <= KICK_Y_MAX[LEFT]+margin:
+            if foot_y < KICK_Y_MIN[LEFT]:
+                kick_parameter = 1.0
+            elif foot_y > KICK_Y_MAX[LEFT]:
+                kick_parameter = 0.0
+            else: #foot_y >= KICK_Y_MIN[LEFT] and foot_y <= KICK_Y_MAX[LEFT]:
+                kick_parameter = 1 - (foot_y - KICK_Y_MIN[LEFT])/(KICK_Y_MAX[LEFT] - KICK_Y_MIN[LEFT])
+    else: #if side == RIGHT:
+        if foot_y >= KICK_Y_MAX[RIGHT]-margin and foot_y <= KICK_Y_MIN[RIGHT]+margin:
+            if foot_y > KICK_Y_MIN[RIGHT]:
+                kick_parameter = 1.0
+            elif foot_y < KICK_Y_MAX[RIGHT]:
+                kick_parameter = 0.0
+            else: #foot_y >= KICK_Y_MIN[RIGHT] and foot_y <= KICK_Y_MAX[RIGHT]:
+                kick_parameter = (foot_y - KICK_Y_MAX[RIGHT])/(KICK_Y_MIN[RIGHT] - KICK_Y_MAX[RIGHT])
+    
+    print "kick_parameter: ", kick_parameter
+    return kick_parameter
