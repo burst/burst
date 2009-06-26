@@ -222,8 +222,8 @@ class Behavior(Nameable):
         err = None
         if self.stopped:
             if self._d.called:
-                err = "callOnDone where _d is already called"
-                import pdb; pdb.set_trace()
+                err = "callOnDone where _d is already called - will probably stop here.."
+                #import pdb; pdb.set_trace()
             else:
                 #print "Behavior: callOnDone ok"
                 self._d.callback(None)
