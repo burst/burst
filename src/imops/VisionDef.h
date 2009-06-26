@@ -52,10 +52,11 @@ Vision Constants that span multiple classes and systems.
 #define NAO_SIM_IMAGE_ROW_OFFSET      (NAO_SIM_IMAGE_WIDTH * 3)
 
 
-#define VISION_FRAME_LENGTH_MS 50
-#define VISION_FRAME_LENGTH_uS 50000
-#define VISION_FRAME_LENGTH_PRINT_THRESH_uS 75000
-#define VISION_FPS 30
+// XXX Vision Frame rate needs to be in sync with lib/burst_consts.py
+#define VISION_FRAME_LENGTH_MS 100
+#define VISION_FRAME_LENGTH_uS 100000
+#define VISION_FRAME_LENGTH_PRINT_THRESH_uS 150000
+#define VISION_FPS 10
 // XXX VISION_FPS is the commanded fps to the camera proxy, which according
 // to help can only take on the values: 5, 10, 15, 30 - so I'm not sure
 // what 20 would do -- Alon.

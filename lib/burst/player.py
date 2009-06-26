@@ -75,6 +75,7 @@ class Player(object):
 
         # kludge
         self._mainBehaviorStoppedByMe = False
+        self._readyBehaviorStoppedByMe = False
 
     def registerFallHandling(self):
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
@@ -167,7 +168,7 @@ class Player(object):
                     info("testing Ready: Done with Ready")
                 self._onReady().onDone(onReadyDone)
             else:
-                self._startMainBehavior().onDone(self._mainBehaviorStopped)
+                self._startMainBehavior().onDone(self._mainBehaviorFinalStop)
         else:
             info("Player: waiting for configuration event (change in game state, or chest button)")
             self._eventmanager.firstEventDeferred(EVENT_GAME_STATE_CHANGED,
@@ -177,13 +178,17 @@ class Player(object):
         print "="*80
         print "= %s =" % msg.center(76)
         print "="*80
+    
+    # Main Behavior ON/OFF Switch and Notification
 
     def _startMainBehavior(self, additional_message=''):
-        self._main_behavior.start()
+        if not self._main_behavior.stopped: return
         self._banner('starting %s%s' % (self._main_behavior.name, additional_message))
+        self._main_behavior.start()
         return self._main_behavior
 
     def _stopMainBehavior(self, additional_message=''):
+        if self._main_behavior.stopped: return self._actions.succeed(self)
         self._banner('stopping %s%s' % (self._main_behavior.name, additional_message))
         self._mainBehaviorStoppedByMe = True
         self._main_behavior.stop()
@@ -194,7 +199,33 @@ class Player(object):
             self._mainBehaviorStoppedByMe = False
             return
         self._banner('%s has stopped' % (self._main_behavior.name))
+
+    def _mainBehaviorFinalStop(self):
+        self._banner('%s has stopped for the last time' % (self._main_behavior.name))
         self._eventmanager.quit()
+
+    # Ready Behavior ON/OFF Switch and Notification
+
+    def _startReadyBehavior(self, additional_message=''):
+        if not self._approacher.stopped: return self._approacher
+        self._banner('starting %s for %s%s' % (self._approacher.name,
+            self._main_behavior.name,  additional_message))
+        self._approacher.start()
+        return self._approacher
+
+    def _stopReadyBehavior(self, additional_message=''):
+        if self._approacher.stopped: return self._actions.succeed(self)
+        self._banner('stopping %s for %s%s' % (self._approacher.name,
+            self._main_behavior.name, additional_message))
+        self._readyBehaviorStoppedByMe = True
+        self._approacher.stop()
+        return self._approacher
+
+    def _readyBehaviorStopped(self):
+        if self._readyBehaviorStoppedByMe:
+            self._readyBehaviorStoppedByMe = False
+            return
+        self._banner('%s for %s has stopped' % (self._approacher.name, self._main_behavior.name))
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -214,6 +245,13 @@ class Player(object):
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
         self._eventmanager.register(self._onPenalized, EVENT_I_GOT_PENALIZED)
         self._eventmanager.register(self._onUnpenalized, EVENT_I_GOT_UNPENALIZED)
+        # Build the approacher behavior - that will be used in Ready state (the
+        # comming state)
+        gameStatus = self._world.gameStatus
+        weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
+        jersey = self._world.robot.jersey
+        x, y = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey][burst_consts.INITIAL_POSITION] # XXX - no idea what that last dict is good for, contains one item right now.
+        self._approacher = ApproachXYHActiveLocalization(self._actions, x, y, 0.0) # heading towards opposing goal
 
     def _onNewGameState(self):
         """ we only register here after we have actually been configured - simplifies the logic """
@@ -239,20 +277,14 @@ class Player(object):
         info("Player: Main Behavior is done (%s)" % (self._main_behavior))
 
     def _onSet(self):
-        info("Player: On Set: TODO")
-        self._main_behavior.stop()
+        self._stopMainBehavior()
+        self._stopReadyBehavior()
 
     def _onReady(self):
         self._main_behavior.stop()
-        gameStatus = self._world.gameStatus
-        weAreKickTeam = gameStatus.mySettings.teamColor == gameStatus.kickOffTeam
-        jersey = self._world.robot.jersey
-        x, y = burst_consts.READY_INITIAL_LOCATIONS[weAreKickTeam][jersey][burst_consts.INITIAL_POSITION] # XXX - no idea what that last dict is good for, contains one item right now.
-        info("onReady: #%d going to %2.1f, %2.1f" % (jersey, x, y))
-        self._approacher = ApproachXYHActiveLocalization(self._actions, x, y, 0.0) # heading towards opposing goal
-        self._approacher.start()
-        self._approacher.onDone(self._onReadyDone)
-        return self._approacher
+        x, y = self._approacher.target_world_x, self._approacher.target_world_y
+        info("onReady: #%d going to %2.1f, %2.1f" % (burst.options.jersey, x, y))
+        return self._startReadyBehavior('; onReady').onDone(self._onReadyDone)
 
     def _onReadyDone(self):
         info("INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey))
@@ -260,6 +292,7 @@ class Player(object):
     def _onInitial(self):
         info("Player: On Initial")
         self._main_behavior.stop()
+        self._approacher.stop()
 
     def onStop(self):
         """ Called when we want to shutdown our program - i.e. game over, go home, or whatever.

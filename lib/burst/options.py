@@ -159,7 +159,8 @@ elif port == 9560:
 else:
     robotname = ROBOT_IP_TO_NAME.get(ip, ip)
 
-options.jersey = jersey = int(options.jersey or burst_consts.ROBOT_NAME_TO_JERSEY_NUMBER[robotname])
+options.jersey = jersey = int(options.jersey or burst_consts.ROBOT_NAME_TO_JERSEY_NUMBER.get(
+    robotname, 1)) # Default to 1
 burst_target.robotname = robotname
 burst_target.jersey = jersey
 

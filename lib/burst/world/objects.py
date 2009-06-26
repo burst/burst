@@ -655,15 +655,6 @@ class GoalPost(Locatable):
             real_length=GOAL_POST_DIAMETER, world_x=world_x, world_y=world_y)
         self.real_post = real_post
         self.which_team = which_team
-        self.angleX = 0.0
-        self.angleY = 0.0
-        self.centerX = 0.0
-        self.centerY = 0.0
-        self.focDist = 0.0
-        self.height = 0.0
-        self.width = 0.0
-        self.x = 0.0
-        self.y = 0.0
         self.id_certainty = ID_NOT_SURE
         # Stuff that is defined only after Player.onConfigured is called:
         self.color = None
@@ -692,7 +683,7 @@ class GoalPost(Locatable):
         self._position_changed_event = event_data['position_changed'] if self.real_post else -1
         self.in_frame_event = event_data['in_frame'] if self.real_post else -1
         self._vars = self.getVarsForName(self.fourLetterPostName())
-        info('Configuring %s' % str(self))
+        info('Configuring %s' % self.goalPostToString())
 
     def goalPostToString(self):
         return ('%(name)s %(color)s, %(which)s, (%(x)3.2f, %(y)3.2f), %(left)s, %(four)s' %

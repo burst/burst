@@ -31,6 +31,10 @@ class CenteringCommand(object):
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
         self._repeats = self._total_repeats = repeats
     def onCenteringDone(self):
+        # TODO - Crude hack, to avoid CenteringCommand continuing when searcher is stopped.
+        # real solution - turn this into a Behavior, have Searcher.stop stop the current
+        # command.
+        if self._actions.searcher.stopped: return
         # called both on centering and on target lost
         if self._target.centered_self.sighted_centered or self._repeats <= 0:
             self._bd.callOnDone()

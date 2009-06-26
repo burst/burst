@@ -28,12 +28,15 @@ class Localizer(Behavior):
             if not self._actions.searcher.stopped:
                 self.log("Stopping Searcher (wasn't stopped)")
                 self._actions.searcher.stop()
-            self.stop()
+            return self.stop()
         self._eventmanager.registerOneShotBD(EVENT_WORLD_LOCATION_UPDATED).onDone(onLocationUpdated)
 
         self._doSearch()
 
     def _doSearch(self):
+        if self.stopped: return # Another hack that the whole Behavior thing should have fixed..
+                    # But it turns out it is very hard to keep track of BD's - if self._actions.search
+                    # returns a bd, I don't currently keep it, or I do and my removal is buggy?
         targets = self._targets
         robot = self._world.robot
         (world_x, world_y, world_heading, world_update_time) = (
@@ -41,14 +44,16 @@ class Localizer(Behavior):
         if (world_x and world_y and world_heading and world_update_time
             and not self._world.odometry.movedBetweenTimes(world_update_time, self._world.time)):
             self.log("position is fine right now")
-            self.stop()
+            return self.stop()
 
         # else go forth and localize!
         # we do a little extra work compared to previous versions: we don't just
         # search, we search and search again! we stop only when the EVENT_WORLD_LOCATION_UPDATED
         # actually fires.
 
+        self.logverbose("BA before search: %s" % self._actions)
         self._actions.search(targets).onDone(self._doSearch)
+        self.logverbose("BA after  search: %s" % self._actions)
 
     def _stop(self):
         self.log("Stopping")

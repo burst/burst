@@ -460,6 +460,13 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
 
 # Debugging
 
+def getcaller(aboveme=1):
+    # we return the caller of who called us, using aboveme
+    # to give the stack about the caller, so -1 is who called
+    # him (i.e. 2 relative to us), -2 is 3 etc.
+    stack = traceback.extract_stack(sys._getframe())
+    return stack[-2-aboveme]
+
 def whocalledme(f, which=lambda stack, *args, **kw: stack[-2]):
     def wrap(*args, **kw):
         stack = traceback.extract_stack(sys._getframe())
@@ -1049,6 +1056,14 @@ def test():
             bd.onDone(meth())
         bdfirst.callOnDone()
         print ','.join(map(str,x))
+
+    print "Test getcaller"
+    print "should print something like ['f', 'test']"
+    def f():
+        def g():
+            return getcaller(), getcaller(2)
+        return g()
+    print [x[2] for x in f()]
 
 if __name__ == '__main__':
     test()

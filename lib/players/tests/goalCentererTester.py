@@ -11,13 +11,20 @@ class centerTester(InitialBehavior):
 
     def _start(self, firstTime=False):
         # use the currently seen object, randomly (or not) the first
+        self.log("Switching to Top to look for a single goal post")
+        DT = 0.0 # now that there is a CAMERA_SWITCH_WAIT It should also allow for the
+                 # few frames I wanted to register existing objects.
+        self._actions.switchToTopCamera().onDone(lambda:
+            self._eventmanager.callLater(DT, self.findCenteringTarget))
+
+    def findCenteringTarget(self):
         possible_targets = list(set(self._world.seenObjects())&set(self._world.all_posts))
         if len(possible_targets) == 0:
             self.log("No targets to center on, no visible posts")
             return self.stop()
         self.log("Centering on %s" % possible_targets[0])
-        self._actions.switchToTopCamera().onDone(lambda:
-            self._actions.centerer.start(target=possible_targets[0], lostCallback=self.onLost).onDone(self.wrapUp))
+        self._actions.centerer.start(target=possible_targets[0], lostCallback=self.onLost
+            ).onDone(self.wrapUp)
 
     def onLost(self):
         self.log("lost ball")
