@@ -18,7 +18,7 @@ debug = True
 right = -1
 left  = +1
 STEP_SIZE = 0.30
-VOVA_OFFSET = 50.0
+VOVA_OFFSET = 70.0
 
 #######################################################################################################################
 
@@ -54,7 +54,8 @@ class AlignmentAfterLeap(Behavior):
         print "_start"
         # On having gotten up, turn to the other side until you've found goal.
         # TODO: We might want to prop the head a little higher.
-        self._actions.moveHead((pi/2)*(-1*self.sideLeaptTo), -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
+        self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.findOppositeOwnPost)
+#        self.findOppositeOwnPost()
 
     def _stop(self):
         return self._actions.clearFootsteps()
@@ -85,8 +86,10 @@ class AlignmentAfterLeap(Behavior):
             return -0.1
         self._actions.centerer.start(target=goalpost).onDone(
             lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False).onDone(
-            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
-            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova))))
+#            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
+            lambda: self._actions.changeLocationRelative(max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
+            self.onVova)))
+#            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova))))
 
 #    @debugged
     def onVova(self):
