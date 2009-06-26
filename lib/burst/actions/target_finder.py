@@ -10,6 +10,7 @@ Created on Jun 16, 2009
 #import burst
 from burst.behavior import ContinuousBehavior
 from burst_util import DeferredList
+import burst_consts
 
 # TODO: If several targets are found simultaneously, track either the earlier one in
 # the list of targets, or the one that is closer.
@@ -50,6 +51,11 @@ class TargetFinder(ContinuousBehavior):
         print "TargetFinder looking for: %s (first time: %s)" % (','.join(s.name for s in self._targets), firstTime)
         # If a search has completed with our targets and they were found in this frame, go to tracking.
         # We give seen objects a priority over recently_seen objects
+
+        # use top camera for a goal post or posts, bottom for anything else (i.e. the ball)
+        self._actions.setCamera({
+            False:burst_consts.CAMERA_WHICH_BOTTOM_CAMERA,
+            True:burst_consts.CAMERA_WHICH_TOP_CAMERA}[bool(self._world.all_posts & set(self._targets))])
         seen_objects = [t for t in self._targets if t.seen]
         seen_objects.extend([t for t in self._targets if t.recently_seen and not t.seen])
 

@@ -161,6 +161,7 @@ class World(object):
             left_world=opposing_lp_xy, right_world=opposing_rp_xy)
         self.opposing_lp = self.opposing_goal.left
         self.opposing_rp = self.opposing_goal.right
+        self.all_posts = set([self.our_lp, self.our_rp, self.opposing_lp, self.opposing_rp])
         for name in VISION_POSTS_NAMES:
             self.addMemoryVars(GoalPost.getVarsForName(name))
         # TODO - other robots
