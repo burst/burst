@@ -715,6 +715,9 @@ def normalize2(value, range):
 
 # Text/String/Printing utils
 
+def nicebool(x):
+    return 'T' if x else 'F'
+
 def nicefloat(x):
     if isinstance(x, float):
         return '%3.3f' % x

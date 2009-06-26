@@ -2,7 +2,7 @@ from math import cos, sin, sqrt, pi, fabs, atan, atan2
 from textwrap import wrap
 import logging
 
-from burst_util import nicefloat
+from burst_util import nicefloat, nicebool
 from burst_consts import (BALL_REAL_DIAMETER, DEG_TO_RAD,
     MISSING_FRAMES_MINIMUM, MIN_BEARING_CHANGE,
     MIN_DIST_CHANGE, GOAL_POST_DIAMETER,
@@ -55,7 +55,9 @@ class CenteredLocatable(object):
         self.update_time = -1000.0
 
     def __str__(self):
-        return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
+        #return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
+        return '%s %s %3.2f %3.2f' % (nicebool(self.sighted), nicebool(self.sighted_centered),
+            self.head_yaw, self.head_pitch)
 
     def _update(self):
         """ Update for self._target. Only stores the
@@ -325,7 +327,7 @@ class Locatable(Nameable):
         self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
 
     def __str__(self):
-        return "<%s at %s>" % (self.name, id(self))
+        return "<%s; (%3.2f,%3.2f,%3.2f,%3.2f), cl=%s>" % (self.name, self.update_time, self.dist, self.bearing, self.elevation, str(self.centered_self))
 
 class Movable(Locatable):
     def __init__(self, name, world, real_length):
@@ -692,7 +694,7 @@ class GoalPost(Locatable):
         self._vars = self.getVarsForName(self.fourLetterPostName())
         info('Configuring %s' % str(self))
 
-    def __str__(self):
+    def goalPostToString(self):
         return ('%(name)s %(color)s, %(which)s, (%(x)3.2f, %(y)3.2f), %(left)s, %(four)s' %
                 dict(name=self.name,
                     color=self.color,

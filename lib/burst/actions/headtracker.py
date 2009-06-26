@@ -155,7 +155,7 @@ class Centerer(Behavior, TrackMixin):
     def _centeringStep(self):
         if self.stopped: return
         dt = self._world.time - self._target.update_time
-        self.log("%3.2f since target seen" % dt)
+        self.log("%3.2f since target seen, %s" % (dt, self._target))
         if not self._target.recently_seen and dt > CENTERING_GIVE_UP_TIME:
             if self.verbose:
                 self.log("CenteringStep: %s not seen for %s, calling _on_lost_callback" % (self._target.name, CENTERING_GIVE_UP_TIME))
