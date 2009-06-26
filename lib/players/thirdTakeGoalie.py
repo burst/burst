@@ -10,10 +10,12 @@ from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfte
 from math import pi
 
 
+debug = True
+
 class Goalie(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
         self.side = left
 
     def _start(self, firstTime=False):
@@ -29,38 +31,41 @@ class Goalie(InitialBehavior):
             self._actions.say(string)
 
     def positionHead(self):
-        self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onHeadPositioned)
+        print "positionHead"
+        self._actions.moveHead(-self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onHeadPositioned)
 
     def onHeadPositioned(self):
-        self._eventmanager.register(self.monitorForFirstOwnGoalPost, EVENT_STEP)
+        print "onHeadPositioned"
+        self._eventmanager.register(self.monitorForFirstOwnGoalPost, EVENT_STEP) # TODO: We could see it beforehand.
+        self.cb = self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD)
+        self.cb.onDone(self.onHeadSweeped)
+
+    def onHeadSweeped(self):
+        print "onHeadSweeped"
         self._actions.turn(self.side*2*pi)
 
     def monitorForFirstOwnGoalPost(self):
-        # Get the closest currently seen goal post of our own goal:
-        goalpost = self._world.our_goal.unknown
-        for obj in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp]):
-            if not goalpost.seen or obj.height * obj.width >= goalpost.height * goalpost.width:
-                goapost = obj
-        # If that goal post is past the middle of what we see, stop and focus on it:
-        readyForCentering = (
-            goalpost.centerX > burst_consts.IMAGE_CENTER_X
-            if self.side == left
-            else goalpost.centerX < burst_consts.IMAGE_CENTER_X)
-        if readyForCentering:
-            self._eventmanager.unregister(self.monitorForFirstOwnGoalPost, EVENT_STEP)
-            self.onGoalPostFoundAndReadyForCentering(goalpost)
+#        print "monitorForFirstOwnGoalPost"
+        for goalpost in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
+            if (goalpost.centerX > burst_consts.IMAGE_CENTER_X if self.side == left else goalpost.centerX < burst_consts.IMAGE_CENTER_X):
+                self.cb.clear() # TODO: Is this OK even if the cb has already been called? Is being called?
+                self._eventmanager.unregister(self.monitorForFirstOwnGoalPost, EVENT_STEP)
+                self.onGoalPostFoundAndReadyForCentering(goalpost)
 
     def onGoalPostFoundAndReadyForCentering(self, goalpost):
+        print "onGoalPostFoundAndReadyForCentering"
         self._actions.clearFootsteps().onDone(
-        lambda _, goalpost=goalpost: self._actions.centerer.start(target=goalpost).onDone(
-        lambda _, goalpost=goalpost: self.onCenteredOnFirstGoalpost(goalpost)))
+            lambda _=None, goalpost=goalpost: self._actions.centerer.start(target=goalpost).onDone(
+            lambda _=None, goalpost=goalpost: self.onCenteredOnFirstGoalpost(goalpost)))
 
     def onCenteredOnFirstGoalpost(self, goalpost):
-        self.distanceToFirst = self.goalpost.centered_self.dist
+        print "onCenteredOnFirstGoalpost"
+        self.distanceToFirst = goalpost.centered_self.dist
         self._eventmanager.register(self.monitorForSecondOwnGoalPost, EVENT_STEP)
         self._actions.turn(self.side*2*pi)
 
     def monitorForSecondOwnGoalPost(self):
+#        print "monitorForSecondOwnGoalPost"
         # Get the closest currently seen goal post of our own goal:
         for obj in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
             readyForCentering = (
@@ -72,13 +77,14 @@ class Goalie(InitialBehavior):
             if readyForCentering:
                 self._eventmanager.unregister(self.monitorForSecondOwnGoalPost, EVENT_STEP)                
                 self._actions.clearFootsteps().onDone(
-                    lambda _, obj=obj: self._actions.centerer.start(target=obj).onDone(
-                    lambda _, obj=obj: self.onCenteredOnSecondGoalpost(obj)))
+                    lambda _=None, obj=obj: self._actions.centerer.start(target=obj).onDone(
+                    lambda _=None, obj=obj: self.onCenteredOnSecondGoalpost(obj)))
                 break
 
     def onCenteredOnSecondGoalpost(self, obj):
+        print "onCenteredOnSecondGoalpost"
         self.distanceToSecond = obj.centered_self.dist
-        print "eh-hey"
+        print self.distanceToFirst, self.distanceToSecond
         self._eventmanager.quit()
         
 
