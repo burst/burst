@@ -73,6 +73,9 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
         self._main_behavior = main_behavior_class(actions) # doesn't start here
 
+        # kludge
+        self._mainBehaviorStoppedByMe = False
+
     def registerFallHandling(self):
         self._eventmanager.register(self.onOnBelly, EVENT_ON_BELLY)
         self._eventmanager.register(self.onOnBack, EVENT_ON_BACK)
@@ -164,18 +167,34 @@ class Player(object):
                     info("testing Ready: Done with Ready")
                 self._onReady().onDone(onReadyDone)
             else:
-                self._startMainBehavior()
+                self._startMainBehavior().onDone(self._mainBehaviorStopped)
         else:
             info("Player: waiting for configuration event (change in game state, or chest button)")
             self._eventmanager.firstEventDeferred(EVENT_GAME_STATE_CHANGED,
                 EVENT_CHEST_BUTTON_PRESSED).addCallback(self._onConfigured).addErrback(log.err)
 
-    def _startMainBehavior(self):
+    def _banner(self, msg=''):
         print "="*80
-        print "= %s =" % (('starting %s' % self._main_behavior.name).center(76))
+        print "= %s =" % msg.center(76)
         print "="*80
+
+    def _startMainBehavior(self, additional_message=''):
         self._main_behavior.start()
+        self._banner('starting %s%s' % (self._main_behavior.name, additional_message))
         return self._main_behavior
+
+    def _stopMainBehavior(self, additional_message=''):
+        self._banner('stopping %s%s' % (self._main_behavior.name, additional_message))
+        self._mainBehaviorStoppedByMe = True
+        self._main_behavior.stop()
+        return self._main_behavior
+
+    def _mainBehaviorStopped(self):
+        if self._mainBehaviorStoppedByMe:
+            self._mainBehaviorStoppedByMe = False
+            return
+        self._banner('%s has stopped' % (self._main_behavior.name))
+        self._eventmanager.quit()
 
     def _onConfigured(self, result=None):
         """ we get here when done configuring """
@@ -194,7 +213,7 @@ class Player(object):
         # register for future changes
         self._eventmanager.register(self._onNewGameState, EVENT_GAME_STATE_CHANGED)
         self._eventmanager.register(self._onPenalized, EVENT_I_GOT_PENALIZED)
-        self._eventmanager.register(self._onUnpenalized, EVENT_I_GOT_PENALIZED)
+        self._eventmanager.register(self._onUnpenalized, EVENT_I_GOT_UNPENALIZED)
 
     def _onNewGameState(self):
         """ we only register here after we have actually been configured - simplifies the logic """
@@ -331,13 +350,13 @@ class Player(object):
         info(str(self))
 
     def _onPenalized(self):
-        print "<"*20 + " P E N A L I Z E D " + ">"*20
-        self._main_behavior.stop()
+        #print "<"*20 + " P E N A L I Z E D " + ">"*20
+        self._stopMainBehavior('; penalized, also calling killAll')
         self._actions._motion.killAll()
 
     def _onUnpenalized(self):
-        print "<"*20 + " u n p e n a l i z e d " + ">"*20
-        self._main_behavior.start()
+        #print "<"*20 + " u n p e n a l i z e d " + ">"*20
+        self._startMainBehavior('; unpenalized')
 
     #############
     # Utilities #

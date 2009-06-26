@@ -250,6 +250,7 @@ class EventManager(object):
             self._events[k] = set()
 
     def quit(self):
+        print "EventManager.quit called"
         self._should_quit = True
 
     def _removeAllPendingCallbacks(self):
@@ -297,6 +298,13 @@ class EventManager(object):
                 self._num_call_laters)
 
     def numberPendingCallbacks(self):
+        return self._num_cbs_in_round
+
+    def numberImportantPendingCallbacks(self):
+        # TODO - Important? goes along with Intelligent and Object as good names
+        if self._num_cbs_in_round > 0 and self._num_events > 0:
+            #import pdb; pdb.set_trace()
+            pass # TODO
         return self._num_cbs_in_round
 
     def handlePendingCallbacks(self):
@@ -582,7 +590,7 @@ class BasicMainLoop(object):
         """
         self._eventmanager.computePendingCallbacks()
         # Print ticker after computing all callbacks/events, but before executing them
-        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberPendingCallbacks() > 0):
+        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberImportantPendingCallbacks() > 0):
             self._printTraceTicker()
 
         # reverse the order? arg.

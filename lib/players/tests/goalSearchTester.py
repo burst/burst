@@ -22,7 +22,7 @@ class SearchTester(InitialBehavior):
             else:
                 print "%s NOT sighted centered" % t.name
 
-        self._eventmanager.quit()
+        self.stop()
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
