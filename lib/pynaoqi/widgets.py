@@ -82,6 +82,8 @@ class NotesWindow(BaseWindow):
         self._w.set_size_request(500,600)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
+        self._buttonholder = self._builder.get_object('buttonholder')
+        #import pdb; pdb.set_trace()
         from gtkcodebuffer import CodeBuffer, SyntaxLoader, add_syntax_path
         # comment-out if CodeBuffer is installed
         add_syntax_path("%s/syntax" % os.path.dirname(__file__))
@@ -89,6 +91,12 @@ class NotesWindow(BaseWindow):
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
         buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
+        for line in pynaoqi.shell.EXAMPLES.split('\n'):
+            if len(line.strip()) == 0 or line.strip()[:1] == '#': continue
+            b = gtk.Button(line)
+            b.connect("clicked", lambda event, line=line: self.runline(event, line))
+            self._buttonholder.add(b)
+        self._buttonholder.show_all()
         # hack - clicking when not focused doesn't set the cursor
         self._cur = None
 
@@ -105,8 +113,11 @@ class NotesWindow(BaseWindow):
         line = txt[b:e]
         if len(line) >= len(txt): return
         #print 'running %s' % line
-        sh = pynaoqi.shell.shell
         buff.select_range(buff.get_iter_at_offset(b), buff.get_iter_at_offset(e))
+        self.runline(line)
+
+    def runline(self, event, line):
+        sh = pynaoqi.shell.shell
         try:
             compile(line,'','exec')
         except Exception, e:
