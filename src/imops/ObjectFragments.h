@@ -279,7 +279,7 @@ public:
     // EDITED BY 4MUSKETEERS! WE STILL RULE!
     int anyballs(int c, VisualBall *thisBall);
     void yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size);
-    CvSeq* getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField);
+    CvSeq* getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField, CvMemStorage** storage);
 #endif
 
     // sanity checks
