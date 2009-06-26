@@ -84,14 +84,14 @@ class NotesWindow(BaseWindow):
         self._textview = self._builder.get_object('textview')
         from gtkcodebuffer import CodeBuffer, SyntaxLoader, add_syntax_path
         # comment-out if CodeBuffer is installed
-        add_syntax_path("../syntax")
+        add_syntax_path("%s/syntax" % __file__)
         lang = SyntaxLoader("python")
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
         buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
 
     def on_textview_button_press_event(self, *args):
-
+        import pdb; pdb.set_trace()
 
 class TaskBaseWindow(BaseWindow):
 
