@@ -18,11 +18,14 @@ debug = True
 right = -1
 left  = +1
 STEP_SIZE = 0.30
-VOVA_OFFSET = 70.0
+VOVA_OFFSET = 50.0
 
 #######################################################################################################################
 
 #TODO: Align according to opposite goal.
+# TODO: Can't use side-stepping.
+# TODO: Center on the things whose distance you're attempting to evaluate.
+
 
 #######################################################################################################################
 
@@ -76,10 +79,14 @@ class AlignmentAfterLeap(Behavior):
 #    @debugged
     def onFocusedOnOppositeOwnPost(self, goalpost):
         print "onFocusedOnOppositeOwnPost"
-        print "DISTANCE:", goalpost.dist
-        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False).onDone(
-            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
-            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova)))
+#        print "DISTANCE:", goalpost.dist
+        def debug1():
+            print goalpost.dist
+            return -0.1
+        self._actions.centerer.start(target=goalpost).onDone(
+            lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False).onDone(
+            lambda: self._actions.changeLocationRelativeSideways(0.0, -self.sideLeaptTo*max(debug1(), goalpost.dist-VOVA_OFFSET, 0.0)).onDone(
+            lambda: self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(self.onVova))))
 
 #    @debugged
     def onVova(self):
@@ -92,9 +99,9 @@ class AlignmentAfterLeap(Behavior):
 #        print 'alignmentAgainstOppositeGoalTester'
         seenOppositePosts = filter(lambda obj: obj.seen, [self._world.opposing_goal.unknown, self._world.opposing_lp, self._world.opposing_rp])
         aligned = (lambda obj: 
-            obj.centerX > 0.25*burst_consts.IMAGE_CENTER_X 
+            obj.centerX > 0.25*burst_consts.IMAGE_WIDTH_INT
             if self.sideLeaptTo == left else 
-            obj.centerX < 0.75*burst_consts.IMAGE_CENTER_X)
+            obj.centerX < 0.75*burst_consts.IMAGE_WIDTH_INT)
         if any(map(aligned, seenOppositePosts)):
             self._eventmanager.unregister(self.alignmentAgainstOppositeGoalTester, EVENT_STEP)
             self._actions.clearFootsteps().onDone(lambda e: self.onAligned())
@@ -110,9 +117,3 @@ class AlignmentAfterLeap(Behavior):
 #        setattr(AlignmentAfterLeap, attribute, debugged(getattr(AlignmentAfterLeap, attribute)))
 
 #######################################################################################################################
-
-if __name__ == '__main__':
-    import burst
-    from burst.eventmanager import MainLoop
-#    MainLoop(AlignmentAfterLeap).run()
-    print "TODO"
