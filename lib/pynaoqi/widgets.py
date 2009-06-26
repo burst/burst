@@ -22,12 +22,18 @@ try:
 except:
     pass
 
+# burst modules
+
 import burst_util
 from burst_util import ensure_table
 import burst
 from burst_consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
 import burst_consts as consts
 import burst.image as image
+
+# Local modules
+
+import shell
 
 #############################################################################
 
@@ -82,7 +88,11 @@ class NotesWindow(BaseWindow):
         self._w.set_size_request(500,600)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
-        self._buttonholder = self._builder.get_object('buttonholder')
+        self._notebook = self._builder.get_object('notebook')
+        self._setupTextbuffer()
+        self._setupButtonPages()
+
+    def _setupTextbuffer(self):
         #import pdb; pdb.set_trace()
         from gtkcodebuffer import CodeBuffer, SyntaxLoader, add_syntax_path
         # comment-out if CodeBuffer is installed
@@ -90,17 +100,25 @@ class NotesWindow(BaseWindow):
         lang = SyntaxLoader("python")
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
-        buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
-        for line in pynaoqi.shell.EXAMPLES.split('\n'):
-            if len(line.strip()) == 0 or line.strip()[:1] == '#': continue
-            b = gtk.Button(line)
-            b.connect("clicked", lambda event, line=line: self.runline(event, line))
-            self._buttonholder.add(b)
-        self._buttonholder.show_all()
+        for k, txt in shell.EXAMPLES.items():
+            buff.insert(buff.get_end_iter(), txt)
         # hack - clicking when not focused doesn't set the cursor
         self._cur = None
 
+    def _setupButtonPages(self):
+        for k, txt in shell.EXAMPLES.items():
+            holder = gtk.VButtonBox()
+            for line in txt.split('\n'):
+                if len(line.strip()) == 0 or line.strip()[:1] == '#': continue
+                b = gtk.Button(line)
+                b.connect("clicked", lambda event, line=line: self.runline(event, line))
+                holder.add(b)
+            # put in notebook
+            self._notebook.append_page(holder, tab_label=gtk.Label(k))
+        self._notebook.show_all()
+
     def on_textview_button_press_event(self, *args):
+        return # using the buttons instead of this
         #import pdb; pdb.set_trace()
         buff = self._textbuffer
         txt = buff.get_text(buff.get_start_iter(),buff.get_end_iter())
@@ -114,16 +132,20 @@ class NotesWindow(BaseWindow):
         if len(line) >= len(txt): return
         #print 'running %s' % line
         buff.select_range(buff.get_iter_at_offset(b), buff.get_iter_at_offset(e))
-        self.runline(line)
+        self.runline(event=None, line=line)
 
     def runline(self, event, line):
-        sh = pynaoqi.shell.shell
         try:
             compile(line,'','exec')
         except Exception, e:
             print "problem with %r: %s" % (line, e)
         else:
-            sh.runsource(line)
+            if hasattr(shell, 'shell'):
+                runsource = shell.shell.runsource
+            else: # just run it using user_ns
+                def runsource(line):
+                    exec line in shell.user_ns
+            runsource(line)
             self._w.set_title('%s...' % line[:20])
 
 class TaskBaseWindow(BaseWindow):

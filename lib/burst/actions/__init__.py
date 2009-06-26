@@ -474,8 +474,11 @@ class Actions(object):
             d = self._imops.switchToTopCamera()
         self._current_camera = whichCamera
         bd_on_wait = self.make(self)
-        d.addCallback(lambda _: self._eventmanager.callLater(burst_consts.CAMERA_SWITCH_WAIT,
-            bd_on_wait.callOnDone))
+        def onCameraChange(_):
+            self._world._onCameraChange(whichCamera)
+            self._eventmanager.callLater(burst_consts.CAMERA_SWITCH_WAIT,
+                bd_on_wait.callOnDone)
+        d.addCallback(onCameraChange)
         return bd_on_wait
 
     @returnsbd # must be first

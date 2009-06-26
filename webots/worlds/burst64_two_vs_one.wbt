@@ -245,7 +245,7 @@ DEF LARGER_YELLOW_GOAL Transform {
   ]
 }
 DEF BALL Solid {
-  translation -0 0.0428038 0
+  translation 0 0.0428038 0
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -271,8 +271,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation -3.31 0.325 0
-  rotation 0 1 0 1.57
+  translation -3.31022 0.321955 1.58082e-05
+  rotation -0.000326669 1 0.000321237 1.56999
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -280,20 +280,20 @@ DEF RED_GOAL_KEEPER Nao {
   name "red goal keeper"
 }
 DEF BLUE_GOAL_KEEPER Nao {
-  translation 3.31 0.325 0
-  rotation 0 1 0 -1.57
+  translation 3.3102 0.321953 -1.88034e-05
+  rotation 0.000308 1 0.000314583 -1.5702
   channel 1
   controller "nao_in_webots64"
   name "blue goal keeper"
 }
 DEF BLUE_PLAYER_1 Nao {
-  translation 0.740001 0.325 0
-  rotation 0 1 0 -1.57
+  translation 0.74023 0.32196 -7.36987e-05
+  rotation 0.000423278 1 0.00043036 -1.57015
   channel 1
   controller "nao_in_webots64"
   name "blue player 1"
-  topCameraWindowPosition 0.870968 0.366337
-  bottomCameraWindowPosition 0.129032 0.366337
+  topCameraWindowPosition 0.868051 0.526001
+  bottomCameraWindowPosition 0.12762 0.531603
 }
 Supervisor {
   children [

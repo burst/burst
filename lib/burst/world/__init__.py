@@ -13,11 +13,12 @@ import sys
 import mmap
 import struct
 import linecache
+import logging
 
 from twisted.python import log
 
 from burst_consts import (US_DISTANCES_VARNAME, is_120, opposite_color, OUR_TEAM, OPPOSING_TEAM,
-    VISION_POSTS_NAMES)
+    VISION_POSTS_NAMES, CAMERA_WHICH_TOP_CAMERA, CAMERA_WHICH_BOTTOM_CAMERA)
 import burst_consts
 import burst
 from burst_events import (EVENT_ALL_OUR_GOAL_SEEN, EVENT_ALL_OPPOSING_GOAL_SEEN,
@@ -36,7 +37,7 @@ from computed import Computed
 from objects import Locatable
 from localization import Localization
 from movecoordinator import MoveCoordinator
-from kinematics import Pose
+from kinematics import Pose, CAMERA_PITCH_ANGLE
 from burst.odometry import Odometry
 
 # TODO: Shouldn't require adding something to the path at any point
@@ -47,6 +48,9 @@ from ..player_settings import PlayerSettings
 from gamestatus import GameStatus
 
 
+############################################################################
+logger = logging.getLogger('world')
+info = logger.info
 ############################################################################
 
 class World(object):
@@ -246,6 +250,18 @@ class World(object):
                 num_world, num_shared, num_shared, num_world)
         self.vars = self._shm.vars
         self._updateMemoryVariables = self._updateMemoryVariablesFromSharedMem
+
+    # ########################################
+    # Actions API
+    # ########################################
+
+    def _onCameraChange(self, which):
+        # we need to update pitch to all objects we have seen.
+        pitch_change = CAMERA_PITCH_ANGLE if which is CAMERA_WHICH_TOP_CAMERA else -CAMERA_PITCH_ANGLE
+        info("Updating all vision objects pitch by %3.2f" % pitch_change)
+        for object in self.vision_objects:
+            if object.centered_self.head_pitch is None: continue
+            object.centered_self.head_pitch += pitch_change
 
     # ########################################
     # EventManager API
