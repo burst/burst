@@ -4,7 +4,8 @@ from twisted.internet.defer import log
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed, func_name,
-    Deferred, DeferredList, chainDeferreds, returnsbd)
+    Deferred, DeferredList, chainDeferreds, returnsbd, whocalledme,
+    whocalledme_outofclass)
 from burst_events import *
 import burst.moves.choreograph as choreograph
 import burst.moves.poses as poses
@@ -425,19 +426,15 @@ class Actions(object):
     #    Low Level
     #===============================================================================
 
-    @returnsbd
     def switchToTopCamera(self):
-        print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
-        self.currentCamera = CAMERA_WHICH_TOP_CAMERA
-        return self.wrap(self._imops.switchToTopCamera(), self)
+        return self.setCamera(CAMERA_WHICH_TOP_CAMERA)
 
-    @returnsbd
     def switchToBottomCamera(self):
-        print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
-        self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        return self.wrap(self._imops.switchToBottomCamera(), self)
+        return self.setCamera(CAMERA_WHICH_BOTTOM_CAMERA)
 
     # don't wrap - calls two wrapped routines
+    @whocalledme_outofclass
+    @returnsbd
     def setCamera(self, whichCamera):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
@@ -446,9 +443,12 @@ class Actions(object):
             bd = self.succeed(self)
         else:
             if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
-                bd = self.switchToBottomCamera()
+                print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
+                d = self._imops.switchToBottomCamera()
             else:
-                bd = self.switchToTopCamera()
+                print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
+                d = self._imops.switchToTopCamera()
+            bd = self.wrap(d, self)
             self._current_camera = whichCamera
         return bd
 

@@ -160,7 +160,6 @@ class Behavior(Nameable):
         """  Note to inheriting folk: this constructor must be the /last/
         call in your constructor, since it calls your start method
         """
-        #BurstDeferred.__init__(self, self, *args, **kw)
         self._resetDeferred()
         Nameable.__init__(self, name)
         self._actions = BehaviorActions(actions, self)
@@ -234,6 +233,11 @@ class Behavior(Nameable):
             err= "callOnDone being called while running - ignored. Probably IsRunningMoveCoordinator bug (see comment above)"
         if err:
             self.log("Error: %s" % err)
+
+    def getDeferred(self):
+        return self._d
+
+    # Core Behavior API
 
     def stop(self):
         """ Stops the behavior, and returns a BD for stoppage complete. If already stopped,
