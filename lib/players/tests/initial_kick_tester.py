@@ -6,7 +6,7 @@ import player_init
 
 from burst.behavior import InitialBehavior
 import burst.field as field
-from burst.actions.initial_kicker import InitialKickWithSideKick
+from burst.actions.initial_kick import InitialKickWithSideKick
 from burst_consts import (LEFT, RIGHT)
 
 class InitialKickTester(InitialBehavior):
