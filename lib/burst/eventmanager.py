@@ -593,6 +593,9 @@ class BasicMainLoop(object):
             bottom = self._actions.switchToBottomCamera
             for what, dt in sum([[(top, b), (top, b+0.05), (top, b+0.1), (bottom, b+0.2), (bottom, b+0.25), (bottom, b+0.3)] for b in (0.0, 0.5)], []):
                 self._eventmanager.callLater(dt, what)
+        # Camera Switch to Bottom:
+        #  can do this without waiting (better to set a barrier - i.e. deferredList)
+        self._actions.switchToBottomCamera()
         self._actions._initPoseAndStiffness(self._player._main_behavior._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):

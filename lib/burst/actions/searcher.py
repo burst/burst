@@ -202,7 +202,7 @@ def TargetsAndLocalizationBasedSearchPlanner(searcher, center_on_targets):
     world = searcher._world
     for baseIter, predicate, msg in [
         (goalSearchIter, lambda targets: len(set(targets) & world.all_posts) > 0,
-            "Looking for a Goal, using specific search interator"),
+            "Looking for a Goal, using specific search iterator"),
         (ballSearchIter, lambda targets: set(targets) == set([world.ball]),
             "Looking for a Ball, using specific search iterator")
         ]:

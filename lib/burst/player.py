@@ -127,7 +127,6 @@ class Player(object):
         self._world._sentinel.enableDefaultActionSimpleClick(False)
         self._announceNotSeeingBall()
         self._announceSeeingNoGoal()
-        self._actions.switchToBottomCamera() # XXX Don't bother onDoning - takes long enough for behavior to start.
         self._initAsUnconfigured()
 
     #####

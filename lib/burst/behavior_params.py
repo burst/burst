@@ -134,6 +134,9 @@ def getKickingType(self, goal_bearing, ball_y, side, margin=0):
     foot_y = delta_y + ball_y
     print "ball is at ", ball_y, ", delta is ", delta_y, ", so foot needs to be at ", foot_y
     
+    # Alon: set default kick_parameter, since your if's didn't cover all bases.
+    kick_parameter = 0.5
+
     if side == LEFT: 
         if foot_y >= KICK_Y_MIN[LEFT]-margin and foot_y <= KICK_Y_MAX[LEFT]+margin:
             if foot_y < KICK_Y_MIN[LEFT]:

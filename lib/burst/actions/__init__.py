@@ -52,7 +52,7 @@ def setfps(fps):
     """ set fps on an Actions method """
     def wrap(f):
         def wrapper(self, *args, **kw):
-            self.setFramesPerSecond(fps)
+            self.setCameraFrameRate(fps)
             return f(self, *args, **kw)
         wrapper.func_doc = f.func_doc
         wrapper.func_name = f.func_name
@@ -461,7 +461,7 @@ class Actions(object):
         return self.setCamera(CAMERA_WHICH_BOTTOM_CAMERA)
 
     @returnsbd # must be first (doesn't add to call stack)
-    @whocalledme_outofclass
+#    @whocalledme_outofclass
     def setCamera(self, whichCamera, force=False):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
@@ -481,7 +481,7 @@ class Actions(object):
             s, switcher = 'bottom', self._imops.switchToBottomCamera
         else:
             s, switcher = 'top', self._imops.switchToTopCamera
-        print "_"*20 + "SWITCHING TO %s CAMERA %s" % (s, dt_since_last) + '_'*20
+        print "_"*20 + "SWITCHING TO %s CAMERA %3.2f" % (s, dt_since_last) + '_'*20
         d = switcher()
         import time
 #        time.sleep(0.5)  # HACK because of switching problem.
