@@ -194,7 +194,7 @@ class PlayerRunner(object):
                 user_ns[k] = getattr(self._main._world, k)
             user_ns['our_unknown'] = self._main._world.our_goal.unknown
             user_ns['opposing_unknown'] = self._main._world.opposing_goal.unknown
-    
+
     def switch_color(self):
         # TODO - simulate chest button (change the AL_MEMORY var?)
         if not self._player: return
@@ -202,13 +202,31 @@ class PlayerRunner(object):
         print str(self._main._world.playerSettings)
 
     def start(self):
+        try:
+            import widgets
+        except:
+            pass
+        else:
+            for l in widgets.TaskBaseWindow.loggers:
+                l.appendLine('> %s started <' % self.fullname)
         self.make()
         self.loop.start()
         return self._main # to allow onDone for stoppage of behavior
 
     def stop(self):
+        def log_stop():
+            print "IM HERERERE"
+            try:
+                import widgets
+            except:
+                pass
+            else:
+                for l in widgets.TaskBaseWindow.loggers:
+                    l.appendLine('> %s stopped <' % self.fullname)
+        def debug():
+            print "STOPPPPPPPPPPPPPPPPPPPPPPPPed"
         bd = self._main.stop()
-        bd.onDone(self.loop.shutdown)
+        bd.onDone(self.loop.shutdown).onDone(log_stop).onDone(debug)
         return bd
 
 class Players(object):
