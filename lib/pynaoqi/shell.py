@@ -20,6 +20,7 @@ compact(lambda: list(world.seenObjects()))
 #compact(lambda: map(burst_events.event_name, main._eventmanager._pending_events))
 compact(lambda: map(burst_events.event_name, list(player._world._events)))
 compact(lambda: [localizer.stopped, searcher.stopped, tracker.stopped, centerer.stopped])
+compact(lambda: [world.robot.world_x, world.robot.world_y, world.robot.world_heading])
 compact(lambda: str(opposing_goal.left)+str(opposing_goal.right))
 tracker.verbose=not tracker.verbose
 searcher.verbose=not searcher.verbose
