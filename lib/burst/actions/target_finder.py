@@ -52,6 +52,10 @@ class TargetFinder(ContinuousBehavior):
         self._iterate(callOnLost=False)
 
     def _iterate(self, callOnLost=True):
+        """
+            If target_finder doesn't find target, it first calls OnTargetLostCB,
+            and only then starts a search (otherwise we might get "Target Found" before getting the "Target Lost")
+        """
         # If a search has completed with our targets and they were found in this frame, go to tracking.
         # We give seen objects a priority over recently_seen objects
 
@@ -81,11 +85,11 @@ class TargetFinder(ContinuousBehavior):
         else:
             # none of our targets are currently seen, start a new search.
             self.log("targets not seen (%s), searching for it" % [t.name for t in self._targets])
+            if callOnLost:
+                self._callOnTargetLostCB()
             self._actions.search(
                 self._targets, center_on_targets=True, stop_on_first=True).onDone(
                 self._iterate)
-            if callOnLost:
-                self._callOnTargetLostCB()
 
     def _stop(self):
         """ stops the finder (and internal tracker/searcher).
