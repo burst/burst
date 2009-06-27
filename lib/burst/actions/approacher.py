@@ -208,6 +208,7 @@ def ApproachTarget(actions, target):
     # TODO - I think this doesn't stop right. Should really do the Behavior thing
     # to make sure stop cleans up.
     def getTargetPosition(_):
+        print target.bearing, target.dist
         bearing, dist = target.bearing, target.dist
         return polar2cart(dist, bearing)
     return Approacher(actions, lambda: actions.search([target]).getDeferred().addCallback(getTargetPosition))
