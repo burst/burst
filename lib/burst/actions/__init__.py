@@ -203,16 +203,16 @@ class Actions(object):
         passingChallange.start()
         return passingChallange
 
+    @stopped(['searcher', 'centerer'])
+    @setfps(20)
     def track(self, target, lostCallback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
-        if not self.searcher.stopped or not self.centerer.stopped:
-            raise Exception("Can't start tracking while searching")
         return self.tracker.start(target=target, lostCallback=lostCallback)
 
     @returnsbd # must be first
-    @setfps(20)
     @stopped(['tracker', 'centerer'])
+    @setfps(20)
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if stop_on_first:
             return self.searcher.search_one_of(targets, center_on_targets)

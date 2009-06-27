@@ -289,8 +289,10 @@ class TaskBaseWindow(BaseWindow):
 
     loggers = []
 
-    def __init__(self, tick_cb, title=None, dt=1.0):
-        super(TaskBaseWindow, self).__init__()
+    def __init__(self, tick_cb, title=None, dt=1.0, builder_file=None,
+            top_level_widget_name=None):
+        super(TaskBaseWindow, self).__init__(builder_file=builder_file,
+            top_level_widget_name=top_level_widget_name)
         from twisted.internet import task
         if title is None:
             title = '%s %s' % (options.ip, self.counter)
@@ -753,9 +755,15 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
     """
 
     def __init__(self, con, dt=0.5):
-        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=dt)
+        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=dt,
+            builder_file="video.glade", top_level_widget_name="window1")
         if not self.init_imops_mixin(con):
             return
+
+        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self._w.connect("button-press-event", self._onButtonClick)
+        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
+        self._w.connect("motion-notify-event", self._onMouseMotion)
 
         self._update_display = True
         self._reading_nbfrm = False
@@ -763,34 +771,13 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         self._con = con
         self._tables = {}
         self._con.subscribeToCamera().addCallback(self._finishInit)
-        self._im = gtkim = gtk.Image()
+        self._im = self._builder.get_object('image')
         # you don't get button press on gtk.Image(), setting add_events on window
         # and gtkim doesn't cause propogation, don't know what does.
         self._dmove = succeed(None)
-        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-        self._w.connect("button-press-event", self._onButtonClick)
-        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
-        self._w.connect("motion-notify-event", self._onMouseMotion)
-        c = gtk.VBox()
-        bottom = gtk.HBox()
-        self._status = gtk.Label('        ')
-        c.add(self._im)
-        c.pack_start(bottom, False, False, 0)
-        bottom.add(self._status)
-        buttons = []
-        for attr, label, callback in [
-            ('_threshold_button', 'threshold', self.threshold),
-            ('_display_update_button', 'update', self.toggleDisplayUpdate)]:
-            b = gtk.Button(label)
-            b.connect('clicked', callback)
-            buttons.append(b)
-            setattr(self, attr, b)
-            bottom.pack_start(b)
-        self._w.add(c)
+        self._status = self._builder.get_object('hover')
+        self._frame_count = 0 # frame capture
         self._w.show_all()
-
-    def toggleDisplayUpdate(self, *args):
-        self._update_display = not self._update_display
 
     # Reading external images support
 
@@ -866,6 +853,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
                 , (y - consts.IMAGE_HALF_HEIGHT) * consts.PIX_TO_RAD_Y)
 
     def _onMouseMotion(self, widget, event):
+    #def on_image_motion_notify_event(self, widget, event):
         ind = int((event.y*consts.IMAGE_WIDTH+event.x)*3)
         if (ind+3 > len(self._rgb)): return
         self._updateTarget(event.x, event.y)
@@ -877,6 +865,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         self._status.set_label('%02X %02X %02X (%d %d %d)' % (r, g, b, r, g, b))
 
     def _onButtonClick(self, widget, event):
+    #def on_image_button_press_event(self, widget, event):
         print "click: ", event.x, event.y
         if not self._dmove.called: return
         self._updateTarget(event.x, event.y)
@@ -899,6 +888,20 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
             ['HeadYaw', 'HeadPitch'], [tgt_yaw, tgt_pitch],
             50, # percent of max speed 1~100
             consts.INTERPOLATION_SMOOTH)
+
+    def on_threshold_clicked(self, event=None):
+        self.threshold()
+
+    def on_update_clicked(self, event=None):
+        self.toggleDisplayUpdate()
+
+    def on_snap_clicked(self, event=None):
+        self.capture()
+        print "captured frame #%s into %s" % (
+            self._frame_count-1, self._frames_location)
+
+    def toggleDisplayUpdate(self, *args):
+        self._update_display = not self._update_display
 
     # getters / setters
     def threshold(self, *args):
