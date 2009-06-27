@@ -107,6 +107,9 @@ class BehaviorEventManager(object):
         self._behavior = behavior
         self._cb_to_wrapper = {}
         self._registered = set() # try to avoid this becoming too big
+        # We keep track of the registrations here to avoid multiples (TODO - this is the same as EventManager code)
+        self._original_callbacks = {}
+        self._original_events = dict([(event, set()) for event in self._eventmanager._events.keys()])
         self._calllaters = [] # TODO (small, Algorithmic) - this is currently suboptimal on clear. (O(N))
         self.verbose = True # TODO, options
 
@@ -125,10 +128,19 @@ class BehaviorEventManager(object):
         self._cb_to_wrapper.clear()
 
     def register(self, callback, event):
+        if callback in self._callbacks and event in self._callbacks[event]:
+            if self.verbose:
+                print "WARNING: harmless reregister of callback"
+                return
+        # since we register using a lambda we must do the multiplicity checks here
         wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
         self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.register(wrapper, event)
         self._registered.add((wrapper, event))
+        if callback not in self._original_callbacks:
+            self._original_callbacks[callback] = set()
+        self._original_callbacks[callback].add(event)
+        self._original_events[event].add(callback)
 
     def register_oneshot(self, callback, event):
         wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
@@ -136,8 +148,17 @@ class BehaviorEventManager(object):
         self._eventmanager.register_oneshot(wrapper, event)
 
     def unregister(self, callback, event=None):
-        if callback not in self._cb_to_wrapper: return
-        self._eventmanager.unregister(self._cb_to_wrapper[callback], event)
+        if callback in self._cb_to_wrapper:
+            self._eventmanager.unregister(self._cb_to_wrapper[callback], event)
+        if event is not None:
+            self._original_callbacks[callback].discard(event)
+            self._original_events[event].discard(callback)
+        else:
+            if callback in self._original_callbacks:
+                events = self._original_callbacks[callback]
+                del self._original_callbacks[callback]
+                for event in events:
+                    self._original_events[event].discard(callback)
         # TODO - remove from self? nah, who cares?
         # we cannot delete.. may be multiple events.
         # TODO: could solve this with reference counting. But is this really a problem?
