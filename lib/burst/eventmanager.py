@@ -211,6 +211,7 @@ class EventManager(object):
         if event in self._callbacks[callback]:
             if burst.options.verbose_reregister:
                 info( "WARNING: harmless re-register of %s to %s" % (func_name(callback), event_name(event)))
+            return
         self._callbacks[callback].add(event)
         # add to _events
         self._events[event].add(callback)

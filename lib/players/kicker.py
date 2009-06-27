@@ -23,8 +23,8 @@ class Kicker(InitialBehavior):
         return self._actions.kickBall(target_left_right_posts=target_left_right_posts)
 
     def onKickComplete(self):
-        print "kick complete - TODO: don't quit"
-        self._eventmanager.quit()
+        print "kick complete - currently Player will restart me, just let it."
+        self.stop()
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop

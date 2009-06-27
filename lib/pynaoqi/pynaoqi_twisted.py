@@ -3,10 +3,13 @@ from xml.dom import minidom
 
 from twisted.internet.protocol import Protocol, ClientFactory, ClientCreator
 from twisted.internet.defer import Deferred
+from twisted.python import log
 
 import twisted.internet.error
 
 LOG_HEADERS = False
+MAX_PROTOCOLS = 1 # None for no maximum (creates as many concurrent as required to send
+                  # the packet when SoapConnectionManager.sendPacket is called)
 
 class SoapConnectionManager(object):
 
@@ -18,7 +21,17 @@ class SoapConnectionManager(object):
         # These two numbers should be equal, difference is roughly a measure of latency / bandwidth
         self._sent = 0
         self._returned = 0
-        self._max_protocols = None # NOT IMPLEMENTED YET
+        if con.options.multiple_connections:
+            print "Pynaoqi Twisted: Using Many Connections"
+            self._max_protocols = None
+        else:
+            self._max_protocols = MAX_PROTOCOLS
+            if self._max_protocols == 1:
+                print "Pynaoqi Twisted: Using Single Connection"
+            else:
+                print "Pynaoqi Twisted: Using Max %s Connections" % (self._max_protocols)
+        self._protocols_being_created = 0
+        self._unsent_queue = []
         if LOG_HEADERS:
             self.con.log = open('headers.txt', 'a+')
 
@@ -31,16 +44,38 @@ class SoapConnectionManager(object):
             if protocol is None:
                 return # silently fail - log this? TODO
             protocol.sendPacket(tosend).addCallback(deferred.callback)
+            return protocol
         conn_d = ClientCreator(reactor, makeProtocol).connectTCP(
                 host=self.con._message_maker._host, port=self.con._message_maker._port)
-        conn_d.addCallbacks(self._newProtocolConnected, self._onConnectionError)
         conn_d.addCallback(sendPacket)
+        conn_d.addCallbacks(self._newProtocolConnected, self._onConnectionError)
         return deferred
 
     def _newProtocolConnected(self, protocol):
         self._protocols.append(protocol)
         if self.verbose:
             print "DEBUG: SoapConnectionManager: protocols: %s" % len(self._protocols)
+        # this should be the first connection (or something), let's queue all packets
+        # we have to it
+        class PacketSender(object):
+            base_number = 0
+            def __init__(self, deferred, protocol, tosend):
+                self.protocol = protocol
+                self.deferred = deferred
+                self.tosend = tosend
+                PacketSender.base_number += 1
+                self.count = PacketSender.base_number
+            def __call__(self, result):
+                if self.verbose:
+                    print "calling PacketSender %s" % self.count
+                self.protocol.sendPacket(self.tosend).addCallback(self.deferred.callback)
+        if len(self._unsent_queue) > 0:
+            if self.verbose:
+                print "pynaoqi_twisted: sending #%s packets down t#%s-th connection" %(
+                    len(self._unsent_queue), len(self._protocols))
+            for d, tosend in self._unsent_queue:
+                protocol.sendPacket(tosend).addCallback(d.callback)
+            del self._unsent_queue[:]
         return protocol # for chaining callbacks, always return something useful
 
     def _onConnectionError(self, error):
@@ -77,12 +112,31 @@ class SoapConnectionManager(object):
 
         ### Create new connection if required
 
+        if self.verbose:
+            print ("ConnectionManager: no existing protocols" if len(self._protocols) == 0 else
+                "#%s; %s" % (len(self._protocols), ','.join('T' if p.ready else 'F' for
+                p in self._protocols)))
+
         if not returned:
             # no ready protocol
-            if self._max_protocols is not None and len(self._protocols) >= self._max_protocols:
-                # queue it
-                raise NotImplemented("No Support for Max Protocols yet")
+            if self._max_protocols is not None and self._protocols_being_created >= self._max_protocols:
+                if len(self._protocols) == 0:
+                    # queue it
+                    returned = Deferred()
+                    self._unsent_queue.append((returned, tosend))
+                else:
+                    # pass it to the connection that sent longest ago
+                    pairs = sorted([(t.time_of_last_send_request, t) for t in self._protocols])
+                    now = time()
+                    if self.verbose:
+                        print "queuing a packet (%s connections), times = %s" % (
+                            self._max_protocols, ','.join('%2.1f' % (now - t) for t, p in pairs))
+                    returned = pairs[-1][1].sendPacket(tosend=tosend)
             else:
+                if len(self._protocols) == 0 and self._protocols_being_created >= self._max_protocols:
+                    print "We are sorry, but breach of max protocols has occured"
+                self._protocols_being_created += 1
+                assert(len(self._protocols) <= self._protocols_being_created)
                 # create a new connection
                 returned = self._makeNewProtocol(tosend=tosend)
 
@@ -110,7 +164,7 @@ class SoapProtocol(Protocol):
         self._packets = 0
         self._got = []
         self._got_len = 0
-        self.deferred = None
+        self.deferred = None # this is the deferred for the last sendPacket
         self.tosend = None
         self.con = con
         self.options = con.options
@@ -118,14 +172,18 @@ class SoapProtocol(Protocol):
         self.verbose = con.options.verbose_twisted
         self._makeReadyForNextPacket()
         self.connected_deferred = Deferred()
+        self.time_of_last_send_request = time()
+        self.queued = [] # (d, tosend)
 
     def sendPacket(self, tosend):
         """ send a single packet, return a deferred that is
         called when a response is available (this is a single connection,
         there is only one outgoing packet)
         """
+        self.time_of_last_send_request = time() # we use this to tell which connection is coldest
         if not self.ready:
-            raise Exception("SoapProtocol.sendPacket called while sending/receiving previous packet")
+            self.queued.append((Deferred(), tosend))
+            return self.queued[-1][0]
         self._time_last_send = time()
         self._packets += 1
         if self.verbose:
@@ -197,15 +255,25 @@ class SoapProtocol(Protocol):
             # maybe add a cb for that later? (user settable) (or use errback mechanism)
             if soapbody.firstChild.nodeName == 'SOAP-ENV:Fault':
                 print "Got a fault:\n%s" % soapbody.firstChild.toprettyxml()
+                # TODO - handling of errors passed to children too (will let me
+                # finally track all the spurios errors talking to naoqi)
             else:
                 self.deferred.callback(soapbody) # This might do something, like write
                                         # to the transport, thus doing the server part.
             # lose connection if not keep alive
             if self._close_connection:
                 self.transport.loseConnection()
+                if len(self.queued) > 0:
+                    print "ERROR - you queued packets on a connection scheduled for closing. Reconnect maybe?"
             else:
                 # we shall survive to service another request
                 self._makeReadyForNextPacket()
+                if len(self.queued) > 0:
+                    d, tosend = self.queued.pop(0)
+                    if self.verbose:
+                        print "SoapProtocol: handling |%s| msg out of %s queued" % (len(tosend),
+                            len(self.queued) + 1)
+                    self.sendPacket(tosend).addCallback(d.callback)
         else:
             if data_len not in self._packet_sizes:
                 self._packet_sizes.add(data_len)
