@@ -61,6 +61,7 @@ plottime(ball)
 ('video',
 """
 # Watch the thresholded image
+v=video(dt=0.1)
 v=video()
 v.threshold()
 # display a single image (need to run with -pylab)

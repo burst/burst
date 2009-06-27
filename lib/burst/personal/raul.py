@@ -35,7 +35,7 @@ walks.SIDESTEP_WALK.defaultSpeed = 27 # 20 seems just fine
 
 # SLOW WALK
 walks.FIRST_TWO_SLOW_STEPS = True
-walks.STRAIGHT_WALK = walks.Walk(WalkParameters([
+walks.STRAIGHT_WALK = walks.Walk('STRAIGHT_WALK raul', WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            15.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian

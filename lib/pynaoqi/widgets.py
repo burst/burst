@@ -81,6 +81,10 @@ class BaseWindow(object):
     def hide(self):
         self._w.hide()
 
+# Some color constants
+red = gtk.gdk.Color('red')
+white = gtk.gdk.Color('white')
+
 class NotesWindow(BaseWindow):
     def __init__(self):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
@@ -118,21 +122,125 @@ class NotesWindow(BaseWindow):
                     ij[0] = 0
                     ij[1] += 1
             return adder
-        for group, title, packer, packing in (
-                (players, 'players', lambda _: gtk.VButtonBox(),
-                    lambda holder: holder.add),
-                (tests, 'tests',
-                    lambda n: gtk.Table(n/5, 5, True),
-                    add_to_table
-                )):
-            holder = packer(len(group.runners))
+        class ButtonHolder(object):
+            def __init__(self, b, player):
+                self.b = b
+                self.player = player
+            def resetButton(self, _=None):
+                self.b.modify_bg(gtk.STATE_NORMAL, None)
+            def __call__(self, event=None):
+                b, player = self.b, self.player
+                if player._main is None or player._main.stopped:
+                    # NOTE - can allow a restart of behavior only too.
+                    b.modify_bg(gtk.STATE_NORMAL, red)
+                    player.start().onDone(self.resetButton)
+                else:
+                    player.stop().onDone(self.resetButton)
+        def makepage(runners, packer ,packing):
+            holder = packer(len(runners))
             packer = packing(holder)
-            for name, player in group.runners:
+            buttonholders = []
+            for name, player in runners:
                 # TODO - stop the current player
                 b = gtk.Button(name)
-                b.connect('clicked', lambda event, player=player: player.start())
+                bh = ButtonHolder(b, player)
+                buttonholders.append(bh)
+                b.connect('clicked', bh)
                 packer(b)
-            self._notebook.append_page(holder, tab_label=gtk.Label(title))
+            holder.buttonholders = buttonholders
+            return holder
+
+        # players in one page
+        holder = makepage(players.runners, lambda _: gtk.VButtonBox(),
+            lambda holder: holder.add)
+        self._notebook.append_page(holder, tab_label=gtk.Label('players'))
+        # all tests in another page, in a subnotebook
+        notebook = gtk.Notebook()
+        #'tests')
+        runners = dict(tests.runners)
+        for title, names in [
+            ('framework', [
+ 'donothing',
+ 'endless',
+ 'callLaterTester',
+ 'registeroneTester',
+ 'framerateTester',
+ 'startStopTester',
+ 'worldJointsTester',
+ 'eventsTester',
+ 'empty',
+ 'timeoutTester',
+ 'dcm_executor',
+ 'cameraSwitchTester',
+ 'exception_in_deferred',
+            ]),
+            ('unclassified', [
+ 'domove_constants',
+ 'fpsTester',
+ 'save_variable_names',
+            ]),
+            ('finding', [
+ 'visionTesting',
+ 'goalCentererTester',
+ 'goalSearchTester',
+ 'ballSearchTester',
+ 'centerTester',
+ 'headTrackingLowLevelTester',
+ 'targetFinderTester',
+ 'localize',
+ 'trackerTester',
+            ]),
+            ('walks', [
+ 'walk_record',
+ 'walkTester',
+ 'asafWalkTester',
+ 'personal_walk_manual_tweaker',
+ 'head_move_and_walk_tester',
+ 'straightWalkTester',
+ 'clearfootsteps',
+            ]),
+            ('non walk locomotion', [
+ 'strafe_around_ball',
+ 'circle_strafer',
+ 'turnccw',
+ 'turncw',
+            ]),
+            ('kicks', [
+ 'diagonalTester',
+ 'kicktest',
+ 'kickTuner',
+ 'initial_kick_tester',
+            ]),
+            ('moves', [
+ 'nodtester',
+ 'rectangle',
+ 'get_current_head_bd',
+ 'leap_tester',
+ 'sitposetester',
+            ]),
+            ('sensors', [
+ 'sonarTester',
+ 'switch_camera',
+            ]),
+            ('gamecontroller', [
+ 'gamecontrollertester',
+ 'gameEnterTester',
+            ]),
+            ('behaviors', [
+ 'approach_xyh_tester',
+ 'goalAlignerTester',
+            ])
+            ]:
+            holder = makepage([(name, runners[name]) for name in names],
+                lambda n: gtk.Table(n/5, 5, True),
+                add_to_table)
+            for name in names:
+                del runners[name]
+            notebook.append_page(holder, tab_label=gtk.Label(title))
+        holder = makepage(runners.items(), lambda n: gtk.Table(n/5, 5, True), add_to_table)
+        notebook.append_page(holder, tab_label=gtk.Label('other'))
+        self._notebook.append_page(notebook, tab_label=gtk.Label('tests'))
+        # fill pages from examples, one page per item
         for k, txt in shell.EXAMPLES:
             holder = gtk.VButtonBox()
             for line in txt.split('\n'):

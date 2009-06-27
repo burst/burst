@@ -339,7 +339,7 @@ class Actions(object):
 
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
-                    description=('sideway', delta_x, delta_y, walk))
+                    description=('sideway', delta_x, delta_y, walk.name))
         return self._current_motion_bd
 
     @returnsbd # must be first
@@ -378,7 +378,7 @@ class Actions(object):
         duration = 10
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
-                    description=('arc', delta_x, delta_y, walk))
+                    description=('arc', delta_x, delta_y, walk.name))
         return self._current_motion_bd
 
 

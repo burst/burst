@@ -204,9 +204,12 @@ class PlayerRunner(object):
     def start(self):
         self.make()
         self.loop.start()
+        return self._main # to allow onDone for stoppage of behavior
 
     def stop(self):
-        self.loop.shutdown()
+        bd = self._main.stop()
+        bd.onDone(self.loop.shutdown)
+        return bd
 
 class Players(object):
     """ Used by pynaoqi shell to let completion work it's magic
