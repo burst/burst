@@ -20,7 +20,21 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Data Structures
 
+def histogram_pairs(strings):
+    d = {}
+    keys = []
+    for s in strings:
+        if s not in d:
+            d[s] = 0
+            keys.append(s)
+        else:
+            d[s] += 1
+    return [(k, d[k]) for k in keys]
+
 def cross(*args):
+    """ you can do:
+    [(x,y) for x in [1,2,3] for y in [4,5,6]] also, much simpler
+    """
     if len(args) == 1:
         for x in args[0]:
             yield tuple([x])

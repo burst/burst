@@ -9,7 +9,7 @@ import sys
 from twisted.python import log
 
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
-    func_name, Deferred, deferredToCondensedString)
+    func_name, Deferred, deferredToCondensedString, histogram_pairs)
 import burst.moves.poses as poses
 from burst_events import event_name
 
@@ -61,7 +61,12 @@ class BehaviorActions(object):
         """ cancel all pending burst deferreds callbacks """
         # TODO - clear becomes cancel - is that ok?
         if self.verbose and len(self._bds) > 0:
-            print "BA.clearFutureCallbacks: removing [%s]" % (','.join(str(bd) for bd in self._bds))
+            if len(self._bds) <= 3:
+                s = ','.join(str(bd) for bd in self._bds)
+            else:
+                s = ','.join('%s: %s' % (num, k) for k, num
+                            in histogram_pairs(map(str, self._bds)))
+            print "BA.clearFutureCallbacks: removing [%s]" % s
         if self.debug and len(self._bds) > 0:
             import pdb; pdb.set_trace()
         for bd in self._bds:
