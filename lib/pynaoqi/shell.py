@@ -8,13 +8,37 @@ import sys
 
 #############################################################################
 
-EXAMPLES = dict(pynaoqi=
+EXAMPLES = [
+('main',
+"""
+# run the joints controller
+naojoints()
+# show all events
+compact(lambda: list(world.seenObjects()))
+#loop(lambda: succeed(player._world._events), dt=0.1)
+# in nicer form (also looks at eventmanager and not world - same thing I think)
+#compact(lambda: map(burst_events.event_name, main._eventmanager._pending_events))
+compact(lambda: map(burst_events.event_name, list(player._world._events)))
+compact(lambda: [localizer.stopped, searcher.stopped, tracker.stopped, centerer.stopped])
+""")
+,
+('events',
+"""
+# show all events
+players.template_player.start()
+loop(lambda: succeed(player._world._events), dt=0.1)
+# in nicer form (also looks at eventmanager and not world - same thing I think)
+loop(lambda: succeed(map(burst_events.event_name, main._eventmanager._pending_events)), dt=0.1)
+""")
+,
+('pynaoqi',
 """
 #!Pynaoqi
 # you can have 
 con.ALMemory.getListData(ball)
-"""
-, ball=
+""")
+,
+('ball',
 """
 # Show current identified ball location
 #ball = refilter('^/.*Ball.*Center', names) # just CenterX/Y
@@ -29,8 +53,9 @@ plot(t, dist, t, focdist)
 # Vision Location of ball over time, in text, in plot
 watch(ball)
 plottime(ball)
-"""
-, video=
+""")
+,
+('video',
 """
 # Watch the thresholded image
 v=video()
@@ -38,24 +63,17 @@ v.threshold()
 # display a single image (need to run with -pylab)
 a=frombuffer(v._thresholded,dtype=uint8).reshape((240,320))
 imshow(a)
-"""
-, vision=
+""")
+, ('vision',
 """
 # Vision positions on a canvas
 vision = refilter('^/.*Center', names)
 yellow=refilter('^/.*YG.P.*(Center|IDC)',names)
 blue=refilter('^/.*BG.P.*(Center|IDC)',names)
 canvaspairs(vision)
-"""
-, events=
-"""
-# show all events
-players.template_player.start()
-loop(lambda: succeed(player._world._events), dt=0.1)
-# in nicer form (also looks at eventmanager and not world - same thing I think)
-loop(lambda: succeed(map(burst_events.event_name, main._eventmanager._pending_events)), dt=0.1)
-"""
-, sensors=
+""")
+,
+('sensors',
 """
 # Getting US Sensors
 # subscribe first
@@ -67,8 +85,9 @@ watch(["Device/SubDeviceList/US/Sensor/Value", "Device/SubDeviceList/US/Actuator
 # Battery in a plot
 battery = refilter('Battery.*Value',names)
 plottime(battery, limits=[-1.0,1.0])
-"""
-, localization=
+""")
+,
+('localization',
 """
 # Localization positions for self and ball on canvas
 loc = refilter('[XY]Est',names)
@@ -82,8 +101,9 @@ import burst.kinematics as kin
 kin.pose.update(con)
 # Watch distance estimates to field goal posts
 loop(lambda: kin.pose.update(con).addCallback(lambda _: (kin.pose._estimates['YGLP'][0][0], kin.pose._estimates['YGRP'][0][0])))
-"""
-, other =
+""")
+,
+('other',
 """
 # Running a player (BROKEN)
 players.localize.start()
@@ -93,8 +113,9 @@ players.localize.init() # for inspecting, doesn't start, just constructs
 # See the Nack/Ack bug
 bug=refilter('ChestBoard/[NA][ac]',names)
 watch(bug)
-"""
-, debugging =
+""")
+,
+('debugging',
 """
 # Localization debugging, a bunch of variables. Not strange, just ugly.
 loop(lambda: kin.pose.update(con).addCallback(lambda _: nicefloats([kin.pose._estimates['YGLP'][0][0], kin.pose._estimates['YGRP'][0][0]] + kin.pose.cameraToWorldFrame[0].tolist() + kin.pose._bodyAngles[:2] + [kin.pose._v.YGRP.height+kin.pose._v.YGRP.y, kin.pose._v.YGRP.x, kin.pose._v.YGLP.height+kin.pose._v.YGLP.y, kin.pose._v.YGLP.x+kin.pose._v.YGLP.width])))
@@ -106,8 +127,9 @@ loop(lambda: succeed((len(con.connection_manager._protocols), sum(p._packets for
 
 # Show number of packets per connection
 loop(lambda: succeed([x._packets for x in con.connection_manager._protocols]))
-""",
-more_tests=
+""")
+,
+('more_tests',
 """
 # test burstmem
 con.burstmem.getNumberOfVariables()
@@ -115,11 +137,17 @@ con.burstmem.getNumberOfVariables()
 r=[con.burstmem.getVarNameByIndex(i) for i in xrange(120)]
 # wait slightly
 r=[x.result for x in r]
-"""
-)
+""")
+]
 
 def examples():
-    print EXAMPLES
+    print """
+    Some Examples of usage:
+
+""" + '\n'.join(['%s:\n%s' % (k,v) for k, v in EXAMPLES]) + """
+Use examples() to show this later.
+"""
+    print "_"*80
 
 def start_names_request(my_ns):
     # get the list of all variables - this can take a little
@@ -234,13 +262,7 @@ printed and available as _d."""
     import pynaoqi
     options = pynaoqi.getDefaultOptions()
     if options.examples:
-        print """
-        Some Examples of usage:
-
-    """ + '\n'.join(['%s:\n%s' % (k,v) for k, v in EXAMPLES.items()]) + """
-    Use examples() to show this later.
-    """
-        print "_"*80
+        examples()
 
 def main_twisted(con, my_ns):
 

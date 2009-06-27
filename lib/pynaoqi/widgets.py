@@ -85,7 +85,7 @@ class NotesWindow(BaseWindow):
     def __init__(self):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
             top_level_widget_name='window1')
-        self._w.set_size_request(500,600)
+        self._w.set_size_request(720,600)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
         self._notebook = self._builder.get_object('notebook')
@@ -100,13 +100,39 @@ class NotesWindow(BaseWindow):
         lang = SyntaxLoader("python")
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
-        for k, txt in shell.EXAMPLES.items():
+        for k, txt in shell.EXAMPLES:
             buff.insert(buff.get_end_iter(), txt)
         # hack - clicking when not focused doesn't set the cursor
         self._cur = None
 
     def _setupButtonPages(self):
-        for k, txt in shell.EXAMPLES.items():
+        from shell_guts import players, tests
+        # players tab and tests tabs
+        def add_to_table(table):
+            ij = [0, 0]
+            def adder(b):
+                table.attach(b, ij[0], ij[0]+1, ij[1], ij[1]+1)
+                ij[0] += 1
+                if ij[0] > 4:
+                    ij[0] = 0
+                    ij[1] += 1
+            return adder
+        for group, title, packer, packing in (
+                (players, 'players', lambda _: gtk.VButtonBox(),
+                    lambda holder: holder.add),
+                (tests, 'tests',
+                    lambda n: gtk.Table(n/5, 5, True),
+                    add_to_table
+                )):
+            holder = packer(len(group.runners))
+            packer = packing(holder)
+            for name, player in group.runners:
+                # TODO - stop the current player
+                b = gtk.Button(name)
+                b.connect('clicked', lambda event, player=player: player.start())
+                packer(b)
+            self._notebook.append_page(holder, tab_label=gtk.Label(title))
+        for k, txt in shell.EXAMPLES:
             holder = gtk.VButtonBox()
             for line in txt.split('\n'):
                 if len(line.strip()) == 0 or line.strip()[:1] == '#': continue

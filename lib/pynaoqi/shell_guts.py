@@ -212,9 +212,12 @@ class Players(object):
     """ Used by pynaoqi shell to let completion work it's magic
     """
     def __init__(self, thelist):
-        self.players_list = thelist
+        self.players_list = list(thelist)
+        self.runners = []
         for player in self.players_list:
-            self.__dict__[player.rsplit('.',1)[-1]] = PlayerRunner(self, player)
+            name = player.rsplit('.',1)[-1]
+            self.__dict__[name] = runner = PlayerRunner(self, player)
+            self.runners.append((name, runner))
 
 # Keep lists of players and tests for easy running.
 import players as players_mod
