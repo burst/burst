@@ -370,7 +370,7 @@ class Ball(Movable):
     def compute_intersection_with_body(self):
 
         if not self.shouldComputeIntersection:
-            return
+            return False
 
         T = 0
         DIST = 1
@@ -414,13 +414,13 @@ class Ball(Movable):
                     n += 1
                     continue #skipping nonrelvant point
                 cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
-                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
-                    self.base_point = cor_point
-                    if self.history[0] != None:
-                        self.base_point_index = n -1
-                    else:
-                        self.base_point_index = n
-                    return False
+#                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
+#                    self.base_point = cor_point
+#                    if self.history[0] != None:
+#                        self.base_point_index = n -1
+#                    else:
+#                        self.base_point_index = n
+#                    return False
                 sumX += cor_point[X]
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
@@ -445,12 +445,6 @@ class Ball(Movable):
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
                 slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX))
 
-            #calc time for intersection: when x(t) the slop is v. using least mean squares - don't work good
-            #if fabs((sumT * sumT) - (n * sumSqrT))  >  ERROR_VAL_X:
-            #    self.velocity = ((sumX * sumT) - (n * sumXT)) / ((sumT * sumT) - (n * sumSqrT))
-            #    self.time_intersection = -last_point[X] / self.velocity
-            #    print "velocity: ", self.velocity
-            #    print "time for intersection: ", self.time_intersection
 
                 #calc time for intersection:
                 #finding the x coordinate of two point on the regression line
@@ -470,7 +464,7 @@ class Ball(Movable):
                             #print "velocity: ", self.velocity
                             #print "time for intersection: ", self.time_intersection
 
-            return True
+                return True
         if self.history[0] != None:
             self.base_point_index -= 1
         return False

@@ -194,7 +194,7 @@ class PlayerRunner(object):
                 user_ns[k] = getattr(self._main._world, k)
             user_ns['our_unknown'] = self._main._world.our_goal.unknown
             user_ns['opposing_unknown'] = self._main._world.opposing_goal.unknown
-    
+
     def switch_color(self):
         # TODO - simulate chest button (change the AL_MEMORY var?)
         if not self._player: return

@@ -1134,6 +1134,7 @@ def getDefaultOptions():
 
     store_true('--twisted', dest='twisted', default=True,
             help='use twisted')
+    store_true('--multiple', dest='multiple_connections', default=False)
     store_true('--examples', dest='examples', default=False,
             help='show long examples on start')
     store_false('--notwisted', dest='twisted',

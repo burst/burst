@@ -16,8 +16,8 @@ WAITING = 6
 WAITING_FOR_NEW_DATA = 1  #not to use old data (made when head was searching)
 
 debug = True
-#isWebots = True
-realLeap = False
+realLeap = True
+
 debugLeapRight = False
 debugLeapLeft = False
 
@@ -26,53 +26,40 @@ class Goalie(InitialBehavior):
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
+        self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
+        self.timeSinceRegistered = 0
+
+        self.isPenalty = False # TODO: Use the gameStatus object.
+        if self.isPenalty:
+            self.targetFinder.setOnTargetFoundCB(self.penaltyRegister)
+            self.targetFinder.setOnTargetLostCB(lambda: self._eventmanager.unregister(self.leapPenalty))
+        else:
+            self.targetFinder.setOnTargetFoundCB(self.goalieRegister)
+            self.targetFinder.setOnTargetLostCB(lambda: self._eventmanager.unregister(self.leap))
 
     def _start(self, firstTime=False):
-        self.isPenalty = False # TODO: Use the gameStatus object.
-        self._restart()
+        self.readyToLeap()
 
-    def _restart(self):
-        self._report("in play")
+    def readyToLeap(self):
+        print "readyToLeap"
         self._actions.setCameraFrameRate(20)
-        self.whichBehavior()
-
-    def _report(self, string):
-        if debug:
-            self._actions.say(string)
-
-    def whichBehavior(self):
-        if self.isPenalty:
-            self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
-            self.targetFinder.start()
-            self.targetFinder.setOnTargetFoundCB(self.waitForHead)
-        else:
-            self.watchIncomingBall()
-
-    def waitForHead(self):
-        self._eventmanager.callLater(WAITING_FOR_HEAD, self.penaltyRegister)
+        self.targetFinder.start()
 
     def penaltyRegister(self):
         self.targetFinder.stop()
+        self.timeSinceRegistered = self._world.time
         self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
 
-    def watchIncomingBall(self):
-        self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
-        self.targetFinder.start()
-        self.targetFinder.setOnTargetFoundCB(self.waitingForData)
-        
-    def waitingForData(self):
-        self._eventmanager.callLater(WAITING_FOR_NEW_DATA, self.goalieRegister)
-        
     def goalieRegister(self):
+        print "goalieRegister (%s)" % id(self)
+        self.timeSinceRegistered = self._world.time
         self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
-        #if isWebots:
-        #    self._eventmanager.register(self.returnHead, EVENT_BALL_LOST)
-
-    #def returnHead(self):
-    #    self._eventmanager.unregister(self.returnHead)
-     #   self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR)
 
     def leapPenalty(self, stopped=False):
+        if self.timeSinceRegistered + WAITING_FOR_HEAD < self._world.time:
+            print "LEAP (PENALTY) ABORTED, NOT ENOUGH DATA!"
+            return
+        print "Penalty leap!"
         self._eventmanager.unregister(self.leapPenalty)
         #print self._world.ball.dy
         if self._world.ball.dy < 0:
@@ -87,43 +74,54 @@ class Goalie(InitialBehavior):
             else:
                 self._actions.say("Leap left.")
                 self.waitingOnLeft()
-
+                
+    leap_time = -1
     def leap(self, stopped=False):
-        self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
-        self.targetFinder.stop()
-        #if isWebots:
-        #    self._eventmanager.unregister(self.returnHead)
-        #print self._world.ball.body_isect
+        if self.timeSinceRegistered + WAITING_FOR_NEW_DATA < self._world.time:
+            print "LEAP ABORTED, NOT ENOUGH DATA!"
+            return
+        print "Checking if leap is necessary"
+        if self._world.time == self.leap_time:
+            import pdb; pdb.set_trace()
+        self.leap_time = self._world.time
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapRight:
+            print "Leaping right!"
+            self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
+            self.targetFinder.stop()
             if realLeap:
                 self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapLeft:
+            print "Leaping left!"
+            self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
+            self.targetFinder.stop()
             if realLeap:
                 self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")
                 self.waitingOnLeft()
         else:
-            self.watchIncomingBall()
-            #assert(self._eventmanager.isregistered(self.returnHead))
+            print "Decided not to leap right now..."
 
     def waitingOnRight(self):
+        print "wait on right"
         self._eventmanager.callLater(TIME_WAITING, self.gettingUpRight)
 
     def waitingOnLeft(self):
+        print "wait on left"
         self._eventmanager.callLater(TIME_WAITING, self.gettingUpLeft)
 
-
     def gettingUpRight(self):
+        print "getting up right"
         if realLeap:
             self._actions.executeToBellyFromLeapRight().onDone(lambda: self.getUpBelly(right))
         else:
             self.onLeapComplete(right)
 
     def gettingUpLeft(self):
+        print "getting up left"
         if realLeap:
             self._actions.executeToBellyFromLeapLeft().onDone(lambda: self.getUpBelly(left))
         else:
@@ -133,10 +131,11 @@ class Goalie(InitialBehavior):
         self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
 
     def onLeapComplete(self, side):
+        print "complete"    
         if realLeap:
-            AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.whichBehavior))
+            AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
         else:
-            self._restart()
+            self.readyToLeap()
 
 
 if __name__ == '__main__':

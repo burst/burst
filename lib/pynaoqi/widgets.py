@@ -89,7 +89,7 @@ class NotesWindow(BaseWindow):
     def __init__(self):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
             top_level_widget_name='window1')
-        self._w.resize(720,600)
+        self._w.resize(800,300)
         self._w.set_size_request(300,200)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
@@ -386,6 +386,10 @@ class GtkTextLogger(TaskBaseWindow):
         self._values = []
         self._times = []
         self._startTaskFirstTime()
+
+    def appendLine(self, txt):
+        # used by PlayerRunner - when restarting a behavior log a seperator
+        self._tb.insert(tb.get_start_iter(), '%s\n' % txt)
 
     def _update(self, result):
         #if not self._w.is_active(): return
