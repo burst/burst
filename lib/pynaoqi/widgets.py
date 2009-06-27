@@ -287,6 +287,7 @@ class TaskBaseWindow(BaseWindow):
 
     """ Any widget that is based on some timer based update """
 
+    tasks = []
     loggers = []
 
     def __init__(self, tick_cb, title=None, dt=1.0, builder_file=None,
@@ -301,7 +302,9 @@ class TaskBaseWindow(BaseWindow):
         self._tick_cb = tick_cb
         self._start = time.time() # updated at the real start, _startTaskFirstTime
         self._task = task.LoopingCall(self._onLoop)
-        self.loggers.append(self)
+        self.tasks.append(self)
+        if hasattr(self, 'appendLine'): # used by PlayerRunner to log lines between runs
+            self.loggers.append(self)
         self.set_title()
 
     def _startTaskFirstTime(self):
@@ -379,8 +382,8 @@ class GtkTextLogger(TaskBaseWindow):
         self._sw = gtk.ScrolledWindow()
         self._sw.add(self._tv)
         self._w.add(self._sw)
-        self._w.set_size_request(100,100)
-        self._w.resize(300,300)
+        self._w.set_size_request(100,60)
+        self._w.resize(300,100)
         self._w.show_all()
         tv.set_buffer(tb)
         self._values = []
@@ -389,7 +392,7 @@ class GtkTextLogger(TaskBaseWindow):
 
     def appendLine(self, txt):
         # used by PlayerRunner - when restarting a behavior log a seperator
-        self._tb.insert(tb.get_start_iter(), '%s\n' % txt)
+        self._tb.insert(self._tb.get_start_iter(), '%s\n' % txt)
 
     def _update(self, result):
         #if not self._w.is_active(): return
