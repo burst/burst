@@ -54,6 +54,10 @@ class CenteredLocatable(object):
         self.sighted_centered = False # is True if last sighting was centered
         self.update_time = -1000.0
 
+    def get_yaw_pitch(self):
+        return self.head_yaw, self.head_pitch
+    yaw_pitch = property(get_yaw_pitch)
+
     def __str__(self):
         #return '\n'.join(wrap('{%s}' % (', '.join(('%s:%s' % (k, nicefloat(v))) for k, v in self.__dict__.items() )), CONSOLE_LINE_LENGTH))
         return '%s %s %3.2f %3.2f' % (nicebool(self.sighted), nicebool(self.sighted_centered),
@@ -114,7 +118,6 @@ class CenteredLocatable(object):
         the image """
 #        if self.centerX == None or self.centerY == None:
 #            import pdb; pdb.set_trace()
-
         try:
             float(self.centerX)
         except:

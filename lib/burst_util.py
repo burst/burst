@@ -745,11 +745,9 @@ def trim(s, l):
 
 def refilter(exp, it):
     rec = re.compile(exp)
-    try:
-        real_it = iter(it)
-    except:
-        real_it = dir(it)
-    return [x for x in real_it if rec.search(x)]
+    if not hasattr(it, '__iter__'):
+        it = dir(it)
+    return [x for x in it if rec.search(x)]
 
 def redir(exp, obj):
     return refilter(exp, dir(obj))

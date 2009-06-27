@@ -85,7 +85,8 @@ class NotesWindow(BaseWindow):
     def __init__(self):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
             top_level_widget_name='window1')
-        self._w.set_size_request(720,600)
+        self._w.resize(720,600)
+        self._w.set_size_request(300,200)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
         self._notebook = self._builder.get_object('notebook')
@@ -268,7 +269,8 @@ class GtkTextLogger(TaskBaseWindow):
         self._sw = gtk.ScrolledWindow()
         self._sw.add(self._tv)
         self._w.add(self._sw)
-        self._w.set_size_request(300,300)
+        self._w.set_size_request(100,100)
+        self._w.resize(300,300)
         self._w.show_all()
         tv.set_buffer(tb)
         self._values = []

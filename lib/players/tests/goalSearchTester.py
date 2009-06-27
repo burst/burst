@@ -3,6 +3,8 @@
 import player_init
 from burst.behavior import InitialBehavior
 from burst.actions.searcher import Searcher
+from burst_util import chainDeferreds
+
 
 class SearchTester(InitialBehavior):
 
@@ -14,7 +16,9 @@ class SearchTester(InitialBehavior):
         self._actions.searcher.search(self.targets).onDone(self.onFound)
 
     def onFound(self):
-        self._actions.say('Found it!')
+        self.log('Found it!')
+
+        self.log(' | '.join(map(str, self.targets)))
 
         for t in self.targets:
             if t.centered_self.sighted_centered:
@@ -22,6 +26,21 @@ class SearchTester(InitialBehavior):
             else:
                 print "%s NOT sighted centered" % t.name
 
+        if len([x for x in self.targets if x.centered_self.sighted]) == 0:
+            print "Nothing found, not looking at targets"
+            return self._quit()
+        self.log("Going towards all targets")
+        chainDeferreds([
+            lambda _, t=t: self.lookAt(t).onDone(
+            lambda: self._eventmanager.callLaterBD(2.0)).getDeferred()
+                for t in self.targets]).addCallback(self._quit)
+
+    def lookAt(self, target):
+        self.log("Looking and centering on %s" % target.name)
+        return self._actions.headTowards(target).onDone(
+            lambda: self._actions.centerer.start(target=target))
+
+    def _quit(self, _=None):
         self.stop()
 
 if __name__ == '__main__':

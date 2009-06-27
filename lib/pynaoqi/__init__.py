@@ -1167,8 +1167,8 @@ def getDefaultOptions():
             raise SystemExit
         del sys.argv[i]
     on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
-    print "USING PORT %s" % options.port
     options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
+    print "USING PORT %s" % options.port
     import burst_target
     burst_target.ip = options.ip
     burst_target.port = options.port

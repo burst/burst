@@ -151,6 +151,7 @@ class Actions(object):
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
+        self._camera_switch_time = world.time
         self.tracker = Tracker(self)        # Please remember to stop # Todo - Locking
         self.centerer = Centerer(self)       # Please remember to stop 
         self.searcher = Searcher(self)      # all of these behaviors
@@ -210,6 +211,7 @@ class Actions(object):
         return self.tracker.start(target=target, lostCallback=lostCallback)
 
     @returnsbd # must be first
+    @setfps(20)
     @stopped(['tracker', 'centerer'])
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if stop_on_first:
@@ -460,26 +462,31 @@ class Actions(object):
 
     @returnsbd # must be first (doesn't add to call stack)
     @whocalledme_outofclass
-    def setCamera(self, whichCamera):
+    def setCamera(self, whichCamera, force=False):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
         """
-        if self._current_camera == whichCamera:
+        # Switching camera's doesn't always work. So we need to actually check for it.
+        # Not sure if this is a webots problem or not, but assuming it isn't webots.
+        if self._current_camera == whichCamera and not force:
             return self.succeed(self)
+        dt_since_last = self._world.time - self._camera_switch_time
+        if dt_since_last < burst_consts.CAMERA_SWITCH_WAIT:
+            print "_"*20 + "Delaying camera switch" + "_"*20
+            return self._eventmanager.callLaterBD(
+                burst_consts.CAMERA_SWITCH_WAIT - dt_since_last).onDone(
+                    lambda: self.setCamera(whichCamera=whichCamera, force=force))
+        self._camera_switch_time = self._world.time
         if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
-            print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
-            d = self._imops.switchToBottomCamera()
+            s, switcher = 'bottom', self._imops.switchToBottomCamera
         else:
-            print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
-            d = self._imops.switchToTopCamera()
+            s, switcher = 'top', self._imops.switchToTopCamera
+        print "_"*20 + "SWITCHING TO %s CAMERA %s" % (s, dt_since_last) + '_'*20
+        d = switcher()
+        import time
+#        time.sleep(0.5)  # HACK because of switching problem.
         self._current_camera = whichCamera
-        bd_on_wait = self.make(self)
-        def onCameraChange(_):
-            self._world._onCameraChange(whichCamera)
-            self._eventmanager.callLater(burst_consts.CAMERA_SWITCH_WAIT,
-                bd_on_wait.callOnDone)
-        d.addCallback(onCameraChange)
-        return bd_on_wait
+        return self.wrap(d, self)
 
     @returnsbd # must be first
     def setCameraFrameRate(self, fps):
@@ -617,6 +624,13 @@ class Actions(object):
             print "MOVE HEAD to %s, %s" % (x, y)
         return self.executeHeadMove([((float(x), float(y)), interp_time)],
             description=('movehead', x, y))
+
+    def headTowards(self, target, interp_time=1.0):
+        # just recorded yaw and pitch
+        #x, y = target.centered_self.head_yaw, target.centered_self.head_pitch
+        # also include vision information
+        x, y = target.centered_self.estimated_yaw_and_pitch_to_center()
+        return self.moveHead(x=x, y=y, interp_time=interp_time)
 
     def blockingStraightWalk(self, distance):
         if self.isMotionInProgress():
