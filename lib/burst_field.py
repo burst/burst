@@ -231,3 +231,6 @@ white_limits = (FIELD_WHITE_LEFT_SIDELINE_X,
     FIELD_WHITE_BOTTOM_SIDELINE_Y,
     FIELD_WHITE_TOP_SIDELINE_Y)
 
+white_x_limits = white_limits[:2]
+white_y_limits = white_limits[2:]
+

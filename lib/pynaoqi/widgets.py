@@ -414,7 +414,11 @@ class GtkTextLogger(TaskBaseWindow):
         #if not self._w.is_active(): return
         if not self._filter(result): return
         tb = self._tb
-        t = time.time() - self._start
+        # take world time if available
+        if shell.user_ns.has_key('world'):
+            t = shell.user_ns['world'].time
+        else:
+            t = time.time() - self._start
         self._times.append(t)
         self._values.append(result)
         tb.insert(tb.get_start_iter(), '%3.3f: %s\n' % (t, str(result)))
