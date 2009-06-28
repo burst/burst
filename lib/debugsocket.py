@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 """
 Implements a read eval loop over a socket which doesn't block at any stage (not
 in bind, in accept, or in reading the socket), and which uses either eval
@@ -61,7 +63,7 @@ class Environment(object):
         setattr(self, k, v)
         self.ic.locals[k] = v
 
-class DebugSocket(object):
+class NonBlockingListeningSocket(object):
 
     def __init__(self, port):
         self.port = port
@@ -70,10 +72,6 @@ class DebugSocket(object):
         self.sa = None
         self.s = []
         self.open()
-
-    def runLoop(self):
-        while True:
-            self.tryReadEval();
 
     def open(self):
         print "debug socket: listening to %s" % self.port
@@ -100,9 +98,6 @@ class DebugSocket(object):
         self.sa.setblocking(False)
         return True
 
-    def setvar(self, k, v):
-        self.env.setvar(k, v)
-
     def tryAccept(self):
         if not self.tryBind():
             self.has_connection = False
@@ -119,6 +114,7 @@ class DebugSocket(object):
         return self.has_connection
 
     def readLines(self):
+        """ returns list of pairs socket, line (to keep track of who sent what) """
         self.tryAccept()
         deleted_socks = []
         msgs = []
@@ -138,6 +134,18 @@ class DebugSocket(object):
             del self.s[i]
         self.has_connection = (len(self.s) == 0)
         return msgs
+
+class DebugSocket(NonBlockingListeningSocket):
+
+    def __init__(self, port):
+        super(DebugSocket, self).__init__(port)
+
+    def runLoop(self):
+        while True:
+            self.tryReadEval();
+
+    def setvar(self, k, v):
+        self.env.setvar(k, v)
 
     def tryReadEval(self):
         msgs = self.readLines()
@@ -166,4 +174,15 @@ class DebugSocket(object):
     def set_module_global(self, k, v):
         self.env.setvar(k, v)
         globals()[k] = v
+
+def test_socket():
+    s = NonBlockingListeningSocket(5000)
+    import time
+    while True:
+        for x in  s.readLines():
+            print x
+        time.sleep(0.1)
+
+if __name__ == '__main__':
+    test_socket()
 
