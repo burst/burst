@@ -273,15 +273,16 @@ def create_button_strip(data):
 ################################################################################
 class Joints(BaseWindow):
 
-    def __init__(self):
+    def __init__(self, con=None):
         super(Joints, self).__init__()
         global start_time
-        global con
         start_time = time()
 
+        if con is None:
+            con = pynaoqi.getDefaultConnection()
+
         self.scales = scales = {}
-        self.con = pynaoqi.getDefaultConnection(with_twisted=True)
-        con = self.con
+        self.con = con
         self.updater = task.LoopingCall(self.getAngles)
         self.battery_level_task = task.LoopingCall(self.getBatteryLevel)
 
@@ -350,6 +351,7 @@ class Joints(BaseWindow):
             ('stiffness on',    self.setStiffnessOn),
             ('stiffness off',   self.setStiffnessOff),
             ('vision',          self.toggleVision),
+            ('notes',          self.toggleNotes),
             ('inertial',        self.toggleInertial),
             ('localization',    self.toggleLocalization),
             ]
@@ -523,6 +525,16 @@ class Joints(BaseWindow):
             what.show()
             setattr(self, attrname, True)
 
+    notes = None
+    notes_visible = False
+    def toggleNotes(self, w):
+        if self.notes is None:
+            import widgets
+            self.notes = widgets.NotesWindow(con)
+            self.notes_visible = True
+            return
+        self.toggleit(self.notes._w, 'notes_visible')
+
     def toggleVision(self, w):
         if self.vision is None:
             import naovision
@@ -572,20 +584,22 @@ class Joints(BaseWindow):
         j = self.cur_read_angles
         print repr([j[2:6], j[8:14], j[14:20], j[20:24]])
 
-class JointsMain(Joints):
+def main(clazz=Joints):
+    global con
+    con = pynaoqi.getDefaultConnection(with_twisted=True)
+    class Main(clazz):
 
-    def _onDestroy(self, *args):
-        super(JointsMain, self)._onDestroy(*args)
-        print "quitting.."
-        reactor.stop()
+        def _onDestroy(self, *args):
+            super(Main, self)._onDestroy(*args)
+            print "quitting.."
+            reactor.stop()
 
-def main():
     from twisted.internet import gtk2reactor
     try:
         gtk2reactor.install()
     except:
         pass
-    joints = JointsMain()
+    window = Main(con)
     reactor.run()
 
 if __name__ == '__main__':

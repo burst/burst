@@ -163,7 +163,7 @@ def start_names_request(my_ns):
     con.modulesDeferred.addCallback(
         lambda _:con.ALMemory.getDataListName().addCallback(onDataListName))
 
-def make_shell_namespace(use_pylab, using_gtk):
+def make_shell_namespace(use_pylab, using_gtk, con):
     """
     Returns a namespace prepopulated with any variable we want in the global
     namespace for easy naoqi developing and debugging.
@@ -412,7 +412,7 @@ def main():
         raise SystemExit
     globals()['con'] = con # <--- global connection object
 
-    my_ns = make_shell_namespace(use_pylab = '-pylab' in sys.argv, using_gtk=using_gtk)
+    my_ns = make_shell_namespace(use_pylab = '-pylab' in sys.argv, using_gtk=using_gtk, con=con)
 
     if options.twisted:
         if options.use_manhole:

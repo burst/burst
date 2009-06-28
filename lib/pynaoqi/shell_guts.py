@@ -90,7 +90,7 @@ def one_window(name, ctor):
 
 video = lambda dt=0.5: one_window('video_window', lambda: VideoWindow(con=con, dt=dt))
 calibrator = lambda: one_window('calibrator_window', lambda: Calibrator(con))
-notes = lambda: one_window('notes_window', lambda: NotesWindow())
+notes = lambda: one_window('notes_window', lambda: NotesWindow(con))
 
 #########################################################
 

@@ -90,7 +90,66 @@ def parse_command_line_arguments():
     # old unused
     unused.add_option('', '--bodyposition', dest='bodyposition', help='test app: prints bodyposition continuously')
 
-    for group in [main, experimental, debug, unused]:
+    pynaoqi = OptionGroup(parser, "pynaoqi")
+    true_storers, false_storers, storers = [], [], []
+
+    # Some helper functions for argument parsing
+    def collector(opt, col, kw_base, **kw):
+        kwjoint = dict(kw_base)
+        kwjoint.update(kw)
+        pynaoqi.add_option('', opt, **kwjoint)
+        col.append(opt)
+    store_true =lambda opt, **kw: collector(opt, true_storers, {'action':'store_true', 'default':False}, **kw)
+    store_false =lambda opt, **kw: collector(opt, false_storers, {'action':'store_false'}, **kw)
+    store = lambda opt, **kw: collector(opt, storers, {'action':'store'}, **kw)
+
+    # Optional Arguments
+    #pynaoqi.add_option('', '--video', action='store_true', dest='video', default=False, help='do video')
+
+    store_true('--calibrator', dest='calibrator', default=False,
+            help='run calibrator')
+    store_true('--video', dest='video', default=False,
+            help='run video window')
+    store_true('--notes', dest='notes', default=False,
+            help='run notes gui')
+    store_true('--twisted', dest='twisted', default=True,
+            help='use twisted')
+    store_true('--multiple', dest='multiple_connections', default=False,
+            help='use multiple connections (big memory hog on naoqi process - don\'t use on robot!)')
+    store_true('--examples', dest='examples', default=False,
+            help='show long examples on start')
+    store_false('--notwisted', dest='twisted',
+            help='don\'t use twisted')
+    store_true('--locon', dest='localization_on_start',
+            help='turn localization on')
+    store_true('--reportnew', dest='report_new_packet_sizes',
+            help='debug - report new packet sizes')
+    store_true('--verbosetwisted', dest='verbose_twisted',
+            help='debug - show twisted communication')
+    store_true('--manhole', dest='use_manhole',
+            help='use manhole shell instead of IPython')
+    store_true('--nogtk', dest='nogtk',
+            help='debug - turn off gtk integration (NOT WORKING)')
+    #parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
+
+    # TODO: UNBRAIN DEAD THIS
+    # The next part is brain dead, but I don't know how to remove *just*
+    # the parameters I used with OptionParser.. delegated option parsers anyone?
+    
+    def remove_my_args_from_sys_argv():
+        todelete = []
+        for i, arg in enumerate(sys.argv):
+            if arg in storers:
+                todelete.extend([i, i+1])
+            if arg in true_storers + false_storers:
+                todelete.append(i)
+        for i in reversed(todelete):
+            if i >= len(sys.argv):
+                print "bad arguments.. go home"
+                raise SystemExit
+            del sys.argv[i]
+
+    for group in [main, experimental, debug, unused, pynaoqi]:
         parser.add_option_group(group)
 
     opts, args = parser.parse_args()
@@ -103,6 +162,9 @@ def parse_command_line_arguments():
                 str(opts.starting_team_color).lower(), opts.starting_team_color)
     # UGLY
     burst_consts.CONSOLE_LINE_LENGTH = int(opts.console_line_length)
+    opts.ip = ip
+    opts.port = port
+    print "VIDEO = opts.video = %s" % opts.video
     return opts, ip, port
 
 LOCALHOST_IP = '127.0.0.1'

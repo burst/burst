@@ -21,8 +21,19 @@ from burst_consts import ROBOT_IP_TO_NAME
 from burst_util import set_robot_ip_from_argv
 
 def main():
+    import pynaoqi
+    import pynaoqi.widgets
     import pynaoqi.gui
-    pynaoqi.gui.main()
+    options = pynaoqi.getDefaultOptions()
+    if options.notes:
+        clazz = pynaoqi.widgets.NotesWindow
+    elif options.video:
+        clazz = pynaoqi.widgets.VideoWindow
+    elif options.calibrator:
+        clazz = pynaoqi.widgets.Calibrator
+    else:
+        clazz = pynaoqi.gui.Joints
+    pynaoqi.gui.main(clazz)
 
 if __name__ == '__main__':
     set_robot_ip_from_argv()

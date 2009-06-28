@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from __future__ import with_statement
 
 import time
@@ -11,14 +13,20 @@ import gtk, goocanvas
 
 from twisted.internet.defer import Deferred, succeed
 
+if __name__ == '__main__':
+    import sys
+    print "__file__ = %s" % __file__
+    sys.path.append(os.path.realpath('%s/../' % os.path.dirname(__file__)))
+
 from pynaoqi.consts import *
-from pynaoqi import options
 import pynaoqi
 
+widgets_using_pylab = False
 try:
     import matplotlib
     from matplotlib.backends.backend_gtk import FigureCanvasGTK, NavigationToolbar
     from matplotlib.pylab import Figure
+    widgets_using_pylab = True
 except:
     pass
 
@@ -86,7 +94,7 @@ red = gtk.gdk.Color('red')
 white = gtk.gdk.Color('white')
 
 class NotesWindow(BaseWindow):
-    def __init__(self):
+    def __init__(self, con):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
             top_level_widget_name='window1')
         self._w.resize(800,300)
@@ -96,6 +104,14 @@ class NotesWindow(BaseWindow):
         self._notebook = self._builder.get_object('notebook')
         self._setupTextbuffer()
         self._setupButtonPages()
+        import shell
+        # Fixes to allow running without pynaoqi shell, and with
+        # NaoJoints. Note that the main of widgets is broken on Ubuntu 9.04
+        if pynaoqi.options is None:
+            pynaoqi.options = pynaoqi.getDefaultOptions()
+        if not hasattr(shell, 'user_ns'):
+            shell.user_ns = shell.make_shell_namespace(
+                use_pylab = widgets_using_pylab, using_gtk=True, con=con)
 
     def _setupTextbuffer(self):
         #import pdb; pdb.set_trace()
@@ -296,7 +312,7 @@ class TaskBaseWindow(BaseWindow):
             top_level_widget_name=top_level_widget_name)
         from twisted.internet import task
         if title is None:
-            title = '%s %s' % (options.ip, self.counter)
+            title = '%s %s' % (pynaoqi.options.ip, self.counter)
         self._title = title
         self._dt = dt
         self._tick_cb = tick_cb
@@ -777,7 +793,15 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         self._threshold = False # to threshold or not to threshold
         self._con = con
         self._tables = {}
-        self._con.subscribeToCamera().addCallback(self._finishInit)
+        # Do initialization correctly - make sure pynaoqi is connected
+        # and that it has the camera module, which we need.
+        self._con.modulesDeferred.addCallback(
+            lambda result:
+            self._con.CameraModule.initDeferred.addCallback(
+                lambda _: self._con.subscribeToCamera().addCallback(
+                    self._finishInit))
+            )
+        
         self._im = self._builder.get_object('image')
         # you don't get button press on gtk.Image(), setting add_events on window
         # and gtkim doesn't cause propogation, don't know what does.
@@ -1129,4 +1153,26 @@ class Inertial(object):
         for l, new_val in zip(self.l, vals):
             l.set_label('%3.3f' % new_val)
 
+class NotesMain(NotesWindow):
+
+    def _onDestroy(self, *args):
+        from twisted.internet import reactor
+        super(NotesMain, self)._onDestroy(*args)
+        print "quitting.."
+        reactor.stop()
+
+def main():
+    from twisted.internet import gtk2reactor
+    try:
+        gtk2reactor.install()
+    except:
+        pass
+    from twisted.internet import reactor
+    con = pynaoqi.getDefaultConnection()
+    notes = NotesMain(con)
+    notes._w.show_all()
+    reactor.run()
+
+if __name__ == '__main__':
+    main()
 
