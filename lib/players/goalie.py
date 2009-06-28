@@ -17,9 +17,10 @@ WAITING_FOR_NEW_DATA = 1  #not to use old data (made when head was searching)
 
 debug = True
 realLeap = True
-
 debugLeapRight = False
 debugLeapLeft = False
+
+
 
 class Goalie(InitialBehavior):
 
@@ -29,6 +30,9 @@ class Goalie(InitialBehavior):
         self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
         self.timeSinceRegistered = 0
 
+    def _start(self, firstTime=False):
+        #AlignmentAfterLeap(self._actions, right).start()
+        #return
         self.isPenalty = False # TODO: Use the gameStatus object.
         if self.isPenalty:
             self.targetFinder.setOnTargetFoundCB(self.penaltyRegister)
@@ -64,12 +68,14 @@ class Goalie(InitialBehavior):
         #print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
+                print "real leap right"
                 self._actions.executeLeapRight().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
         else:
             if realLeap or debugLeapLeft:
+                print "real leap left"
                 self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")
@@ -89,6 +95,7 @@ class Goalie(InitialBehavior):
             self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
             self.targetFinder.stop()
             if realLeap:
+                print "real leap right safe"
                 self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
@@ -98,6 +105,7 @@ class Goalie(InitialBehavior):
             self._eventmanager.unregister(self.leap) # (EVENT_BALL_BODY_INTERSECT_UPDATE)
             self.targetFinder.stop()
             if realLeap:
+                print "real leap left safe"
                 self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")

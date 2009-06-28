@@ -19,7 +19,6 @@ class Goalie(InitialBehavior):
         self.side = left
 
     def _start(self, firstTime=False):
-        self.isPenalty = False # TODO: Use the gameStatus object.
         self._restart()
 
     def _restart(self):
