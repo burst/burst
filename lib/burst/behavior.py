@@ -9,7 +9,7 @@ import sys
 from twisted.python import log
 
 from burst_util import (BurstDeferred, Nameable, succeedBurstDeferred,
-    func_name, Deferred, deferredToCondensedString)
+    func_name, Deferred, deferredToCondensedString, histogram_pairs)
 import burst.moves.poses as poses
 from burst_events import event_name
 
@@ -61,11 +61,19 @@ class BehaviorActions(object):
         """ cancel all pending burst deferreds callbacks """
         # TODO - clear becomes cancel - is that ok?
         if self.verbose and len(self._bds) > 0:
-            print "BA.clearFutureCallbacks: removing [%s]" % (','.join(str(bd) for bd in self._bds))
+            if len(self._bds) <= 3:
+                s = ','.join(str(bd) for bd in self._bds)
+            else:
+                s = ','.join('%s: %s' % (num, k) for k, num
+                            in histogram_pairs(map(str, self._bds)))
+            print "BA.clearFutureCallbacks: removing [%s]" % s
         if self.debug and len(self._bds) > 0:
             import pdb; pdb.set_trace()
         for bd in self._bds:
-            bd.clear()
+            if hasattr(bd, 'clear'):
+                bd.clear()
+            else:
+                print "BA.clearFutureCallbacks: isn't it strange that I got a %r" % bd
 
     def _addBurstDeferred(self, bd):
         self._bds.append(bd)
@@ -75,6 +83,11 @@ class BehaviorActions(object):
         if hasattr(actions_k, 'returnsbd'):
             return behaviorwrapbd(self, actions_k)
         return actions_k
+
+    def __str__(self):
+        return "<BA with %s waiting bds>" % (len(self._bds))
+    
+    __repr__ = __str__
 
 class BehaviorEventManager(object):
     """ Manage all calls to EventManager for a specific Behavior.
@@ -94,6 +107,9 @@ class BehaviorEventManager(object):
         self._behavior = behavior
         self._cb_to_wrapper = {}
         self._registered = set() # try to avoid this becoming too big
+        # We keep track of the registrations here to avoid multiples (TODO - this is the same as EventManager code)
+        self._original_callbacks = {}
+        self._original_events = dict([(event, set()) for event in self._eventmanager._events.keys()])
         self._calllaters = [] # TODO (small, Algorithmic) - this is currently suboptimal on clear. (O(N))
         self.verbose = True # TODO, options
 
@@ -112,10 +128,19 @@ class BehaviorEventManager(object):
         self._cb_to_wrapper.clear()
 
     def register(self, callback, event):
+        if callback in self._callbacks and event in self._callbacks[event]:
+            if self.verbose:
+                print "WARNING: harmless reregister of callback"
+                return
+        # since we register using a lambda we must do the multiplicity checks here
         wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
         self._cb_to_wrapper[callback] = wrapper
         self._eventmanager.register(wrapper, event)
         self._registered.add((wrapper, event))
+        if callback not in self._original_callbacks:
+            self._original_callbacks[callback] = set()
+        self._original_callbacks[callback].add(event)
+        self._original_events[event].add(callback)
 
     def register_oneshot(self, callback, event):
         wrapper = lambda: self._behavior._applyIfNotStopped(callback, [], {})
@@ -123,8 +148,17 @@ class BehaviorEventManager(object):
         self._eventmanager.register_oneshot(wrapper, event)
 
     def unregister(self, callback, event=None):
-        if callback not in self._cb_to_wrapper: return
-        self._eventmanager.unregister(self._cb_to_wrapper[callback], event)
+        if callback in self._cb_to_wrapper:
+            self._eventmanager.unregister(self._cb_to_wrapper[callback], event)
+        if event is not None:
+            self._original_callbacks[callback].discard(event)
+            self._original_events[event].discard(callback)
+        else:
+            if callback in self._original_callbacks:
+                events = self._original_callbacks[callback]
+                del self._original_callbacks[callback]
+                for event in events:
+                    self._original_events[event].discard(callback)
         # TODO - remove from self? nah, who cares?
         # we cannot delete.. may be multiple events.
         # TODO: could solve this with reference counting. But is this really a problem?
@@ -160,7 +194,6 @@ class Behavior(Nameable):
         """  Note to inheriting folk: this constructor must be the /last/
         call in your constructor, since it calls your start method
         """
-        #BurstDeferred.__init__(self, self, *args, **kw)
         self._resetDeferred()
         Nameable.__init__(self, name)
         self._actions = BehaviorActions(actions, self)
@@ -212,17 +245,19 @@ class Behavior(Nameable):
         return chained
 
     def callOnDone(self):
-        # hack - TODO remove me
-        # we are getting sporious callOnDone from a head move (in Centerer, but can happen
-        # in any Behavior) that are called by the IsRunningMoveCoordinator when an action
-        # is complete. Since this is happening when the Behavior is running (not stopped)
-        # we have a simple solution, but the actual problem remains not solved.
-        # The actual problem (probably): when we call clear we are not clearing our parent
-        # we can also do that, but lets try to do both.
+        """ same API as BurstDeferred, but doesn't actually call anyone if we are not
+        stopped. Kind of strange. But meant to protect from anyone else calling it. Not sure
+        if it even makes sense.
+        """
         err = None
         if self.stopped:
             if self._d.called:
-                err = "callOnDone where _d is already called - will probably stop here.."
+                # NOTE: I think this is a result of multiple callpaths ending in callLater - so
+                # maybe I should make this an "official" tree and store the callers, and actually
+                # make sure each calls once, AND if one calls, then the other, not even
+                # report it as an error - since it won't be. Oh, how do you record the callers? Just
+                # at runtime I guess (burst_util.getcaller could help)
+                err = "callOnDone where _d is already called - ignored (seems harmless*)"
                 #import pdb; pdb.set_trace()
             else:
                 #print "Behavior: callOnDone ok"
@@ -233,7 +268,12 @@ class Behavior(Nameable):
         else:
             err= "callOnDone being called while running - ignored. Probably IsRunningMoveCoordinator bug (see comment above)"
         if err:
-            self.log("Error: %s" % err)
+            self.log("WARNING: %s" % err)
+
+    def getDeferred(self):
+        return self._d
+
+    # Core Behavior API
 
     def stop(self):
         """ Stops the behavior, and returns a BD for stoppage complete. If already stopped,
@@ -255,6 +295,7 @@ class Behavior(Nameable):
         self._eventmanager.clearFutureCallbacks()
         self._actions.clearFutureCallbacks()
         #self.log("Calling _stop")
+        self.stopped = 'inprogress' # TODO kludge - we do need a tri-state, but that-is-not-the-way (using the fact that a non empty string is True)
         bd = self._stop()
         self.stopped = True # after self._stop we are really stopping, but better then before.
         assert(bd)
@@ -274,8 +315,8 @@ class Behavior(Nameable):
         # getDeferred() from it. Whenever they call start() they expect this to be "renewed",
         # so basically we should do a clear here.. no?
         if len(self._d.callbacks) > 0:
-            self.log("Questionable: Removing some callbacks and setting completed to false")
-            self.log("              %s" % self)
+            self.logverbose("Questionable: Removing some callbacks and setting completed to false")
+            self.logverbose("              %s" % self)
         self._resetDeferred()
         self.stopped = False
         self._start(firstTime=True, **kw)
@@ -283,6 +324,10 @@ class Behavior(Nameable):
 
     def log(self, msg):
         print "%s: %s" % (self.__class__.__name__, msg)
+
+    def logverbose(self, msg):
+        if self.verbose:
+            print "%s: %s" % (self.__class__.__name__, msg)
 
     #####  Override by Inheritance  #####
 

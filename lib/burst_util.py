@@ -10,6 +10,7 @@ import linecache
 import glob
 import socket
 import logging
+import traceback
 
 ################################################################################
 
@@ -19,7 +20,21 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Data Structures
 
+def histogram_pairs(strings):
+    d = {}
+    keys = []
+    for s in strings:
+        if s not in d:
+            d[s] = 0
+            keys.append(s)
+        else:
+            d[s] += 1
+    return [(k, d[k]) for k in keys]
+
 def cross(*args):
+    """ you can do:
+    [(x,y) for x in [1,2,3] for y in [4,5,6]] also, much simpler
+    """
     if len(args) == 1:
         for x in args[0]:
             yield tuple([x])
@@ -459,6 +474,36 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
 
 # Debugging
 
+def getcaller(aboveme=1):
+    # we return the caller of who called us, using aboveme
+    # to give the stack about the caller, so -1 is who called
+    # him (i.e. 2 relative to us), -2 is 3 etc.
+    stack = traceback.extract_stack(sys._getframe())
+    return stack[-2-aboveme]
+
+def whocalledme(f, which=lambda stack, *args, **kw: stack[-2]):
+    def wrap(*args, **kw):
+        stack = traceback.extract_stack(sys._getframe())
+        caller = which(stack, *args, **kw)
+        print "%s was called by %r" % (func_name(f), caller)
+        return f(*args, **kw)
+    wrap.func_name = f.func_name
+    wrap.func_doc = f.func_doc
+    return wrap
+
+def first_out_of_class(stack, self, *args, **kw):
+    # Assume that the class is in one file
+    # assume that same file and func of same name is enough
+    self_file = os.path.splitext(sys.modules[self.__class__.__module__].__file__)[0]
+    dir_self = dir(self)
+    for rev_i, (filename, lineno, funcname, line) in enumerate(reversed(stack)):
+        if self_file == os.path.splitext(filename)[0] and funcname in dir_self:
+            return stack[len(stack)-rev_i-2]
+    return stack[-2]
+
+def whocalledme_outofclass(f):
+    return whocalledme(f, which=first_out_of_class)
+
 def timeit(tmpl):
     def wrapper(f):
         def wrap(*args, **kw):
@@ -691,6 +736,9 @@ def normalize2(value, range):
 
 # Text/String/Printing utils
 
+def nicebool(x):
+    return 'T' if x else 'F'
+
 def nicefloat(x):
     if isinstance(x, float):
         return '%3.3f' % x
@@ -711,6 +759,8 @@ def trim(s, l):
 
 def refilter(exp, it):
     rec = re.compile(exp)
+    if not hasattr(it, '__iter__'):
+        it = dir(it)
     return [x for x in it if rec.search(x)]
 
 def redir(exp, obj):
@@ -1022,6 +1072,14 @@ def test():
             bd.onDone(meth())
         bdfirst.callOnDone()
         print ','.join(map(str,x))
+
+    print "Test getcaller"
+    print "should print something like ['f', 'test']"
+    def f():
+        def g():
+            return getcaller(), getcaller(2)
+        return g()
+    print [x[2] for x in f()]
 
 if __name__ == '__main__':
     test()

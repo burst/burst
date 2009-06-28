@@ -12,14 +12,15 @@ import burst_consts
 # to concoct elequent 'just complex enough' behaviors
 
 class HeadMovementCommand(object):
-    def __init__(self, actions, headYaw, headPitch):
+    def __init__(self, actions, headYaw, headPitch, interpTime=1.0):
         self._actions = actions
         self.headYaw = headYaw
         self.headPitch = headPitch
+        self.interpTime = interpTime
     def __call__(self):
-        return self._actions.moveHead(self.headYaw, self.headPitch)
+        return self._actions.moveHead(self.headYaw, self.headPitch, self.interpTime)
 
-class CenteringCommand(object):
+class ComplexAndBrokenCenteringCommand(object):
     """ Turn towards an initial position, then execute centering
     a few times, each time using the most centered position currently
     known to bootstrap."""
@@ -31,6 +32,10 @@ class CenteringCommand(object):
         self._yaw, self._pitch, self._target = headYaw, headPitch, target
         self._repeats = self._total_repeats = repeats
     def onCenteringDone(self):
+        # TODO - Crude hack, to avoid CenteringCommand continuing when searcher is stopped.
+        # real solution - turn this into a Behavior, have Searcher.stop stop the current
+        # command.
+        if self._actions.searcher.stopped: return
         # called both on centering and on target lost
         if self._target.centered_self.sighted_centered or self._repeats <= 0:
             self._bd.callOnDone()
@@ -46,6 +51,18 @@ class CenteringCommand(object):
         self._actions.moveHead(self._yaw, self._pitch).onDone(self.onCenteringDone)
         self._bd = self._actions.make(self)
         return self._bd
+
+class CenteringCommand(object):
+    """ move towards, then call the centerer """
+    def __init__(self, actions, headYaw, headPitch, target):
+        """ repeats - number of times to run centering. First time the
+        target is centered, or if repeats times pass, we call the bd returned
+        """
+        self._actions = actions
+        self._yaw, self._pitch, self._target = headYaw, headPitch, target
+    def __call__(self):
+        return self._actions.headTowards(self._target).onDone(
+            lambda: self._actions.centerer.start(target=self._target))
 
 class TurnCommand(object):
     def __init__(self, actions, thetadelta):
@@ -108,7 +125,11 @@ def searchMovesIterWithCameraSwitching(searcher):
 
 def goalSearchIter(searcher):
     yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_TOP_CAMERA)
-    for headCoordinates in [(pi/2, 0.0), (-pi/2, 0.0)]:
+    #for t in searcher.targets:
+    #    yield lambda: searcher._actions.headTowards(t)
+    cur_yaw = searcher._actions._world.getAngle('HeadYaw')
+    w =  1.0/3.0 # secs for pi turn
+    for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def ballSearchIter(searcher):
@@ -180,8 +201,8 @@ def TargetsAndLocalizationBasedSearchPlanner(searcher, center_on_targets):
     targets = searcher.targets
     world = searcher._world
     for baseIter, predicate, msg in [
-        (goalSearchIter, world.singleGoal,
-            "Looking for a Goal, using specific search interator"),
+        (goalSearchIter, lambda targets: len(set(targets) & world.all_posts) > 0,
+            "Looking for a Goal, using specific search iterator"),
         (ballSearchIter, lambda targets: set(targets) == set([world.ball]),
             "Looking for a Ball, using specific search iterator")
         ]:
@@ -318,6 +339,7 @@ class Searcher(Behavior):
                     self._report("%s, %s" % (self.targets,
                         self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
                 except StopIteration:
+                    self.log("Could not find any of the targets - are you using the right camera?")
                     self.stop() # TODO - say "failed"
             else:
                 self.stop()

@@ -1,0 +1,289 @@
+#VRML_SIM V6.0 utf8
+WorldInfo {
+  info [
+    "Nao robots playing the Robocup standard league"
+    "Olivier Michel <Olivier.Michel@cyberbotics.com>"
+    "Date: 12 OCT 2007"
+  ]
+  title "Nao Robocup"
+  basicTimeStep 40
+  runRealTime TRUE
+}
+Viewpoint {
+  orientation 0.559392 0.61134 0.559772 4.23629
+  position -2.16795 5.75174 -0.192224
+}
+Background {
+  skyColor [
+    0.435294 0.4 0.317647
+  ]
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location 3 1.5 0
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location -3 1.5 0
+}
+PointLight {
+  ambientIntensity 0.2
+  attenuation 0.2 0.2 0.2
+  location 0 1.5 0
+}
+DEF GROUND Solid {
+  children [
+    DEF GREEN1 Transform {
+      translation -3 0 -2
+      children [
+        Shape {
+          appearance DEF GREEN_APPEARANCE Appearance {
+            material Material {
+              diffuseColor 1 1 1
+              shininess 0.05
+              specularColor 0.498039 0.498039 0.498039
+            }
+            texture ImageTexture {
+              url [
+                "textures/final.png"
+              ]
+              repeatS FALSE
+              repeatT FALSE
+            }
+          }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                -1.1 0 2
+                3 0 2
+                3 0 -1
+                -1.1 0 -1
+              ]
+            }
+            texCoord TextureCoordinate {
+              point [
+                0 0
+                1 0
+                1 1
+                0 1
+              ]
+            }
+            coordIndex [
+              0, 1, 2, 3, -1
+            ]
+            texCoordIndex [
+              0, 1, 2, 3
+            ]
+          }
+        }
+      ]
+    }
+    DEF GREEN2 Transform {
+      translation -3 0 0
+      children [
+        Shape {
+          appearance USE GREEN_APPEARANCE
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                -1.1 0 3
+                3 0 3
+                3 0 0
+                -1.1 0 0
+              ]
+            }
+            texCoord TextureCoordinate {
+              point [
+                0 1
+                1 1
+                1 0
+                0 0
+              ]
+            }
+            coordIndex [
+              0, 1, 2, 3, -1
+            ]
+            texCoordIndex [
+              0, 1, 2, 3
+            ]
+          }
+        }
+      ]
+    }
+    DEF GREEN3 Transform {
+      translation 3 0 0
+      rotation 0 1 0 3.14159
+      children [
+        Shape {
+          appearance USE GREEN_APPEARANCE
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                -1.1 0 3
+                3 0 3
+                3 0 0
+                -1.1 0 0
+              ]
+            }
+            texCoord TextureCoordinate {
+              point [
+                0 1
+                1 1
+                1 0
+                0 0
+              ]
+            }
+            coordIndex [
+              0, 1, 2, 3, -1
+            ]
+            texCoordIndex [
+              0, 1, 2, 3
+            ]
+          }
+        }
+      ]
+    }
+    DEF GREEN4 Transform {
+      translation 3 0 2
+      rotation 0 1 0 3.14159
+      children [
+        Shape {
+          appearance USE GREEN_APPEARANCE
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                -1.1 0 2
+                3 0 2
+                3 0 -1
+                -1.1 0 -1
+              ]
+            }
+            texCoord TextureCoordinate {
+              point [
+                0 0
+                1 0
+                1 1
+                0 1
+              ]
+            }
+            coordIndex [
+              0, 1, 2, 3, -1
+            ]
+            texCoordIndex [
+              0, 1, 2, 3
+            ]
+          }
+        }
+      ]
+    }
+  ]
+  name "ground"
+  boundingObject Group {
+    children [
+      IndexedFaceSet {
+        coord Coordinate {
+          point [
+            4.1 0 3
+            4.1 0 -3
+            -4.1 0 -3
+            -4.1 0 3
+          ]
+        }
+        coordIndex [
+          0, 1, 2, 3
+        ]
+      }
+      Transform {
+        translation 4.6 0.5 0
+        children [
+          Box {
+            size 1 1 6
+          }
+        ]
+      }
+      Transform {
+        translation -4.6 0.5 0
+        children [
+          Box {
+            size 1 1 6
+          }
+        ]
+      }
+      Transform {
+        translation 0 0.5 3.5
+        children [
+          Box {
+            size 8.2 1 1
+          }
+        ]
+      }
+      Transform {
+        translation 0 0.5 -3.5
+        children [
+          Box {
+            size 8.2 1 1
+          }
+        ]
+      }
+    ]
+  }
+  locked TRUE
+}
+DEF LARGER_YELLOW_GOAL Transform {
+  scale 1.07 1.07 1.07
+  children [
+    DEF YELLOW_GOAL Goal {
+      translation -3.11 0 0
+      rotation 0 1 0 3.14159
+    }
+    DEF BLUE_GOAL Goal {
+      translation 3.11 0 0
+      postColor 0 0.5 1
+    }
+  ]
+}
+DEF BALL Solid {
+  translation -0.101373 0.0428038 -1.15704
+  children [
+    DEF BALL_SHAPE Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.7
+          diffuseColor 1 0.392157 0
+          shininess 0.5
+          specularColor 1 0.392157 0
+        }
+      }
+      geometry Sphere {
+        radius 0.043
+      }
+    }
+  ]
+  boundingObject USE BALL_SHAPE
+  physics Physics {
+    density -1
+    mass 0.1
+    bounce 0.9
+    coulombFriction 0.5
+    forceDependentSlip 0.5
+  }
+}
+DEF RED_GOAL_KEEPER Nao {
+  translation 0.0323356 0.321953 -1.06616
+  rotation 0 -1 0 1.82065
+  color 1 0 0
+  texture [
+    "textures/red_logo.png"
+  ]
+  controller "nao_in_webots64"
+  name "red goal keeper"
+}
+Supervisor {
+  children [
+    Emitter {
+      name "emitter"
+    }
+  ]
+}

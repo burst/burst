@@ -155,29 +155,26 @@ class Centerer(Behavior, TrackMixin):
     def _centeringStep(self):
         if self.stopped: return
         dt = self._world.time - self._target.update_time
-        self.log("%3.2f since target seen" % dt)
+        self.logverbose("%3.2f since target seen, %s" % (dt, self._target))
         if not self._target.recently_seen and dt > CENTERING_GIVE_UP_TIME:
-            if self.verbose:
-                self.log("CenteringStep: %s not seen for %s, calling _on_lost_callback" % (self._target.name, CENTERING_GIVE_UP_TIME))
+            self.logverbose("CenteringStep: %s not seen for %s, calling _on_lost_callback" % (self._target.name, CENTERING_GIVE_UP_TIME))
             return self.stop().onDone(self._on_lost_callback)
         centered, centered_at_pitch_limit, delta_angles, error = self.calculateTracking(self._target,
             normalized_error_x=self._centering_normalized_x_error,
             normalized_error_y=self._centering_normalized_y_error)
-        if self.verbose:
-            self.log("CenteringStep: centered = %s, delta_angles %s, centered_at_pitch_limit = %s" % (centered,
+        self.logverbose("CenteringStep: centered = %s, delta_angles %s, centered_at_pitch_limit = %s" % (centered,
                 delta_angles or 'is None', centered_at_pitch_limit))
         if centered or centered_at_pitch_limit:
-            if self.verbose:
-                self.log("CenteringStep: DONE")
+            self.logverbose("CenteringStep: DONE")
             return self.stop()
         if delta_angles:
-            self.log("Out #1: Delta Angles")
+            self.logverbose("Out #1: Delta Angles")
             # Out path 1: wait for change angles relative to complete
             self._actions.changeHeadAnglesRelative(*delta_angles).onDone(self._centeringStep)
         else: # target.recently_seen is True
             # Out path 2: try to move to the pitch limit (we lost it, let's try finding it the cheap way)
             if self.movehead:
-                self.log("Out #2-move: Moving head up")
+                self.logverbose("Out #2-move: Moving head up")
                 self._actions.changeHeadAnglesRelative(0.0, -0.1).onDone(self._centeringStep)
             else:
                 # old path 2: wait a little

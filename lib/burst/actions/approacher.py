@@ -42,6 +42,15 @@ class Approacher(Behavior):
     def _start(self, firstTime=False):
         self._getTargetPos()
 
+    def _stop(self):
+        # we assume user uses everything, so we stop everything. Override to have different behavior.
+        self._actions.searcher.stop()
+        self._actions.tracker.stop()
+        self._actions.centerer.stop()
+        self._actions.clearFootsteps()
+        self._actions.localizer.stop()
+        return self._actions.succeed(self)
+    
     def _getTargetPos(self):
         """ This can potentially take a long time (localize) or be instantaneous. Since
         we just need an x,y,h coming out of this and into _approach, we don't care. Also,
@@ -54,6 +63,7 @@ class Approacher(Behavior):
         """
         Do a single movement towards the target location given by target_pos_callback
         """
+        if self.stopped: return
 
         if self._actions.isMotionInProgress():
             self.log("WARNING: motion still in progress, waiting for original onDone")
@@ -71,68 +81,69 @@ class Approacher(Behavior):
         self._actions.setCameraFrameRate(10).onDone(lambda:
             self._movement_callback(delta_x=x, delta_y=y, delta_theta=h).onDone(self._getTargetPos))
 
-    def _kickerMovementFromRelativeTarget(self, x, y, h):
-        """ Temporary - this is the kicker strategy, here as a reference. We'll start
-        out with the much simpler 'just use changeLocationRelative' strategy.
+################################################################################
+def kickerMovementFromRelativeTarget(x, y, h):
+    """ Temporary - this is the kicker strategy, here as a reference. We'll start
+    out with the much simpler 'just use changeLocationRelative' strategy.
 
-        decide any carry out the best way to reach x,y,h change. Simplest
-        is just doing a changeLocationRelative, but possibly we want to do Sideways
-        or Turns otherwise - that's what BallKicker does.
-        """
-        from burst.behavior_params import (calcTargetXY,
-            # Area types (where is the ball, err, target, in relation to me)
-            BALL_IN_KICKING_AREA, BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_BETWEEN_LEGS, BALL_SIDE_NEAR,
-            BALL_DIAGONAL, BALL_SIDE_NEAR, BALL_SIDE_FAR,
-            # Other stuff
-            MOVEMENT_PERCENTAGE_TURN, MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS,
-            # Movement types (for logging)
-            MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN
-            )
+    decide any carry out the best way to reach x,y,h change. Simplest
+    is just doing a changeLocationRelative, but possibly we want to do Sideways
+    or Turns otherwise - that's what BallKicker does.
+    """
+    from burst.behavior_params import (calcTargetXY,
+        # Area types (where is the ball, err, target, in relation to me)
+        BALL_IN_KICKING_AREA, BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_BETWEEN_LEGS, BALL_SIDE_NEAR,
+        BALL_DIAGONAL, BALL_SIDE_NEAR, BALL_SIDE_FAR,
+        # Other stuff
+        MOVEMENT_PERCENTAGE_TURN, MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS,
+        # Movement types (for logging)
+        MOVE_FORWARD, MOVE_SIDEWAYS, MOVE_TURN
+        )
 
-        (side, kp_x, kp_y, kp_dist, kp_bearing, target_location,
-                kick_side_offset) = calcTargetXY(x, y) # TODO - we use calcTargetXY, but ignore the kp_x, kp_y
+    (side, kp_x, kp_y, kp_dist, kp_bearing, target_location,
+            kick_side_offset) = calcTargetXY(x, y) # TODO - we use calcTargetXY, but ignore the kp_x, kp_y
 
-        ### DECIDE ON NEXT MOVEMENT ###
-        # TODO? - remove BALL language and change to TARGET language?
-        # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
-        if target_location == BALL_IN_KICKING_AREA:
-            self.log("Done from self")
-            self.stop()
-            return
+    ### DECIDE ON NEXT MOVEMENT ###
+    # TODO? - remove BALL language and change to TARGET language?
+    # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
+    if target_location == BALL_IN_KICKING_AREA:
+        return None
 
-        def move_forward(target_location):
-            return (self._actions.changeLocationRelative(x), MOVE_FORWARD)
-            # TODO - the obstacle thing
-            if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
-                opposite_side_from_obstacle = self.getObstacleOppositeSide()
-                print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
-                return (self._actions.changeLocationRelativeSideways(
-                    0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
-            else:
-                return (self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD), MOVE_FORWARD)
-
-        def move_sideways(target_location):
+    def move_forward(target_location):
+        return (self._actions.changeLocationRelative(x), MOVE_FORWARD)
+        # TODO - the obstacle thing
+        if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
+            opposite_side_from_obstacle = self.getObstacleOppositeSide()
+            print "opposite_side_from_obstacle: %d" % opposite_side_from_obstacle
             return (self._actions.changeLocationRelativeSideways(
-                0.0, y, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
+                0.0, 30.0*opposite_side_from_obstacle, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
+        else:
+            return (self._actions.changeLocationRelative(kp_x*MOVEMENT_PERCENTAGE_FORWARD), MOVE_FORWARD)
 
-        def move_turn(target_location):
-            return self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN), MOVE_TURN
+    def move_sideways(target_location):
+        return (self._actions.changeLocationRelativeSideways(
+            0.0, y, walk=walks.SIDESTEP_WALK), MOVE_SIDEWAYS)
 
-        type_to_msg = {MOVE_FORWARD:'Walking straight',
-            MOVE_SIDEWAYS:'Side-stepping!', MOVE_TURN:'Turning!'}
+    def move_turn(target_location):
+        return self._actions.turn(kp_bearing*MOVEMENT_PERCENTAGE_TURN), MOVE_TURN
 
-        action_selection = dict(sum(
-            [[(area, movement) for area in areas] for areas, movement in
-                (((BALL_FRONT_NEAR, BALL_FRONT_FAR), move_forward),
-                 ((BALL_BETWEEN_LEGS, BALL_SIDE_NEAR), move_sideways),
-                 ((BALL_DIAGONAL, BALL_SIDE_FAR), move_turn))]
-            , []))
+    type_to_msg = {MOVE_FORWARD:'Walking straight',
+        MOVE_SIDEWAYS:'Side-stepping!', MOVE_TURN:'Turning!'}
 
-        bd = None
-        if target_location in action_selection:
-            self._actions.setCameraFrameRate(10)
-            bd, movement_type = action_selection[target_location](target_location)
-        self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! target location problematic!"))
+    action_selection = dict(sum(
+        [[(area, movement) for area in areas] for areas, movement in
+            (((BALL_FRONT_NEAR, BALL_FRONT_FAR), move_forward),
+             ((BALL_BETWEEN_LEGS, BALL_SIDE_NEAR), move_sideways),
+             ((BALL_DIAGONAL, BALL_SIDE_FAR), move_turn))]
+        , []))
+
+    bd = None
+    if target_location in action_selection:
+        self._actions.setCameraFrameRate(10)
+        bd, movement_type = action_selection[target_location](target_location)
+    return bd
+    #self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! target location problematic!"))
+
 
 ################################################################################
 
@@ -154,10 +165,11 @@ def getTargetPosition(actions, world_x, world_y, world_heading, close_enough=50,
     rel_x, rel_y = dx * ch - dy * ch, dx * sh + dy * ch # TODO - check me
     dist2 = rel_x**2 + rel_y**2
     if dist2 <= close_enough**2:
-        print "getTargetPosition: close enough (%3.2f <= %3.2f)" % (sqrt(dist2), close_enough)
+        print "Approacher: getTargetPosition: close enough (%3.2f <= %3.2f)" % (sqrt(dist2), close_enough)
         return None
-    print "getTargetPosition: rel_x = %3.2f cm, rel_y = %3.2f cm (dx %3.2f, dy %3.2f, head %3.2f)" % (
-        rel_x, rel_y, dx, dy, our_heading)
+    print "Approacher: getTargetPosition: %s->%s, rel=(%3.2f,%3.2f) delta=(%3.2f, %3.2f, h %3.2f)" % (
+        '%2.3f,%2.3f,h%2.3f' % (our_x, our_y, our_heading),
+        '%2.3f,%2.3f,h%2.3f' % (world_x, world_y, world_heading), rel_x, rel_y, dx, dy, our_heading)
     return rel_x, rel_y, dh
 
 def TurtleTurn(actions, x, y, heading, steps):
@@ -185,13 +197,18 @@ def TurtleTurn(actions, x, y, heading, steps):
     return Approacher(actions, lambda: succeed(target_pos_callback()))
 
 def ApproachXYHActiveLocalization(actions, x, y, h):
-    return Approacher(actions, lambda: actions.localize().getDeferred().addCallback(
+    approacher = Approacher(actions, lambda: actions.localize().getDeferred().addCallback(
         lambda _: getTargetPosition(actions, x, y, h)))
+    approacher.target_world_x = x
+    approacher.target_world_y = y
+    approacher.target_world_h = h
+    return approacher
 
 def ApproachTarget(actions, target):
     # TODO - I think this doesn't stop right. Should really do the Behavior thing
     # to make sure stop cleans up.
     def getTargetPosition(_):
+        print target.bearing, target.dist
         bearing, dist = target.bearing, target.dist
         return polar2cart(dist, bearing)
     return Approacher(actions, lambda: actions.search([target]).getDeferred().addCallback(getTargetPosition))

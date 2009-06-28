@@ -2,6 +2,11 @@
 
 blue=$1
 red=$2
+if [ "x$3" != "x" ]; then
+    broadcast="-broadcast $3"
+else
+    broadcast=
+fi
 
 # b-human is 3, burst is 4 - from teams.cfg
 
@@ -13,4 +18,5 @@ if [ ! -e GameController.jar ]; then
  cd ..
 fi
 # -quiet - should stop the ticking (the sound!)
-java -jar GameController.jar -quiet -numplayers 3 ${blue} ${red}
+java -jar GameController.jar -quiet -numplayers 3 ${broadcast} ${blue} ${red}
+

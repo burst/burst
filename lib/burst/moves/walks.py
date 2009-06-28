@@ -8,7 +8,8 @@ class Walk(object):
 
     SlowestSpeed, FastestSpeed, DefaultSpeed = object(), object(), object()
 
-    def __init__(self, walkParameters, defaultSpeed=None, slowestSpeed=150, fastestSpeed=100):
+    def __init__(self, name, walkParameters, defaultSpeed=None, slowestSpeed=150, fastestSpeed=100):
+        self.name = name
         self.walkParameters = walkParameters # TODO
         self.slowestSpeed = slowestSpeed
         self.fastestSpeed = fastestSpeed
@@ -41,7 +42,7 @@ class Walk(object):
 
 # WALKS
 
-TURN_WALK = Walk(WalkParameters([
+TURN_WALK = Walk('TURN_WALK', WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian
@@ -59,7 +60,7 @@ TURN_WALK = Walk(WalkParameters([
            100          # 20ms count per step
     )
 
-STRAIGHT_WALK = Walk(WalkParameters([
+STRAIGHT_WALK = Walk('STRAIGHT_WALK', WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian
@@ -77,7 +78,7 @@ STRAIGHT_WALK = Walk(WalkParameters([
            25          # 20ms count per step
     )
 
-SIDESTEP_WALK = Walk(WalkParameters([
+SIDESTEP_WALK = Walk('SIDESTEP_WALK', WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            20.0 * DEG_TO_RAD,  # ShoulderAmplitude
            30.0 * DEG_TO_RAD,  # ElbowMedian
@@ -99,7 +100,7 @@ SIDESTEP_WALK = Walk(WalkParameters([
 
 ## PREVIOUS TURN / SIDESTEP ROUTINES
 
-#TURN_WALK = Walk(WalkParameters([
+#TURN_WALK = Walk("TURN_WALK", WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           15.0 * DEG_TO_RAD,  # ShoulderAmplitude
 #           30.0 * DEG_TO_RAD,  # ElbowMedian
@@ -117,7 +118,7 @@ SIDESTEP_WALK = Walk(WalkParameters([
 #           150          # 20ms count per step
 #    )
 
-#SIDESTEP_WALK = Walk(WalkParameters([
+#SIDESTEP_WALK = Walk("SIDESTEP_WALK", WalkParameters([
 #           100.0 * DEG_TO_RAD, # ShoulderMedian
 #           10.0 * DEG_TO_RAD,  # ShoulderAmplitude
 #           20.0 * DEG_TO_RAD,  # ElbowMedian
@@ -147,7 +148,7 @@ SIDESTEP_WALK = Walk(WalkParameters([
 
 '''
 STABLE_PAIR = (STABLE_WALK, poses.STABLE_WALK_INITIAL_POSE)
-STABLE_WALK = Walk(WalkParameters([
+STABLE_WALK = Walk("STABLE_WALK", WalkParameters([
            100.0 * DEG_TO_RAD, # ShoulderMedian
            10.0 * DEG_TO_RAD,  # ShoulderAmplitude
            20.0 * DEG_TO_RAD,  # ElbowMedian

@@ -22,11 +22,12 @@ def moveDegToRad(move):
     return [convertPose(pose) for pose in move]
 
 ''' BODY POSITIONS '''
-INITIAL_POS = moveDegToRad([((0.,0.),
+INITIAL_POS_DEG = [((0.,0.),
                 (90.,20.,-80.,-45.),
                 (0.,0.,-25.,40.,-20.,0.),
                 (0.,0.,-25.,40.,-20.,0.),
-                (90.,-20.,80.,45.),4.0),])
+                (90.,-20.,80.,45.),4.0)]
+INITIAL_POS = moveDegToRad(INITIAL_POS_DEG)
 
 #Angles measured pretty exactly from the robot w/gains off.
 #might want to make them even different if we suspect the motors are weakening
@@ -549,10 +550,10 @@ STAND_UP_FRONT = moveDegToRad((
                     (0,0,-60,120,-60,0),
                     (93,-10,90,80),1.0),
 
-                   ( INITIAL_POS[0][1], # start from [1] to skip head
-                     INITIAL_POS[0][2],
-                     INITIAL_POS[0][3],
-                     INITIAL_POS[0][4],0.5)))
+                   ( INITIAL_POS_DEG[0][1], # start from [1] to skip head
+                     INITIAL_POS_DEG[0][2],
+                     INITIAL_POS_DEG[0][3],
+                     INITIAL_POS_DEG[0][4],0.5)))
 
 STAND_UP_BACK = moveDegToRad((
                   ((0,90,0,0),
@@ -606,10 +607,10 @@ STAND_UP_BACK = moveDegToRad((
                    (0,0,-50,120,-70,0),
                    (98,-2,72,65), 1.1),
 
-                  ( INITIAL_POS[0][1], # Start from [1] to skip head
-                    INITIAL_POS[0][2],
-                    INITIAL_POS[0][3],
-                    INITIAL_POS[0][4],0.5)))
+                  ( INITIAL_POS_DEG[0][1], # Start from [1] to skip head
+                    INITIAL_POS_DEG[0][2],
+                    INITIAL_POS_DEG[0][3],
+                    INITIAL_POS_DEG[0][4],0.5)))
 
 #STABLE_WALK_INITIAL_POSE = [
 #                (HEAD_POS_FRONT_BOTTOM,

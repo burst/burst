@@ -53,10 +53,12 @@ webots:
 pynaoqi:
 	cd src/imops; $(MAKE) pynaoqi
 
-install: Makefile.local burstmem recordermodule colortable
+robot: Makefile.local burstmem recordermodule colortable imops
+
+install: robot
 	rsync -avr --exclude "*.pyc" --exclude ".*.sw?" --exclude imops_pynaoqi*.so --exclude *.kcachegrind lib root@$(ROBOT):/home/root/burst/
 
-installall: imops install
+installall: install
 	# TODO - we use two rsyncs, hence two connections - can this be done better (one ssh session, not two)?
 	rsync -v $(MODULES) root@$(ROBOT):/opt/naoqi/modules/lib
 

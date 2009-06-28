@@ -134,16 +134,18 @@ class EventManager(object):
 
     _break_on_next_deferred = False
 
-    def __init__(self, world):
+    def __init__(self, mainloop, world):
         """ In charge of computing when certain events happen, keeping track
         of callbacks, and calling them.
         """
         # The _events maps from an event enum to a set of callbacks (so order
         # of callback is undefined)
         self.verbose = burst.options.verbose_eventmanager
+        self.frame = 0 # number of steps.
         self.num_callbacks_to_report = 2
         self._clearEventsAndCallbacks()
         self._world = world
+        self._mainloop = mainloop # for updateTimeStep
         self.burst_deferred_maker = self._world.burst_deferred_maker
         self._should_quit = False
         self._call_later = [] # heap of tuples: absolute_time, callback, args, kw
@@ -168,6 +170,13 @@ class EventManager(object):
 
     def resetCallLaters(self): # TODO: This should probably be removed. Considered harmful.
         del self._call_later[:]
+
+    # World / Actions API
+    def updateTimeStep(self, dt):
+        self.dt = dt
+        self._mainloop.updateTimeStep(dt)
+
+    # User (Player, Behavior - from within the loop)
 
     def callLater(self, dt, callback, *args, **kw):
         """ Will call given callback after an approximation of dt milliseconds,
@@ -202,6 +211,7 @@ class EventManager(object):
         if event in self._callbacks[callback]:
             if burst.options.verbose_reregister:
                 info( "WARNING: harmless re-register of %s to %s" % (func_name(callback), event_name(event)))
+            return
         self._callbacks[callback].add(event)
         # add to _events
         self._events[event].add(callback)
@@ -250,6 +260,7 @@ class EventManager(object):
             self._events[k] = set()
 
     def quit(self):
+        print "EventManager.quit called"
         self._should_quit = True
 
     def _removeAllPendingCallbacks(self):
@@ -262,6 +273,7 @@ class EventManager(object):
     def computePendingCallbacks(self):
         """ mainly split off from handlePendingCallbacks to allow easier debugging,
         by printing each frame's callbacks """
+        self.frame += 1
         self._pending_events, deferreds = self._world.getEventsAndDeferreds()
         self._pending_deferreds = list(deferreds) # make copy, avoid endless loop
 
@@ -297,6 +309,13 @@ class EventManager(object):
                 self._num_call_laters)
 
     def numberPendingCallbacks(self):
+        return self._num_cbs_in_round
+
+    def numberImportantPendingCallbacks(self):
+        # TODO - Important? goes along with Intelligent and Object as good names
+        if self._num_cbs_in_round > 0 and self._num_events > 0:
+            #import pdb; pdb.set_trace()
+            pass # TODO
         return self._num_cbs_in_round
 
     def handlePendingCallbacks(self):
@@ -396,6 +415,12 @@ class BasicMainLoop(object):
         # debug flags
         self._ticker = burst.options.ticker or burst.options.trace_proxies
 
+    # EventManager API (only one function)
+    def updateTimeStep(self, dt):
+        """ here to allow loops that don't just use eventmanager.dt to update themselves,
+        i.e. twisted, pynaoqi """
+        pass
+
     def _getNumberOutgoingMessages(self):
         return 0 # implemented just in twisted for now
 
@@ -413,7 +438,7 @@ class BasicMainLoop(object):
 
         # main objects: world, eventmanager, actions and player
         self._world = world.World()
-        self._eventmanager = EventManager(world = self._world)
+        self._eventmanager = EventManager(mainloop = self, world = self._world)
         self._actions = actions.Actions(eventmanager = self._eventmanager)
         self._world._setActions(self._actions) # they shall never part now (nor be garbage collected. ti's ok)
         if self._main_behavior_class is None:
@@ -569,6 +594,9 @@ class BasicMainLoop(object):
             bottom = self._actions.switchToBottomCamera
             for what, dt in sum([[(top, b), (top, b+0.05), (top, b+0.1), (bottom, b+0.2), (bottom, b+0.25), (bottom, b+0.3)] for b in (0.0, 0.5)], []):
                 self._eventmanager.callLater(dt, what)
+        # Camera Switch to Bottom:
+        #  can do this without waiting (better to set a barrier - i.e. deferredList)
+        self._actions.switchToBottomCamera()
         self._actions._initPoseAndStiffness(self._player._main_behavior._initial_pose).onDone(setLegalAndCallPlayerOnStart)
 
     def doSingleStep(self):
@@ -582,7 +610,7 @@ class BasicMainLoop(object):
         """
         self._eventmanager.computePendingCallbacks()
         # Print ticker after computing all callbacks/events, but before executing them
-        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberPendingCallbacks() > 0):
+        if burst.options.trace_proxies or (self._ticker and self._eventmanager.numberImportantPendingCallbacks() > 0):
             self._printTraceTicker()
 
         # reverse the order? arg.
@@ -794,6 +822,11 @@ class TwistedMainLoop(BasicMainLoop):
         self._startBanner("running TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000))
         self._main_task = task.LoopingCall(self.onTimeStep)
         self._main_task.start(self._eventmanager.dt)
+
+    def updateTimeStep(self, dt):
+        """ here to allow loops that don't just use eventmanager.dt to update themselves,
+        i.e. twisted, pynaoqi """
+        self._main_task.interval = dt
 
     def _run_loop(self):
         if not self._control_reactor:

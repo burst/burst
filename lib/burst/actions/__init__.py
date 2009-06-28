@@ -1,10 +1,12 @@
 from math import atan2, asin
 from twisted.internet.defer import log
+import logging
 
 import burst
 from burst_consts import *
 from burst_util import (transpose, cumsum, succeed, func_name,
-    Deferred, DeferredList, chainDeferreds, returnsbd)
+    Deferred, DeferredList, chainDeferreds, returnsbd, whocalledme,
+    whocalledme_outofclass)
 from burst_events import *
 import burst.moves.choreograph as choreograph
 import burst.moves.poses as poses
@@ -27,13 +29,33 @@ from burst_consts import (InitialRobotState,
     FinishGameState, PenalizedRobotState, UNKNOWN_PLAYER_STATUS,
     is_120)
 
-def stopped(behaviors):
+################################################################################
+logger = logging.getLogger("actions")
+info = logger.info
+################################################################################
+
+def stopped(behavior_names):
     def wrap(f):
         def wrapper(self, *args, **kw):
-            not_stopped = [k for k in behaviors if not getattr(self, k).stopped]
-            if len(not_stopped) > 0:
-                raise Exception("Can't start %s while %s" % (func_name(f), ','.join(str(x) for x in not_stopped)))
+            not_stopped = [k for k in behavior_names if not getattr(self, k).stopped]
+            wanted_func_name = func_name(f)
+            for conflicted in not_stopped:
+                info("ERROR: Stopping %s to run %s (note - not using BD's)" % (conflicted, wanted_func_name))
+                getattr(self, conflicted).stop() # TODO - onDone chain those things
             return f(self, *args, **kw)
+        wrapper.func_doc = f.func_doc
+        wrapper.func_name = f.func_name
+        return wrapper
+    return wrap
+
+def setfps(fps):
+    """ set fps on an Actions method """
+    def wrap(f):
+        def wrapper(self, *args, **kw):
+            self.setCameraFrameRate(fps)
+            return f(self, *args, **kw)
+        wrapper.func_doc = f.func_doc
+        wrapper.func_name = f.func_name
         return wrapper
     return wrap
 
@@ -45,6 +67,7 @@ head_moves_allowed = any_move_allowed.union([InitialRobotState, FinishGameState]
 _use_legal = False # Global (module) flag, set by MainLoop before calling onStart of robot,o
                    # and after quit initated, for initPose and for sit pose at start and end respectively.
 
+illegal_become_calllater = False # so they just never get called
 def legal(f, group):
     """ disallow movement according to state, according to the SPL 2009 rules.
     They basically say:
@@ -60,8 +83,11 @@ def legal(f, group):
         if not _use_legal or state in group:
             return f(self, *args, **kw)
         else: # buddy, stop right here!
-            print "Actions: ILLEGAL ROBOCUP MOVE: %s; turning into a calllater" % f.func_name
-            return self._eventmanager.callLaterBD(self._eventmanager.dt)
+            what_msg = 'turning into a callLater' if illegal_become_calllater else 'oblivi-ized'
+            print "Actions: ILLEGAL ROBOCUP MOVE: %s; %s" % (f.func_name, what_msg)
+            if illegal_become_calllater:
+                return self._eventmanager.callLaterBD(self._eventmanager.dt)
+            return self.make('will never be called') # TODO - DeathBedBD?
     wrapper.func_doc = f.func_doc
     wrapper.func_name = f.func_name
     return wrapper
@@ -119,11 +145,13 @@ class Actions(object):
         self._imops = world.getImopsProxy()
 
         self._current_camera = None # This is based on our commands only - we are the only ones changing it
+        self._current_fps = burst_consts.INITIAL_FRAME_PER_SECOND
 
         self._joint_names = self._world.jointnames
         self._journey = Journey(self)
         self._movecoordinator = self._world._movecoordinator
         self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
+        self._camera_switch_time = world.time
         self.tracker = Tracker(self)        # Please remember to stop # Todo - Locking
         self.centerer = Centerer(self)       # Please remember to stop 
         self.searcher = Searcher(self)      # all of these behaviors
@@ -147,7 +175,7 @@ class Actions(object):
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
 
-    @returnsbd
+    @returnsbd # must be first
     def kickBall(self, target_left_right_posts, target_world_frame=None):
         """ Kick the Ball. Returns an already initialized BallKicker instance which
         can be used to stop the current activity.
@@ -169,21 +197,22 @@ class Actions(object):
         ballkicker.start()
         return ballkicker
 
-    @returnsbd
+    @returnsbd # must be first
     def passBall(self, target_world_frame=None):
         passingChallange = passBall(self._eventmanager, self)
         passingChallange.start()
         return passingChallange
 
+    @stopped(['searcher', 'centerer'])
+    @setfps(20)
     def track(self, target, lostCallback=None):
         """ Track an object that is seen. If the object is not seen,
         does nothing. """
-        if not self.searcher.stopped or not self.centerer.stopped:
-            raise Exception("Can't start tracking while searching")
         return self.tracker.start(target=target, lostCallback=lostCallback)
 
+    @returnsbd # must be first
     @stopped(['tracker', 'centerer'])
-    @returnsbd
+    @setfps(20)
     def search(self, targets, center_on_targets=True, stop_on_first=False):
         if stop_on_first:
             return self.searcher.search_one_of(targets, center_on_targets)
@@ -200,7 +229,7 @@ class Actions(object):
             normalized_error_x=normalized_error_x,
             normalized_error_y=normalized_error_y)
 
-    @returnsbd
+    @returnsbd # must be first
     def localize(self):
         return self.localizer.start() # a Behavior, hence a BurstDeferred
 
@@ -208,7 +237,7 @@ class Actions(object):
     #    Mid Level - any motion that uses callbacks
     #===============================================================================
 
-    @returnsbd
+    @returnsbd # must be first (since other wrappers don't copy the attributes..)
     @legal_any
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
@@ -234,7 +263,7 @@ class Actions(object):
             distance=distance, bearing=bearing)
         return self._current_motion_bd
 
-    @returnsbd
+    @returnsbd # must be first
     @legal_any
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
         print walk
@@ -252,7 +281,7 @@ class Actions(object):
         return self._current_motion_bd
 
     # TODO: Change to walkSideways()
-    @returnsbd
+    @returnsbd # must be first
     @legal_any
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
@@ -310,10 +339,10 @@ class Actions(object):
 
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
-                    description=('sideway', delta_x, delta_y, walk))
+                    description=('sideway', delta_x, delta_y, walk.name))
         return self._current_motion_bd
 
-    @returnsbd
+    @returnsbd # must be first
     @legal_any
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
         #handle divide by zero 
@@ -349,11 +378,11 @@ class Actions(object):
         duration = 10
         d = chainDeferreds(dgens)
         self._current_motion_bd = self._movecoordinator.walk(d, duration=duration,
-                    description=('arc', delta_x, delta_y, walk))
+                    description=('arc', delta_x, delta_y, walk.name))
         return self._current_motion_bd
 
 
-    @returnsbd
+    @returnsbd # must be first
     @legal_any
     def sitPoseAndRelax(self): # TODO: This appears to be a blocking function!
         self._current_motion_bd = self.wrap(self.sitPoseAndRelax_returnDeferred(), data=self)
@@ -425,37 +454,47 @@ class Actions(object):
     #    Low Level
     #===============================================================================
 
-    @returnsbd
     def switchToTopCamera(self):
-        print "_"*20 + "SWITCHING TO top CAMERA" + '_'*20
-        self.currentCamera = CAMERA_WHICH_TOP_CAMERA
-        return self.wrap(self._imops.switchToTopCamera(), self)
+        return self.setCamera(CAMERA_WHICH_TOP_CAMERA)
 
-    @returnsbd
     def switchToBottomCamera(self):
-        print "_"*20 + "SWITCHING TO bottom CAMERA" + '_'*20
-        self.currentCamera = CAMERA_WHICH_BOTTOM_CAMERA
-        return self.wrap(self._imops.switchToBottomCamera(), self)
+        return self.setCamera(CAMERA_WHICH_BOTTOM_CAMERA)
 
-    # don't wrap - calls two wrapped routines
-    def setCamera(self, whichCamera):
+    @returnsbd # must be first (doesn't add to call stack)
+#    @whocalledme_outofclass
+    def setCamera(self, whichCamera, force=False):
         """ Set camera used, we have two: top and bottom.
         whichCamera in [burst_consts.CAMERA_WHICH_TOP_CAMERA, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA]
         """
-        if self._current_camera == whichCamera:
-            bd = self.succeed(self)
+        # Switching camera's doesn't always work. So we need to actually check for it.
+        # Not sure if this is a webots problem or not, but assuming it isn't webots.
+        if self._current_camera == whichCamera and not force:
+            return self.succeed(self)
+        dt_since_last = self._world.time - self._camera_switch_time
+        if dt_since_last < burst_consts.CAMERA_SWITCH_WAIT:
+            print "_"*20 + "Delaying camera switch" + "_"*20
+            return self._eventmanager.callLaterBD(
+                burst_consts.CAMERA_SWITCH_WAIT - dt_since_last).onDone(
+                    lambda: self.setCamera(whichCamera=whichCamera, force=force))
+        self._camera_switch_time = self._world.time
+        if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
+            s, switcher = 'bottom', self._imops.switchToBottomCamera
         else:
-            if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
-                bd = self.switchToBottomCamera()
-            else:
-                bd = self.switchToTopCamera()
-            self._current_camera = whichCamera
-        return bd
+            s, switcher = 'top', self._imops.switchToTopCamera
+        print "_"*20 + "SWITCHING TO %s CAMERA %3.2f" % (s, dt_since_last) + '_'*20
+        d = switcher()
+        import time
+#        time.sleep(0.5)  # HACK because of switching problem.
+        self._current_camera = whichCamera
+        return self.wrap(d, self)
 
-    @returnsbd
+    @returnsbd # must be first
     def setCameraFrameRate(self, fps):
+        if self._current_fps == fps: return
+        self._current_fps = fps
+        print "_"*20 + "SETTING FPS TO %s" % fps + "_"*20
         bd = self.make(self)
-        self._eventmanager.dt = 1.0/fps # convert number of frames per second to dt
+        self._eventmanager.updateTimeStep(1.0/fps) # convert number of frames per second to dt
         self._imops.setFramesPerSecond(float(fps)).addCallback(lambda _: bd.callOnDone()).addErrback(log.err)
         return bd
 
@@ -542,7 +581,7 @@ class Actions(object):
             interp_type, description = description)
         return self._current_motion_bd
 
-    @returnsbd
+    @returnsbd # must be first
     @legal_head
     def executeHeadMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('headmove',)):
         """ Go through a list of head angles
@@ -585,6 +624,13 @@ class Actions(object):
             print "MOVE HEAD to %s, %s" % (x, y)
         return self.executeHeadMove([((float(x), float(y)), interp_time)],
             description=('movehead', x, y))
+
+    def headTowards(self, target, interp_time=1.0):
+        # just recorded yaw and pitch
+        #x, y = target.centered_self.head_yaw, target.centered_self.head_pitch
+        # also include vision information
+        x, y = target.centered_self.estimated_yaw_and_pitch_to_center()
+        return self.moveHead(x=x, y=y, interp_time=interp_time)
 
     def blockingStraightWalk(self, distance):
         if self.isMotionInProgress():

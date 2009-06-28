@@ -34,34 +34,15 @@ NAOQI_1_2_0 = 'NaoQi 1.2.0'
 #                                                                              #
 ################################################################################
 
+# From teams.cfg, in GameStateVisualizer 2009
+BURST_TEAM_NUMBER = 4
+
 # which version of naoqi are we using
 NAOQI_VERSION=NAOQI_1_2_0 # NAOQI_1_3_8
 
 # Wait for a configure event when no game controller present
 ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
 
-# From teams.cfg, in GameStateVisualizer 2009
-BURST_TEAM_NUMBER = 4
-
-# Operating Environment constants
-ROBOT_IP_TO_NAME = {
-    '192.168.5.126'	: MESSI,
-    '192.168.5.170'	: GERRARD,
-    '192.168.5.226'	: CECH,
-    '192.168.5.168'	: HAGI,
-    '192.168.5.224'	: RAUL,
-    '192.168.5.228'	: MALDINI,
-}
-import linecache
-hosts = linecache.getlines('/etc/hosts')
-__rev = dict([(h,i) for i,h in ROBOT_IP_TO_NAME.items()])
-for l in hosts:
-    parts = l.split()
-    if len(parts) != 2: continue
-    ip, host = parts
-    if host in ROBOT_IP_TO_NAME.values() and __rev[host] != ip:
-        print "WARNING: overriding %s from hosts file, from %s to %s" % (host, __rev[host], ip)
-        ROBOT_IP_TO_NAME[ip] = host
 # Jersey numbers:
 # 1 == goalie
 GOALIE_JERSEY = 1
@@ -88,6 +69,26 @@ JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS = {
     SECONDARY_JERSEY: 'players.kicker.Kicker',
 }
 
+# Operating Environment constants
+ROBOT_IP_TO_NAME = {
+    '192.168.5.126'	: MESSI,
+    '192.168.5.170'	: GERRARD,
+    '192.168.5.226'	: CECH,
+    '192.168.5.168'	: HAGI,
+    '192.168.5.224'	: RAUL,
+    '192.168.5.228'	: MALDINI,
+}
+import linecache
+hosts = linecache.getlines('/etc/hosts')
+__rev = dict([(h,i) for i,h in ROBOT_IP_TO_NAME.items()])
+for l in hosts:
+    parts = l.split()
+    if len(parts) != 2: continue
+    ip, host = parts
+    if host in ROBOT_IP_TO_NAME.values() and __rev[host] != ip:
+        print "WARNING: overriding %s from hosts file, from %s to %s" % (host, __rev[host], ip)
+        ROBOT_IP_TO_NAME[ip] = host
+
 ################################################################################
 # File locations, Shared memory
 ################################################################################
@@ -106,17 +107,11 @@ BURST_SHARED_MEMORY_VARIABLES_START_OFFSET = 8
 MMAP_FILENAME           = "/home/root/burst/lib/etc/burstmem.mmap"
 MMAP_LENGTH      = 4096
 
-
 ################################################################################
-# Important other constants (parameters for various behaviors)
+#
+#                   Ready State - Approacher
+#
 ################################################################################
-
-# shortcut variable, True if this is naoqi version 1.2.0
-is_120 = NAOQI_VERSION == NAOQI_1_2_0
-
-# WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
-# 'initial_position' - world coordinates
-INITIAL_POSITION = 'initial_position'
 
 SECONDARY_ATTACK_LEFT_INITIAL_Y  = -CENTER_CIRCLE_RADIUS*1.5
 SECONDARY_ATTACK_RIGHT_INITIAL_Y =  CENTER_CIRCLE_RADIUS*1.5
@@ -130,8 +125,12 @@ GOALIE_DONT_HIDE_DIST = 40.0
 WHITE_LINE_BUFFER = 20.0 # cm from white line we compensate for inaccuracy in localization and no white line detection
 PENALTEY_BUFFER = 20.0
 
+# WeAreKickOffTeam (True/False) -> Jersey number -> Ready params (dict)
+# INITIAL_POSITION - world coordinates
+INITIAL_POSITION = 'initial_position'
+
 READY_INITIAL_LOCATIONS = {
-    # We are the Kick off team - Attacking positions
+    # True - We are the Kick off team - Attacking positions
     True: {
         GOALIE_JERSEY: {
             INITIAL_POSITION: (0.0, 0.0), # TODO - lambda that determines? would be pretty cool
@@ -143,6 +142,7 @@ READY_INITIAL_LOCATIONS = {
             INITIAL_POSITION: (MIDFIELD_X - WHITE_LINE_BUFFER, SECONDARY_ATTACK_INITIAL_Y),
         },
     },
+    # False - We are the defending team - Defense positions
     False: {
         GOALIE_JERSEY: {
             INITIAL_POSITION: (0.0, 0.0),
@@ -156,8 +156,19 @@ READY_INITIAL_LOCATIONS = {
     }
 }
 
+################################################################################
+# Important other constants (parameters for various behaviors)
+################################################################################
+
 # Event Manager constants
 DEFAULT_EVENT_MANAGER_DT = 0.1 # seconds. Main loop - we have a polling loop (ayeee). changaeble from --dt
+INITIAL_FRAME_PER_SECOND = 10  # Used just by Actions, to avoid unneccessary setFrameRate. Needs
+                               # To be in sync with src/imops/VisionDef.h
+
+CAMERA_SWITCH_WAIT = 0.5       # TODO - deliberately large, change later
+
+# shortcut variable, True if this is naoqi version 1.2.0
+is_120 = NAOQI_VERSION == NAOQI_1_2_0
 
 MISSING_FRAMES_MINIMUM = 10
 

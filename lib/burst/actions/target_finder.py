@@ -48,12 +48,19 @@ class TargetFinder(ContinuousBehavior):
         return self._targets
 
     def _start(self, firstTime=False):
-        print "TargetFinder looking for: %s (first time: %s)" % (','.join(s.name for s in self._targets), firstTime)
+        self.log("_start: %s (first time: %s)" % (','.join(s.name for s in self._targets), firstTime))
+        self._iterate(callOnLost=False)
+
+    def _iterate(self, callOnLost=True):
+        """
+            If target_finder doesn't find target, it first calls OnTargetLostCB,
+            and only then starts a search (otherwise we might get "Target Found" before getting the "Target Lost")
+        """
         # If a search has completed with our targets and they were found in this frame, go to tracking.
         # We give seen objects a priority over recently_seen objects
 
         # use top camera for a goal post or posts, bottom for anything else (i.e. the ball)
-        self._actions.setCamera({
+        camera_bd = self._actions.setCamera({
             False:burst_consts.CAMERA_WHICH_BOTTOM_CAMERA,
             True:burst_consts.CAMERA_WHICH_TOP_CAMERA}[bool(self._world.all_posts & set(self._targets))])
         seen_objects = [t for t in self._targets if t.seen]
@@ -71,21 +78,18 @@ class TargetFinder(ContinuousBehavior):
                 self._targets = [seen_objects[0]]
 
             target = self._targets[0]
-            print "will track %s" % target.name
-            # NOTE: to make the behavior happy we need to always keep the deferred we are
-            # waiting on at self._bd ; because Tracker doesn't provide any bd we create
-            # one using self._actions._make
-            self._bd = self._actions.make(self)
-            self._bd.onDone(lambda _, self=self: self._start())
-            self._actions.track(target=target, lostCallback=self._bd.callOnDone)
+            self.log("will track %s" % target.name)
+            camera_bd.onDone(
+                lambda: self._actions.track(target=target, lostCallback=self._iterate))
             self._callOnTargetFoundCB()
         else:
             # none of our targets are currently seen, start a new search.
-            print "targets not seen (%s), searching for it" % [t.name for t in self._targets]
-            self._bd = self._actions.search(self._targets, center_on_targets=True, stop_on_first=True)
-            self._bd.onDone(self._start)
-            if not firstTime:
+            self.log("targets not seen (%s), searching for it" % [t.name for t in self._targets])
+            if callOnLost:
                 self._callOnTargetLostCB()
+            self._actions.search(
+                self._targets, center_on_targets=True, stop_on_first=True).onDone(
+                self._iterate)
 
     def _stop(self):
         """ stops the finder (and internal tracker/searcher).

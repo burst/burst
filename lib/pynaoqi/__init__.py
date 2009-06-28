@@ -74,7 +74,10 @@ def has_imops():
 # Utilities
 
 def getip():
-    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+    options = [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255']
+    if len(options) == 0:
+        return '127.0.0.1'
+    return options[0]
 
 def compresstoprint(s, first, last):
     if len(s) < first + last + 3:
@@ -1114,61 +1117,9 @@ options = None
 def getDefaultOptions():
     global options
     if options is not None: return options
-    from optparse import OptionParser
-    parser = OptionParser()
-    true_storers, false_storers, storers = [], [], []
-
-    # Some helper functions for argument parsing
-    def collector(opt, col, kw_base, **kw):
-        kwjoint = dict(kw_base)
-        kwjoint.update(kw)
-        parser.add_option(opt, **kwjoint)
-        true_storers.append(opt)
-    store_true =lambda opt, **kw: collector(opt, true_storers, {'action':'store_true'}, **kw)
-    store_false =lambda opt, **kw: collector(opt, false_storers, {'action':'store_false'}, **kw)
-    store = lambda opt, **kw: collector(opt, storers, {'action':'store'}, **kw)
-
-    # Optional Arguments
-    store('--ip', dest='ip', default='localhost', help='hostname to connect to')
-    store('--port', dest='port', default=None,    help='port to connect to')
-
-    store_true('--twisted', dest='twisted', default=True,
-            help='use twisted')
-    store_false('--notwisted', dest='twisted',
-            help='don\'t use twisted')
-    store_true('--locon', dest='localization_on_start',
-            help='turn localization on')
-    store_true('--reportnew', dest='report_new_packet_sizes',
-            help='debug - report new packet sizes')
-    store_true('--verbosetwisted', dest='verbose_twisted',
-            help='debug - show twisted communication')
-    store_true('--manhole', dest='use_manhole',
-            help='use manhole shell instead of IPython')
-    store_true('--nogtk', dest='nogtk',
-            help='debug - turn off gtk integration (NOT WORKING)')
-    store_true('--video', dest='video',
-            help='open video window on start')
-    parser.error = lambda msg: None # only way I know to avoid errors when unknown parameters are given
-    options, rest = parser.parse_args()
-    # TODO: UNBRAIN DEAD THIS
-    # The next part is brain dead, but I don't know how to remove *just*
-    # the parameters I used with OptionParser.. delegated option parsers anyone?
-    todelete = []
-    for i, arg in enumerate(sys.argv):
-        if arg in storers:
-            todelete.extend([i, i+1])
-        if arg in true_storers + false_storers:
-            todelete.append(i)
-    for i in reversed(todelete):
-        if i >= len(sys.argv):
-            print "bad arguments.. go home"
-            raise SystemExit
-        del sys.argv[i]
-    on_nao = os.path.exists('/opt/naoqi/bin/naoqi') # hope no one else installs this, faster then running uname?
-    options.port = options.port or ((options.ip == 'localhost' and not on_nao and 9560) or 9559)
-    import burst_target
-    burst_target.ip = options.ip
-    burst_target.port = options.port
+    from burst import options
+    import burst
+    options = burst.options
     return options
 
 default_connection = None

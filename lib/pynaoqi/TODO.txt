@@ -1,0 +1,4 @@
+work around disconnects:
+ * when the first error occurs on a module that was ok (just assume any module),
+  * remove all modules and replace them with dont cares (all calls get oblivized)
+  * start a looping call to reconnect.

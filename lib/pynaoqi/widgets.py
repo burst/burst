@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from __future__ import with_statement
 
 import time
@@ -11,16 +13,24 @@ import gtk, goocanvas
 
 from twisted.internet.defer import Deferred, succeed
 
+if __name__ == '__main__':
+    import sys
+    print "__file__ = %s" % __file__
+    sys.path.append(os.path.realpath('%s/../' % os.path.dirname(__file__)))
+
 from pynaoqi.consts import *
-from pynaoqi import options
 import pynaoqi
 
+widgets_using_pylab = False
 try:
     import matplotlib
     from matplotlib.backends.backend_gtk import FigureCanvasGTK, NavigationToolbar
     from matplotlib.pylab import Figure
+    widgets_using_pylab = True
 except:
     pass
+
+# burst modules
 
 import burst_util
 from burst_util import ensure_table
@@ -28,6 +38,10 @@ import burst
 from burst_consts import DEG_TO_RAD, RAD_TO_DEG, IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT
 import burst_consts as consts
 import burst.image as image
+
+# Local modules
+
+import shell
 
 #############################################################################
 
@@ -75,24 +89,187 @@ class BaseWindow(object):
     def hide(self):
         self._w.hide()
 
+# Some color constants
+red = gtk.gdk.Color('red')
+white = gtk.gdk.Color('white')
+
 class NotesWindow(BaseWindow):
-    def __init__(self):
+    def __init__(self, con):
         super(NotesWindow, self).__init__(builder_file='notes.glade',
             top_level_widget_name='window1')
-        self._w.set_size_request(500,600)
+        self._w.resize(800,300)
+        self._w.set_size_request(300,200)
         self._w.show_all()
         self._textview = self._builder.get_object('textview')
+        self._notebook = self._builder.get_object('notebook')
+        self._setupTextbuffer()
+        self._setupButtonPages()
+        import shell
+        # Fixes to allow running without pynaoqi shell, and with
+        # NaoJoints. Note that the main of widgets is broken on Ubuntu 9.04
+        if pynaoqi.options is None:
+            pynaoqi.options = pynaoqi.getDefaultOptions()
+        if not hasattr(shell, 'user_ns'):
+            shell.user_ns = shell.make_shell_namespace(
+                use_pylab = widgets_using_pylab, using_gtk=True, con=con)
+
+    def _setupTextbuffer(self):
+        #import pdb; pdb.set_trace()
         from gtkcodebuffer import CodeBuffer, SyntaxLoader, add_syntax_path
         # comment-out if CodeBuffer is installed
         add_syntax_path("%s/syntax" % os.path.dirname(__file__))
         lang = SyntaxLoader("python")
         self._textbuffer = buff = CodeBuffer(lang=lang)
         self._textview.set_buffer(self._textbuffer)
-        buff.insert(buff.get_start_iter(), pynaoqi.shell.EXAMPLES)
+        for k, txt in shell.EXAMPLES:
+            buff.insert(buff.get_end_iter(), txt)
         # hack - clicking when not focused doesn't set the cursor
         self._cur = None
 
+    def _setupButtonPages(self):
+        from shell_guts import players, tests
+        # players tab and tests tabs
+        def add_to_table(table):
+            ij = [0, 0]
+            def adder(b):
+                table.attach(b, ij[0], ij[0]+1, ij[1], ij[1]+1)
+                ij[0] += 1
+                if ij[0] > 4:
+                    ij[0] = 0
+                    ij[1] += 1
+            return adder
+        class ButtonHolder(object):
+            def __init__(self, b, player):
+                self.b = b
+                self.player = player
+            def resetButton(self, _=None):
+                self.b.modify_bg(gtk.STATE_NORMAL, None)
+            def __call__(self, event=None):
+                b, player = self.b, self.player
+                if player._main is None or player._main.stopped:
+                    # NOTE - can allow a restart of behavior only too.
+                    b.modify_bg(gtk.STATE_NORMAL, red)
+                    player.start().onDone(self.resetButton)
+                else:
+                    player.stop().onDone(self.resetButton)
+        def makepage(runners, packer ,packing):
+            holder = packer(len(runners))
+            packer = packing(holder)
+            buttonholders = []
+            for name, player in runners:
+                # TODO - stop the current player
+                b = gtk.Button(name)
+                bh = ButtonHolder(b, player)
+                buttonholders.append(bh)
+                b.connect('clicked', bh)
+                packer(b)
+            holder.buttonholders = buttonholders
+            return holder
+
+        # players in one page
+        holder = makepage(players.runners, lambda _: gtk.VButtonBox(),
+            lambda holder: holder.add)
+        self._notebook.append_page(holder, tab_label=gtk.Label('players'))
+        # all tests in another page, in a subnotebook
+        notebook = gtk.Notebook()
+        #'tests')
+        runners = dict(tests.runners)
+        for title, names in [
+            ('framework', [
+ 'donothing',
+ 'endless',
+ 'callLaterTester',
+ 'registeroneTester',
+ 'framerateTester',
+ 'startStopTester',
+ 'worldJointsTester',
+ 'eventsTester',
+ 'empty',
+ 'timeoutTester',
+ 'dcm_executor',
+ 'cameraSwitchTester',
+ 'exception_in_deferred',
+            ]),
+            ('unclassified', [
+ 'domove_constants',
+ 'fpsTester',
+ 'save_variable_names',
+            ]),
+            ('finding', [
+ 'visionTesting',
+ 'goalCentererTester',
+ 'goalSearchTester',
+ 'ballSearchTester',
+ 'centerTester',
+ 'headTrackingLowLevelTester',
+ 'targetFinderTester',
+ 'localize',
+ 'trackerTester',
+            ]),
+            ('walks', [
+ 'walk_record',
+ 'walkTester',
+ 'asafWalkTester',
+ 'personal_walk_manual_tweaker',
+ 'head_move_and_walk_tester',
+ 'straightWalkTester',
+ 'clearfootsteps',
+            ]),
+            ('non walk locomotion', [
+ 'strafe_around_ball',
+ 'circle_strafer',
+ 'turnccw',
+ 'turncw',
+            ]),
+            ('kicks', [
+ 'diagonalTester',
+ 'kicktest',
+ 'kickTuner',
+ 'initial_kick_tester',
+            ]),
+            ('moves', [
+ 'nodtester',
+ 'rectangle',
+ 'get_current_head_bd',
+ 'leap_tester',
+ 'sitposetester',
+            ]),
+            ('sensors', [
+ 'sonarTester',
+ 'switch_camera',
+            ]),
+            ('gamecontroller', [
+ 'gamecontrollertester',
+ 'gameEnterTester',
+            ]),
+            ('behaviors', [
+ 'approach_xyh_tester',
+ 'goalAlignerTester',
+            ])
+            ]:
+            holder = makepage([(name, runners[name]) for name in names],
+                lambda n: gtk.Table(n/5, 5, True),
+                add_to_table)
+            for name in names:
+                del runners[name]
+            notebook.append_page(holder, tab_label=gtk.Label(title))
+        holder = makepage(runners.items(), lambda n: gtk.Table(n/5, 5, True), add_to_table)
+        notebook.append_page(holder, tab_label=gtk.Label('other'))
+        self._notebook.append_page(notebook, tab_label=gtk.Label('tests'))
+        # fill pages from examples, one page per item
+        for k, txt in shell.EXAMPLES:
+            holder = gtk.VButtonBox()
+            for line in txt.split('\n'):
+                if len(line.strip()) == 0 or line.strip()[:1] == '#': continue
+                b = gtk.Button(line)
+                b.connect("clicked", lambda event, line=line: self.runline(event, line))
+                holder.add(b)
+            # put in notebook
+            self._notebook.append_page(holder, tab_label=gtk.Label(k))
+        self._notebook.show_all()
+
     def on_textview_button_press_event(self, *args):
+        return # using the buttons instead of this
         #import pdb; pdb.set_trace()
         buff = self._textbuffer
         txt = buff.get_text(buff.get_start_iter(),buff.get_end_iter())
@@ -105,33 +282,45 @@ class NotesWindow(BaseWindow):
         line = txt[b:e]
         if len(line) >= len(txt): return
         #print 'running %s' % line
-        sh = pynaoqi.shell.shell
         buff.select_range(buff.get_iter_at_offset(b), buff.get_iter_at_offset(e))
+        self.runline(event=None, line=line)
+
+    def runline(self, event, line):
         try:
             compile(line,'','exec')
         except Exception, e:
             print "problem with %r: %s" % (line, e)
         else:
-            sh.runsource(line)
+            if hasattr(shell, 'shell'):
+                runsource = shell.shell.runsource
+            else: # just run it using user_ns
+                def runsource(line):
+                    exec line in shell.user_ns
+            runsource(line)
             self._w.set_title('%s...' % line[:20])
 
 class TaskBaseWindow(BaseWindow):
 
     """ Any widget that is based on some timer based update """
 
+    tasks = []
     loggers = []
 
-    def __init__(self, tick_cb, title=None, dt=1.0):
-        super(TaskBaseWindow, self).__init__()
+    def __init__(self, tick_cb, title=None, dt=1.0, builder_file=None,
+            top_level_widget_name=None):
+        super(TaskBaseWindow, self).__init__(builder_file=builder_file,
+            top_level_widget_name=top_level_widget_name)
         from twisted.internet import task
         if title is None:
-            title = '%s %s' % (options.ip, self.counter)
+            title = '%s %s' % (pynaoqi.options.ip, self.counter)
         self._title = title
         self._dt = dt
         self._tick_cb = tick_cb
         self._start = time.time() # updated at the real start, _startTaskFirstTime
         self._task = task.LoopingCall(self._onLoop)
-        self.loggers.append(self)
+        self.tasks.append(self)
+        if hasattr(self, 'appendLine'): # used by PlayerRunner to log lines between runs
+            self.loggers.append(self)
         self.set_title()
 
     def _startTaskFirstTime(self):
@@ -201,22 +390,29 @@ class GtkTextLogger(TaskBaseWindow):
     @dt - time between calls.
     @title - title of window.
     """
-    def __init__(self, tick_cb, title=None, dt=1.0):
+    def __init__(self, tick_cb, title=None, dt=1.0, filter=lambda x: True):
         super(GtkTextLogger, self).__init__(tick_cb=tick_cb, title=title, dt=dt)
+        self._filter = filter
         self._tv = tv = gtk.TextView()
         self._tb = tb = gtk.TextBuffer()
         self._sw = gtk.ScrolledWindow()
         self._sw.add(self._tv)
         self._w.add(self._sw)
-        self._w.set_size_request(300,300)
+        self._w.set_size_request(100,60)
+        self._w.resize(300,100)
         self._w.show_all()
         tv.set_buffer(tb)
         self._values = []
         self._times = []
         self._startTaskFirstTime()
 
+    def appendLine(self, txt):
+        # used by PlayerRunner - when restarting a behavior log a seperator
+        self._tb.insert(self._tb.get_start_iter(), '%s\n' % txt)
+
     def _update(self, result):
         #if not self._w.is_active(): return
+        if not self._filter(result): return
         tb = self._tb
         t = time.time() - self._start
         self._times.append(t)
@@ -236,6 +432,14 @@ class GtkTextLogger(TaskBaseWindow):
     def plotme(self):
         from pylab import plot, array
         plot(array(self._times), array(self._values))
+
+def GtkTextCompactingLogger(tick_cb, title=None, dt=1.0):
+    def filter(new, old=[None]):
+        if new != old[0]:
+            old[0] = new
+            return True
+        return False
+    return GtkTextLogger(tick_cb=tick_cb, title=title, dt=dt, filter=filter)
 
 def make_ellipse(parent, x, y, radius, fill_color):
     return goocanvas.Ellipse(parent = parent,
@@ -574,44 +778,37 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
     """
 
     def __init__(self, con, dt=0.5):
-        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=dt)
+        TaskBaseWindow.__init__(self, tick_cb=self.getNew, dt=dt,
+            builder_file="video.glade", top_level_widget_name="window1")
         if not self.init_imops_mixin(con):
             return
+
+        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
+        self._w.connect("button-press-event", self._onButtonClick)
+        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
+        self._w.connect("motion-notify-event", self._onMouseMotion)
 
         self._update_display = True
         self._reading_nbfrm = False
         self._threshold = False # to threshold or not to threshold
         self._con = con
         self._tables = {}
-        self._con.subscribeToCamera().addCallback(self._finishInit)
-        self._im = gtkim = gtk.Image()
+        # Do initialization correctly - make sure pynaoqi is connected
+        # and that it has the camera module, which we need.
+        self._con.modulesDeferred.addCallback(
+            lambda result:
+            self._con.CameraModule.initDeferred.addCallback(
+                lambda _: self._con.subscribeToCamera().addCallback(
+                    self._finishInit))
+            )
+        
+        self._im = self._builder.get_object('image')
         # you don't get button press on gtk.Image(), setting add_events on window
         # and gtkim doesn't cause propogation, don't know what does.
         self._dmove = succeed(None)
-        self._w.add_events(gtk.gdk.BUTTON_PRESS_MASK)
-        self._w.connect("button-press-event", self._onButtonClick)
-        self._w.add_events(gtk.gdk.POINTER_MOTION_MASK)
-        self._w.connect("motion-notify-event", self._onMouseMotion)
-        c = gtk.VBox()
-        bottom = gtk.HBox()
-        self._status = gtk.Label('        ')
-        c.add(self._im)
-        c.pack_start(bottom, False, False, 0)
-        bottom.add(self._status)
-        buttons = []
-        for attr, label, callback in [
-            ('_threshold_button', 'threshold', self.threshold),
-            ('_display_update_button', 'update', self.toggleDisplayUpdate)]:
-            b = gtk.Button(label)
-            b.connect('clicked', callback)
-            buttons.append(b)
-            setattr(self, attr, b)
-            bottom.pack_start(b)
-        self._w.add(c)
+        self._status = self._builder.get_object('hover')
+        self._frame_count = 0 # frame capture
         self._w.show_all()
-
-    def toggleDisplayUpdate(self, *args):
-        self._update_display = not self._update_display
 
     # Reading external images support
 
@@ -687,6 +884,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
                 , (y - consts.IMAGE_HALF_HEIGHT) * consts.PIX_TO_RAD_Y)
 
     def _onMouseMotion(self, widget, event):
+    #def on_image_motion_notify_event(self, widget, event):
         ind = int((event.y*consts.IMAGE_WIDTH+event.x)*3)
         if (ind+3 > len(self._rgb)): return
         self._updateTarget(event.x, event.y)
@@ -698,6 +896,7 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
         self._status.set_label('%02X %02X %02X (%d %d %d)' % (r, g, b, r, g, b))
 
     def _onButtonClick(self, widget, event):
+    #def on_image_button_press_event(self, widget, event):
         print "click: ", event.x, event.y
         if not self._dmove.called: return
         self._updateTarget(event.x, event.y)
@@ -720,6 +919,20 @@ class VideoWindow(TaskBaseWindow, ImopsMixin):
             ['HeadYaw', 'HeadPitch'], [tgt_yaw, tgt_pitch],
             50, # percent of max speed 1~100
             consts.INTERPOLATION_SMOOTH)
+
+    def on_threshold_clicked(self, event=None):
+        self.threshold()
+
+    def on_update_clicked(self, event=None):
+        self.toggleDisplayUpdate()
+
+    def on_snap_clicked(self, event=None):
+        self.capture()
+        print "captured frame #%s into %s" % (
+            self._frame_count-1, self._frames_location)
+
+    def toggleDisplayUpdate(self, *args):
+        self._update_display = not self._update_display
 
     # getters / setters
     def threshold(self, *args):
@@ -940,4 +1153,26 @@ class Inertial(object):
         for l, new_val in zip(self.l, vals):
             l.set_label('%3.3f' % new_val)
 
+class NotesMain(NotesWindow):
+
+    def _onDestroy(self, *args):
+        from twisted.internet import reactor
+        super(NotesMain, self)._onDestroy(*args)
+        print "quitting.."
+        reactor.stop()
+
+def main():
+    from twisted.internet import gtk2reactor
+    try:
+        gtk2reactor.install()
+    except:
+        pass
+    from twisted.internet import reactor
+    con = pynaoqi.getDefaultConnection()
+    notes = NotesMain(con)
+    notes._w.show_all()
+    reactor.run()
+
+if __name__ == '__main__':
+    main()
 
