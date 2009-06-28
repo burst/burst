@@ -74,7 +74,10 @@ def has_imops():
 # Utilities
 
 def getip():
-    return [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255'][0]
+    options = [x for x in re.findall('[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', os.popen('ip addr').read()) if x[:3] != '255' and x != '127.0.0.1' and x[-3:] != '255']
+    if len(options) == 0:
+        return '127.0.0.1'
+    return options[0]
 
 def compresstoprint(s, first, last):
     if len(s) < first + last + 3:
