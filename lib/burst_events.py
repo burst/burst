@@ -127,8 +127,11 @@ LAST_EVENT_NUM = counter
 ################################################################################
 
 # Util for debugging
-the_items = [(event, name) for name, event in globals().items() if name == name.upper() and isinstance(event, int)]
+the_items = [(event, name) for name, event in globals().items() if name == name.upper() and isinstance(event, int) and name[0] == 'E']
 event_name_d = dict(the_items)
+short_event_name_d = dict([(k, v.split('EVENT_')[1]) for k,v in the_items])
 def event_name(event):
     return event_name_d.get(event, 'no such event %s' % event)
+def short_event_name(event):
+    return short_event_name_d.get(event, 'no such event %s' % event)
 

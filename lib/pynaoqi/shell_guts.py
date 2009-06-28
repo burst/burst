@@ -215,7 +215,6 @@ class PlayerRunner(object):
 
     def stop(self):
         def log_stop():
-            print "IM HERERERE"
             try:
                 import widgets
             except:
@@ -223,10 +222,8 @@ class PlayerRunner(object):
             else:
                 for l in widgets.TaskBaseWindow.loggers:
                     l.appendLine('> %s stopped <' % self.fullname)
-        def debug():
-            print "STOPPPPPPPPPPPPPPPPPPPPPPPPed"
         bd = self._main.stop()
-        bd.onDone(self.loop.shutdown).onDone(log_stop).onDone(debug)
+        bd.onDone(self.loop.shutdown).onDone(log_stop)
         return bd
 
 class Players(object):

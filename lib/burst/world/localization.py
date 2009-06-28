@@ -10,7 +10,7 @@ from burst_consts import RAD_TO_DEG
 import burst
 from burst_events import EVENT_WORLD_LOCATION_UPDATED
 from burst.field import (GOAL_POST_CM_HEIGHT, CROSSBAR_CM_WIDTH,
-    CROSSBAR_CM_WIDTH)
+    CROSSBAR_CM_WIDTH, white_limits)
 from burst.position import xyt_from_two_dist_one_angle
 from math import asin
 
@@ -140,7 +140,7 @@ class Localization(object):
         if not hasattr(top, 'my_dist') or not hasattr(bottom, 'my_dist'):
             if self.verbose:
                 print "BUG ALERT: we should have my_dist updated at this point."
-            return
+            return False
         r1, r2, a1 = (top.my_dist, bottom.my_dist, top.bearing)
         # compute distance using r_avg and angle - note that it is not correct
         if abs(r1 - r2) > 2*d:
@@ -152,6 +152,12 @@ class Localization(object):
             return False
         x, y, theta = xyt_from_two_dist_one_angle(
                 r1=r1, r2=r2, a1=a1, d=d, p0=p0, p1=p1)
+        min_x, max_x, min_y, max_y = white_limits # This is the WHITE limits - we could be in the green part.. COMPETITION
+        if not (min_x <= x <= max_x) or not (min_y <= y <= max_y):
+            #import pdb; pdb.set_trace()
+            print "LOCALIZATION ERROR - out of White bounds; not updating"
+            print "Error value: %3.2f %3.2f %3.2f deg" % (x, y, theta*RAD_TO_DEG)
+            return False
         if self.verbose:
             print "Localization: GOT %3.2f %3.2f heading %3.2f deg" % (x, y, theta*RAD_TO_DEG)
         r = self._world.robot
