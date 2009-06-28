@@ -35,20 +35,31 @@ from controller import Supervisor
 # in the wbt file
 BASIC_TIME_STEP = 40
 
-#from util import opendebugsocket
-#opendebugsocket()
-
-
 class MyController (Supervisor):
 
-    def run(self):
+    def onCommand(self, line):
+        parts = line.split()
+        cmd, params = parts[0], parts[1:]
+        getattr(self, 'on_%s' % (cmd.lower()))(*params)
 
-        f = open('out_params.txt','w')
-        # Get some references - ball, oball (visualization), player
-        player = self.getFromDef('PLAYER_1')
-        player_trans = player.getField('translation')
-        player_rot = player.getField('rotation')
+    def on_player(self, name):
+        self.player = player = self.getFromDef(name)
+        self.player_trans = player.getField('translation')
+        self.player_rot = player.getField('rotation')
+        print "REMOTE CONTROL: Player = %s" % name
+ 
+    def on_pos(self, x, y, z):
+        x, y, z = float(x), float(y), float(z)
         player_trans.setSFVec3f([0, 0.325, 0]) # doesn't work for some reason
+
+    def on_rot(self, x, y, z, angle):
+        x, y, z, angle = map(float, [x, y, z, angle])
+
+    def label(self, s):
+        self.setLabel(0, s, 0.05,0.01,0.08,0xff0000,0.0)
+
+    def run(self):
+        self.on_player('RED_GOAL_KEEPER') # burst.wbt compatible
         player_new_pos = array(player_trans.getSFVec3f())
 
         counter = 0
@@ -68,9 +79,6 @@ class MyController (Supervisor):
                 print math.floor(run_num/3)+1, ' - [' , x_pos, ',', y_pos, ',', rotation, ']'
             if self.step(BASIC_TIME_STEP) == -1: break
         # Enter here exit cleanup code
-
-    def label(self, s):
-        self.setLabel(0, s, 0.05,0.01,0.08,0xff0000,0.0)
 
 if __name__ == '__main__':
     controller = MyController()
