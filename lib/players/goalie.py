@@ -17,9 +17,11 @@ WAITING_FOR_NEW_DATA = 1  #not to use old data (made when head was searching)
 
 debug = True
 #isWebots = True
-realLeap = False
+realLeap = True
 debugLeapRight = False
 debugLeapLeft = False
+
+
 
 class Goalie(InitialBehavior):
 
@@ -28,6 +30,8 @@ class Goalie(InitialBehavior):
         self._world.ball.shouldComputeIntersection = True
 
     def _start(self, firstTime=False):
+        #AlignmentAfterLeap(self._actions, right).start()
+        #return
         self.isPenalty = False # TODO: Use the gameStatus object.
         self._restart()
 
@@ -77,12 +81,14 @@ class Goalie(InitialBehavior):
         #print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
+                print "real leap right"
                 self._actions.executeLeapRight().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
         else:
             if realLeap or debugLeapLeft:
+                print "real leap left"
                 self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")
@@ -96,12 +102,14 @@ class Goalie(InitialBehavior):
         #print self._world.ball.body_isect
         if self._world.ball.body_isect < 0 and self._world.ball.body_isect > -(GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapRight:
             if realLeap:
+                print "real leap right safe"
                 self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
             else:
                 self._actions.say("Leap right.")
                 self.waitingOnRight()
         elif self._world.ball.body_isect > 0 and self._world.ball.body_isect < (GOAL_BORDER + ERROR_IN_LENGTH) or debugLeapLeft:
             if realLeap:
+                print "real leap left safe"
                 self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("Leap left.")
