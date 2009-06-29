@@ -321,47 +321,51 @@ class Player(object):
 
     def onBackOnFeet(self):
         self._actions.say("I'm back on my feet")
-        self.registerFallHandling()
+        #self.registerFallHandling()
+
+    def onFallen(executeGettingUp, onGottenUp):
+        """ stop main behavior, kill all actions.
+        start: waiting for main behavior stop to be done && getting up
+        when both are done: restart main behavior
+        """
+        self.unregisterFallHandling()        
+        self._actions.killAll()
+        main_bd = self._main_behavior.stop()        
+        up_bd = executeGettingUp()
+        DeferredList([main_bd.getDeferred(), up_bd.getDeferred()]).addCallback(
+            lambda _: onGottenUp())
 
     def onOnBack(self):
         self._actions.say("I'm on my back.")
 #        print "Player: onOnBack: stopping main_behavior"
-#        self._actions.killAll()
-#        self._main_behavior.stop()
-#        self.unregisterFallHandling()
-#        self._actions.executeGettingUpBack().onDone(self.onGottenUpFromBack)
+        onFallen(self._actions.executeGettingUpBack, self.onGottenUpFromBelly)        
 
     def onOnBelly(self):
         self._actions.say("I'm on my belly.")
 #        print "Player: onOnBelly: stopping main_behavior"
-#        self._actions.killAll()
-#        self._main_behavior.stop()
-#        self.unregisterFallHandling()
-#        self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
+        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)        
+
+    def onRightSide(self):
+        self._actions.say("I'm on the right side")        
+        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
+        
+    def onLeftSide(self):
+        self._actions.say("I'm on the left side")
+        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
 
     def onGottenUpFromBack(self):
         self._actions.say("Getting up done (from back)")
         self.registerFallHandling()
 
-        info("Player: onGottenUpFromBack")
+        #info("Player: onGottenUpFromBack")
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
 
     def onGottenUpFromBelly(self):
         self._actions.say("Getting up done (from belly)")
         self.registerFallHandling()
 
-        info("Player: onGottenUpFromBelly")
+        #info("Player: onGottenUpFromBelly")
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
-
-    def onRightSide(self):
-        self._actions.say("I'm on the right side")
-        #self.unregisterFallHandling()
-        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
-
-    def onLeftSide(self):
-        self._actions.say("I'm on the left side")
-        #self.unregisterFallHandling()
-        #self._actions.executeGettingUpBelly().onDone(self.onGottenUpFromBelly)
 
     def _announceSeeingBall(self):
         self._world.robot.leds.rightEyeLED.turnOn(burst_consts.RED)
