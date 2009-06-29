@@ -483,6 +483,7 @@ class Ball(Movable):
                             print "t2: ", last_point[T], " t1: ", self.base_point[T]
                             print "velocity: ", self.velocity
                             print "time for intersection: ", self.time_intersection
+                            print "self.body_isect: ", self.body_isect
                     
                             
                 self.base_point_index -= 1

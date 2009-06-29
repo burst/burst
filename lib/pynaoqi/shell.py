@@ -37,6 +37,10 @@ centerer.start(target=world.seen_goal.right)
 ,
 ('remote',
 """
+remote.ball(-300,0)
+remote.pos(300,0,0)
+remote.rotyellow()
+remote.rotblue()
 remote.player_name('BLUE_PLAYER_1')
 remote.player_name('BLUE_GOAL_KEEPER')
 remote.player_name('RED_GOAL_KEEPER')
@@ -47,8 +51,6 @@ remote.pos(0,100,0)
 remote.pos(0,-100,0)
 remote.pos(100,0,0)
 remote.pos(-100,0,0)
-remote.rotyellow()
-remote.rotblue()
 """
 ),
 ('events',

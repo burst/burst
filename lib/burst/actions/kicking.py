@@ -72,6 +72,7 @@ class BallKicker(Behavior):
         self.target_left_right_posts = target_left_right_posts
         self._goalFinder = TargetFinder(actions=actions, targets=self.target_left_right_posts, start=False)
         self._goalFinder.setOnTargetFoundCB(self.onGoalFound)
+        self._goalFinder.setOnSearchFailedCB(self._onGoalSearchFailed)
         self._currentFinder = None
 
     def _start(self, firstTime=False):
@@ -185,7 +186,7 @@ class BallKicker(Behavior):
             print "@ Turning, and rerunning search"
             self._movement_deferred = self._actions.turn(pi)
             self._movement_type = MOVE_TURN
-            self._movement_deferred.onDone(self._ballSearch_restart)
+            self._movement_deferred.onDone(lambda: self._onMovementFinished(self._ballSearch_restart))
         else:
             # TODO
             self._onSecondSearchFail_LocalizeStrategy()
@@ -194,7 +195,7 @@ class BallKicker(Behavior):
 
     def _ballSearch_restart(self):
         print "@ Ball search: restarting search"
-        self._ballFinder.start()
+        self.switchToFinder(to_goal_finder=False)
 
     # Own Goal Seen Strategy: Turn towards closest goal, walk forward
     # according to dist Strategy
@@ -205,6 +206,7 @@ class BallKicker(Behavior):
     # Localization strategy: localize, then move to location
     def _onSecondSearchFail_LocalizeStrategy(self):
         # not first time, localize
+        print "@ Calling localize"
         self._actions.localize().onDone(self._onSecondSearchFail_LocalizeStrategy_LocalizeOver)
 
     def _onSecondSearchFail_LocalizeStrategy_LocalizeOver():
@@ -219,6 +221,7 @@ class BallKicker(Behavior):
         import approacher
         dx, dy, dh = approacher.getTargetPosition(target_x, target_y, 0.0) # heading towards opposite goal regardles of penalty.
         self._actions.changeLocationRelative(dx, dy, dh).onDone(self._ballSearch_restart)
+
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
     # make it cleared to understand the relationship, not require this comment)
@@ -231,7 +234,6 @@ class BallKicker(Behavior):
         # when ball tracker finds the ball while a previous movement is still ON.
         if self._movement_deferred:
             print "LAST MOVEMENT STILL ON!!!"
-            self._eventmanager.callLater(0.5, self._approachBall)
             #import pdb; pdb.set_trace()
             return
 
@@ -414,6 +416,15 @@ class BallKicker(Behavior):
             g = self.goalpost_to_track
             self.logverbose('onGoalFound: found %s at %s, %s (%s)' % (g.name, g.centerX, g.centerY, g.seen))
             self.strafe()
+
+    def _onGoalSearchFailed(self):
+        print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?"
+        self._movement_type = MOVE_TURN
+        #self._actions.turn(pi)
+        strafeMove = self._actions.executeCircleStrafeClockwise
+        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
+        self._movement_deferred = self._actions.turn(pi)
+        self._movement_deferred.onDone(lambda: self._onMovementFinished(self.switchToFinder(to_goal_finder=True)))
 
     def strafe(self):
         self._is_strafing = True

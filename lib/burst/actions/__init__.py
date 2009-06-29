@@ -199,6 +199,15 @@ class Actions(object):
         return ballkicker
 
     @returnsbd # must be first
+    def runSecondary(self, direction):
+        """ Go to a predefined point and then run kicker depending on the kick off side chosen. 
+        Returns an already initialized SecondaryStarter instance which can be used to stop the current activity
+        """
+        second = SecondaryStarter(self, direction=LEFT)
+        second.start()
+        return second
+
+    @returnsbd # must be first
     def passBall(self, target_world_frame=None):
         passingChallange = passBall(self._eventmanager, self)
         passingChallange.start()

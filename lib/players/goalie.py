@@ -19,7 +19,7 @@ FAST_BALL_TIME = 0.5 #not leaping for too fast ball, since the robot won't make 
 LONG_TIME_ERROR = 0
 SHORT_TIME_ERROR = 0
 
-realLeap = True
+realLeap = False
 debugLeapRight = False
 debugLeapLeft = False
 
@@ -111,7 +111,7 @@ class Goalie(InitialBehavior):
             print "Time of arrival: ", self._world.ball.time_intersection
             return  
         if (-(HALF_GOAL_WIDTH + ERROR_IN_LENGTH) < self._world.ball.body_isect < 0) or debugLeapRight:
-            print "Leaping right!"
+            print "LEAPING RIGHT************###############"
             self.isLeaping = True
             self.targetFinder.stop()
             if realLeap:
@@ -122,7 +122,7 @@ class Goalie(InitialBehavior):
                 self._actions.say("right.")
                 self.waitingOnRight()
         elif 0 < self._world.ball.body_isect < (HALF_GOAL_WIDTH + ERROR_IN_LENGTH) or debugLeapLeft:
-            print "Leaping left!"
+            print "LEAPING LEFT@@@@@@@@@@@@@@@@@@@@@@@@@@"
             self.isLeaping = True
             self.targetFinder.stop()
             if realLeap:
