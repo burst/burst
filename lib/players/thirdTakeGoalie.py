@@ -95,6 +95,7 @@ class Goalie(InitialBehavior):
     def analyze(self):
         print "analyze"
         a, b, c = burst_field.CROSSBAR_CM_WIDTH, self.distanceToFirst, self.distanceToSecond
+        print "originally:", a, b, c
         a, b, c = 140.0, 211.0, 290.0 # TODO: REMOVE THIS LINE!
         print a, b, c
         m = sqrt( (2*b*b + 2*c*c - a*a) / 4.0 )
@@ -115,10 +116,10 @@ class Goalie(InitialBehavior):
         self._actions.turn(2*pi)
 
     def monitorForOppositeGoal(self):
-        print "monitorForOppositeGoal"
-        if self._world.opposite_rp.seen and self._world.opposite_lp.seen:
-            if self._world.opposite_rp.centerX > IMAGE_CENTER_X:
-                if self._world.opposite_lp.centerX < IMAGE_CENTER_X:
+#        print "monitorForOppositeGoal"
+        if self._world.opposing_rp.seen and self._world.opposing_lp.seen:
+            if self._world.opposing_rp.centerX > IMAGE_CENTER_X:
+                if self._world.opposing_lp.centerX < IMAGE_CENTER_X:
                     self._eventmanager.unregister(self.monitorForOppositeGoal, EVENT_STEP)
                     self._actions.clearFootsteps().onDone(self.onAlignedWithOppositeGoal)
 
