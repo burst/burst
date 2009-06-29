@@ -323,7 +323,7 @@ class Player(object):
         self._actions.say("I'm back on my feet")
         #self.registerFallHandling()
 
-    def onFallen(executeGettingUp, onGottenUp):
+    def onFallen(self, executeGettingUp, onGottenUp):
         """ stop main behavior, kill all actions.
         start: waiting for main behavior stop to be done && getting up
         when both are done: restart main behavior
@@ -338,20 +338,20 @@ class Player(object):
     def onOnBack(self):
         self._actions.say("I'm on my back.")
 #        print "Player: onOnBack: stopping main_behavior"
-        onFallen(self._actions.executeGettingUpBack, self.onGottenUpFromBelly)        
+        self.onFallen(self._actions.executeGettingUpBack, self.onGottenUpFromBelly)        
 
     def onOnBelly(self):
         self._actions.say("I'm on my belly.")
 #        print "Player: onOnBelly: stopping main_behavior"
-        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)        
+        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)        
 
     def onRightSide(self):
         self._actions.say("I'm on the right side")        
-        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
-        
+        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
+
     def onLeftSide(self):
         self._actions.say("I'm on the left side")
-        onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
+        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
 
     def onGottenUpFromBack(self):
         self._actions.say("Getting up done (from back)")
