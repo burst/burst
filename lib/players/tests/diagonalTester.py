@@ -19,7 +19,6 @@ class DiagonalTester(InitialBehavior):
         self._ballFinder.setOnTargetLostCB(self.ball_lost)
         
     def _start(self, firstTime=False):
-        self._actions.setCameraFrameRate(20)
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_FAR).onDone(self.find_goal)
     
     def find_goal(self):

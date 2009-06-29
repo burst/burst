@@ -42,7 +42,6 @@ class Goalie(InitialBehavior):
 
     def readyToLeap(self):
         print "readyToLeap"
-        self._actions.setCameraFrameRate(20)
         self.targetFinder.start()
 
     def targetFound(self):
