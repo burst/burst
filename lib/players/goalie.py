@@ -6,7 +6,7 @@ from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
-from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
+from burst.actions.goalie.alignment_after_leap import AlignmentAfterLeap
 
 HALF_GOAL_WIDTH = 57
 ERROR_IN_LENGTH = 5
@@ -19,7 +19,7 @@ FAST_BALL_TIME = 0.5 #not leaping for too fast ball, since the robot won't make 
 LONG_TIME_ERROR = 0
 SHORT_TIME_ERROR = 0
 
-realLeap = False
+realLeap = True
 debugLeapRight = False
 debugLeapLeft = False
 
@@ -146,25 +146,25 @@ class Goalie(InitialBehavior):
     def gettingUpRight(self):
         print "getting up right"
         if realLeap:
-            self._actions.executeToBellyFromLeapRight().onDone(lambda: self.getUpBelly(right))
+            self._actions.executeToBellyFromLeapRight().onDone(lambda _: self.getUpBelly(RIGHT))
         else:
-            self.onLeapComplete(right)
+            self.onGettingUpDone(RIGHT)
 
     def gettingUpLeft(self):
         print "getting up left"
         if realLeap:
-            self._actions.executeToBellyFromLeapLeft().onDone(lambda: self.getUpBelly(left))
+            self._actions.executeToBellyFromLeapLeft().onDone(lambda _: self.getUpBelly(LEFT))
         else:
-            self.onLeapComplete(left)
+            self.onGettingUpDone(LEFT)
 
     def getUpBelly(self, side):
-        self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
+        self._actions.executeGettingUpBelly().onDone(lambda _: self.onGettingUpDone(side))
 
-    def onLeapComplete(self, side):
-        print "complete"    
+    def onGettingUpDone(self, side):
+        print "complete (side=%s)" % side
         self._player.registerFallHandling()        
         if realLeap:
-            AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
+            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
         else:
             self.readyToLeap()
 
