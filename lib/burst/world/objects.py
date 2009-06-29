@@ -377,6 +377,7 @@ class Ball(Movable):
         self.velocity = None
         self.time_intersection = None
         self.shouldComputeIntersection = False
+        self.isTimeCalc = False
 
     #for robot body when facing the other goal
     def compute_intersection_with_body(self):
@@ -391,9 +392,9 @@ class Ball(Movable):
         X = 1
         Y = 2
 
-        ERROR_VAL_X = 10
-        ERROR_VAL_Y = 0
+        ERROR_VAL_X = 1
         NUM_OF_POINTS = 10
+        HISTORY_SIZE = 20
 
         if not self.CalcIsBallMoving():
             return False
@@ -402,6 +403,7 @@ class Ball(Movable):
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
                                    , self.history[0][DIST] * sin(self.history[0][BEARING])]
+                #print "base point has changed"
         else:
             return False
 
@@ -426,13 +428,15 @@ class Ball(Movable):
                     n += 1
                     continue #skipping nonrelvant point
                 cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
-#                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
-#                    self.base_point = cor_point
-#                    if self.history[0] != None:
-#                        self.base_point_index = n -1
-#                    else:
-#                        self.base_point_index = n
-#                    return False
+                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
+                    self.base_point = cor_point
+                    if n > HISTORY_SIZE-1:
+                    #if self.history[n] != None:
+                        self.base_point_index = n -1
+                    else:
+                        self.base_point_index = n
+                    #print "base point index = ", self.base_point_index
+                    return False
                 sumX += cor_point[X]
                 sumXY += cor_point[X] * cor_point[Y]
                 sumY += cor_point[Y]
@@ -460,6 +464,7 @@ class Ball(Movable):
 
                 #calc time for intersection:
                 #finding the x coordinate of two point on the regression line
+                self.isTimeCalc = False
                 if slop != 0:
                     slop2 = -1/slop
                     n_last_point = last_point[Y] - slop2 * last_point [X]
@@ -473,11 +478,16 @@ class Ball(Movable):
                             self.velocity = dx1/dt1
                             dx2 = 0 - last_point[X]
                             self.time_intersection = dx2/self.velocity
-                            #print "velocity: ", self.velocity
-                            #print "time for intersection: ", self.time_intersection
-
+                            self.isTimeCalc = True
+                            print "x2: ", last_point[X], " x1: ", self.base_point[X]
+                            print "t2: ", last_point[T], " t1: ", self.base_point[T]
+                            print "velocity: ", self.velocity
+                            print "time for intersection: ", self.time_intersection
+                    
+                            
+                self.base_point_index -= 1
                 return True
-        if self.history[0] != None:
+        if self.history[n + self.base_point_index] != None:
             self.base_point_index -= 1
         return False
 
@@ -507,7 +517,7 @@ class Ball(Movable):
         BEARING = 2
 
         ERROR_VAR = 1
-        NUM_OF_CHANGED_POINTS = 5
+        NUM_OF_CHANGED_POINTS = 3
 
         i = 0
         dist_list = []
