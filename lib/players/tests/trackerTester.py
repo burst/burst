@@ -14,7 +14,6 @@ class trackerTester(InitialBehavior):
 
     def _start(self, firstTime=False):
         self.count = 1
-        self._actions.setCameraFrameRate(20)
         self._eventmanager.register(self.printBall, EVENT_BALL_IN_FRAME)
         self._actions.executeHeadMove(poses.HEAD_MOVE_FRONT_BOTTOM).onDone(self.track)
 

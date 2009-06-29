@@ -10,6 +10,7 @@ from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
 from math import pi, sqrt, acos
 
+DESIRED_DISTANCE_FROM_GOAL_LINE = 3 * 0.055
 
 debug = True
 
@@ -25,6 +26,10 @@ class Goalie(InitialBehavior):
 
     def _start(self, firstTime=False):
 #        print "%3.3f" % self._world.getAngle('HeadYaw'); raise SystemExit
+        # TODO - remove before commit
+        def donothing(*args, **kw):
+            pass
+        self._eventmanager._mainloop._player.onFallen = donothing
         self._restart()
 
     def _restart(self):
@@ -66,6 +71,9 @@ class Goalie(InitialBehavior):
     def onCenteredOnFirstGoalpost(self, goalpost):
         print "onCenteredOnFirstGoalpost"
         self.distanceToFirst = goalpost.centered_self.dist
+        self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onReadyToLookForSecond)
+
+    def onReadyToLookForSecond(self):
         self._eventmanager.register(self.monitorForSecondOwnGoalPost, EVENT_STEP)
         self._actions.turn(self.side*2*pi)
 
@@ -75,9 +83,9 @@ class Goalie(InitialBehavior):
         for obj in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
             readyForCentering = (
                 # 0.45-0.55 is a deadzone, since the first goalpost might appear to move back slightly.
-                0.25*burst_consts.IMAGE_WIDTH_INT < obj.centerX < 0.45*burst_consts.IMAGE_WIDTH_INT
+                0.10*burst_consts.IMAGE_WIDTH_INT < obj.centerX < 0.35*burst_consts.IMAGE_WIDTH_INT
                 if self.side == left
-                else 0.75*burst_consts.IMAGE_WIDTH_INT > obj.centerX > 0.55*burst_consts.IMAGE_WIDTH_INT)
+                else 0.90*burst_consts.IMAGE_WIDTH_INT > obj.centerX > 0.65*burst_consts.IMAGE_WIDTH_INT)
             # If that goal post is past the middle of what we see, stop and focus on it:
             if readyForCentering:
                 self._eventmanager.unregister(self.monitorForSecondOwnGoalPost, EVENT_STEP)                
@@ -96,7 +104,8 @@ class Goalie(InitialBehavior):
         print "analyze"
         a, b, c = burst_field.CROSSBAR_CM_WIDTH, self.distanceToFirst, self.distanceToSecond
         print "originally:", a, b, c
-        a, b, c = 140.0, 211.0, 290.0 # TODO: REMOVE THIS LINE!
+        a, b, c = a, 1.1*b, 1.1*c # TODO: REMOVE THIS LINE!
+#        a, b, c = 140.0, 211.0, 290.0 # TODO: REMOVE THIS LINE!
         print a, b, c
         m = sqrt( (2*b*b + 2*c*c - a*a) / 4.0 )
         alpha = acos( (b*b+c*c-a*a)/(2.0*b*c) )
@@ -106,9 +115,11 @@ class Goalie(InitialBehavior):
         
     def onHeadDirectedAtCenterOfGoal(self, alpha, m):
         print "onHeadDirectedAtCenterOfGoal"
-        self._actions.turn(self._world.getAngle('HeadYaw')).onDone(
+        rad = self._world.getAngle('HeadYaw')
+        self._actions.moveHead(0.0, -40.0*DEG_TO_RAD).onDone(
+            lambda: self._actions.turn(rad).onDone(
             lambda: self._actions.changeLocationRelative(m).onDone(
-            self.onArrivalAtMiddleOfOwnGoal))
+            self.onArrivalAtMiddleOfOwnGoal)))
 
     def onArrivalAtMiddleOfOwnGoal(self):
         print "onArrivalAtMiddleOfOwnGoal"
@@ -117,16 +128,20 @@ class Goalie(InitialBehavior):
 
     def monitorForOppositeGoal(self):
 #        print "monitorForOppositeGoal"
-        if self._world.opposing_rp.seen and self._world.opposing_lp.seen:
-            if self._world.opposing_rp.centerX > IMAGE_CENTER_X:
-                if self._world.opposing_lp.centerX < IMAGE_CENTER_X:
-                    self._eventmanager.unregister(self.monitorForOppositeGoal, EVENT_STEP)
-                    self._actions.clearFootsteps().onDone(self.onAlignedWithOppositeGoal)
+        opp = filter(lambda obj: obj.seen, [self._world.opposing_rp, self._world.opposing_lp,
+            self._world.opposing_goal.unknown])
+        for goalpost in opp:
+            if 0.25*IMAGE_WIDTH < goalpost.centerX < 0.75*IMAGE_WIDTH:
+                self._eventmanager.unregister(self.monitorForOppositeGoal, EVENT_STEP)
+                self._actions.clearFootsteps().onDone(self.onAlignedWithOppositeGoal)
 
     def onAlignedWithOppositeGoal(self):
         print "onAlignedWithOppositeGoal"
+        self._actions.changeLocationRelative(DESIRED_DISTANCE_FROM_GOAL_LINE).onDone(self.onFinished)
+
+    def onFinished(self):
+        print "onFinished"
         self._eventmanager.quit()
-        
 
 
 

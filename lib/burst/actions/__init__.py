@@ -52,7 +52,8 @@ def setfps(fps):
     """ set fps on an Actions method """
     def wrap(f):
         def wrapper(self, *args, **kw):
-            self.setCameraFrameRate(fps)
+            if not self.isWalkInProgress() and not self.isMotionInProgress():
+                self.setCameraFrameRate(fps)
             return f(self, *args, **kw)
         wrapper.func_doc = f.func_doc
         wrapper.func_name = f.func_name
@@ -239,6 +240,7 @@ class Actions(object):
 
     @returnsbd # must be first (since other wrappers don't copy the attributes..)
     @legal_any
+    @setfps(10)
     def changeLocationRelative(self, delta_x, delta_y = 0.0, delta_theta = 0.0,
         walk=walks.STRAIGHT_WALK, steps_before_full_stop=0):
         """
@@ -265,6 +267,7 @@ class Actions(object):
 
     @returnsbd # must be first
     @legal_any
+    @setfps(10)
     def turn(self, deltaTheta, walk=walks.TURN_WALK):
         print walk
         self.setWalkConfig(walk.walkParameters)
@@ -283,6 +286,7 @@ class Actions(object):
     # TODO: Change to walkSideways()
     @returnsbd # must be first
     @legal_any
+    @setfps(10)
     def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
@@ -344,6 +348,7 @@ class Actions(object):
 
     @returnsbd # must be first
     @legal_any
+    @setfps(10)
     def changeLocationArc(self, delta_x, delta_y, walk=walks.STRAIGHT_WALK):
         #handle divide by zero 
         if delta_y==0:
@@ -514,6 +519,7 @@ class Actions(object):
     # Kick type - one of the kick types defined in actionconsts KICK_TYPE_STRAIGHT/KICK_TYPE_PASSING/etc...
     # Kick leg - the leg used to kick
     # Kick strength - strength of the kick (between 0..1)
+    @setfps(10)
     def kick(self, kick_type, kick_leg, kick_dist):
         # TODO: Add support for kick_type/kick_leg tuple, along with kick_strength
 
@@ -531,9 +537,11 @@ class Actions(object):
         originalKick[4][4] = orig_value
         return bd
 
+    @setfps(10)
     def inside_kick(self, kick_type, kick_leg):
         return self.executeMove(KICK_TYPES[(kick_type, kick_leg)])
 
+    @setfps(10)
     def adjusted_straight_kick(self, kick_leg, kick_side_offset=1.0):
         if kick_leg==LEFT:
             return self.executeMove(poses.getGreatKickLeft(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
@@ -541,6 +549,7 @@ class Actions(object):
             return self.executeMove(poses.getGreatKickRight(kick_side_offset), description=('kick', 'ADJUSTED_KICK', kick_leg, 1.0, kick_side_offset))
 
     @legal_any
+    @setfps(10)
     def executeMoveChoreograph(self, (jointCodes, angles, times), whatmove):
         self._current_motion_bd = self._movecoordinator.doMove(jointCodes, angles, times, 1,
                                             description=('choreograph', whatmove))
@@ -548,6 +557,7 @@ class Actions(object):
 
     # TODO: combine executeMove & executeHeadMove (as in lib/pynaoqi/__init__.py)
     @legal_any
+    @setfps(10)
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, description=('executemove',), headIncluded=True):
         """ Go through a list of body angles, works like northern bites code:
         moves is a list, each item contains:
@@ -632,6 +642,7 @@ class Actions(object):
         x, y = target.centered_self.estimated_yaw_and_pitch_to_center()
         return self.moveHead(x=x, y=y, interp_time=interp_time)
 
+    @setfps(10)
     def blockingStraightWalk(self, distance):
         if self.isMotionInProgress():
             return False
@@ -655,7 +666,6 @@ class Actions(object):
 
     def lookaround(self, lookaround_type):
         return self.executeHeadMove(LOOKAROUND_TYPES[lookaround_type])
-
 
     def killAll(self):
         self._motion.killAll()
