@@ -4,6 +4,8 @@ Created on Jun 14, 2009
 @author: Alon & Eran
 '''
 
+from math import pi
+
 from burst_util import (BurstDeferred, succeedBurstDeferred,
     Nameable, calculate_middle, calculate_relative_pos,
     polar2cart, cart2polar, nicefloats)
@@ -17,6 +19,7 @@ import burst.moves as moves
 import burst.moves.walks as walks
 import burst.moves.poses as poses
 from burst.behavior import Behavior
+from burst_field import MIDFIELD_X
 
 from burst.behavior_params import (calcTarget, getKickingType, MAX_FORWARD_WALK, MAX_SIDESTEP_WALK, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS,
                                    BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
@@ -64,6 +67,7 @@ class BallKicker(Behavior):
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self._approachBall)
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
+        self._ballFinder.setOnSearchFailedCB(self._onBallSearchFailed)
         
         self.target_left_right_posts = target_left_right_posts
         self._goalFinder = TargetFinder(actions=actions, targets=self.target_left_right_posts, start=False)
@@ -82,6 +86,8 @@ class BallKicker(Behavior):
 
         self._obstacle_in_front = None
         self._target = self._world.ball
+
+        self._initBallMovements()
 
         # kicker initial position
         self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
@@ -161,6 +167,59 @@ class BallKicker(Behavior):
         return opposite_side_from_obstacle
 
     ################################################################################
+    # Ball finding functionality - better then just plain old search!
+    #
+    #
+    
+    def _initBallMovements(self):
+        self._ball_search_first_failure = True
+
+    def _onBallSearchFailed(self):
+        print "@ Ball Search Failed!!!! Stopping ball Finder"
+        self._ballFinder.stop()
+        if self._movement_deferred:
+            print "@ Movement Deferred - waiting for it to complete and not doing anything here"
+            return
+        if self._ball_search_first_failure:
+            self._ball_search_first_failure = False
+            print "@ Turning, and rerunning search"
+            self._movement_deferred = self._actions.turn(pi)
+            self._movement_type = MOVE_TURN
+            self._movement_deferred.onDone(self._ballSearch_restart)
+        else:
+            # TODO
+            self._onSecondSearchFail_LocalizeStrategy()
+            # TODO
+            #self._onSecondSearchFail_GotoGoalStrategy()
+
+    def _ballSearch_restart(self):
+        print "@ Ball search: restarting search"
+        self._ballFinder.start()
+
+    # Own Goal Seen Strategy: Turn towards closest goal, walk forward
+    # according to dist Strategy
+    def _onSecondSearchFail_GotoGoalStrategy(self):
+        print "TODO - starting ball finder again."
+        self._ballFinder.start()
+
+    # Localization strategy: localize, then move to location
+    def _onSecondSearchFail_LocalizeStrategy(self):
+        # not first time, localize
+        self._actions.localize().onDone(self._onSecondSearchFail_LocalizeStrategy_LocalizeOver)
+
+    def _onSecondSearchFail_LocalizeStrategy_LocalizeOver():
+        # so we are localized.
+        # Let's see where we are:
+        print "In SecondSearchFaile, LocalizeStrategy, Localize Over"
+        x, y = self.robot.world_x, self.robot.world_y
+        if x > MIDFIELD_X:
+            target_x, target_y = 180.0, 0.0 # Our penalty
+        else:
+            target_x, target_y = MIDFIELD_X + 120.0, 0.0 # Their penalty
+        import approacher
+        dx, dy, dh = approacher.getTargetPosition(target_x, target_y, 0.0) # heading towards opposite goal regardles of penalty.
+        self._actions.changeLocationRelative(dx, dy, dh).onDone(self._ballSearch_restart)
+    ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would
     # make it cleared to understand the relationship, not require this comment)
     #
@@ -172,6 +231,7 @@ class BallKicker(Behavior):
         # when ball tracker finds the ball while a previous movement is still ON.
         if self._movement_deferred:
             print "LAST MOVEMENT STILL ON!!!"
+            self._eventmanager.callLater(0.5, self._approachBall)
             #import pdb; pdb.set_trace()
             return
 
