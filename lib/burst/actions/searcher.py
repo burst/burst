@@ -129,6 +129,12 @@ def goalSearchIter(searcher):
     #    yield lambda: searcher._actions.headTowards(t)
     cur_yaw = searcher._actions._world.getAngle('HeadYaw')
     w =  1.0/3.0 # secs for pi turn
+    for turn in [pi/2, pi/2]:
+        for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
+            yield HeadMovementCommand(searcher._actions, *headCoordinates)
+        # so we didn't find the targets - take the posts we find, turn the complement.
+        #if set(searcher.seen_objects
+        yield turn
     for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
@@ -176,6 +182,9 @@ class SearchPlanner(object):
     def _report(self, string):
         if self.verbose:
             print "Planner: %s" % string
+
+    def wantedMove(self):
+        return self._wantedMove
 
 # Various other strategies for the searcher
 
@@ -234,6 +243,7 @@ class Searcher(Behavior):
         # this is the default "did I see all targets" function, used
         # by searchHelper to provide both "all" and "one off" behavior.
         self._seenTargets = self._seenAll
+        self._wantedMove = None
 
     def _reset(self):
         """ called when starting a new search """
@@ -244,10 +254,13 @@ class Searcher(Behavior):
         self.targets = []
         self._report("Searcher: RESET")
         self._eventToCallbackMapping = {}
+        self._wantedMove = None
 
     def _report(self, *strings):
         if self.verbose:
             self.log("%s: %s" % (self._search_count, '\n'.join(strings)))
+
+    # Player / Behavior API
 
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
             searchPlannerMaker=TargetsAndLocalizationBasedSearchPlanner):
@@ -261,6 +274,20 @@ class Searcher(Behavior):
         return self.start(targets=targets, center_on_targets=center_on_targets,
             timeout=timeout, timeoutCallback=timeoutCallback,
             searchPlannerMaker=searchPlannerMaker)
+
+    def wantsToMove(self):
+        return self._wantedMove is not None
+
+    def wantedMove(self):
+        """ returns either a single float for heading, or a triple for (dx, dy, dh) """
+        return self._wantedMove
+
+    # Complementary setter for wanted move
+
+    def _setWantedMove(self, move):
+        self._wantedMove = move
+
+    # Local Methods
 
     def _start(self, firstTime, targets, center_on_targets,
                 timeout, timeoutCallback, searchPlannerMaker):
@@ -335,12 +362,19 @@ class Searcher(Behavior):
         if not self.stopped:
             if not self._seenTargets() or self._searchPlanner.hasMoreCenteringTargets():
                 try:
-                    self._searchPlanner.next().__call__().onDone(self._nextSearchMove)
-                    self._report("%s, %s" % (self.targets,
-                        self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
+                    next_searcher_action = self._searchPlanner.next() # UGLY - this will call self.setWantedMove if it wants one
                 except StopIteration:
-                    self.log("Could not find any of the targets - are you using the right camera?")
+                    self.log("Could not find any of the targets and no suggested movement")
                     self.stop() # TODO - say "failed"
+                else:
+                    # specific check for a movement command (which is not an action at all)
+                    if not callable(next_searcher_action):
+                        self._setWantedMove(next_searcher_action)
+                        self.stop()
+                    else:
+                        next_searcher_action.__call__().onDone(self._nextSearchMove)
+                        self._report("%s, %s" % (self.targets,
+                            self._searchPlanner.hasMoreCenteringTargets() and 'has more centering targets' or 'done centering'))
             else:
                 self.stop()
 
