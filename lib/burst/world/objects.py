@@ -613,6 +613,7 @@ class Goal(Locatable):
         self.unknown = GoalPost(name='%s_UnknownPost' % name, which_team=which_team, world=world, world_x=mid_x,
                 world_y=mid_y, real_post=False)
         self.bottom_top = (self.left, self.right) if self.left.world_y < self.right.world_y else (self.right, self.left)
+        self.left_right_unknown = (self.left, self.right, self.unknown)
 
     def configure(self, color):
         """ called when entering CONFIGURED state """
