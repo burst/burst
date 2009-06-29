@@ -10,7 +10,7 @@ from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
 from math import pi, sqrt, acos
 
-DESIRED_DISTANCE_FROM_GOAL_LINE = 3 * 0.055
+DESIRED_DISTANCE_FROM_GOAL_LINE = 17 * 0.055
 
 debug = True
 
@@ -25,8 +25,7 @@ class Goalie(InitialBehavior):
         self.side = left
 
     def _start(self, firstTime=False):
-#        print "%3.3f" % self._world.getAngle('HeadYaw'); raise SystemExit
-        # TODO - remove before commit
+        # TODO - remove
         def donothing(*args, **kw):
             pass
         self._eventmanager._mainloop._player.onFallen = donothing
@@ -55,7 +54,6 @@ class Goalie(InitialBehavior):
         self._actions.turn(self.side*2*pi)
 
     def monitorForFirstOwnGoalPost(self):
-#        print "monitorForFirstOwnGoalPost"
         for goalpost in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
             if (goalpost.centerX > burst_consts.IMAGE_CENTER_X if self.side == left else goalpost.centerX < burst_consts.IMAGE_CENTER_X):
                 self.cb.clear() # TODO: Is this OK even if the cb has already been called? Is being called?
@@ -65,12 +63,14 @@ class Goalie(InitialBehavior):
     def onGoalPostFoundAndReadyForCentering(self, goalpost):
         print "onGoalPostFoundAndReadyForCentering"
         self._actions.clearFootsteps().onDone(
-            lambda _=None, goalpost=goalpost: self._actions.centerer.start(target=goalpost).onDone(
-            lambda _=None, goalpost=goalpost: self.onCenteredOnFirstGoalpost(goalpost)))
+            lambda _=None, _goalpost1=goalpost: self._actions.centerer.start(target=_goalpost1).onDone(
+            lambda _=None, _goalpost2=goalpost: self.onCenteredOnFirstGoalpost(_goalpost2)))
 
     def onCenteredOnFirstGoalpost(self, goalpost):
         print "onCenteredOnFirstGoalpost"
-        self.distanceToFirst = goalpost.centered_self.dist
+        self.distanceToFirst = goalpost.dist
+        goalpost.centered_self.clear()
+        print "!", self.distanceToFirst
         self._actions.moveHead(self.side*pi/2, -40.0*DEG_TO_RAD).onDone(self.onReadyToLookForSecond)
 
     def onReadyToLookForSecond(self):
@@ -78,9 +78,9 @@ class Goalie(InitialBehavior):
         self._actions.turn(self.side*2*pi)
 
     def monitorForSecondOwnGoalPost(self):
-#        print "monitorForSecondOwnGoalPost"
         # Get the closest currently seen goal post of our own goal:
-        for obj in filter(lambda obj: obj.seen, [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
+        for obj in filter(lambda _obj: _obj.seen, 
+                [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]):
             readyForCentering = (
                 # 0.45-0.55 is a deadzone, since the first goalpost might appear to move back slightly.
                 0.10*burst_consts.IMAGE_WIDTH_INT < obj.centerX < 0.35*burst_consts.IMAGE_WIDTH_INT
@@ -90,21 +90,23 @@ class Goalie(InitialBehavior):
             if readyForCentering:
                 self._eventmanager.unregister(self.monitorForSecondOwnGoalPost, EVENT_STEP)                
                 self._actions.clearFootsteps().onDone(
-                    lambda _=None, obj=obj: self._actions.centerer.start(target=obj).onDone(
-                    lambda _=None, obj=obj: self.onCenteredOnSecondGoalpost(obj)))
+                    lambda _=None, _obj1=obj: self._actions.centerer.start(target=_obj1).onDone(
+                    lambda _=None, _obj2=obj: self.onCenteredOnSecondGoalpost(_obj2)))
                 break
 
     def onCenteredOnSecondGoalpost(self, obj):
         print "onCenteredOnSecondGoalpost"
-        self.distanceToSecond = obj.centered_self.dist
-        print self.distanceToFirst, self.distanceToSecond
+        for x in [self._world.our_rp, self._world.our_lp, self._world.our_goal.unknown]:
+            print x, "seen: %s dist: %3.3f bearing: %3.3f" % (x.seen, x.dist, x.bearing)
+            print "centered dist:", x.centered_self.dist
+        print "chosen:", obj.centered_self.dist, obj
+        self.distanceToSecond = obj.dist
+        print "first, second:", self.distanceToFirst, self.distanceToSecond
         self.analyze()
 
     def analyze(self):
         print "analyze"
         a, b, c = burst_field.CROSSBAR_CM_WIDTH, self.distanceToFirst, self.distanceToSecond
-        print "originally:", a, b, c
-        a, b, c = a, 1.1*b, 1.1*c # TODO: REMOVE THIS LINE!
 #        a, b, c = 140.0, 211.0, 290.0 # TODO: REMOVE THIS LINE!
         print a, b, c
         m = sqrt( (2*b*b + 2*c*c - a*a) / 4.0 )
@@ -137,6 +139,11 @@ class Goalie(InitialBehavior):
 
     def onAlignedWithOppositeGoal(self):
         print "onAlignedWithOppositeGoal"
+        self._eventmanager.register(self.shittyCode, EVENT_STEP)
+
+    def shittyCode(self):
+        print "shittyCode"
+        self._eventmanager.unregister(self.shittyCode, EVENT_STEP)
         self._actions.changeLocationRelative(DESIRED_DISTANCE_FROM_GOAL_LINE).onDone(self.onFinished)
 
     def onFinished(self):
