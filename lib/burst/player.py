@@ -327,7 +327,8 @@ class Player(object):
         """ stop main behavior, kill all actions.
         start: waiting for main behavior stop to be done && getting up
         when both are done: restart main behavior
-        """        self.unregisterFallHandling()        
+        """
+        self.unregisterFallHandling()        
         self._actions.killAll()
         main_bd = self._main_behavior.stop()        
         up_bd = executeGettingUp()
