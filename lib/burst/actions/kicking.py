@@ -191,6 +191,7 @@ class BallKicker(Behavior):
         
         # Ball inside kicking area, kick it
         if target_location == BALL_IN_KICKING_AREA and (self._aligned_to_goal or not self._align_to_target):
+            # TODO: diagonalize the kick. It might be off target even if we think we are alligned            
             self.doKick(side, kick_side_offset)
             return
 
@@ -207,6 +208,7 @@ class BallKicker(Behavior):
         self._diag_kick_tested = False
         
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
+        # TODO: Use 2x circle strafing to get to the ball faster an not so accurate
         if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR) and not self._aligned_to_goal and self._align_to_target:
             self.logverbose("Aligning to goal! (switching to goal finder)")
             self._actions.setCameraFrameRate(20)
@@ -245,6 +247,7 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_SIDEWAYS
             self._movement_location = target_location
+            # TODO: change numbers for side stepping. Does that 4 or 5 times.                            
             self._movement_deferred = self._actions.changeLocationRelativeSideways(
                 0.0, movementAmount, walk=walks.SIDESTEP_WALK)
         elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):

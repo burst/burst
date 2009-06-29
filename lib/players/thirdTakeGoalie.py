@@ -1,16 +1,21 @@
 #!/usr/bin/python
 
 import player_init
+import burst_field
 from burst.behavior import InitialBehavior
 from burst_events import *
 from burst_consts import *
 import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
-from math import pi
+from math import pi, sqrt, acos
 
 
 debug = True
+
+# TODO: Centering bugs?
+# TODO: Realign the head after first centering? Probably shouldn't.
+# TODO: 
 
 class Goalie(InitialBehavior):
 
@@ -19,6 +24,7 @@ class Goalie(InitialBehavior):
         self.side = left
 
     def _start(self, firstTime=False):
+#        print "%3.3f" % self._world.getAngle('HeadYaw'); raise SystemExit
         self._restart()
 
     def _restart(self):
@@ -84,14 +90,46 @@ class Goalie(InitialBehavior):
         print "onCenteredOnSecondGoalpost"
         self.distanceToSecond = obj.centered_self.dist
         print self.distanceToFirst, self.distanceToSecond
+        self.analyze()
+
+    def analyze(self):
+        print "analyze"
+        a, b, c = burst_field.CROSSBAR_CM_WIDTH, self.distanceToFirst, self.distanceToSecond
+        print "originally:", a, b, c
+        a, b, c = 140.0, 211.0, 290.0 # TODO: REMOVE THIS LINE!
+        print a, b, c
+        m = sqrt( (2*b*b + 2*c*c - a*a) / 4.0 )
+        alpha = acos( (b*b+c*c-a*a)/(2.0*b*c) )
+        print "analyzed distance:", m, "analyzed degree:", alpha
+        self._actions.changeHeadAnglesRelative(-0.5*alpha, 0.0).onDone(
+            lambda _=None, alpha=alpha, m=m: self.onHeadDirectedAtCenterOfGoal(alpha, m))
+        
+    def onHeadDirectedAtCenterOfGoal(self, alpha, m):
+        print "onHeadDirectedAtCenterOfGoal"
+        self._actions.turn(self._world.getAngle('HeadYaw')).onDone(
+            lambda: self._actions.changeLocationRelative(m).onDone(
+            self.onArrivalAtMiddleOfOwnGoal))
+
+    def onArrivalAtMiddleOfOwnGoal(self):
+        print "onArrivalAtMiddleOfOwnGoal"
+        self._eventmanager.register(self.monitorForOppositeGoal, EVENT_STEP)
+        self._actions.turn(2*pi)
+
+    def monitorForOppositeGoal(self):
+#        print "monitorForOppositeGoal"
+        if self._world.opposing_rp.seen and self._world.opposing_lp.seen:
+            if self._world.opposing_rp.centerX > IMAGE_CENTER_X:
+                if self._world.opposing_lp.centerX < IMAGE_CENTER_X:
+                    self._eventmanager.unregister(self.monitorForOppositeGoal, EVENT_STEP)
+                    self._actions.clearFootsteps().onDone(self.onAlignedWithOppositeGoal)
+
+    def onAlignedWithOppositeGoal(self):
+        print "onAlignedWithOppositeGoal"
         self._eventmanager.quit()
         
-
-
 
 
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
     MainLoop(Goalie).run()
-
