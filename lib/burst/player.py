@@ -335,7 +335,7 @@ class Player(object):
         """
         self.unregisterFallHandling()
         self._actions.killAll()
-        main_bd = self._stopMainBehavior('Fallen, restarting behavior')
+        main_bd = self._stopMainBehavior('; Fallen, restarting behavior')
         up_bd = executeGettingUp()
         DeferredList([main_bd.getDeferred(), up_bd.getDeferred()]).addCallback(lambda _: self.onGottenUp())
 

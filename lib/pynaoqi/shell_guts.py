@@ -168,6 +168,8 @@ class RemoteControl(object):
         self.send('ball %s %s %s' % (x, y, WORLD_BALL_Z))
     def rot(self, x, y, z, alpha):
         self.send('rot %s %s %s %s' % (x, y, z, alpha))
+    def player_name(self, name):
+        self.send('player_name %s' % name)
 
 remote = RemoteControl()
 
