@@ -365,6 +365,6 @@ class InitialBehavior(Behavior):
         self._initial_pose = initial_pose
 
     # TODO - remove and put in constructor
-    def setPlayer(self):
+    def setPlayer(self, player):
         self._player = player
 
