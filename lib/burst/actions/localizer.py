@@ -11,11 +11,18 @@ class Localizer(Behavior):
         self._my_completed = False
 
     def _start(self, firstTime, targets=None):
+        """ Since localization happens in the background, here we just try to make sure it will happen
+        by pointing the head in all directions, through the searcher.
+
+        targets - optional, not sure needed - to set different targets for the search. If they don't
+        contain any of the posts or other known landmarks, known by world/localization.py, nothing will
+        happen :(
+        """
         # first check if we are already localized. If so return succeed
 
         # TODO - yellow gate isn't right. We should use "last seen", try to minimize time to localize.
 
-        self._targets = targets if targets is not None else [self._world.opposing_lp, self._world.opposing_rp]
+        self._targets = targets if targets is not None else list(self._world.all_posts)
         if not firstTime:
             # we won't need to reregister our bd
             print "ERROR: Don't call Localizer _start directly!"

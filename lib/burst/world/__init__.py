@@ -322,6 +322,16 @@ class World(object):
             if o.seen:
                 yield o
 
+    def getSeenGoal(self):
+        """ returns None or the Goal object """
+        seen = set(self.seenObjects())
+        if set(self.opposing_goal.bottom_top) <= seen:
+            return self.opposing_goal
+        if set(self.our_goal.bottom_top) <= seen:
+            return self.our_goal
+        return None
+    seen_goal = property(getSeenGoal)
+
     # Accessors
 
     def getMemoryProxy(self):

@@ -237,7 +237,9 @@ class Behavior(Nameable):
             try:
                 ret = cb()
             except TypeError, e:
-                import pdb; pdb.set_trace()
+                import traceback
+                traceback.print_exc()
+                return
             if not hasattr(ret, 'onDone'):
                 return ret
             return ret.onDone(chained.callOnDone)

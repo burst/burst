@@ -92,7 +92,7 @@ except Exception, e:
     print "\nERROR: Exception while importing %s: %s" % (personal_filename, e)
     import traceback
     import sys
-    traceback.print_tb(sys.exc_info()[2])
+    traceback.print_exc()
     raise SystemExit
 
 print "Done"

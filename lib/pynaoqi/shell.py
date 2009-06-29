@@ -26,6 +26,14 @@ tracker.verbose=not tracker.verbose
 searcher.verbose=not searcher.verbose
 localizer.verbose=not localizer.verbose
 """)
+,('centerer',
+"""
+centerer.start(target=world.ball)
+centerer.start(target=list(world.seenObjects)[0])
+centerer.start(target=world.seen_goal.left)
+centerer.start(target=world.seen_goal.right)
+"""
+)
 ,
 ('remote',
 """
