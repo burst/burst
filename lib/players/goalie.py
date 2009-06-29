@@ -28,18 +28,14 @@ class Goalie(InitialBehavior):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
         self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
-        self.timeSinceRegistered = 0
 
     def _start(self, firstTime=False):
         #AlignmentAfterLeap(self._actions, right).start()
         #return
         self.isPenalty = False # TODO: Use the gameStatus object.
-        if self.isPenalty:
-            self.targetFinder.setOnTargetFoundCB(self.penaltyRegister)
-            self.targetFinder.setOnTargetLostCB(lambda: self._eventmanager.unregister(self.leapPenalty))
-        else:
-            self.targetFinder.setOnTargetFoundCB(self.goalieRegister)
-            self.targetFinder.setOnTargetLostCB(lambda: self._eventmanager.unregister(self.leap))
+        self.targetFinder.setOnTargetFoundCB(self.targetFound)
+        self.targetFinder.setOnTargetLostCB(self.targetLost)
+        self.targetLostTime = self._world.time
 
     def _start(self, firstTime=False):
         self.readyToLeap()
@@ -49,18 +45,27 @@ class Goalie(InitialBehavior):
         self._actions.setCameraFrameRate(20)
         self.targetFinder.start()
 
-    def penaltyRegister(self):
-        self.targetFinder.stop()
-        self.timeSinceRegistered = self._world.time
-        self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
+    def targetFound(self):
+        self.targetFoundTime = self._world.time
+        if self.isPenalty:
+            self.targetFinder.stop()
+            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
+        else:
+            before = len(self._eventmanager._registered)
+            self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
+            after = len(self._eventmanager._registered)
+            print "registering: self: %s %s, #registered: before %s, after %s" % (
+                id(self), id(self.leap), before, after) # note: id(self.leap) changes, but it's ok.
 
-    def goalieRegister(self):
-        print "goalieRegister (%s)" % id(self)
-        self.timeSinceRegistered = self._world.time
-        self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)
+    def targetLost(self):
+        self.targetLostTime = self._world.time
+        if self.isPenalty:
+            self._eventmanager.unregister(self.leapPenalty)
+        else:
+            self._eventmanager.unregister(self.leap)
 
     def leapPenalty(self, stopped=False):
-        if self.timeSinceRegistered + WAITING_FOR_HEAD < self._world.time:
+        if self.targetFoundTime + WAITING_FOR_HEAD < self._world.time:
             print "LEAP (PENALTY) ABORTED, NOT ENOUGH DATA!"
             return
         print "Penalty leap!"
@@ -83,9 +88,11 @@ class Goalie(InitialBehavior):
                 
     leap_time = -1
     def leap(self, stopped=False):
-        if self.timeSinceRegistered + WAITING_FOR_NEW_DATA < self._world.time:
-            print "LEAP ABORTED, NOT ENOUGH DATA!"
-            return
+        if self.targetFoundTime - self.targetLostTime > 0.5:
+            if self.targetFoundTime + WAITING_FOR_NEW_DATA < self._world.time:
+                print "LEAP ABORTED, NOT ENOUGH DATA!"
+                return
+
         print "Checking if leap is necessary"
         if self._world.time == self.leap_time:
             import pdb; pdb.set_trace()
@@ -144,7 +151,6 @@ class Goalie(InitialBehavior):
             AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
         else:
             self.readyToLeap()
-
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
