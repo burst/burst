@@ -474,6 +474,9 @@ if '--history' in sys.argv: # TODO - ugly, should be through burst.options
 
 # Debugging
 
+def gettb():
+    return traceback.extract_stack(sys._getframe())
+
 def getcaller(aboveme=1):
     # we return the caller of who called us, using aboveme
     # to give the stack about the caller, so -1 is who called

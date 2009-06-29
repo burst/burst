@@ -116,6 +116,62 @@ def fieldshow(callback=None, limits=field.green_limits):
         statics=list(field.rects) + map(list, field.landmarks))
 
 ################################################################################
+# Remote control through remote_control supervisor
+# see webots/controllers/remote_control/remote_control.py
+RC_PORT = 13434
+WEBOTS_STANDING_Z = 0.32195
+WEBOTS_BALL_Z = 0.0428038
+# TODO - put in burst_consts.
+webots_goal_dist_from_center = 3.11 * 1.07 #3.3277
+burst_field_width = 605.0 # cm
+k = webots_goal_dist_from_center / (burst_field_width / 2)
+konv = 1.0 / k
+WORLD_STANDING_Z = WEBOTS_STANDING_Z * konv
+WORLD_BALL_Z = WEBOTS_BALL_Z * konv
+
+class RemoteControl(object):
+    def __init__(self):
+        self.s = None
+    def tryConnect(self):
+        if self.s is None:
+            import socket
+            self.s = socket.socket()
+        if not self.connected():
+            try:
+                self.s.connect(('127.0.0.1', RC_PORT))
+            except:
+                return False
+        return self.connected()
+    def connected(self):
+        #return self.s.getsockname()[0] == '0.0.0.0'
+        if self.s is None: return False
+        try:
+            self.s.getpeername()
+            return True
+        except:
+            return False
+    def send(self, line):
+        if not self.tryConnect():
+            print "no one home"
+            return
+        if len(line) == 0 or line[-1] != '\n': line = line + '\n'
+        self.s.send(line)
+    def origin(self):
+        self.pos(0, 0, WEBOTS_STANDING_Z)
+    def rotblue(self):
+        self.send('rotblue')
+    def rotyellow(self):
+        self.send('rotyellow')
+    def pos(self, x, y, z):
+        self.send('pos %s %s %s' % (x, y, max(WORLD_STANDING_Z, z)))
+    def ball(self, x, y):
+        self.send('ball %s %s %s' % (x, y, WORLD_BALL_Z))
+    def rot(self, x, y, z, alpha):
+        self.send('rot %s %s %s %s' % (x, y, z, alpha))
+
+remote = RemoteControl()
+
+################################################################################
 # Vision Helpers
 
 class Data(object):

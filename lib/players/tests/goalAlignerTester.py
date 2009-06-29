@@ -21,7 +21,6 @@ class GoalAlignerTester(InitialBehavior):
     def searchGoalPosts(self):
         self._actions.tracker.stop()
         self.goalpost_to_track = None
-        self._actions.setCameraFrameRate(20)
         self._actions.search(self.goalposts, stop_on_first=True, center_on_targets=False).onDone(self.onGoalPostFound)
 
     def onGoalPostFound(self):
@@ -47,7 +46,6 @@ class GoalAlignerTester(InitialBehavior):
         else:
             # track goal post, align against it
             self.goalLocationKnown = True
-            self._actions.setCameraFrameRate(20)
 
             print "manually centering on goal post (from search goal results)"
             self.manualCentering(self.goalpost_to_track.centered_self, self.onSearchCenteringDone)
@@ -66,9 +64,7 @@ class GoalAlignerTester(InitialBehavior):
     def strafe(self):
         print "strafing"
         if self.goalLocationKnown:
-            # TODO: Add align-to-goal-center support
             if self.goalpost_to_track.bearing < -DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
-                self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
                     self.movement_deferred = self._actions.turn(-0.2)
                     self.movement_deferred.onDone(self.strafe)
@@ -76,7 +72,6 @@ class GoalAlignerTester(InitialBehavior):
                     self.movement_deferred = self._actions.executeTurnCW()
                     self.movement_deferred.onDone(self.strafe)
             elif self.goalpost_to_track.bearing > DEFAULT_NORMALIZED_CENTERING_Y_ERROR:
-                self._actions.setCameraFrameRate(10)
                 if burst.connecting_to_webots():
                     self.movement_deferred = self._actions.turn(0.2)
                     self.movement_deferred.onDone(self.strafe)
@@ -87,7 +82,6 @@ class GoalAlignerTester(InitialBehavior):
                 print "Aligned position reached!"
                 self._actions.tracker.stop()
                 #self.ballLocationKnown = False
-                #self._actions.setCameraFrameRate(20)
                 #self._actions.executeHeadMove(moves.HEAD_MOVE_FRONT_BOTTOM).onDone(self.doNextAction)
                 self._eventmanager.quit()
         else:

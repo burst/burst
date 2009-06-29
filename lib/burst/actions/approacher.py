@@ -78,8 +78,7 @@ class Approacher(Behavior):
 
         self.log("Step: %3.2f, %3.2f, %3.2f" % (x, y, h))
 
-        self._actions.setCameraFrameRate(10).onDone(lambda:
-            self._movement_callback(delta_x=x, delta_y=y, delta_theta=h).onDone(self._getTargetPos))
+        self._movement_callback(delta_x=x, delta_y=y, delta_theta=h).onDone(self._getTargetPos)
 
 ################################################################################
 def kickerMovementFromRelativeTarget(x, y, h):
@@ -139,7 +138,6 @@ def kickerMovementFromRelativeTarget(x, y, h):
 
     bd = None
     if target_location in action_selection:
-        self._actions.setCameraFrameRate(10)
         bd, movement_type = action_selection[target_location](target_location)
     return bd
     #self.log(type_to_msg.get(movement_type, "!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! target location problematic!"))

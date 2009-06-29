@@ -27,6 +27,14 @@ searcher.verbose=not searcher.verbose
 localizer.verbose=not localizer.verbose
 """)
 ,
+('remote',
+"""
+remote.ball(100,0)
+remote.origin()
+remote.rotyellow()
+remote.rotblue()
+"""
+),
 ('events',
 """
 # show all events
@@ -174,7 +182,7 @@ def make_shell_namespace(use_pylab, using_gtk, con):
     from shell_guts import (format_vision_vars, onevision, makeplayerloop,
         players, tests, moves, field, f, fps,
         checking_loop, compacting_loop, watch, plottime, canvaspairs,
-        fieldpairs, fieldshow, video, calibrator, notes,)
+        fieldpairs, fieldshow, video, calibrator, notes, remote)
 
     import burst
     from gui import Joints
@@ -205,6 +213,7 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         players = players,
         tests = tests,
         player = None, # set by players.bla.start()
+        remote = remote,
         # burst
         burst = burst,
         burst_util = burst_util,
