@@ -26,9 +26,18 @@ class TargetFinder(ContinuousBehavior):
         self._targets = targets
         self._onTargetFoundCB = None
         self._onTargetLostCB = None
+        self._onSearchFailedCB = None
         self.verbose = False
         if start:
             self.start()
+
+    # Callback helpers
+    def setOnSearchFailedCB(self, cb):
+        self._onSearchFailedCB = cb
+
+    def _callOnSearchFailedCB(self):
+        if self._onSearchFailedCB:
+            self._onSearchFailedCB()
 
     def setOnTargetFoundCB(self, cb):
         self._onTargetFoundCB = cb
@@ -51,8 +60,18 @@ class TargetFinder(ContinuousBehavior):
         self.log("_start: %s (first time: %s)" % (','.join(s.name for s in self._targets), firstTime))
         self._iterate(callOnLost=False)
 
+    def _onSearchOver(self):
+        if set(self._actions.searcher.seen_object) < set(self._targets):
+            self.log("_onSearchOver: didn't see all targets, so calling user callback")
+            self._callOnSearchFailedCB()
+        self._iterate()
+
     def _iterate(self, callOnLost=True):
         """
+            Called by/as:
+                lostCallback of tracker (TODO - should call some helper like onSearchOver)
+                self._onSearchOver when search is done
+
             If target_finder doesn't find target, it first calls OnTargetLostCB,
             and only then starts a search (otherwise we might get "Target Found" before getting the "Target Lost")
         """
@@ -89,7 +108,7 @@ class TargetFinder(ContinuousBehavior):
                 self._callOnTargetLostCB()
             self._actions.search(
                 self._targets, center_on_targets=True, stop_on_first=True).onDone(
-                self._iterate)
+                self._onSearchFailedCB)
 
     def _stop(self):
         """ stops the finder (and internal tracker/searcher).

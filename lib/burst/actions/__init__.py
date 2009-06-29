@@ -19,6 +19,7 @@ from burst.image import normalized2_image_width, normalized2_image_height
 from actionconsts import *
 from journey import Journey
 from kicking import BallKicker
+from initial_cp_kicking import InitialKicker
 from headtracker import Tracker, Centerer
 from searcher import Searcher
 from passing import passBall
@@ -175,6 +176,29 @@ class Actions(object):
     #===============================================================================
     # These functions are generally a facade for internal objects, currently:
     # kicking.Kicker, headtracker.Searcher, headtracker.Tracker
+    @returnsbd # must be first
+    def kickInit(self, target_world_frame=None, side=LEFT):
+        """ Kick the Ball. Returns an already initialized BallKicker instance which
+        can be used to stop the current activity.
+
+        If target is None it kicks towards the enemy goal (currently the Yellow - TODO).
+        Otherwise target should be a location which will be used to short circuit the
+        scanning process. (caller needs to supply a valid target)
+
+        Kicking towards a target entails:
+         * if target is default: scan for ball until found (using various strategies)
+         * approach ball using different strategies (far, close)
+         * kick
+
+        TODO: target can be a robot name, then the kick becomes a pass. This requires
+        being able to detect the location.
+        TODO: have several kick types, one for passing, one for kicking towards goal.
+        """
+        initkicker = InitialKicker(self, side=side)
+        initkicker.start()
+        return initkicker
+
+
 
     @returnsbd # must be first
     def kickBall(self, target_left_right_posts, target_world_frame=None):
