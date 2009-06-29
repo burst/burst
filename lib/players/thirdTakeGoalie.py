@@ -100,20 +100,22 @@ class Goalie(InitialBehavior):
         m = sqrt( (2*b*b + 2*c*c - a*a) / 4.0 )
         alpha = acos( (b*b+c*c-a*a)/(2.0*b*c) )
         print "analyzed distance:", m, "analyzed degree:", alpha
-        self._actions.changeHeadAnglesRelative(-0.5*alpha, 0.0).onDone(self.onHeadDirectedAtCenterOfGoal)
+        self._actions.changeHeadAnglesRelative(-0.5*alpha, 0.0).onDone(
+            lambda _=None, alpha=alpha, m=m: self.onHeadDirectedAtCenterOfGoal(alpha, m))
         
-    def onHeadDirectedAtCenterOfGoal(self):
+    def onHeadDirectedAtCenterOfGoal(self, alpha, m):
         print "onHeadDirectedAtCenterOfGoal"
-        raise SystemExit
-        self._actions.turn(-0.5*alpha).onDone(
+        self._actions.turn(self._world.getAngle('HeadYaw')).onDone(
             lambda: self._actions.changeLocationRelative(m).onDone(
             self.onArrivalAtMiddleOfOwnGoal))
 
     def onArrivalAtMiddleOfOwnGoal(self):
+        print "onArrivalAtMiddleOfOwnGoal"
         self._eventmanager.register(self.monitorForOppositeGoal, EVENT_STEP)
         self._actions.turn(2*pi)
 
     def monitorForOppositeGoal(self):
+        print "monitorForOppositeGoal"
         if self._world.opposite_rp.seen and self._world.opposite_lp.seen:
             if self._world.opposite_rp.centerX > IMAGE_CENTER_X:
                 if self._world.opposite_lp.centerX < IMAGE_CENTER_X:
