@@ -76,6 +76,7 @@ class Goalie(InitialBehavior):
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
                 print "real leap right"
+                self.unregisterFallHandling()
                 self._actions.executeLeapRight().onDone(self.waitingOnRight)
             else:
                 self._actions.say("right.")
@@ -83,6 +84,7 @@ class Goalie(InitialBehavior):
         else:
             if realLeap or debugLeapLeft:
                 print "real leap left"
+                self.unregisterFallHandling()
                 self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("left.")
@@ -114,6 +116,7 @@ class Goalie(InitialBehavior):
             self.targetFinder.stop()
             if realLeap:
                 print "real leap right safe"
+                self.unregisterFallHandling()
                 self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
             else:
                 self._actions.say("right.")
@@ -124,6 +127,7 @@ class Goalie(InitialBehavior):
             self.targetFinder.stop()
             if realLeap:
                 print "real leap left safe"
+                self.unregisterFallHandling()
                 self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("left.")
@@ -157,7 +161,8 @@ class Goalie(InitialBehavior):
         self._actions.executeGettingUpBelly().onDone(lambda: self.onLeapComplete(side))
 
     def onLeapComplete(self, side):
-        print "complete"
+        print "complete"    
+        self.registerFallHandling()        
         if realLeap:
             AlignmentAfterLeap(self._actions, side).start().onDone(lambda: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
         else:

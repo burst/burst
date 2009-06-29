@@ -28,7 +28,6 @@ class Goalie(InitialBehavior):
         # TODO: ownGoal according to my own team color.
         self.ownGoal = [self._world.opposing_rp, self._world.opposing_lp]
         self.oppositeGoal = [self._world.opposing_rp, self._world.opposing_lp]
-        self._actions.setCameraFrameRate(10)
 
         # TODO: This will no longer be the case once we make sure that our own goal, regardless of the color, is at (0, 0).
         self.ownGoalGlobalCartesianCoordinates = (0.0, 0.0)

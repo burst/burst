@@ -14,8 +14,8 @@ import burst_consts
 from burst_events import (EVENT_BALL_IN_FRAME,
     EVENT_BALL_BODY_INTERSECT_UPDATE, EVENT_BALL_LOST,
     EVENT_BALL_SEEN, EVENT_BALL_POSITION_CHANGED , BALL_MOVING_PENALTY,
-    event_name)
-from burst_util import running_median, RingBuffer, Nameable
+    event_name, FIRST_EVENT_NUM)
+from burst_util import running_median, RingBuffer, Nameable, func_name, gettb
 from burst.image import normalized2_image_width, normalized2_image_height
 import burst
 import burst_events
@@ -28,6 +28,16 @@ info = logger.info
 
 ################################################################################
 
+def once_per_step(f):
+    def wrapper(self, *args, **kw):
+        if hasattr(self, '_once_per_step_time') and self._world.time == self._once_per_step_time:
+            print "ERROR: called twice per round: %s" % func_name(f)
+            import pdb; pdb.set_trace()
+            return
+        self._once_per_step_time = self._world.time
+        self._last_tb = gettb()
+        return f(self, *args, **kw)
+    return wrapper
 
 class CenteredLocatable(object):
     """ store data for a Locatable for a current search.
@@ -276,6 +286,7 @@ class Locatable(Nameable):
         return self.seen or (
              self._world.time - self.history[-1][self.HIST_TIME] <= min_dt if self.history[-1] else False)
 
+    @once_per_step
     def update_location_body_coordinates(self, new_dist, new_bearing, new_elevation):
         """ We only update the values if the move looks plausible.
 
@@ -287,6 +298,7 @@ class Locatable(Nameable):
         dt = update_time - self.update_time
         if dt <= 0.0:
             print "TIME ERROR: dt = %s, not updating anything" % dt
+            import pdb; pdb.set_trace()
             return
         body_x, body_y = new_dist * cos(new_bearing), new_dist * sin(new_bearing)
         dx, dy = body_x - self.body_x, body_y - self.body_y
@@ -621,28 +633,35 @@ class Goal(Locatable):
     def calc_events(self, events, deferreds):
         """ Try to get the location of the left/right posts from the unknown harder.
         """
-        left_seen_uncertain = self.left.calc_events(events, deferreds)
-        right_seen_uncertain = self.right.calc_events(events, deferreds)
-        if left_seen_uncertain or right_seen_uncertain:
-            state = left_seen_uncertain or right_seen_uncertain
-            # First, try to use the unknown to update the one closest. We don't actually compute anything,
-            # we just assume that if in the previous frame we saw only one then we can update it.
-            # TODO: If we saw both in the previous frame (very possible) we need to take the one with closest heading
-            target = self.unknown
-            for target in [self.left, self.right]:
-                if self.left.seenWithinOneFrame:
-                    break
-            else:
-                target = self.unknown
-            if target is self.unknown:
-                self.unknown.update_from_new_state(state, events=None, deferreds=None, require_sure=False)
-                # try heading
-                #print "TODO TRY HEADING"
-            target.update_from_new_state(state, events=None, deferreds=None, require_sure=False)
-            if target.seen and burst.options.verbose_goals:
-                print "%s: updated %s from an unknown" % (self.name, target.name)
+        # First read vars and check
+        if self.left.color is None: return
+        self.left.get_new_state()
+        self.right.get_new_state()
+        left_seen_uncertain = self.left.is_uncertain()
+        right_seen_uncertain = self.right.is_uncertain()
+        to_second_stage = []
+        # States:
+        if left_seen_uncertain and right_seen_uncertain:
+            # should never happen
+            to_second_stage.append(self.unknown)
+            state = self.left.get_state() if left_seen_uncertain else self.right.get_state()
+            print "BOTH UNCERTAIN AND SEEN??"
+            import pdb; pdb.set_trace()
+            self.unknown.set_state(state)
+        elif left_seen_uncertain or right_seen_uncertain:
+            # one uncertain, the other maybe certain or not.
+            # TODO: use the unknown to update the one the correct post.
+            # right now: we just update the unknown.
+            uncertain_one = self.left if left_seen_uncertain else self.right
+            other = self.right if left_seen_uncertain else self.left
+            self.unknown.set_state(uncertain_one.get_state())
+            to_second_stage = [self.unknown, other]
         else:
+            # none seen uncertain - either both seen, one seen or none, so let the standard update happen
+            to_second_stage = [self.left, self.right]
             self.unknown.seen = False
+        for obj in to_second_stage:
+            obj.second_stage_calc_events(events, deferreds)
         self.seen = self.left.seen or self.right.seen or self.unknown.seen
         # TODO - thrown the team event here? instead of world.__init__
 
@@ -703,21 +722,42 @@ class GoalPost(Locatable):
                     four=self.fourLetterPostName()))
 
     def get_new_state(self):
-        return self._world.getVars(self._vars)
+        # must be called first before calling anything else
+        self._vars_values = self._world.getVars(self._vars)
+        return self._vars_values
 
-    def update_from_new_state(self, new_state, events, deferreds, require_sure=True):
-        """ returns the new_state if the special "seen but not certain" case holds.
-        """
+    def get_state(self):
+        return self._vars_values
+
+    def set_state(self, state):
+        self._vars_values = state
+
+    def is_uncertain(self):
+        (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
+                new_dist, new_elevation, new_focDist, new_height,
+                new_width, new_x, new_y, new_id_certainty
+                ) = self._vars_values
+        return new_id_certainty != ID_SURE and new_dist > 0.0
+
+    def second_stage_calc_events(self, events, deferreds):
+        """ get new values from proxy, return set of events """
+        # TODO: this is ugly - there is an idiom of using a class as a list
+        # and a 'struct' at the same time - somewhere in activestate.com?
+
+        # If we are uncofigured we cannot update anything
+        if self.color is None: return
+
         # calculate events
         (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
-                ) = new_state
+                ) = self._vars_values
 
-        new_seen = (isinstance(new_dist, float) and new_dist > 0.0 and (not require_sure or new_id_certainty == ID_SURE))
+        new_seen = isinstance(new_dist, float) and new_dist > 0.0
 
         if new_seen:
-            if events is not None: events.add(self.in_frame_event)
+            if events is not None and self.in_frame_event >= FIRST_EVENT_NUM:
+                events.add(self.in_frame_event)
             # convert to radians
             new_bearing *= DEG_TO_RAD
             if isinstance(new_elevation, float):
@@ -729,7 +769,8 @@ class GoalPost(Locatable):
         if new_seen and (abs(self.bearing - new_bearing) > MIN_BEARING_CHANGE or
                 abs(self.dist - new_dist) > MIN_DIST_CHANGE):
             self.update_location_body_coordinates(new_dist, new_bearing, new_elevation)
-            if events is not None: events.add(self._position_changed_event)
+            if events is not None and self._position_changed_event >= FIRST_EVENT_NUM:
+                events.add(self._position_changed_event)
         # store new values
         (self.angleX, self.angleY, self.centerX, self.centerY,
                 self.focDist, self.height, self.width,
@@ -741,15 +782,5 @@ class GoalPost(Locatable):
         self.recently_seen = self.calc_recently_seen(new_seen)
         if self.seen:
             self.update_centered()
-
-        if new_id_certainty != ID_SURE and new_dist > 0.0:
-            return new_state
-        return None
-
-    def calc_events(self, events, deferreds):
-        """ get new values from proxy, return set of events """
-        # TODO: this is ugly - there is an idiom of using a class as a list
-        # and a 'struct' at the same time - somewhere in activestate.com?
-        if self.color is None: return
-        return self.update_from_new_state(self.get_new_state(), events, deferreds)
+            self.update_time = self._world.time
 

@@ -83,7 +83,6 @@ class BallKicker(Behavior):
         self._obstacle_in_front = None
         self._target = self._world.ball
 
-        self._actions.setCameraFrameRate(20)
         # kicker initial position
         self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
             lambda: self.switchToFinder(to_goal_finder=False))
@@ -191,6 +190,7 @@ class BallKicker(Behavior):
         
         # Ball inside kicking area, kick it
         if target_location == BALL_IN_KICKING_AREA and (self._aligned_to_goal or not self._align_to_target):
+            # TODO: diagonalize the kick. It might be off target even if we think we are alligned            
             self.doKick(side, kick_side_offset)
             return
 
@@ -207,15 +207,14 @@ class BallKicker(Behavior):
         self._diag_kick_tested = False
         
         # Use circle-strafing when near ball (TODO: area for strafing different from kicking-area)
+        # TODO: Use 2x circle strafing to get to the ball faster an not so accurate
         if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS, BALL_FRONT_NEAR) and not self._aligned_to_goal and self._align_to_target:
             self.logverbose("Aligning to goal! (switching to goal finder)")
-            self._actions.setCameraFrameRate(20)
             self.switchToFinder(to_goal_finder=True)
             return
         
         if target_location in (BALL_FRONT_NEAR, BALL_FRONT_FAR):
             self.logverbose("Walking straight!")
-            self._actions.setCameraFrameRate(10)
             self._movement_type = MOVE_FORWARD
             self._movement_location = target_location
             if self._obstacle_in_front and target_location == BALL_FRONT_FAR:
@@ -238,19 +237,18 @@ class BallKicker(Behavior):
                 self._movement_deferred = self._actions.changeLocationRelative(min(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MAX_FORWARD_WALK))
         elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
             self.logverbose("Side-stepping!")
-            self._actions.setCameraFrameRate(10)
             movementAmount = min(kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS,MAX_SIDESTEP_WALK)
             # if we do a significant side-stepping, our goal-alignment isn't worth much anymore...
             if movementAmount > 20:
                 self._aligned_to_goal = False
             self._movement_type = MOVE_SIDEWAYS
             self._movement_location = target_location
+            # TODO: change numbers for side stepping. Does that 4 or 5 times.                            
             self._movement_deferred = self._actions.changeLocationRelativeSideways(
                 0.0, movementAmount, walk=walks.SIDESTEP_WALK)
         elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
             self.logverbose("Turning!")
             self._aligned_to_goal = False
-            self._actions.setCameraFrameRate(10)
             movementAmount = kp_bearing*MOVEMENT_PERCENTAGE_TURN
             # if we do a significant turn, our goal-alignment isn't worth much anymore...
             if movementAmount > 10*DEG_TO_RAD:
@@ -272,7 +270,6 @@ class BallKicker(Behavior):
             self._currentFinder.stop()
             self._currentFinder = None
         self.logverbose("kick_side_offset: %3.3f" % (kick_side_offset))
-        self._actions.setCameraFrameRate(10)
         self._movement_type = MOVE_KICK
         self._movement_location = BALL_IN_KICKING_AREA
 
@@ -378,15 +375,11 @@ class BallKicker(Behavior):
             self._is_strafing_init_done = False
             self.logverbose("Aligned position reached! (starting ball search)")
             self._aligned_to_goal = True
-            self._actions.setCameraFrameRate(20)
             if self._goalFinder:
                 self._goalFinder.stop().onDone(self.refindBall)
             else:
                 self.refindBall()
             return
-
-        # TODO: FPS=10 removed for now (for accurate feedback), might be needed for stable circle-strafing!
-        #self._actions.setCameraFrameRate(10)
 
         self._movement_type = MOVE_CIRCLE_STRAFE
         self._movement_location = BALL_BETWEEN_LEGS
