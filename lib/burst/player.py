@@ -171,7 +171,9 @@ class Player(object):
                     info("testing Ready: Done with Ready")
                 self._onReady().onDone(onReadyDone)
             else:
-                self._startMainBehavior().onDone(self._mainBehaviorFinalStop)
+                # doesn't seem like we need _mainBehaviorFinalStop at all (since
+                # we should never really terminate the behavior)
+                self._startMainBehavior().onDone(self._onMainBehaviorDone)
         else:
             info("Player: waiting for configuration event (change in game state, or chest button)")
             self._eventmanager.firstEventDeferred(EVENT_GAME_STATE_CHANGED,
@@ -194,8 +196,9 @@ class Player(object):
         if self._main_behavior.stopped: return self._actions.succeed(self)
         self._banner('stopping %s%s' % (self._main_behavior.name, additional_message))
         self._mainBehaviorStoppedByMe = True
-        self._main_behavior.stop()
-        return self._main_behavior
+        # we sometimes want to sync with the stoppage, so we return its bd
+        return self._main_behavior.stop()
+        #return self._main_behavior
 
     def _mainBehaviorStopped(self):
         if self._mainBehaviorStoppedByMe:
@@ -203,9 +206,10 @@ class Player(object):
             return
         self._banner('%s has stopped' % (self._main_behavior.name))
 
-    def _mainBehaviorFinalStop(self):
-        self._banner('%s has stopped for the last time' % (self._main_behavior.name))
-        self._eventmanager.quit()
+#    def _mainBehaviorFinalStop(self):
+#        if self._mainBehaviorStoppedByMe: return
+#        self._banner('%s has stopped for the last time' % (self._main_behavior.name))
+#        self._eventmanager.quit()
 
     # Ready Behavior ON/OFF Switch and Notification
 
@@ -323,48 +327,38 @@ class Player(object):
         self._actions.say("I'm back on my feet")
         #self.registerFallHandling()
 
-    def onFallen(self, executeGettingUp, onGottenUp):
+    def onFallen(self, executeGettingUp):
         """ stop main behavior, kill all actions.
         start: waiting for main behavior stop to be done && getting up
         when both are done: restart main behavior
         """
-        self.unregisterFallHandling()        
+        self.unregisterFallHandling()
         self._actions.killAll()
-        main_bd = self._main_behavior.stop()        
+        main_bd = self._stopMainBehavior('Fallen, restarting behavior')
         up_bd = executeGettingUp()
-        DeferredList([main_bd.getDeferred(), up_bd.getDeferred()]).addCallback(
-            lambda _: onGottenUp())
+        DeferredList([main_bd.getDeferred(), up_bd.getDeferred()]).addCallback(lambda _: self.onGottenUp())
 
     def onOnBack(self):
         self._actions.say("I'm on my back.")
 #        print "Player: onOnBack: stopping main_behavior"
-        self.onFallen(self._actions.executeGettingUpBack, self.onGottenUpFromBelly)        
+        self.onFallen(self._actions.executeGettingUpBack)
 
     def onOnBelly(self):
         self._actions.say("I'm on my belly.")
 #        print "Player: onOnBelly: stopping main_behavior"
-        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)        
+        self.onFallen(self._actions.executeGettingUpBelly)
 
     def onRightSide(self):
-        self._actions.say("I'm on the right side")        
-        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
+        self._actions.say("I'm on the right side")
+        self.onFallen(self._actions.executeGettingUpBelly)
 
     def onLeftSide(self):
         self._actions.say("I'm on the left side")
-        self.onFallen(self._actions.executeGettingUpBelly, self.onGottenUpFromBelly)
+        self.onFallen(self._actions.executeGettingUpBelly)
 
-    def onGottenUpFromBack(self):
-        self._actions.say("Getting up done (from back)")
+    def onGottenUp(self):
+        self._actions.say("Getting up done")
         self.registerFallHandling()
-
-        #info("Player: onGottenUpFromBack")
-        self._main_behavior.start().onDone(self._onMainBehaviorDone)
-
-    def onGottenUpFromBelly(self):
-        self._actions.say("Getting up done (from belly)")
-        self.registerFallHandling()
-
-        #info("Player: onGottenUpFromBelly")
         self._main_behavior.start().onDone(self._onMainBehaviorDone)
 
     def _announceSeeingBall(self):
