@@ -151,7 +151,7 @@ if burst.using_pynaoqi:
         orig_setBodyStiffness = self.ALMotion.setBodyStiffness
         self.ALMotion.setBodyStiffness = types.MethodType(
             lambda self, num: raulSetBodyStiffness(self, orig_setBodyStiffness, num), self.ALMotion)
-    pynaoqi.NaoQiConnection.__init__ = new_init
+    #pynaoqi.NaoQiConnection.__init__ = new_init
 
     # oh, and we need to patch the getDefaultConnection too / only
     con = pynaoqi.getDefaultConnection()
