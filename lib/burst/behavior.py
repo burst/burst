@@ -237,7 +237,9 @@ class Behavior(Nameable):
             try:
                 ret = cb()
             except TypeError, e:
-                import pdb; pdb.set_trace()
+                import traceback
+                traceback.print_exc()
+                return
             if not hasattr(ret, 'onDone'):
                 return ret
             return ret.onDone(chained.callOnDone)
@@ -359,7 +361,12 @@ class InitialBehavior(Behavior):
     are the actualy "main" of our program, when all robocup rules / gamecontroller stuff
     is taken out of the way. """
 
+    # TODO - should add player to constructor
     def __init__(self, actions, name, initial_pose=poses.INITIAL_POS):
         super(InitialBehavior, self).__init__(actions=actions, name=name)
         self._initial_pose = initial_pose
+
+    # TODO - remove and put in constructor
+    def setPlayer(self, player):
+        self._player = player
 

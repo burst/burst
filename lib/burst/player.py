@@ -76,6 +76,7 @@ class Player(object):
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_YELLOW_GOAL_LOST)
         self._eventmanager.register(self._announceSeeingNoGoal, EVENT_ALL_BLUE_GOAL_LOST)
         self._main_behavior = main_behavior_class(actions) # doesn't start here
+        self._main_behavior.setPlayer(self)
 
         # kludge
         self._mainBehaviorStoppedByMe = False

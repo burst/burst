@@ -154,6 +154,9 @@ class Centerer(Behavior, TrackMixin):
 
     def _centeringStep(self):
         if self.stopped: return
+        # TODO - this should be done through a registration mechanism in World, like the default objects.
+        if hasattr(self.target, 'update'):
+            self.target.update()
         dt = self._world.time - self._target.update_time
         self.logverbose("%3.2f since target seen, %s" % (dt, self._target))
         if not self._target.recently_seen and dt > CENTERING_GIVE_UP_TIME:
@@ -180,6 +183,58 @@ class Centerer(Behavior, TrackMixin):
                 # old path 2: wait a little
                 #self.log("Out #2-wait: Waiting one frame")
                 self._eventmanager.callLater(self._eventmanager.dt, self._centeringStep)
+
+############################################################################
+
+class GoalPostCenterer(object):
+
+    # TODO: What if all goalposts are suddenly lost?
+
+    MAXMINAL_PIXEL_DISTANCE = 20 # TODO: Relative to the size of the image.
+
+    def __init__(self, world, actions, obj, cb):
+        self.world = world
+        self.actions = actions
+        self.obj = obj
+        self.cb = cb
+        self.start()
+
+    def start(self):
+        self.loop(firstTime=True)
+
+    def loop(self, _=None, firstTime=False):
+        print "loop"
+        # Determine which goalpost you're centering on (since unknown might sometimes change into rp/lp, and vice versa)
+        if firstTime:
+            goalpost = self.obj
+        else:
+            if self.obj in self.world.our_goal.left_right_unknown:
+                trio = self.world.our_goal.left_right_unknown
+            else:
+                trio = self.world.opposing_goal.left_right_unknown
+            trio = filter(lambda x: x.seen, trio)
+            print "!", trio
+            goalpost = None
+            for potential_goalpost in filter(lambda x: x.seen, trio):
+                if goalpost == None or (abs(goalpost.centerX - consts.IMAGE_CENTER_X) > 
+                        abs(potential_goalpost.centerX - consts.IMAGE_CENTER_X)):
+                    goalpost = potential_goalpost
+        if goalpost is None:
+            print "GoalPostCenterer on empty"
+            # didn't find *any* goal post - sleep (will have a stop flag on this function)
+            self.actions._eventmanager.callLater(0.1, self.loop)
+            return
+        # If you're close enough to that goalpost, you're done:
+        if abs(consts.IMAGE_CENTER_X - goalpost.centerX) <= GoalPostCenterer.MAXMINAL_PIXEL_DISTANCE:
+            self.stop(goalpost)
+        # Otherwise, move closer to that goalpost:
+        else:
+            delta = ((consts.IMAGE_CENTER_X - goalpost.centerX) / consts.IMAGE_WIDTH) * (FOV_X/4.0)
+            print "delta:", delta
+            self.actions.changeHeadAnglesRelative(delta, 0.0).onDone(self.loop)
+
+    def stop(self, goalpost):
+        self.cb(goalpost)
 
 ############################################################################
 
