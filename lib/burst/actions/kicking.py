@@ -17,6 +17,7 @@ import burst.moves as moves
 import burst.moves.walks as walks
 import burst.moves.poses as poses
 from burst.behavior import Behavior
+from burst_field import MIDFIELD_X
 
 from burst.behavior_params import (calcTarget, getKickingType, MAX_FORWARD_WALK, MAX_SIDESTEP_WALK, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS,
                                    BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
@@ -64,6 +65,7 @@ class BallKicker(Behavior):
         self._ballFinder = TargetFinder(actions=actions, targets=[self._world.ball], start=False)
         self._ballFinder.setOnTargetFoundCB(self._approachBall)
         self._ballFinder.setOnTargetLostCB(self._stopOngoingMovement)
+        self._ballFinder.setOnSearchFailedCB(self._onBallSearchFailed)
         
         self.target_left_right_posts = target_left_right_posts
         self._goalFinder = TargetFinder(actions=actions, targets=self.target_left_right_posts, start=False)
@@ -82,6 +84,8 @@ class BallKicker(Behavior):
 
         self._obstacle_in_front = None
         self._target = self._world.ball
+
+        self._initBallMovements()
 
         # kicker initial position
         self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
@@ -159,6 +163,34 @@ class BallKicker(Behavior):
         elif self._obstacle_in_front[0] == "right":
             opposite_side_from_obstacle = 1
         return opposite_side_from_obstacle
+
+    ################################################################################
+    # Ball finding functionality - better then just plain old search!
+    #
+    #
+    
+    def _initBallMovements(self):
+        self._ball_search_first_failure = True
+
+    def _onBallSearchFailed(self):
+        print "@ Ball Search Failed!!!!"
+        if self._ball_search_first_failure:
+            self._ball_search_first_failure = False
+            print "@ Turning, and rerunning search"
+            self._actions.turn(pi).onDone(self._ballFinder.start)
+        else:
+            # not first time, localize
+            self._actions.localize().onDone(self._onMoveTowardsPossibleBallLocation)
+
+    def _onMoveTowardsPossibleBallLocation(self):
+        # so we are localized.
+        # Let's see where we are:
+        x, y = self.robot.world_x, self.robot.world_y
+        if x > MIDFIELD_X:
+            target_x, target_y = 180.0, 0.0 # Our penalty
+        else:
+            target_x, target_y = MIDFIELD_X + 120.0, 0.0 # Their penalty
+
 
     ################################################################################
     # _approachBall helpers (XXX - should they be submethods of _approachBall? would

@@ -129,16 +129,20 @@ def goalSearchIter(searcher):
     #    yield lambda: searcher._actions.headTowards(t)
     cur_yaw = searcher._actions._world.getAngle('HeadYaw')
     w =  1.0/3.0 # secs for pi turn
+    print "GOAL SEARCH: Before All Turns"
     for turn in [pi/2, pi/2]:
         for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         # so we didn't find the targets - take the posts we find, turn the complement.
         #if set(searcher.seen_objects
         yield turn
+        print "GOAL SEARCH: After Turn"
     for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def ballSearchIter(searcher):
+    # Start by turning in place, then move. We cannot move randomly, except for being inefficient
+    # it is also illegal to exit the field, so instead go to the more distant goal.
     yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
     for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
                             (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
