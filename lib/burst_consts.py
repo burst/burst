@@ -165,7 +165,11 @@ DEFAULT_EVENT_MANAGER_DT = 0.1 # seconds. Main loop - we have a polling loop (ay
 INITIAL_FRAME_PER_SECOND = 10  # Used just by Actions, to avoid unneccessary setFrameRate. Needs
                                # To be in sync with src/imops/VisionDef.h
 
-CAMERA_SWITCH_WAIT = 0.5       # TODO - deliberately large, change later
+# Wait if we did a switch recently
+CAMERA_SWITCH_SINCE_LAST_WAIT = 0.5       # TODO - deliberately large, change later
+# Wait once the switch is called
+CAMERA_SWITCH_ON_SWITCH_WAIT = 1.0       # TODO - deliberately large, change later
+
 
 # shortcut variable, True if this is naoqi version 1.2.0
 is_120 = NAOQI_VERSION == NAOQI_1_2_0

@@ -476,22 +476,36 @@ class Actions(object):
         if self._current_camera == whichCamera and not force:
             return self.succeed(self)
         dt_since_last = self._world.time - self._camera_switch_time
-        if dt_since_last < burst_consts.CAMERA_SWITCH_WAIT:
+        delay = False
+        if dt_since_last < burst_consts.CAMERA_SWITCH_SINCE_LAST_WAIT:
             print "_"*20 + "Delaying camera switch" + "_"*20
-            return self._eventmanager.callLaterBD(
-                burst_consts.CAMERA_SWITCH_WAIT - dt_since_last).onDone(
-                    lambda: self.setCamera(whichCamera=whichCamera, force=force))
+            delay = True
         self._camera_switch_time = self._world.time
         if whichCamera == CAMERA_WHICH_BOTTOM_CAMERA:
             s, switcher = 'bottom', self._imops.switchToBottomCamera
         else:
             s, switcher = 'top', self._imops.switchToTopCamera
-        print "_"*20 + "SWITCHING TO %s CAMERA %3.2f" % (s, dt_since_last) + '_'*20
-        d = switcher()
-        import time
+        print ("_"*20 + "%3.2f: SWITCHING TO %s CAMERA in %3.2f secs (delta %3.2f)" % (
+            self._world.time, s, burst_consts.CAMERA_SWITCH_ON_SWITCH_WAIT, dt_since_last) + '_'*20)
+        #import time
 #        time.sleep(0.5)  # HACK because of switching problem.
         self._current_camera = whichCamera
-        return self.wrap(d, self)
+        bd = self.make(self)
+        def onSwitchChilldownComplete():
+            # called when CAMERA_SWITCH_ON_SWITCH_WAIT time has passed since switcher() called
+            #print "Actions: FINALLY %3.2f" % self._world.time
+            bd.callOnDone()
+        def doSwitch():
+            # called when CAMERA_SWITCH_SINCE_LAST_WAIT - dt_since_last time has passed
+            self.wrap(switcher(), data=self).onDone(lambda:
+                self._eventmanager.callLater(burst_consts.CAMERA_SWITCH_ON_SWITCH_WAIT,
+                        onSwitchChilldownComplete))
+        if delay:
+            self._eventmanager.callLater(
+                burst_consts.CAMERA_SWITCH_SINCE_LAST_WAIT - dt_since_last, doSwitch)
+        else:
+            doSwitch()
+        return bd
 
     @returnsbd # must be first
     def setCameraFrameRate(self, fps):
