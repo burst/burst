@@ -107,6 +107,18 @@ class RemoteControl (Supervisor):
 
     def on_rot(self, x, y, z, angle):
         x, y, z, angle = map(float, [x, y, z, angle])
+        #print dir(self.player_rot)
+        print self.player_rot.getSFRotation()
+        print help(self.player_rot.setSFRotation)
+        self.player_rot.setSFRotation([x, y, z, angle])
+
+    def on_rotblue(self):
+        """ rotate to the blue gate """
+        self.player_rot.setSFRotation([0., 1., 0., pi/2])
+
+    def on_rotyellow(self):
+        """ rotate to the blue gate """
+        self.player_rot.setSFRotation([0., 1., 0., -pi/2])
 
     def label(self, s):
         self.setLabel(0, s, 0.05,0.01,0.08,0xff0000,0.0)
