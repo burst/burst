@@ -21,8 +21,11 @@ debug_socket.tryReadEval()
 import socket
 import code
 
+verbose = False
+
 def getline(s, c):
-    print "getting line"
+    if verbose:
+        print "getting line"
     a = []
     a.append(c)
     while c!='\n':

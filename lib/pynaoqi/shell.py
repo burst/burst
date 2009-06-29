@@ -27,6 +27,14 @@ searcher.verbose=not searcher.verbose
 localizer.verbose=not localizer.verbose
 """)
 ,
+('remote',
+"""
+remote.ball(100,0)
+remote.origin()
+remote.rotyellow()
+remote.rotblue()
+"""
+),
 ('events',
 """
 # show all events

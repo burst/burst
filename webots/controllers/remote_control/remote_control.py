@@ -41,6 +41,9 @@ def matmult(m, v):
             (m[2][0] * v[0] + m[2][1] * v[1] + m[2][2] * v[2] + m[2][3] * v[3]),
             (m[3][0] * v[0] + m[3][1] * v[1] + m[3][2] * v[2] + m[3][3] * v[3]))
 
+# Webots minimal height for robot
+webots_min_player_z = 0.32195
+
 # Some magic consts - just make sure they correspond to the right points,
 # you can change the location manually in webots and see if it works,
 # or read the VRML Tree and figure out the final transform.
@@ -88,12 +91,32 @@ class RemoteControl (Supervisor):
         except Exception, e:
             print "RemoteControl: Error running %s: %s" % (cmd, e)
 
-    def on_player(self, name):
-        self.player = player = self.getFromDef(name)
-        self.player_trans = player.getField('translation')
-        self.player_rot = player.getField('rotation')
-        print "REMOTE CONTROL: Player = %s" % name
+    def on_player_name(self, name):
+        self._on_object('player', name)
+
+    def on_ball_name(self, name):
+        self._on_object('ball', name)
+
+    def _on_object(self, attr_name, name):
+        obj = self.getFromDef(name)
+        setattr(self, attr_name, obj)
+        trans_attr_name = '%s_trans' % attr_name
+        rot_attr_name = '%s_rot' % attr_name
+        setattr(self, trans_attr_name, obj.getField('translation'))
+        setattr(self, rot_attr_name, obj.getField('rotation'))
+        print "REMOTE CONTROL: %s = %s" % (attr_name, name)
  
+    def on_ball(self, x, y, z):
+        """ ball position change in burst coordinates """
+        # TODO - we assume yellow gate is at 0,0,0
+        x, y, z = world_to_webots_yellow_webots_minus(float(x), float(y), float(z))
+        self.ball_trans.setSFVec3f([x, y, z])
+
+    def on_ballw(self, x, y, z):
+        """ ball position change in webots coordinates """
+        x, y, z = float(x), float(y), float(z)
+        self.ball_trans.setSFVec3f([x, y, z])
+
     def on_pos(self, x, y, z):
         """ position change in burst coordinates """
         # TODO - we assume yellow gate is at 0,0,0
@@ -124,7 +147,8 @@ class RemoteControl (Supervisor):
         self.setLabel(0, s, 0.05,0.01,0.08,0xff0000,0.0)
 
     def run(self):
-        self.on_player('RED_GOAL_KEEPER') # burst.wbt compatible
+        self.on_player_name('RED_GOAL_KEEPER') # burst.wbt compatible
+        self.on_ball_name('BALL') # burst.wbt compatible
 
         sock = NonBlockingListeningSocket(PORT)
         # Main loop
