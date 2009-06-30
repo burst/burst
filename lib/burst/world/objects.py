@@ -785,3 +785,36 @@ class GoalPost(Locatable):
             self.update_centered()
             self.update_time = self._world.time
 
+# Used for Centering, instead of centering on a goal post, center on:
+# StickyGoalPost(self._world.opposite_goal, self._world.opposite_goal.left)
+# and it will keep the location (heading/pitch) of the closest of the (left, right, unknown),
+# starting
+
+class StickyObject(object):
+
+    overridenAttributes = ['__init__', '_recordCurrentStatus', 'update']
+
+    def __init__(self, initial, possibilities):
+        self.obj = initial
+        self._possibilities = possibilities
+        self._recordCurrentStatus()
+
+    def _recordCurrentStatus(self):
+        self.lastCenterX = self.obj.cetnerX
+
+    def update(self):
+        best = None
+        for potential in filter(lambda x: x.seen, self._possibilities):
+            if best == None or abs(potential.centerX - self.lastCenterX) < abs(best.centerX - self.lastCenterX):
+                best = potential
+        if not best is None:
+            self.obj = best
+            self._recordCurrentStatus()
+   #     self. # TODO: I stopped working here.
+
+    def __getattr__(self, attrname):
+        if not attrname in StickyObject.overridenAttributes:
+            return getattr(self.obj, attrname)
+        else:
+            return getattr(self, attrname)
+
