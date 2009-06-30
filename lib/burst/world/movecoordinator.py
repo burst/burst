@@ -126,7 +126,8 @@ class SerialPostQueue(object):
                 print "FIXME: SerialPostQueue._onIsRunning called twice for postid = %s" % postid
             return
         if self._posts[0][0] != postid:
-            import pdb; pdb.set_trace()
+            print "err, this is not the postid we were waiting for. I don't know what to do. But there is a game"
+            return
         self._events.add(event)
         self._deferreds.append(deferred)
         if self.verbose:
