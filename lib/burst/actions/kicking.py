@@ -438,9 +438,9 @@ class BallKicker(Behavior):
         self.logverbose("%s bearing is %s. Left is %s, Right is %s" % (self.goalpost_to_track.name, self.goalpost_to_track.bearing, self.alignLeftLimit, self.alignRightLimit))
         # TODO: Add align-to-goal-center support
         if self.goalpost_to_track.bearing < self.alignLeftLimit:
-            strafeMove = self._actions.executeCircleStrafeClockwise
+            strafeMove = lambda: self._actions.executeCircleStrafeClockwise().onDone(self._actions.executeCircleStrafeClockwise)
         elif self.goalpost_to_track.bearing > self.alignRightLimit:
-            strafeMove = self._actions.executeCircleStrafeCounterClockwise
+            strafeMove = lambda: self._actions.executeCircleStrafeCounterClockwise().onDone(self._actions.executeCircleStrafeCounterClockwise)
         else:
             self._is_strafing = False
             self._is_strafing_init_done = False
