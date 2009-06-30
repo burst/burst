@@ -2,12 +2,22 @@
 # contains the ROBOT variable (ip or host name of robot to install to)
 include Makefile.local
 
+# We require a TABLE variable defined in Makefile.local
 # color table to use, copied to the robot at /home/root/burst/lib/
 # from data/tables/
-TABLE=maverick/default.mtb
+#TABLE=maverick/default.mtb
+
 MODULES=src/imops/build_robot/libimops.so src/burstmem/build_robot/libburstmem.so src/recordermodule/crossbuild/src/librecordermodule.so
 
-all: install
+prerequisites:
+ifeq ($(TABLE), )
+	@echo You must define a table in Makefile.local, i.e. TABLE=field_a.mtb
+	@exit 1
+else
+    echo Using TABLE=$(TABLE)
+endif
+
+all: prerequisites install
 
 # Main Targets:
 #  robot

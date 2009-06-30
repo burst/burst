@@ -38,6 +38,8 @@ def parse_command_line_arguments():
     from optparse import OptionParser, OptionGroup
     parser = OptionParser()
     main = OptionGroup(parser, "main")
+
+    main.add_option('', '--daemonize', action='store_true', dest='daemonize', default=False, help='daemonize the process. must be used for competition.')
     main.add_option('', '--ip', dest='ip', help='ip address for broker, default is localhost')
     main.add_option('', '--port', dest='port', help='port used by broker, localhost will default to 9560, rest to 9559')
     main.add_option('', '--jersey', dest='jersey', help='override default per-host-name jersey number in burst_consts')
