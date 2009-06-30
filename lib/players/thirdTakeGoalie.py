@@ -9,7 +9,7 @@ import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import left, right, AlignmentAfterLeap
 from math import pi, sqrt, acos
-
+from burst_consts import FOV_X, IMAGE_WIDTH
 DESIRED_DISTANCE_FROM_GOAL_LINE = 17 * 0.055
 
 debug = True
@@ -61,11 +61,16 @@ class Goalie(InitialBehavior):
                 self.onGoalPostFoundAndReadyForCentering(goalpost)
 
     def onGoalPostFoundAndReadyForCentering(self, goalpost):
-        print "onGoalPostFoundAndReadyForCentering"
-        self._actions.clearFootsteps().onDone(
-            lambda _=None, _goalpost1=goalpost: self._actions.centerer.start(target=_goalpost1).onDone(
-            lambda _=None, _goalpost2=goalpost: self.onCenteredOnFirstGoalpost(_goalpost2)))
+        print "onGoalPostFoundAndReadyForCentering"from burst_consts import
+        self._actions.clearFootsteps().onDone(lambda _: self._centerOnGoal(goalpost))
+        
+            #lambda _=None, _goalpost1=goalpost: self._actions.centerer.start(target=_goalpost1).onDone(
+            #lambda _=None, _goalpost2=goalpost: self.onCenteredOnFirstGoalpost(_goalpost2)))
 
+    def centerOnGoal(self, goalpost):
+        #Pretty simple: when the goalpost is in the left part of the frame - move head and body left, else move right when in the middle - done
+        #Get current bearing - will give aproximate angle 
+        goalpost.centerX 
     def onCenteredOnFirstGoalpost(self, goalpost):
         print "onCenteredOnFirstGoalpost"
         self.distanceToFirst = goalpost.dist

@@ -61,10 +61,12 @@ class TargetFinder(ContinuousBehavior):
         self._iterate(callOnLost=False)
 
     def _onSearchOver(self):
-        if set(self._actions.searcher.seen_object) < set(self._targets):
+        if set(self._actions.searcher.seen_objects) < set(self._targets):
             self.log("_onSearchOver: didn't see all targets, so calling user callback")
             self._callOnSearchFailedCB()
-        self._iterate()
+            # If we lost the targets, don't restart - let the user do it.
+        else:
+            self._iterate()
 
     def _iterate(self, callOnLost=True):
         """
@@ -108,7 +110,7 @@ class TargetFinder(ContinuousBehavior):
                 self._callOnTargetLostCB()
             self._actions.search(
                 self._targets, center_on_targets=True, stop_on_first=True).onDone(
-                self._onSearchFailedCB)
+                self._onSearchOver)
 
     def _stop(self):
         """ stops the finder (and internal tracker/searcher).

@@ -159,6 +159,7 @@ class Scale(object):
             self._waiting_callbacks = 0
 
         def gotoAngle(ind, val):
+            con = pynaoqi.getDefaultConnection()
             #print "joint %s, ind %s, value %s %s" % (
             #            self.name, ind, s.get_value(), val)
             if ind == self._waiting_callbacks:

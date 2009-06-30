@@ -163,9 +163,9 @@ def getTargetPosition(actions, world_x, world_y, world_heading, close_enough=50,
     rel_x, rel_y = dx * ch - dy * ch, dx * sh + dy * ch # TODO - check me
     dist2 = rel_x**2 + rel_y**2
     if dist2 <= close_enough**2:
-        print "Approacher: getTargetPosition: close enough (%3.2f <= %3.2f)" % (sqrt(dist2), close_enough)
+        print "approacher.getTargetPosition: close enough (%3.2f <= %3.2f)" % (sqrt(dist2), close_enough)
         return None
-    print "Approacher: getTargetPosition: %s->%s, rel=(%3.2f,%3.2f) delta=(%3.2f, %3.2f, h %3.2f)" % (
+    print "approacher.getTargetPosition: %s->%s, rel=(%3.2f,%3.2f) delta=(%3.2f, %3.2f, h %3.2f)" % (
         '%2.3f,%2.3f,h%2.3f' % (our_x, our_y, our_heading),
         '%2.3f,%2.3f,h%2.3f' % (world_x, world_y, world_heading), rel_x, rel_y, dx, dy, our_heading)
     return rel_x, rel_y, dh
