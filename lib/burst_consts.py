@@ -15,6 +15,13 @@ from burst_field import * # field constants
 from burst_events import * # event constants
 
 # Some stuff that is required first
+#MESSI = 'messi'
+#GERRARD = 'gerrard'
+#CECH = 'cech'
+#RAUL = 'raul'
+#MALDINI = 'maldini'
+#HAGI = 'hagi'
+
 MESSI = 'messi'
 GERRARD = 'gerrard'
 CECH = 'cech'
@@ -41,7 +48,7 @@ BURST_TEAM_NUMBER = 4
 NAOQI_VERSION=NAOQI_1_2_0 # NAOQI_1_3_8
 
 # Wait for a configure event when no game controller present
-ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
+ALWAYS_CONFIGURE = True # IMPORTANT!! Set to True for the games.
 
 # Jersey numbers:
 # 1 == goalie
@@ -50,12 +57,12 @@ KICKER_JERSEY = 2
 SECONDARY_JERSEY = 3
 
 ROBOT_NAME_TO_JERSEY_NUMBER = {
-    MESSI: GOALIE_JERSEY,
-    CECH: GOALIE_JERSEY,
-    HAGI: KICKER_JERSEY,
+    HAGI: GOALIE_JERSEY,
+    GERRARD: GOALIE_JERSEY,
+    MALDINI: KICKER_JERSEY,
     RAUL: KICKER_JERSEY,
-    MALDINI: SECONDARY_JERSEY,
-    GERRARD: SECONDARY_JERSEY,
+    MESSI: SECONDARY_JERSEY,
+    CECH: SECONDARY_JERSEY,
     WEBOTS: GOALIE_JERSEY, # TODO - overriding command line for robot number, required for webots.
 }
 
