@@ -8,16 +8,18 @@ import burst.moves.poses as poses
 from burst.actions.target_finder import TargetFinder
 from burst.actions.goalie.alignment_after_leap import AlignmentAfterLeap
 
-HALF_GOAL_WIDTH = 57
-ERROR_IN_LENGTH = 5
-TIME_STAY_ON_BELLY = 3 #time to wait when finishing the leap for getting up
+HALF_GOAL_WIDTH = 65
+ERROR_IN_LENGTH = 20
+TIME_STAY_ON_BELLY = 0 #time to wait when finishing the leap for getting up
 WAITING_FOR_HEAD = 5
 WAITING_FOR_NEW_DATA = 1  #not to use old data (made when head was searching)
 SEARCH_TIME = 0.3 #threshHold for the searcher to work before ruin history data.
-SLOW_BALL_TIME = 3 #not leaping for slow balls
-FAST_BALL_TIME = 0.5 #not leaping for too fast ball, since the robot won't make it
+SLOW_BALL_TIME = 5 #not leaping for slow balls
+FAST_BALL_TIME = 0.1 #not leaping for too fast ball, since the robot won't make it
 LONG_TIME_ERROR = 0
 SHORT_TIME_ERROR = 0
+LEFT_LEAP=1
+RIGHT_LEAP=-1
 
 realLeap = True
 debugLeapRight = False
@@ -117,7 +119,7 @@ class Goalie(InitialBehavior):
             if realLeap:
                 print "real leap right safe"
                 self._player.unregisterFallHandling()
-                self._actions.executeLeapRightSafe().onDone(self.waitingOnRight)
+                self._actions.executeLeapRight().onDone(self.waitingOnRight)
             else:
                 self._actions.say("right.")
                 self.waitingOnRight()
@@ -128,7 +130,7 @@ class Goalie(InitialBehavior):
             if realLeap:
                 print "real leap left safe"
                 self._player.unregisterFallHandling()
-                self._actions.executeLeapLeftSafe().onDone(self.waitingOnLeft)
+                self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
             else:
                 self._actions.say("left.")
                 self.waitingOnLeft()
@@ -146,16 +148,16 @@ class Goalie(InitialBehavior):
     def gettingUpRight(self):
         print "getting up right"
         if realLeap:
-            self._actions.executeToBellyFromLeapRight().onDone(lambda _: self.getUpBelly(RIGHT))
+            self._actions.executeToBellyFromLeapRight().onDone(lambda _: self.getUpBelly(RIGHT_LEAP))
         else:
-            self.onGettingUpDone(RIGHT)
+            self.onGettingUpDone(RIGHT_LEAP)
 
     def gettingUpLeft(self):
         print "getting up left"
         if realLeap:
-            self._actions.executeToBellyFromLeapLeft().onDone(lambda _: self.getUpBelly(LEFT))
+            self._actions.executeToBellyFromLeapLeft().onDone(lambda _: self.getUpBelly(LEFT_LEAP))
         else:
-            self.onGettingUpDone(LEFT)
+            self.onGettingUpDone(LEFT_LEAP)
 
     def getUpBelly(self, side):
         self._actions.executeGettingUpBelly().onDone(lambda _: self.onGettingUpDone(side))
