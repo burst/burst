@@ -24,6 +24,7 @@ from headtracker import Tracker, Centerer
 from searcher import Searcher
 from passing import passBall
 from localizer import Localizer
+from secondary_starter import SecondaryStarter
 
 from burst_consts import (InitialRobotState,
     ReadyRobotState, SetRobotState, PlayRobotState,

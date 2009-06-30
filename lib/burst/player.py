@@ -184,7 +184,7 @@ class Player(object):
     # Main Behavior ON/OFF Switch and Notification
 
     def _startMainBehavior(self, additional_message=''):
-        if not self._main_behavior.stopped: return
+        if not self._main_behavior.stopped: return self._actions.succeed(self)
         self._banner('starting %s%s' % (self._main_behavior.name, additional_message))
         self._main_behavior.start()
         return self._main_behavior
@@ -279,8 +279,15 @@ class Player(object):
     def _onPlay(self):
         self._onPlay_counter += 1
         info("Player: OnPlay %s" % self._onPlay_counter)
-        self._startMainBehavior().onDone(self._onPlay)
-        self._main_behavior.onDone(self._onMainBehaviorDone)
+        if self._main_behavior.stopped:
+            self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
+            self._main_behavior.onDone(self._onMainBehaviorDone)
+
+    def _onCheckIfPenalizedElsePlay(self):
+        if not self._world.gameStatus.getMyPlayerStatus().isPenalized():
+            self._onPlay()
+        else:
+            info("Player: onCheckIfPenalizedElsePlay: is penalized, so not playing")
 
     def _onMainBehaviorDone(self):
         info("Player: Main Behavior is done (%s)" % (self._main_behavior))
@@ -299,7 +306,7 @@ class Player(object):
         info("INFO: Player: #%s Reached Ready Position!" % (self._world.robot.jersey))
 
     def _onInitial(self):
-        info("Player: On Initial")
+        info("Player: On Initial - stopping behaviors.")
         self._main_behavior.stop()
         self._approacher.stop()
 
