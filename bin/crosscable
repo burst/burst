@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Now executable!
+
+IFACE=eth0
+ADDR=192.168.50.20
+echo Using interface $IFACE
+echo Setting your address to $ADDR
+echo Starting dnsmasq - make sure /etc/dnsmasq.conf has an address range compatible with that address.
+sudo ifconfig eth0 down
+sudo ifconfig eth0 $ADDR netmask 255.255.255.0
+sudo ifconfig eth0 up
+sudo /etc/init.d/dnsmasq restart
+

@@ -36,10 +36,6 @@ logger = logging.getLogger("player")
 info = logger.info
 ################################################################################
 
-def counter(f):
-    f.counter = 0
-    return f
-
 def overrideme(f):
     return f
 
@@ -276,10 +272,10 @@ class Player(object):
     def _onFinish(self):
         self.onStop() # TODO - can this be called twice right now, from a ctrl-c / eventmanager.quit and from FinishGameState?
 
-    @counter
+    _onPlay_counter = 0
     def _onPlay(self):
-        self._onPlay.counter += 1
-        info("Player: OnPlay %s" % self._onPlay.counter)
+        self._onPlay_counter += 1
+        info("Player: OnPlay %s" % self._onPlay_counter)
         self._startMainBehavior().onDone(self._onPlay)
         self._main_behavior.onDone(self._onMainBehaviorDone)
 
@@ -335,7 +331,7 @@ class Player(object):
         """
         self.unregisterFallHandling()
         self._actions.killAll()
-        main_bd = self._stopMainBehavior('Fallen, restarting behavior')
+        main_bd = self._stopMainBehavior('; Fallen, restarting behavior')
         up_bd = executeGettingUp()
         DeferredList([main_bd.getDeferred(), up_bd.getDeferred()]).addCallback(lambda _: self.onGottenUp())
 
