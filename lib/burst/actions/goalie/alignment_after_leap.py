@@ -11,6 +11,7 @@ from burst.actions.target_finder import TargetFinder
 from math import pi
 from burst_consts import DEG_TO_RAD
 from burst_util import succeedBurstDeferred
+import burst.moves.poses as poses
 
 #######################################################################################################################
 
@@ -114,7 +115,7 @@ class AlignmentAfterLeap(Behavior):
 
 #    @debugged
     def onAligned(self):
-        self.stop()
+        self._actions.executeMove(poses.SIT_POS).onDone(self.stop)
 
 #######################################################################################################################
 
