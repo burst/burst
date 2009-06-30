@@ -393,7 +393,7 @@ class Ball(Movable):
         Y = 2
 
         ERROR_VAL_X = 1
-        NUM_OF_POINTS = 10
+        NUM_OF_POINTS = 5
         HISTORY_SIZE = 20
 
         if not self.CalcIsBallMoving():
