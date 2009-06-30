@@ -69,6 +69,8 @@ JERSEY_NUMBER_TO_INITIAL_BEHAVIOR_MODULE_CLASS = {
     SECONDARY_JERSEY: 'players.kicker.Kicker',
 }
 
+NULL_READY_BEHAVIOR = True
+
 # Operating Environment constants
 ROBOT_IP_TO_NAME = {
     '192.168.5.126'	: MESSI,

@@ -345,12 +345,16 @@ class EventManager(object):
         for event, cbs in loop_event_cb:
             for cb in cbs:
                 if cb in self._events[event]:  # handle possible removal
+                    if self.verbose:
+                        info("----------------EventManager-Events-----------")
                     cb()
                 elif self.verbose:
                     info( "EventManager: %s removed by prior during step" % cb)
         # EVENT_STEP registrators are always called (again, list used to create a temp copy)
         for cb in list(self._events[EVENT_STEP]):
             if cb in self._events[EVENT_STEP]: # handle possible removal
+                if self.verbose:
+                    info("----------------EventManager-EventStep--------")
                 cb()
             elif self.verbose:
                 info( "EventManager: %s removed by prior during step" % cb)
@@ -358,7 +362,8 @@ class EventManager(object):
         # Handle call later's (we counted before, now we run and merge)
         for cb, args, kw in call_laters_this_frame:
             if self.verbose:
-                info( "EventManager: calling callLater callback")
+                #info( "EventManager: calling callLater callback")
+                info("----------------EventManager-CallLater--------")
             cb(*args, **kw)
 
         # now merge the new with the old
@@ -379,6 +384,8 @@ class EventManager(object):
             if self._break_on_next_deferred:
                 self._break_on_next_deferred = False
                 import pdb; pdb.set_trace()
+            if self.verbose:
+                info("----------------EventManager-Deferreds--------")
             deferred.callOnDone()
 
     def _D_breakOnNextDeferred(self):

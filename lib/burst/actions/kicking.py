@@ -356,7 +356,11 @@ class BallKicker(Behavior):
         self._currentFinder = to_finder
         # TODO: Yet More Hacks
         doit = lambda f: self._eventmanager.callLater(0.0, f) if not stop_bd.completed() else stop_bd.onDone(f)
-        doit(to_finder.start)
+        if not to_finder.stopped:
+            print "SwitchToFinder: Target finder not stopped. Stopping it."
+            to_finder.stop().onDone(lambda _, f=to_finder.start: doit(f))
+        else:
+            doit(to_finder.start)
 
 
     ################################################################################
@@ -378,16 +382,26 @@ class BallKicker(Behavior):
                 nearestGoalpost = self.target_left_right_posts[1]
                 
         if nearestGoalpost is None:
-            self._eventmanager.callLater(0.0, self._approachBall)
+            self.logverbose("LOST GOAL WHILE TRYING TO KICK?! (switching to goal finder)")
+            self._aligned_to_goal = False
+            self._diag_kick_tested = True
+            self._onGoalSearchFailed()
+            #self._eventmanager.callLater(0.0, self._approachBall)
+            #TODO: RESTART GOAL/Ball TARGET_FINDER
             return
-        
+
+        self._actions.headTowards(nearestGoalpost).onDone(lambda _, nearestGoalpost=nearestGoalpost:
+            self.onSearchGoalPostOverAfterHeadTowards(nearestGoalpost))
+
+    def onSearchGoalPostOverAfterHeadTowards(self, nearestGoalpost):
+        print "AFTER HEAD MOVE TOWARDS %s" % (nearestGoalpost.name) 
         # Add offset to the diagonal kick (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
         targetBearing = nearestGoalpost.bearing
         if nearestGoalpost == self._world.opposing_lp:
             targetBearing = targetBearing + 0.5/2
         elif nearestGoalpost == self._world.opposing_rp:
             targetBearing = targetBearing - 0.5/2 # TODO: Move to const, calibrate value (cover half-goal? goal? differs for different distances?)
-        
+
         # check if diagonal kick is viable
         # use self._ballY_lastseen
         kick_side_offset = getKickingType(self, targetBearing, self._ballY_lastseen, self._side_last, margin=0)
@@ -396,7 +410,7 @@ class BallKicker(Behavior):
         else:
             # do diagonal kick
             self.doKick(self._side_last, kick_side_offset)
-
+ 
     ################################################################################
     # Strafing
 
@@ -419,12 +433,16 @@ class BallKicker(Behavior):
 
     def _onGoalSearchFailed(self):
         print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?"
+        #self._actions.searcher.stop()
+        
         self._movement_type = MOVE_TURN
         #self._actions.turn(pi)
-        strafeMove = self._actions.executeCircleStrafeClockwise
-        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
-        self._movement_deferred = self._actions.turn(pi)
-        self._movement_deferred.onDone(lambda: self._onMovementFinished(self.switchToFinder(to_goal_finder=True)))
+        num_circle_strafes = 8
+        self._movement_deferred = self._actions.executeCircleStraferInitPose()
+        for i in xrange(num_circle_strafes):
+            self._movement_deferred = self._movement_deferred.onDone(self._actions.executeCircleStrafeClockwise)
+        #self._movement_deferred = self._actions.turn(pi)
+        self._movement_deferred.onDone(lambda: self._onMovementFinished(lambda: self.switchToFinder(to_goal_finder=True)))
 
     def strafe(self):
         self._is_strafing = True

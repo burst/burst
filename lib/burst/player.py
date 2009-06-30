@@ -211,6 +211,7 @@ class Player(object):
     # Ready Behavior ON/OFF Switch and Notification
 
     def _startReadyBehavior(self, additional_message=''):
+        if burst_consts.NULL_READY_BEHAVIOR: return self._actions.succeed(self)
         if not self._approacher.stopped: return self._approacher
         self._banner('starting %s for %s%s' % (self._approacher.name,
             self._main_behavior.name,  additional_message))
@@ -218,6 +219,7 @@ class Player(object):
         return self._approacher
 
     def _stopReadyBehavior(self, additional_message=''):
+        if burst_consts.NULL_READY_BEHAVIOR: return self._actions.succeed(self)
         if self._approacher.stopped: return self._actions.succeed(self)
         self._banner('stopping %s for %s%s' % (self._approacher.name,
             self._main_behavior.name, additional_message))
@@ -226,6 +228,7 @@ class Player(object):
         return self._approacher
 
     def _readyBehaviorStopped(self):
+        if burst_consts.NULL_READY_BEHAVIOR: return self._actions.succeed(self)
         if self._readyBehaviorStoppedByMe:
             self._readyBehaviorStoppedByMe = False
             return
