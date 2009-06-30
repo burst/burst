@@ -10,6 +10,8 @@ motion_proxy = burst.getMotionProxy()
 
 """
 
+import sys
+
 # Global debug flag. Not actually used in burst, but expected to be checked
 # by user code.
 debug = False # set to False when checking in
@@ -29,6 +31,11 @@ def test():
         print "you can use various switches to test the nao:"
         print default_help() + ' [--bodyposition]'
         print "--bodyposition - enter an endless loop printing various sensors (good for testing)"
+
+# We will daemonize at this point? before anything else:
+if '--daemonize' in sys.argv:
+    import daemon
+    retcode = daemon.createDaemon()
 
 # must be the first import - you can only import naoqi after this
 from base import *

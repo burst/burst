@@ -320,10 +320,10 @@ void ImopsModule::notifyNextVisionImage() {
     //if(camera_active)
     g_imageTranscriber->releaseImage();
 
-    static Counter writer("ImopsModule: Counter: time for writeToALMemory: ");
-    writer.one();
+    //static Counter writer("ImopsModule: Counter: time for writeToALMemory: ");
+    //writer.one();
     this->writeToALMemory();
-    writer.two();
+    //writer.two();
 
     // Make sure messages are printed
     fflush(stdout);
