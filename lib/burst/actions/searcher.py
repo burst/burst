@@ -266,6 +266,10 @@ class Searcher(Behavior):
 
     # Player / Behavior API
 
+    def search_conditioned(self, targets, seenTargetsCB, center_on_targets=True, timeout=None, timeoutCallback=None,
+            searchPlannerMaker=TargetsAndLocalizationBasedSearchPlanner):
+        self._seenTargets = seenTargetsCB
+
     def search_one_of(self, targets, center_on_targets=True, timeout=None, timeoutCallback=None,
             searchPlannerMaker=TargetsAndLocalizationBasedSearchPlanner):
         self._seenTargets = self._seenOne
@@ -309,12 +313,12 @@ class Searcher(Behavior):
         for target in targets:
             target.centered_self.clear()
 
-        self.log("search started for %s %s %s." % (','.join([
+        self.log("search started for %s %s, seenTargets = %s." % (','.join([
             '%s%s%s' % (t.name, ' sighted?! ' if t.centered_self.sighted else '',
                 ' sighted_centered?! ' if t.centered_self.sighted_centered else '')
                     for t in targets]),
             'with centering' if center_on_targets else 'no centering',
-            'for all' if self._seenTargets == self._seenAll else 'for one'))
+            func_name(self._seenTargets)))
 
         self._search_count[0] += 1
         self.targets = targets[:]
@@ -364,7 +368,7 @@ class Searcher(Behavior):
     def _nextSearchMove(self):
         ''' Whenever a movement is finished, either the search is done, or a new movement should be issued. '''
         if not self.stopped:
-            if not self._seenTargets() or self._searchPlanner.hasMoreCenteringTargets():
+            if not self._seenTargets(self.seen_objects) or self._searchPlanner.hasMoreCenteringTargets():
                 try:
                     next_searcher_action = self._searchPlanner.next() # UGLY - this will call self.setWantedMove if it wants one
                 except StopIteration:
@@ -382,17 +386,17 @@ class Searcher(Behavior):
             else:
                 self.stop()
 
-    def _seenOne(self):
+    def _seenOne(self, seen_objects):
         """ function for search_one_of, checks if one of the supplied targets
         has been seen """
         self._report("_seenOne: len(self.seen_objects) = %s" % len(self.seen_objects))
-        return len(self.seen_objects) >= 1
+        return len(seen_objects) >= 1
 
-    def _seenAll(self):
+    def _seenAll(self, seen_objects):
         """ default _seenTargets function, checks that all
         targets have been seen """
         for target in self.targets:
-            if not target in self.seen_objects:
+            if not target in seen_objects:
                 self._report("_seenAll FALSE")
                 return False
         self._report("_seenAll TRUE")

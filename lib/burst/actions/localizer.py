@@ -59,8 +59,22 @@ class Localizer(Behavior):
         # actually fires.
 
         self.logverbose("BA before search: %s" % self._actions)
-        self._actions.search(targets).onDone(self._doSearch)
+        self._actions.search_conditioned(targets, seenTargetsCB=self._seenTargetsCB).onDone(self._doSearch)
         self.logverbose("BA after  search: %s" % self._actions)
+
+    def  _seenTargetsCB(self, seen):
+        """ gets the seen objects, returns True if enough objects have been seen and search should stop """
+        opposing = set(self._world.opposing_goal.bottom_top)
+        our = set(self._world.our_goal.bottom_top)
+        seen = set(seen)
+        if seen <= opposing:
+            self.log('seen OPPOSING goal')
+            return True
+        elif seen <= our:
+            self.log('seen OUR goal')
+            return True
+        # TODO - force location update in either case, using best distances. That *would* make it a one shot behavior.
+        return False
 
     def _stop(self):
         self.log("Stopping")
