@@ -1,5 +1,6 @@
 from math import pi
 
+from burst_util import func_name
 import burst
 import burst_events
 from burst.behavior import Behavior
