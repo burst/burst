@@ -19,7 +19,7 @@ FAST_BALL_TIME = 0.5 #not leaping for too fast ball, since the robot won't make 
 LONG_TIME_ERROR = 0
 SHORT_TIME_ERROR = 0
 
-realLeap = False
+realLeap = True
 debugLeapRight = False
 debugLeapLeft = False
 
