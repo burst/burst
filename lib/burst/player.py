@@ -281,7 +281,7 @@ class Player(object):
         info("Player: OnPlay %s" % self._onPlay_counter)
         if self._main_behavior.stopped:
             self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
-        self._main_behavior.onDone(self._onMainBehaviorDone)
+            self._main_behavior.onDone(self._onMainBehaviorDone)
 
     def _onCheckIfPenalizedElsePlay(self):
         if not self._world.gameStatus.getMyPlayerStatus().isPenalized():
