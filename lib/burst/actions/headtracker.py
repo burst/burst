@@ -155,8 +155,8 @@ class Centerer(Behavior, TrackMixin):
     def _centeringStep(self):
         if self.stopped: return
         # TODO - this should be done through a registration mechanism in World, like the default objects.
-        if hasattr(self.target, 'update'):
-            self.target.update()
+        #if hasattr(self.target, 'update'):
+        #    self.target.update()
         dt = self._world.time - self._target.update_time
         self.logverbose("%3.2f since target seen, %s" % (dt, self._target))
         if not self._target.recently_seen and dt > CENTERING_GIVE_UP_TIME:
