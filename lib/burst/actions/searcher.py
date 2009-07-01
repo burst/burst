@@ -93,8 +93,8 @@ class WaitCommand(object):
 
 def searchMovesIter(searcher):
     while True:
-        for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (1.0,  0.5), (-1.0, 0.5),
-                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.6), (0.0, 0.6), (0.9,  0.5), (-0.9, 0.5),
+                                (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         # Give the robot time to see the ball before executing the costly turn command.
         yield WaitCommand(searcher._eventmanager, 3)
@@ -102,25 +102,25 @@ def searchMovesIter(searcher):
 
 def searchMoveIterWithoutAnythingButHeadMovements(searcher):
     while True:
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
-                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (0.9, 0.5), (-0.9, 0.5),
+                                (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def finiteSearchMoveIterWithoutAnythingButHeadMovements(searcher):
-    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
-                            (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (0.9, 0.5), (-0.9, 0.5),
+                            (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def searchMovesIterWithCameraSwitching(searcher):
     while True:
         if not searcher._actions.currentCamera == burst_consts.CAMERA_WHICH_BOTTOM_CAMERA:
             yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
-                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (0.9,  0.5), (-0.9, 0.5),
+                                (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_TOP_CAMERA)
-        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0,  0.5), (-1.0, 0.5),
-                                (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+        for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (0.9,  0.5), (-0.9, 0.5),
+                                (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         yield TurnCommand(searcher._actions, -pi/2)
 
@@ -132,21 +132,21 @@ def goalSearchIter(searcher):
     w =  1.0/2.5 # secs for pi turn
     print "GOAL SEARCH: Before All Turns"
     for turn in [pi/2, pi/2]:
-        for headCoordinates in [(0.0, 0.0, 1.0), (pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
+        for headCoordinates in [(0.0, 0.0, 1.0), (pi/3, 0.0, (pi/3-cur_yaw)/pi/w), (-pi/3, 0.0, 1.0/w)]:
             yield HeadMovementCommand(searcher._actions, *headCoordinates)
         # so we didn't find the targets - take the posts we find, turn the complement.
         #if set(searcher.seen_objects
         yield turn
         print "GOAL SEARCH: After Turn"
-    for headCoordinates in [(pi/2, 0.0, (pi/2-cur_yaw)/pi/w), (-pi/2, 0.0, 1.0/w)]:
+    for headCoordinates in [(pi/3, 0.0, (pi/3-cur_yaw)/pi/w), (-pi/3, 0.0, 1.0/w)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 def ballSearchIter(searcher):
     # Start by turning in place, then move. We cannot move randomly, except for being inefficient
     # it is also illegal to exit the field, so instead go to the more distant goal.
     yield SwitchCameraCommand(searcher._actions, burst_consts.CAMERA_WHICH_BOTTOM_CAMERA)
-    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (1.0, 0.5), (-1.0, 0.5),
-                            (-1.0, 0.0), (1.0, 0.0), (1.0, -0.5), (-1.0, -0.5)]:
+    for headCoordinates in [(0.0, -0.5), (0.0, 0.5), (0.9, 0.5), (-0.9, 0.5),
+                            (-0.9, 0.0), (0.9, 0.0), (0.9, -0.5), (-0.9, -0.5)]:
         yield HeadMovementCommand(searcher._actions, *headCoordinates)
 
 class SearchPlanner(object):
