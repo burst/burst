@@ -68,7 +68,27 @@ class TargetFinder(ContinuousBehavior):
             self._callOnSearchFailedCB()
             # If we lost the targets, don't restart - let the user do it.
         else:
-            self._iterate()
+            print "TargetFinder._onSearchOver: Searcher.seen_objects = %s" % (self._actions.searcher.seen_objects)
+            searcher_seen = self._actions.searcher.seen_objects
+            seen_objects = self.calc_current_seen_objects()
+            if len(searcher_seen) > 0 and len(seen_objects) == 0:
+                print "Inconsistency of TargetFinder with searcher - will do manual headTowards, giving searcher seen priority."
+                self._selectOneTargetFromCandidates(searcher_seen)
+                self._actions.headTowards(self._targets[0]).onDone(self._iterate)
+            else:
+                self._iterate()
+
+    def calc_current_seen_objects(self):
+        """ returns an array with the seen objects from self._targets, uses also
+        seen_recently. Used by _iterate and _onSearchOver """
+        seen_objects = [t for t in self._targets if t.seen]
+        seen_objects.extend([t for t in self._targets if t.recently_seen and not t.seen])
+        return seen_objects
+
+    def _selectOneTargetFromCandidates(self, seen_objects):
+        # TODO - check that this actually works. (i.e. when searching for both posts, returns the one closest to the current yaw)
+        bearings = [abs(t.bearing) for t in seen_objects]
+        self._targets = [seen_objects[bearings.index(min(bearings))]]
 
     def _iterate(self, callOnLost=True):
         """
@@ -86,8 +106,8 @@ class TargetFinder(ContinuousBehavior):
         camera_bd = self._actions.setCamera({
             False:burst_consts.CAMERA_WHICH_BOTTOM_CAMERA,
             True:burst_consts.CAMERA_WHICH_TOP_CAMERA}[bool(self._world.all_posts & set(self._targets))])
-        seen_objects = [t for t in self._targets if t.seen]
-        seen_objects.extend([t for t in self._targets if t.recently_seen and not t.seen])
+        seen_objects = self.calc_current_seen_objects()
+        print "TargetFinder._iterate: seen_objects = %s" % (seen_objects)
 
         if len(seen_objects) > 0:
             if len(seen_objects) > 1:
@@ -95,8 +115,7 @@ class TargetFinder(ContinuousBehavior):
                 #    print "name: %s bearing: %f" % (t.name, t.bearing)
                 # if more than 1 object seen, select the one with minimal bearing
                 # we also reset the _targets so we'll track the same target if target lost
-                bearings = [abs(t.bearing) for t in seen_objects]
-                self._targets = [seen_objects[bearings.index(min(bearings))]]
+                self._selectOneTargetFromCandidates(seen_objects)
             else:
                 self._targets = [seen_objects[0]]
 
