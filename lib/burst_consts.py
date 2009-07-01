@@ -48,7 +48,7 @@ BURST_TEAM_NUMBER = 4
 NAOQI_VERSION=NAOQI_1_2_0 # NAOQI_1_3_8
 
 # Wait for a configure event when no game controller present
-ALWAYS_CONFIGURE = True # IMPORTANT!! Set to True for the games.
+ALWAYS_CONFIGURE = False # IMPORTANT!! Set to True for the games.
 
 # Jersey numbers:
 # 1 == goalie
