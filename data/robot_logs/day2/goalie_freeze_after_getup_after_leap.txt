@@ -1,0 +1,294 @@
+0 S 0 L|Player._announceSeeingBall,<l> (function) _behavior
+23.4  B      -00|02|02|-------------|-------------|0.00 -0.47 F|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Searcher._nextSearchMove))
+24.5  B      -00|03|03|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(<l> (CenteringCommand) _actions))
+Centerer: reset 2, 140770508
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks]
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+Searcher: No head motion, returning success
+TargetFinder: will track Ball
+Tracker: reset 2, 140770988
+24.5  B      -00|04|04|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 0 E 0 S 1 L|Centerer._centeringStep
+24.7  B      -00|04|04|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+24.9  B      -00|05|05|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+25.2  B      -00|06|06|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+25.4  B      -00|07|07|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+25.6  B      -00|08|08|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+25.8  B      -00|09|09|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+26.0  B      -00|10|10|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+31.8         -00|11|11|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceNotSeeingBall,bd->(bd->(Tracker._trackingStep))
+32.0  B      -00|11|11|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 1 L|Tracker._trackingStep,Player._announceSeeingBall
+32.4  B  U   -00|12|12|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+32.5     U   -00|13|13|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+32.8  B      -00|13|13|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+33.0  B      -00|13|13|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+33.2  B      -00|14|14|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+33.4  B      -00|15|15|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+33.6  B      -00|16|16|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+33.7  B      -00|17|17|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+33.9  B      -00|18|18|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+34.0         -00|19|19|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+34.2  B      -00|19|19|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+34.4  B      -00|19|19|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+34.6  B      -00|20|20|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+34.8         -00|21|21|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceNotSeeingBall,bd->(bd->(Tracker._trackingStep))
+35.0  B      -00|21|21|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+35.3  B      -00|21|21|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+35.5  B      -00|22|22|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+35.7  B R    -00|23|23|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+35.9  B      -00|24|24|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+36.1  B      -00|25|25|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+36.3  B      -00|26|26|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+36.6  B      -00|27|27|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+36.8  B      -00|28|28|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+37.0  B      -00|29|29|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+37.1  B      -00|30|30|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+37.3  B      -00|31|31|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+37.4         -00|32|32|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+37.6  B      -00|32|32|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+37.9  B  U   -00|32|32|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+38.0     U   -00|33|33|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+38.2         -00|33|33|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+38.2         -00|33|33|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+38.3  B      -00|33|33|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+38.5  B      -00|33|33|-------------|-------------|0.10 -0.53 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+38.7  B      -00|34|34|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+38.9  B      -00|35|35|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.0  B      -00|36|36|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.2  B      -00|37|37|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.4  B      -00|38|38|-------------|-------------|0.10 -0.53 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.6  B      -00|39|39|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.8  B      -00|40|40|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+39.9  B      -00|40|40|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+40.0  B      -00|40|40|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+40.1  B      -00|40|40|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+40.3  B      -00|41|41|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+40.5  B      -00|42|42|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+40.6         -00|43|43|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+40.8  B      -00|43|43|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+41.1         -00|43|43|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceNotSeeingBall,bd->(bd->(Tracker._trackingStep))
+41.3  B      -00|43|43|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 1 E 0 S 1 L|Tracker._trackingStep,Player._announceSeeingBall
+41.8  B      -00|44|44|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+42.0  B      -00|45|45|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+42.2  B      -00|46|46|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+42.3  B      -00|47|47|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+42.5         -00|48|48|-------------|-------------|-0.29 -0.58 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+42.7  B      -00|48|48|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceSeeingBall,bd->(bd->(Tracker._trackingStep))
+43.1  B      -00|49|49|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+43.3  B  U   -00|50|50|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+43.5  B      -00|51|51|-------------|-------------|-0.29 -0.58 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+43.7  B      -00|52|52|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+43.7  B      -00|52|52|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 0 S 1 L|Tracker._trackingStep
+43.9  B      -00|53|53|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+44.1  B      -00|54|54|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+44.3  B      -00|55|55|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+44.5  B      -00|56|56|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+44.7  B      -00|57|57|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+44.9  B      -00|58|58|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+45.0  B      -00|59|59|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+45.3  B      -00|60|60|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+45.5  B      -00|61|61|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+45.7  B      -00|62|62|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+45.9  B      -00|63|63|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+46.1  B      -00|64|64|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+46.3  B      -00|65|65|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+46.4         -00|66|66|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+46.6  B R    -00|66|66|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+46.9  B R    -00|66|66|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+47.1  B      -00|67|67|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+47.3  B      -00|68|68|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+47.5  B  U   -00|69|69|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+47.7  B  U   -00|70|70|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Tracker._trackingStep))
+x2:  121.233208233  x1:  188.71801271
+t2:  49.7786390781  t1:  49.1048321724
+velocity:  -100.080993277
+time for intersection:  1.21135096948
+self.body_isect:  -36.9557227604
+47.8  B R    -00|71|71|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|<l> (instancemethod) _behavior
+Checking if leap is necessary
+LEAPING RIGHT************###############
+Searcher: WARNING: self._d already called
+real leap right safe
+____________________SETTING FPS TO 10____________________
+x2:  109.915389214  x1:  188.71801271
+t2:  49.8033361435  t1:  49.1048321724
+velocity:  -112.736033378
+time for intersection:  0.974980101041
+self.body_isect:  -40.426541577
+48.4  B R    -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 1 E 0 S 0 L|<l> (instancemethod) _behavior,bd->(bd->(Tracker._trackingStep,d-empty-140770988,d-empty-140787532))
+x2:  109.915389214  x1:  188.71801271
+t2:  49.8345220089  t1:  49.1708090305
+velocity:  -117.954999526
+time for intersection:  0.931841716382
+self.body_isect:  -43.9194941828
+48.4  B R    -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|<l> (instancemethod) _behavior
+x2:  109.915389214  x1:  188.71801271
+t2:  49.8345220089  t1:  49.1708090305
+velocity:  -117.954999526
+time for intersection:  0.931841716382
+self.body_isect:  -43.9194941828
+48.4  B      -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|<l> (instancemethod) _behavior
+x2:  109.915389214  x1:  188.71801271
+t2:  49.8345220089  t1:  49.1708090305
+velocity:  -117.954999526
+time for intersection:  0.931841716382
+self.body_isect:  -43.9194941828
+48.4  B      -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|<l> (instancemethod) _behavior
+48.5         -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+49.3         -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Goalie.waitingOnRight))
+wait on right
+49.4         -00|72|72|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 0 S 1 L|Goalie.gettingUpRight
+getting up right
+54.5         -00|73|73|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(<l> (Goalie) getUpBelly))
+63.1         -00|74|74|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(<l> (Goalie) onGettingUpDone))
+complete (side=-1)
+AlignmentAfterLeap: reset 1, 142574124
+AlignmentAfterLeap: reset 2, 142574220
+_start
+64.1  B      -00|75|75|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+64.4  B      -00|75|75|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(AlignmentAfterLeap.findOppositeOwnPost))
+findOppositeOwnPost
+1.74532925199, 0.349065850399, 0.523598775598, 0.349065850399, 5, -5, 0.22, -4.0, 0.055, 0.015, 0.04, 0.3, 0.01, 0.0, 100
+ADD TURN (deltaTheta): 6.283185
+64.5  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.5  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.5  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.6  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.7  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+64.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.0  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.1  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.2  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.4  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.4  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.5  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.6  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.7  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+65.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.0  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.1  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.2  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.4  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.4  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.5  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.6  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.7  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+66.9  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+67.0  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+67.1  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+67.2  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+67.4         -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 1 S 0 L|Player._announceNotSeeingBall,<l> (instancemethod) _behavior
+67.7  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 1 S 0 L|Player._announceSeeingBall,<l> (instancemethod) _behavior
+68.0  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+68.0  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+68.1  B      -00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+68.1  B     u-00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 1 S 0 L|<l> (instancemethod) _behavior
+vova (triggered)
+onFocusedOnOppositeOwnPost
+Centerer: reset 3, 140749036
+68.2  B     u-00|76|76|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 0 S 1 L|Centerer._centeringStep
+68.5  B     u-00|77|77|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+68.7        u-00|78|78|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceNotSeeingBall,bd->(bd->(Centerer._centeringStep))
+69.1  B     u-00|79|79|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+69.4  B     u-00|79|79|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+69.6        u-00|80|80|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceNotSeeingBall,bd->(bd->(Centerer._centeringStep))
+70.1        u-00|81|81|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+70.4  B      -00|82|82|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 1 E 0 S 0 L|Player._announceSeeingBall,bd->(bd->(Centerer._centeringStep))
+70.7        u-00|82|82|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 1 L|Centerer._centeringStep,Player._announceNotSeeingBall
+71.1  B     u-00|83|83|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceSeeingBall
+71.4  B     u-00|83|83|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+71.5        u-00|84|84|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 1 E 0 S 0 L|Player._announceNotSeeingBall
+71.8        u-00|84|84|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+71.9       ru-00|85|85|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+72.1       r -00|86|86|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+72.3       ru-00|86|86|-------------|-------------|-0.24 -0.57 T|  0|  0|0 D 0 E 0 S 1 L|Centerer._centeringStep
+72.6       ru-00|87|87|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+72.9       ru-00|88|88|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+73.2       ru-00|89|89|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+73.4       ru-00|90|90|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(<l> (Motion) _onWalkComplete))
+73.5       ru-00|90|90|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+73.8       ru-00|91|91|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+74.1       ru-00|92|92|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+74.4       ru-00|93|93|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+74.7       ru-00|94|94|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+75.0       ru-00|95|95|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+75.3       ru-00|96|96|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+75.6       ru-00|97|97|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+76.0       ru-00|98|98|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+76.2       ru-00|99|99|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+76.5       ru-00|100|100|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+76.8       ru-00|101|101|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+77.1       ru-00|102|102|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+77.4       ru-00|103|103|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+77.7       ru-00|104|104|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+78.0       ru-00|105|105|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+78.3       ru-00|106|106|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+78.6       ru-00|107|107|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+78.9       ru-00|108|108|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+79.2       ru-00|109|109|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+79.5       ru-00|110|110|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+79.8       ru-00|111|111|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+80.1       ru-00|112|112|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+80.4       ru-00|113|113|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+80.7       ru-00|114|114|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+81.0       ru-00|115|115|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+81.3       ru-00|116|116|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+81.6       ru-00|117|117|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+81.9       ru-00|118|118|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+82.2       ru-00|119|119|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+82.5       ru-00|120|120|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+82.8       ru-00|121|121|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+83.1       ru-00|122|122|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+83.4       ru-00|123|123|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+83.7       ru-00|124|124|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+84.0       ru-00|125|125|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+84.3       ru-00|126|126|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+84.6       ru-00|127|127|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+84.9       ru-00|128|128|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+85.2       ru-00|129|129|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+85.5       ru-00|130|130|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+85.8       ru-00|131|131|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+86.1       ru-00|132|132|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+86.4       ru-00|133|133|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+86.7       ru-00|134|134|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+87.0       ru-00|135|135|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+87.3       ru-00|136|136|-------------|-------------|-0.24 -0.57 T|  0|  0|1 D 0 E 0 S 0 L|bd->(bd->(Centerer._centeringStep))
+INFO:eventmanager:BasicMainLoop: ctrl-c detected.
+================================================================================
+=                       quitting - event loop restarted                        =
+================================================================================
+Odometry Summary: (end time = 89.4)
+===================================
+66.1..75.2 (9.1/est 1.0): ('turn', 6.2831853071795862, 1.74532925199, 0.349065850399, 0.523598775598, 0.349065850399, 5, -5, 0.22, -4.0, 0.055, 0.015, 0.04, 0.3, 0.01, 0.0, 100)
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_BODY_INTERSECT_UPDATE-><l> (instancemethod) _behavior]
+BA.clearFutureCallbacks: removing [4: no callbacks,0: <Behavior Searcher: d-empty-140786892>]
+Searcher: WARNING: clear does nothing
+INFO:player:Player: OnPlay 2 (state=3)
+================================================================================
+=                               starting Goalie                                =
+================================================================================
+Goalie: reset 3, 142607404
+readyToLeap
+____________________SETTING FPS TO 20____________________
+TargetFinder: reset 3, 142606956
+TargetFinder: _start: Ball (first time: True)
+TargetFinder: targets not seen (['Ball']), searching for it
+INFO:actions:ERROR: Stopping centerer to run search (note - not using BD's)
+Searcher: reset 3, 142607276
+Searcher: search started for Ball with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Ball, using specific search iterator
+INFO:player:Player: Main Behavior is done (<Behavior Goalie: d-[callAndCallBD,passthru,callAndCallBD,passthru]>)
+INFO:eventmanager:MainLoop: ILLEGAL ROBOCUP moves ALLOWED from now on
+INFO:eventmanager:BasicMainLoop: sitting, removing stiffness and quitting.
+____________________SETTING FPS TO 10____________________
+89.2       ru-00|138|138|-------------|-------------|             |  0|  0|1 D 0 E 0 S 0 L|bd->(<l> (BurstDeferredMaker) _printOnDone)
+BurstDeferredMaker: short circuit of BurstDeferred.callOnDone
+89.2       ru-00|138|138|-------------|-------------|             |  0|  0|0 D 0 E 0 S 1 L|Searcher._nextSearchMove
+INFO:eventmanager:BasicMainLoop: ctrl-c detected a second time. unclean exit.
+inaoqi-broker: destruct brokerroot@Maldini [0] [~]# 
+root@Maldini [0] [~]# 
+
+

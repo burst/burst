@@ -1,0 +1,157 @@
+root@Maldini [0] [~]# ./kicker.py 
+Secondary attacker INITIAL POSITION is RIGHT
+VIDEO = opts.video = False
+________________________________________________________________________________
+You are running with robotname = maldini
+--------------------------------------------------------------------------------
+Loading Personalization for maldini.. MoveCoordinator: using IsRunningMoveCoordinator
+Done
+inaoqi-broker: construct at 127.0.0.1:10234, parent : 127.0.0.1:9559
+..::: THIS IS A RELEASE VERSION :::..
+sh: can't open /bin/ip.sh
+broker.setCurrentIP: ERROR: couldn't get data (file empty or ...)
+SOAP 1.1 fault: SOAP-ENV:Client [no subcode]
+"unable to explore to get a module by name for: 'ALTextToSpeech'"
+Detail: [no detail]
+WARNING: ALTextToSpeech module is not available (Exception: modulename: 'ALProxy'
+method: 'constructor'
+desc: 'Module 'ALTextToSpeech' not found.)
+World: Using DCM for body angles
+world will record (if asked) 176 vars
+__init__
+world: using SharedMemoryReader
+SharedMemory: asked burstmem to map 102 variables
+SharedMemory: burstmem says it has 102 variables
+SharedMemory: _completeOpen: memory mapped = False (if True then previous session didn't close it)
+world: shared memory opened successfully
+Checking for Man module by getting a vision variable: ['/BURST/Vision/Ball/BearingDeg']
+Man found
+Tracker: reset 1, 140915468
+Centerer: reset 1, 140915788
+Searcher: reset 1, 140282476
+Localizer: reset 1, 140879788
+Kicker: reset 1, 140914956
+____________________1.74: SWITCHING TO bottom CAMERA in 1.00 secs (delta 1.74)____________________
+================================================================================
+=       running custom event loop with sleep time of 100.0 milliseconds        =
+================================================================================
+INFO:eventmanager:MainLoop: only LEGAL ROBOCUP moves allowed from now on
+INFO:player:Player: waiting for configuration event (change in game state, or chest button)
+Team number 4, Team color 0, Player number 1, game state Initial
+INFO:objects:Configuring OurLeftPost blue_goal, our, (0.00, 75.00), left, BGLP
+INFO:objects:Configuring OurRightPost blue_goal, our, (0.00, -75.00), right, BGRP
+INFO:objects:Configuring OurGoal_UnknownPost blue_goal, our, (0.00, 0.00), right, BGRP
+INFO:objects:Configuring OpposingLeftPost yellow_goal, opposing, (605.00, -75.00), left, YGLP
+INFO:objects:Configuring OpposingRightPost yellow_goal, opposing, (605.00, 75.00), right, YGRP
+INFO:objects:Configuring OpposingGoal_UnknownPost yellow_goal, opposing, (605.00, 0.00), right, YGRP
+Approacher: reset 1, 140969196
+INFO:player:Player: On Initial - stopping behaviors.
+saying: I'm being picked-up
+saying: I'm back on my feet
+INFO:player:Player: OnPlay 1 (state=3)
+================================================================================
+=                               starting Kicker                                =
+================================================================================
+Kicker: reset 2, 142140332
+BallKicker: reset 1, 140971500
+TargetFinder: reset 1, 142013420
+TargetFinder: reset 1, 142014252
+BallKicker: reset 2, 142015404
+SwitchToFinder: calling ['Ball'] Finder.start
+TargetFinder: reset 2, 140981164
+TargetFinder: _start: Ball (first time: True)
+TargetFinder: will track Ball
+____________________SETTING FPS TO 20____________________
+Tracker: reset 2, 140981196
+
+Approaching Ball: (recently seen True, dist: 49.097, distSmoothed: 47.132, bearing: -0.121)
+----------------------------------------------------------------------------------------------------
+target_x: 46.788cm, target_y: -5.686cm
+Designated kick leg: RIGHT
+kp_x: 30.788cm   kp_y: -0.436cm
+kp_dist: 30.791cm   kp_bearing: -0.014
+OUT OF ELLIPSE: ball too far
+TARGET_FRONT_FAR
+BallKicker: Walking straight!
+____________________SETTING FPS TO 10____________________
+Movement STARTING!
+Obstacle seen (on left, distance of 0.280000)!
+NOTE: Obstacle seen while a movement is in progress, movement STOPPED
+CLEARING FOOTSTEPS!
+Kicking: _stopOngoingMovement: current movement STOPPED (forceStop = True)
+
+Approaching Ball: (recently seen True, dist: 27.288, distSmoothed: 27.288, bearing: -0.229)
+----------------------------------------------------------------------------------------------------
+target_x: 26.576cm, target_y: -6.191cm
+Designated kick leg: RIGHT
+kp_x: 10.576cm   kp_y: -0.941cm
+kp_dist: 10.618cm   kp_bearing: -0.089
+OUT OF ELLIPSE: ball too far
+TARGET_FRONT_NEAR
+BallKicker: Aligning to goal! (switching to goal finder)
+BA.clearFutureCallbacks: removing [no callbacks]
+SwitchToFinder: calling ['OpposingLeftPost', 'OpposingRightPost'] Finder.start
+TargetFinder: reset 2, 142142956
+TargetFinder: _start: OpposingLeftPost,OpposingRightPost (first time: True)
+____________________64.06: SWITCHING TO top CAMERA in 1.00 secs (delta 62.32)____________________
+TargetFinder: targets not seen (['OpposingLeftPost', 'OpposingRightPost']), searching for it
+____________________SETTING FPS TO 20____________________
+Searcher: reset 2, 142140844
+Searcher: search started for OpposingLeftPost,OpposingRightPost with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Goal, using specific search iterator
+GOAL SEARCH: Before All Turns
+Obstacle lost!
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_YGLP_IN_FRAME-><l> (function) _behavior,EVENT_YGRP_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks,bd->(Searcher._nextSearchMove)]
+Searcher: search completed for OpposingLeftPost,OpposingRightPost with centering for one. Seen: []
+Searcher: No head motion, returning success
+TargetFinder: _onSearchOver: didn't see all targets, so calling user callback
+@ Goal not found - doing some strafing (how do I do this for 180 degrees?
+____________________SETTING FPS TO 10____________________
+Movement DONE!
+TargetFinder: WARNING: self._d already called
+SwitchToFinder: calling ['OpposingLeftPost', 'OpposingRightPost'] Finder.start
+SwitchToFinder: Target finder not stopped. Stopping it.
+BA.clearFutureCallbacks: removing [no callbacks,<Behavior Searcher: d-empty-142140844>]
+Searcher: WARNING: clear does nothing
+Tracker: WARNING: self._d already called
+Searcher: WARNING: self._d already called
+INFO:eventmanager:BasicMainLoop: ctrl-c detected.
+================================================================================
+=                       quitting - event loop restarted                        =
+================================================================================
+Odometry Summary: (end time = 89.5)
+===================================
+58.4..63.8 (5.4/est 1.0): ('journey last leg', 0.27709106723100985, 0.0, 0.0)
+BA.clearFutureCallbacks: removing [<Behavior BallKicker: d-[callAndCallBD,passthru]>]
+BallKicker: WARNING: clear does nothing
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_OBSTACLE_SEEN-><l> (instancemethod) _behavior,EVENT_OBSTACLE_IN_FRAME-><l> (instancemethod) _behavior,EVENT_OBSTACLE_LOST-><l> (instancemethod) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks]
+KICKING STOPS!!!
+STOPPING CURRENT FINDER: ['OpposingLeftPost', 'OpposingRightPost'] Finder
+kick complete - currently Player will restart me, just let it.
+Kicker: WARNING: calling stop when already stopped, with callbacks waiting: d-[callAndCallBD,passthru,callAndCallBD,passthru]
+INFO:player:Player: OnPlay 2 (state=3)
+================================================================================
+=                               starting Kicker                                =
+================================================================================
+Kicker: reset 3, 141001996
+BallKicker: reset 1, 141001132
+TargetFinder: reset 1, 141004396
+TargetFinder: reset 1, 141001708
+BallKicker: reset 2, 140963052
+INFO:player:Player: Main Behavior is done (<Behavior Kicker: d-[callAndCallBD,passthru,callAndCallBD,passthru]>)
+INFO:player:Player: OnPlay 3 (state=3)
+================================================================================
+=                               starting Kicker                                =
+================================================================================
+Kicker: reset 4, 140969484
+BallKicker: reset 1, 142140332
+TargetFinder: reset 1, 142142732
+TargetFinder: reset 1, 142140524
+BallKicker: reset 2, 142143052
+INFO:player:Player: Main Behavior is done (<Behavior Kicker: d-[callAndCallBD,passthru,callAndCallBD,passthru]>)
+INFO:eventmanager:BasicMainLoop: ctrl-c detected a second time. unclean exit.
+inaoqi-broker: destruct brokerroot@Maldini [0] [~]# 
+
+

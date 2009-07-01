@@ -1,0 +1,151 @@
+================================================================================
+=       running custom event loop with sleep time of 100.0 milliseconds        =
+================================================================================
+INFO:eventmanager:MainLoop: only LEGAL ROBOCUP moves allowed from now on
+INFO:player:Player: waiting for configuration event (change in game state, or chest button)
+Team number 4, Team color 0, Player number 1, game state Play
+INFO:objects:Configuring OurLeftPost blue_goal, our, (0.00, 75.00), left, BGLP
+INFO:objects:Configuring OurRightPost blue_goal, our, (0.00, -75.00), right, BGRP
+INFO:objects:Configuring OurGoal_UnknownPost blue_goal, our, (0.00, 0.00), right, BGRP
+INFO:objects:Configuring OpposingLeftPost yellow_goal, opposing, (605.00, -75.00), left, YGLP
+INFO:objects:Configuring OpposingRightPost yellow_goal, opposing, (605.00, 75.00), right, YGRP
+INFO:objects:Configuring OpposingGoal_UnknownPost yellow_goal, opposing, (605.00, 0.00), right, YGRP
+Approacher: reset 1, 142118060
+INFO:player:Player: OnPlay 1 (state=3)
+================================================================================
+=                               starting Goalie                                =
+================================================================================
+Goalie: reset 2, 142118348
+readyToLeap
+____________________SETTING FPS TO 20____________________
+TargetFinder: reset 2, 142118476
+TargetFinder: _start: Ball (first time: True)
+TargetFinder: targets not seen (['Ball']), searching for it
+Searcher: reset 2, 142118284
+Searcher: search started for Ball with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Ball, using specific search iterator
+Centerer: reset 2, 142117740
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks]
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+Searcher: No head motion, returning success
+TargetFinder: will track Ball
+Tracker: reset 2, 142116236
+x2:  117.297617612  x1:  122.304231535
+t2:  12.7526369095  t1:  11.7976248264
+velocity:  -5.26348765729
+time for intersection:  22.2851510726
+self.body_isect:  -10.2601314098
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  22.2851510726
+x2:  117.300548064  x1:  122.212079513
+t2:  19.5991919041  t1:  18.6485388279
+velocity:  -5.24418982886
+time for intersection:  22.3677158708
+self.body_isect:  -13.5201957015
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  22.3677158708
+x2:  117.361302814  x1:  122.310918661
+t2:  26.0417299271  t1:  25.0493400097
+velocity:  -5.00060379665
+time for intersection:  23.4694264106
+self.body_isect:  -12.340955277
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  23.4694264106
+TargetFinder: targets not seen (['Ball']), searching for it
+Searcher: reset 3, 142550604
+Searcher: search started for Ball with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Ball, using specific search iterator
+Centerer: reset 3, 142567756
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [no callbacks,no callbacks]
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+Searcher: No head motion, returning success
+TargetFinder: will track Ball
+Tracker: reset 3, 142096556
+x2:  117.360964375  x1:  122.283658325
+t2:  30.2871470451  t1:  29.3476579189
+velocity:  -5.24509065879
+time for intersection:  22.3753929169
+self.body_isect:  -5.75981960528
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  22.3753929169
+x2:  117.363199133  x1:  140.011966478
+t2:  32.6949579716  t1:  30.5390539169
+velocity:  -10.5034340914
+time for intersection:  11.1737930769
+self.body_isect:  18.7053465431
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  11.1737930769
+TargetFinder: targets not seen (['Ball']), searching for it
+Searcher: reset 4, 142574316
+Searcher: search started for Ball with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Ball, using specific search iterator
+Centerer: reset 4, 142574828
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [10: no callbacks]
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+Searcher: No head motion, returning success
+TargetFinder: will track Ball
+Tracker: reset 4, 142574572
+TargetFinder: targets not seen (['Ball']), searching for it
+Searcher: reset 5, 142576492
+Searcher: search started for Ball with centering, seenTargets = Searcher._seenOne.
+Searcher: Looking for a Ball, using specific search iterator
+Centerer: reset 5, 142567916
+BEM.clearFutureCallbacks: removing CL [], E [EVENT_BALL_IN_FRAME-><l> (function) _behavior]
+BA.clearFutureCallbacks: removing [12: no callbacks]
+Searcher: search completed for Ball with centering for one. Seen: [Ball]
+Searcher: No head motion, returning success
+TargetFinder: will track Ball
+Tracker: reset 5, 142568332
+x2:  157.800981258  x1:  166.765822511
+t2:  61.5587918758  t1:  61.1222639084
+velocity:  -22.5538055876
+time for intersection:  6.99664545058
+self.body_isect:  82.5103582372
+Checking if leap is necessary
+According to time calculation, decided not to leap
+Time of arrival:  6.99664545058
+x2:  97.4987251769  x1:  114.398828013
+t2:  72.1484129429  t1:  71.641988039
+velocity:  -33.3358033074
+time for intersection:  2.92474503398
+self.body_isect:  71.4639309814
+Checking if leap is necessary
+LEAPING LEFT@@@@@@@@@@@@@@@@@@@@@@@@@@
+Searcher: WARNING: self._d already called
+real leap left safe
+____________________SETTING FPS TO 10____________________
+x2:  96.1544899655  x1:  114.398828013
+t2:  72.1737010479  t1:  71.641988039
+velocity:  -34.9075015718
+time for intersection:  2.7545509027
+self.body_isect:  76.5998535235
+x2:  92.388262477  x1:  114.398828013
+t2:  72.2023129463  t1:  71.6684038639
+velocity:  -43.4583049605
+time for intersection:  2.12590579777
+self.body_isect:  91.2477759778
+x2:  92.388262477  x1:  114.398828013
+t2:  72.7113218307  t1:  71.7130630016
+velocity:  -22.6144391238
+time for intersection:  4.08536607834
+self.body_isect:  100.540526238
+wait on left
+getting up left
+complete (side=1)
+AlignmentAfterLeap: reset 1, 142591724
+AlignmentAfterLeap: reset 2, 142591084
+_start
+findOppositeOwnPost
+1.74532925199, 0.349065850399, 0.523598775598, 0.349065850399, 5, -5, 0.22, -4.0, 0.055, 0.015, 0.04, 0.3, 0.01, 0.0, 100
+ADD TURN (deltaTheta): -6.283185
+
+
+
