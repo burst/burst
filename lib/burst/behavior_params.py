@@ -43,16 +43,16 @@ MOVEMENT_PERCENTAGE_TURN = 0.8
 # Kick consts (Measurements acquired via headTrackingTester)
 # First value is for LEFT leg, second for RIGHT leg
 KICK_X_MIN = [14, 14]
-KICK_X_MAX = [18, 18]
+KICK_X_MAX = [20, 20]
 KICK_Y_MIN = [4.0, -4.0]
-KICK_Y_MAX = [6.0, -6.5]
+KICK_Y_MAX = [7.0, -7.0]
 
 KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
 KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
-MAX_FORWARD_WALK = 100 # 100cm is the farthest we can stably go without stopping
+MAX_FORWARD_WALK = 120 # 120cm is the farthest we can stably go without stopping
 MAX_SIDESTEP_WALK = 20 # 20 cm is the farthest we go on side-stepping without stopping
 
 def calcTarget(distSmoothed, bearing):

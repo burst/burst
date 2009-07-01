@@ -3,9 +3,9 @@
 ## Behavior params
 import burst.behavior_params as params
 params.KICK_X_MIN = [14,14]
-params.KICK_X_MAX = [19,19]
-params.KICK_Y_MIN = [3.5,-2]
-params.KICK_Y_MAX = [10.5,-9]
+params.KICK_X_MAX = [20,20]
+params.KICK_Y_MIN = [4.5,-3.5]
+params.KICK_Y_MAX = [9.25,-8]
 
 ## Choreograph moves
 import burst.moves.choreograph as choreograph
@@ -76,8 +76,9 @@ walks.SIDESTEP_WALK.defaultSpeed = 27 # 20 seems just fine
 #    )
 
 import burst.moves.poses as poses
+"""
 #Probably no need when arm is OK.
-poses.GREAT_KICK_LEFT_OFFSET = poses.moveDegToRad((
+#poses.GREAT_KICK_LEFT_OFFSET = poses.moveDegToRad((
     #Stand up more fully
     ((0.0,0.0,0.0,0.0),
      (0.0,0.0,0.0,0.0,0.0,0.0),
@@ -124,7 +125,7 @@ poses.GREAT_KICK_LEFT_OFFSET = poses.moveDegToRad((
      (0.0,0.0,0.0,0.0,0.0,0.0),
      (0.0,0.0,0.0,0.0),0.0)
 ))
-
+"""
 ####### UGLY CHANGE, RAUL ONLY, FAULTY JOINT #########
 # I have two different sets of proxies, and it is a pain
 # to make them both take the same path somehow, so I'm

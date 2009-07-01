@@ -2,10 +2,10 @@
 
 ## Behavior params
 import burst.behavior_params as params
-params.KICK_X_MIN = [12,12]
-params.KICK_X_MAX = [18,18]
-params.KICK_Y_MIN = [3.5,-1.5]
-params.KICK_Y_MAX = [9.5,-8.5]
+params.KICK_X_MIN = [14,14]
+params.KICK_X_MAX = [20,20]
+params.KICK_Y_MIN = [3.5,-4.5]
+params.KICK_Y_MAX = [7,-8]
 
 import burst.moves.walks as walks
 
