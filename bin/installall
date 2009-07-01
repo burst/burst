@@ -1,0 +1,19 @@
+#!/usr/bin/python
+
+from __future__ import with_statement
+
+import os
+import sys
+
+HOME=os.environ['HOME']
+os.chdir('%s/src/burst' % HOME)
+#ips=['192.168.4.11', '192.168.4.20', '192.168.4.12']
+ips=['cech', 'raul', 'messi', 'maldini']
+for ip in ips:
+    print "*"*20 + ip + "*"*20
+    with open('Makefile.local', 'w') as fd:
+        fd.write("""ROBOT=%s
+TABLE=maverick/graz_field_a.mtb
+""" % ip)
+    os.system('make installall')
+
