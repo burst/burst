@@ -237,4 +237,3 @@ else:
 motionProxy.walk()   #Blocking Function
 
 
-
