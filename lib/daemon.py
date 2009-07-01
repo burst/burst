@@ -153,10 +153,13 @@ def createDaemon():
    # that can be opened by this process.  If there is not limit on the
    # resource, use the default value.
    #
-   import resource		# Resource usage information.
-   maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-   if (maxfd == resource.RLIM_INFINITY):
-      maxfd = MAXFD
+
+   ## not strictly required (maybe nice to have)
+   #import resource		# Resource usage information.
+   #maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+   #if (maxfd == resource.RLIM_INFINITY):
+   #   maxfd = MAXFD
+   maxfd = MAXFD
   
    # Iterate through and close all file descriptors.
    for fd in range(0, maxfd):

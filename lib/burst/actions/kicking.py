@@ -264,7 +264,9 @@ class BallKicker(Behavior):
             self._side_last = side
             if self._ballFinder:
                 self._ballFinder.stop().onDone(self.searchGoalPost)
-            return
+                return
+            else:
+                self.log("NO BALL FINDER???")
 
         self._diag_kick_tested = False
         

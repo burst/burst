@@ -17,7 +17,7 @@ else
     echo Using TABLE=$(TABLE)
 endif
 
-all: prerequisites install
+all: install
 
 # Main Targets:
 #  robot
@@ -65,7 +65,7 @@ pynaoqi:
 
 robot: Makefile.local burstmem recordermodule colortable imops
 
-install: robot
+install: prerequisites robot
 	rsync -avr --exclude "*.pyc" --exclude ".*.sw?" --exclude imops_pynaoqi*.so --exclude *.kcachegrind lib root@$(ROBOT):/home/root/burst/
 
 installall: install

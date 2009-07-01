@@ -480,6 +480,8 @@ class Actions(object):
 
         return DeferredList(ds)
 
+    @returnsbd
+    @legal_head
     def chainHeads(self, moves):
         """ chain a number of headMoves, return a burstdeferred on the last
         move. Useful for debugging, or just for sign language. see nodtester.py """
@@ -675,6 +677,8 @@ class Actions(object):
 #        d.addCallback(debugme)
 #        return self.wrap(d, data=self)
 
+    @returnsbd
+    @legal_head
     def moveHead(self, x, y, interp_time=1.0):
         """ move from current yaw pitch to new values within
         interp_time time (up to limit of actuators) """

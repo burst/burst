@@ -412,7 +412,11 @@ class Searcher(Behavior):
 
         self._search_count[1] += 1
         self._actions.centerer.stop()
-        return self._actions.getCurrentHeadBD() # XXX THIS IS BROKEN. Should be returning a specific BD - not the Head BD. That's like returning the general cause, instead of the specific cause.
+        if self._actions.isHeadMotionInProgress():
+            print "returning currentHeadBD: %s" % self._actions.getCurrentHeadBD()
+            return self._actions.getCurrentHeadBD() # XXX THIS IS BROKEN. Should be returning a specific BD - not the Head BD. That's like returning the general cause, instead of the specific cause.
+        self.log("No head motion, returning success")
+        return self._actions.succeed(self)
 
     def _onTimeout(self):
         ''' The event for a searching having timed-out. '''
