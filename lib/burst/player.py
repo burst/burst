@@ -428,6 +428,7 @@ class Player(object):
             self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
 
     def _onUnpenalized(self):
+        if self._main_behavior.stopped: return # REQUIRED TESTING..
         #print "<"*20 + " u n p e n a l i z e d " + ">"*20
         self._restartMainBehavior('; unpenalized')
         self._main_behavior.onDone(self._onCheckIfPenalizedElsePlay)

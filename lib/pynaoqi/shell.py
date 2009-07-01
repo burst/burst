@@ -37,6 +37,7 @@ centerer.start(target=world.seen_goal.right)
 ,
 ('remote',
 """
+remote.rot(0,1,0,-0.5)
 remote.ball(-300,0)
 remote.pos(300,0,0)
 remote.rotyellow()

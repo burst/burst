@@ -176,6 +176,10 @@ class BallKicker(Behavior):
         self._ball_search_first_failure = True
 
     def _onBallSearchFailed(self):
+        # we are here after searching for a ball. Just make sure it did actually fail.
+        if self._world.ball in self._actions.searcher.seen_objects:
+            print "@ _onBallSearchFailed called, but ball is visible - proceeding as usual"
+            return self._approachBall()
         print "@ Ball Search Failed!!!! Stopping ball Finder"
         self._ballFinder.stop()
         if self._movement_deferred:
@@ -233,9 +237,13 @@ class BallKicker(Behavior):
         # TODO: we probably need a better solution? this can happen after we're aligned,
         # when ball tracker finds the ball while a previous movement is still ON.
         if self._movement_deferred:
-            print "LAST MOVEMENT STILL ON!!!"
             #import pdb; pdb.set_trace()
-            return
+            if not self._actions.isMotionInProgress() and not self._actions.isWalkInProgress():
+                print "ignoring current movement deferred and erasing it"
+                self._clearMovement(clearFootsteps = False)
+            else:
+                print "LAST MOVEMENT STILL ON!!!"
+                return
 
         if not self._target.recently_seen:
             if self._ballFinder.stopped:
@@ -360,7 +368,8 @@ class BallKicker(Behavior):
         doit = lambda f: self._eventmanager.callLater(0.0, f) if not stop_bd.completed() else stop_bd.onDone(f)
         if not to_finder.stopped:
             print "SwitchToFinder: Target finder not stopped. Stopping it."
-            to_finder.stop().onDone(lambda _, f=to_finder.start: doit(f))
+            to_finder.stop()
+            self._eventmanager.callLater(0.5, to_finder.start)
         else:
             doit(to_finder.start)
 
@@ -442,9 +451,14 @@ class BallKicker(Behavior):
         num_circle_strafes = 8
         self._movement_deferred = self._actions.executeCircleStraferInitPose()
         for i in xrange(num_circle_strafes):
-            self._movement_deferred = self._movement_deferred.onDone(self._actions.executeCircleStrafeClockwise)
+            self._movement_deferred = self._movement_deferred.onDone(self._actions.executeCircleStrafeCounterClockwise)
         #self._movement_deferred = self._actions.turn(pi)
-        self._movement_deferred.onDone(lambda: self._onMovementFinished(lambda: self.switchToFinder(to_goal_finder=True)))
+        self._movement_deferred.onDone(lambda: self._onMovementFinished)
+        self._movement_deferred.onDone(self.restartGoalFinderAfterFailure)
+
+    def restartGoalFinderAfterFailure(self):
+        self.log("Restarting goal finder")
+        self._eventmanager.callLater(0.5, lambda: self.switchToFinder(to_goal_finder=True))
 
     def strafe(self):
         self._is_strafing = True
@@ -455,7 +469,15 @@ class BallKicker(Behavior):
             self._eventmanager.callLater(self._eventmanager.dt, self.strafe)
             return
         self.logverbose("strafe: goal post seen")
-        self.logverbose("%s bearing is %s. Left is %s, Right is %s" % (self.goalpost_to_track.name, self.goalpost_to_track.bearing, self.alignLeftLimit, self.alignRightLimit))
+        self.logverbose("%s bearing is %s (seen %s, all %s). Left is %s, Right is %s" % (
+                self.goalpost_to_track.name,
+                self.goalpost_to_track.bearing,
+                self.goalpost_to_track.seen, str(['%3.2f (c %3.2f) %s %s' % (x.bearing,
+                    x.centered_self.bearing,
+                    'seen' if x.seen else 'not seen', 'centered' if x.centered else 'not centered')
+                    for x in self._world.opposing_goal.left_right_unknown]),
+                self.alignLeftLimit,
+                self.alignRightLimit))
         # TODO: Add align-to-goal-center support
         if self.goalpost_to_track.bearing < self.alignLeftLimit:
             #strafeMove = lambda: self._actions.executeCircleStrafeClockwise().onDone(self._actions.executeCircleStrafeClockwise)

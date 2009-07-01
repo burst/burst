@@ -37,7 +37,7 @@ from burst_util import (polar2cart, cart2polar)
 
 MOVEMENT_PERCENTAGE_FORWARD = 0.9
 MOVEMENT_PERCENTAGE_SIDEWAYS = 0.9
-MOVEMENT_PERCENTAGE_TURN = 0.9
+MOVEMENT_PERCENTAGE_TURN = 0.8
 
 ## Kicks
 # Kick consts (Measurements acquired via headTrackingTester)
@@ -52,7 +52,7 @@ KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_M
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
-MAX_FORWARD_WALK = 200 # 200cm is the farthest we can stably go without stopping
+MAX_FORWARD_WALK = 100 # 100cm is the farthest we can stably go without stopping
 MAX_SIDESTEP_WALK = 20 # 20 cm is the farthest we go on side-stepping without stopping
 
 def calcTarget(distSmoothed, bearing):
@@ -99,6 +99,10 @@ def calcBallArea(ball_x, ball_y, side):
             else:
                 return BALL_SIDE_FAR
         else: #ball_x > KICK_X_MAX[side]
+            # don't turn to far balls (define a diagonal area)
+            # TODO - uncomment and debug
+            #if ball_x > 100.0 and abs(ball_y)/(abs(ball_x) + 0.01) < 1.0/5:  # TODO - constantize this
+            #    return BALL_FRONT_FAR
             return BALL_DIAGONAL
 
 def isInEllipse(ball_x, ball_y, side, margin=0):

@@ -16,7 +16,8 @@ import burst_consts
 # the list of targets, or the one that is closer.
 
 class TargetFinder(ContinuousBehavior):
-    ''' Continuous target finder & tracker '''
+    ''' Continuous target finder & tracker. Success is finding a single target (out of
+        possibly multiple candidates). '''
 
     def __init__(self, actions, targets, start = True):
         super(TargetFinder, self).__init__(actions=actions, name='%s Finder' % [
@@ -61,8 +62,9 @@ class TargetFinder(ContinuousBehavior):
         self._iterate(callOnLost=False)
 
     def _onSearchOver(self):
-        if set(self._actions.searcher.seen_objects) < set(self._targets):
-            self.log("_onSearchOver: didn't see all targets, so calling user callback")
+        # we are looking for a single target, so don't check for self._targets, just len()>0
+        if len(self._actions.searcher.seen_objects) == 0:
+            self.log("_onSearchOver: didn't see any target, so calling user callback")
             self._callOnSearchFailedCB()
             # If we lost the targets, don't restart - let the user do it.
         else:
