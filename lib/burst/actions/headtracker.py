@@ -115,8 +115,10 @@ class Centerer(Behavior, TrackMixin):
         """
         # TODO - automate this via locking. NOTE: It is ok for the Searcher to do Centering (it does that shit).
         if not self._actions.tracker.stopped:
-            self.log("ERROR: Center while Track")
-            import pdb; pdb.set_trace()
+            self.log("ERROR: Center while Track - stopping in 1 second")
+            self._eventmanager.callLater(1.0, self.stop)
+            return
+            #import pdb; pdb.set_trace()
         self._target = target
         self._on_lost_callback = lostCallback
         # TODO - what happens if the target is lost during the centering,

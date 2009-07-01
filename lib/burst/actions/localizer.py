@@ -59,7 +59,7 @@ class Localizer(Behavior):
         # actually fires.
 
         self.logverbose("BA before search: %s" % self._actions)
-        self._actions.search_conditioned(targets, seenTargetsCB=self._seenTargetsCB).onDone(self._doSearch)
+        self._actions.searcher.search_conditioned(targets, seenTargetsCB=self._seenTargetsCB).onDone(self._doSearch)
         self.logverbose("BA after  search: %s" % self._actions)
 
     def  _seenTargetsCB(self, seen):

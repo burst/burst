@@ -292,6 +292,9 @@ class Player(object):
             self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
             self._main_behavior.onDone(self._onMainBehaviorDone)
 
+    def isPenalized(self):
+        return self._world.gameStatus.getMyPlayerStatus().isPenalized()
+
     def _onCheckIfPenalizedElsePlay(self):
         if not self._world.gameStatus.getMyPlayerStatus().isPenalized():
             self._onPlay()
@@ -405,6 +408,18 @@ class Player(object):
         #print "<"*20 + " P E N A L I Z E D " + ">"*20
         self._stopMainBehavior('; penalized, also calling killAll')
         self._actions._motion.killAll()
+        # Vova strategy: if we are goalie, we now become a kicker.
+        if self._main_behavior.name == 'Goalie':
+            self.turnToKicker()
+
+    def turnToKicker(self):
+        # called by: _onPenalized, tests (or Goalie that decided to suicide and reincarnate as a Kicker)
+        # the later (tests+Goalie) use start=True
+        info("%s behavior removed after penalization, changed to Kicker" % self._main_behavior.name)
+        import players.kicker
+        self._main_behavior = players.kicker.Kicker(self._actions)
+        if not self.isPenalized():
+            self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
 
     def _onUnpenalized(self):
         #print "<"*20 + " u n p e n a l i z e d " + ">"*20
