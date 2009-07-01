@@ -33,6 +33,7 @@ class Goalie(InitialBehavior):
         self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
         self.targetFinder.setOnTargetFoundCB(self.targetFound)
         self.targetFinder.setOnTargetLostCB(self.targetLost)
+        self.targetFinder.setOnSearchFailedCB(self.searchFailed)
         self.isPenalty = False # TODO: Use the gameStatus object.
 
     def _start(self, firstTime = False):
@@ -43,7 +44,7 @@ class Goalie(InitialBehavior):
         if not self.isPenalty:
             self._eventmanager.register(self.leap, EVENT_BALL_BODY_INTERSECT_UPDATE)    
         self.readyToLeap()
-       
+
     def readyToLeap(self):
         print "readyToLeap"
         self._actions.setCameraFrameRate(20)
@@ -68,6 +69,16 @@ class Goalie(InitialBehavior):
         #else:
             #self._eventmanager.unregister(self.leap)
 
+    def searchFailed(self):
+        print "at searchFailed"
+        # ball search failed, needs to be restarted
+        if self._actions.searcher.stopped:
+            self.log("Restarting target finder since searcher is stopped")
+            if not self.targetFinder.stopped:
+                self.log("TODO - targetFinder should have been stopped at searchFailure")
+            self.targetFinder.stop()
+            self._eventmanager.callLater(0.5, self.targetFinder.start)
+
     def leapPenalty(self, stopped=False):
         if self.targetFoundTime + WAITING_FOR_HEAD < self._world.time:
             print "LEAP (PENALTY) ABORTED, NOT ENOUGH DATA!"
@@ -91,7 +102,7 @@ class Goalie(InitialBehavior):
             else:
                 self._actions.say("left.")
                 self.waitingOnLeft()
-                
+
     leap_time = -1
     def leap(self, stopped=False):
         if self.isLeaping: return

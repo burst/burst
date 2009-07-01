@@ -13,10 +13,10 @@ class SearchTester(InitialBehavior):
 
     def _start(self, firstTime=False):
         self.targets=[self._world.opposing_lp, self._world.opposing_rp]
-        self._actions.searcher.search(self.targets).onDone(self.onFound)
+        self._actions.searcher.search(self.targets).onDone(self.onSearchCallback)
 
-    def onFound(self):
-        self.log('Found it!')
+    def onSearchCallback(self):
+        self.log('Search done')
 
         self.log(' | '.join(map(str, self.targets)))
 
@@ -28,12 +28,12 @@ class SearchTester(InitialBehavior):
 
         if len([x for x in self.targets if x.centered_self.sighted]) == 0:
             print "Nothing found, not looking at targets"
-            return self._quit()
+            return self._start()
         self.log("Going towards all targets")
         chainDeferreds([
             lambda _, t=t: self.lookAt(t).onDone(
             lambda: self._eventmanager.callLaterBD(2.0)).getDeferred()
-                for t in self.targets]).addCallback(self._quit)
+                for t in self.targets]).addCallback(self._start)
 
     def lookAt(self, target):
         self.log("Looking and centering on %s" % target.name)
