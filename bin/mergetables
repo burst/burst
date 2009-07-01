@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+""" Read two tables, take some colors from the first, others from the second,
+and write into a result table.
+"""
+
+import sys
+
+first, second, dest, rest = sys.argv[1:]
+
+first_colors = [int(r) for r in rest]
+
+print "reading %s and %s, taking %s from %s, writing to %s" % (
+    first, second, first_colors, first, dest)
+
+first = open(first_fname).read()
+second = open(second_fname).read()
+dtable = open(dest, 'w+')
+print "colors in first table (%s) = %s" % (first_fname, set(first))
+print "colors in second table (%s) = %s" % (second_fname, set(first))
+for first, second in zip(first, second):
+    dtable.write(first if first in first_colors else second)
+dtable.close()
+
