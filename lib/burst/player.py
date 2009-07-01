@@ -183,6 +183,13 @@ class Player(object):
     
     # Main Behavior ON/OFF Switch and Notification
 
+    def _restartMainBehavior(self, additional_message=''):
+        if not self._main_behavior.stopped:
+            info("restartMainBehavior: not stopped")
+            return self._main_behavior.stop().onDone(
+                lambda: self._startMainBehavior(additional_message))
+        return self._startMainBehavior(additional_message)
+
     def _startMainBehavior(self, additional_message=''):
         if not self._main_behavior.stopped: return self._actions.succeed(self)
         self._banner('starting %s%s' % (self._main_behavior.name, additional_message))
@@ -278,8 +285,10 @@ class Player(object):
     _onPlay_counter = 0
     def _onPlay(self):
         self._onPlay_counter += 1
-        info("Player: OnPlay %s" % self._onPlay_counter)
-        if self._main_behavior.stopped:
+        state = self._world.robot.state
+        info("Player: OnPlay %s (state=%s)" % (self._onPlay_counter, state))
+        ispenalized = self._world.gameStatus.getMyPlayerStatus().isPenalized()
+        if self._main_behavior.stopped and state == PlayRobotState and not ispenalized:
             self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
             self._main_behavior.onDone(self._onMainBehaviorDone)
 
@@ -399,7 +408,8 @@ class Player(object):
 
     def _onUnpenalized(self):
         #print "<"*20 + " u n p e n a l i z e d " + ">"*20
-        self._startMainBehavior('; unpenalized')
+        self._restartMainBehavior('; unpenalized')
+        self._main_behavior.onDone(self._onCheckIfPenalizedElsePlay)
 
     #############
     # Utilities #
