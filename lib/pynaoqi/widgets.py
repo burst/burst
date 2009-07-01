@@ -720,6 +720,8 @@ class Calibrator(BaseWindow, ImopsMixin):
     def __init__(self, con):
         BaseWindow.__init__(self, builder_file='calibrator.glade',
             top_level_widget_name='calibrator')
+        self._init_database()
+        self._yuv_size = (IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT) # yeah, hard coded
         self._w.show_all()
         self._im = self._builder.get_object('image')
         self._filechooser = self._builder.get_object('filechooser')
@@ -728,8 +730,6 @@ class Calibrator(BaseWindow, ImopsMixin):
         filefilter.add_pattern('*.NBFRM')
         self._filechooser.set_filter(filefilter)
         self.init_imops_mixin(con)
-        self._yuv_size = (IMAGE_WIDTH_INT, IMAGE_HEIGHT_INT) # yeah, hard coded
-        self._init_database()
 
     def _init_database(self):
         import sqlite3

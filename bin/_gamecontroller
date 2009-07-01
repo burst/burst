@@ -18,5 +18,5 @@ if [ ! -e GameController.jar ]; then
  cd ..
 fi
 # -quiet - should stop the ticking (the sound!)
-java -jar GameController.jar -port 5838 -quiet -numplayers 3 ${broadcast} ${blue} ${red}
+java -jar GameController.jar -port 5838 -debug -quiet -numplayers 3 ${broadcast} ${blue} ${red}
 

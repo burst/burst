@@ -16,6 +16,11 @@ class TargetFinderTester(InitialBehavior):
         self._ballFinder = TargetFinder(actions=self._actions, targets=self.targets, start=True)
         self._ballFinder.setOnTargetFoundCB(self.onTargetFound)
         self._ballFinder.setOnTargetLostCB(self.onTargetLost)
+        self._ballFinder.setOnSearchFailedCB(self.onSearchFailed)
+
+    def onSearchFailed(self):
+        self.log('Search Failed')
+        self._ballFinder.stop().onDone(self.onStopped)
 
     def onTargetFound(self):
         self.log('Found it')
