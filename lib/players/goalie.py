@@ -148,25 +148,25 @@ class Goalie(InitialBehavior):
     def gettingUpRight(self):
         print "getting up right"
         if realLeap:
-            self._actions.executeToBellyFromLeapRight().onDone(lambda _: self.getUpBelly(RIGHT_LEAP))
+            self._actions.executeToBellyFromLeapRight().onDone(lambda _=None: self.getUpBelly(RIGHT_LEAP))
         else:
             self.onGettingUpDone(RIGHT_LEAP)
 
     def gettingUpLeft(self):
         print "getting up left"
         if realLeap:
-            self._actions.executeToBellyFromLeapLeft().onDone(lambda _: self.getUpBelly(LEFT_LEAP))
+            self._actions.executeToBellyFromLeapLeft().onDone(lambda _=None: self.getUpBelly(LEFT_LEAP))
         else:
             self.onGettingUpDone(LEFT_LEAP)
 
     def getUpBelly(self, side):
-        self._actions.executeGettingUpBelly().onDone(lambda _: self.onGettingUpDone(side))
+        self._actions.executeGettingUpBelly().onDone(lambda _=None: self.onGettingUpDone(side))
 
     def onGettingUpDone(self, side):
         print "complete (side=%s)" % side
         self._player.registerFallHandling()        
         if realLeap:
-            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
+            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _=None: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
         else:
             self.readyToLeap()
 

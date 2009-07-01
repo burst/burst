@@ -15,6 +15,13 @@ from burst_field import * # field constants
 from burst_events import * # event constants
 
 # Some stuff that is required first
+#MESSI = 'messi'
+#GERRARD = 'gerrard'
+#CECH = 'cech'
+#RAUL = 'raul'
+#MALDINI = 'maldini'
+#HAGI = 'hagi'
+
 MESSI = 'messi'
 GERRARD = 'gerrard'
 CECH = 'cech'
@@ -50,12 +57,12 @@ KICKER_JERSEY = 2
 SECONDARY_JERSEY = 3
 
 ROBOT_NAME_TO_JERSEY_NUMBER = {
-    MESSI: GOALIE_JERSEY,
-    CECH: GOALIE_JERSEY,
-    HAGI: KICKER_JERSEY,
+    HAGI: GOALIE_JERSEY,
+    GERRARD: GOALIE_JERSEY,
+    MALDINI: KICKER_JERSEY,
     RAUL: KICKER_JERSEY,
-    MALDINI: SECONDARY_JERSEY,
-    GERRARD: SECONDARY_JERSEY,
+    MESSI: SECONDARY_JERSEY,
+    CECH: SECONDARY_JERSEY,
     WEBOTS: GOALIE_JERSEY, # TODO - overriding command line for robot number, required for webots.
 }
 
