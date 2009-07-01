@@ -164,7 +164,7 @@ class Goalie(InitialBehavior):
 
     def onGettingUpDone(self, side):
         print "complete (side=%s)" % side
-        self._player.registerFallHandling()        
+        self._player.registerFallHandling()
         if realLeap:
 #            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _=None: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
             AlignmentAfterLeap(self._actions, side).start().onDone(self.readyToLeap)

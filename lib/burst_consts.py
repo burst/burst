@@ -224,7 +224,8 @@ else: # using NAOQI_1_2_0
     SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, [dt_ms])
 
 MIN_JERSEY_NUMBER, MAX_JERSEY_NUMBER = 1, 3
-GAME_CONTROLLER_BROADCAST_PORT = 3838
+GAME_CONTROLLER_BROADCAST_PORT = 3838 # REAL ONE!!
+#GAME_CONTROLLER_BROADCAST_PORT = 5838
 GAME_CONTROLLER_NUM_PLAYERS = 11
 GAME_CONTROLLER_NUM_TEAMS = 2
 
@@ -473,7 +474,7 @@ vision_vars = ['/BURST/Vision/BGCrossbar/AngleXDeg',
 # Sonar constants
 US_ELEMENTS_NUM = 2
 US_HISTORY_SIZE = 4 # size of history buffer (500ms * 4 frames = ~1 second)
-US_NEAR_DISTANCE = 0.4 # distance in meters
+US_NEAR_DISTANCE = 0.3 # distance in meters
 US_FRAMES_TILL_LOST = 3 # 3 frames * 500ms = ~1.5 before declaring object as lost
 
 # Joint data

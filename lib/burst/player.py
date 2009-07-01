@@ -409,8 +409,14 @@ class Player(object):
         self._stopMainBehavior('; penalized, also calling killAll')
         self._actions._motion.killAll()
         # Vova strategy: if we are goalie, we now become a kicker.
-        if self._main_behavior.name == 'Goalie':
+        if self.isGoalie():
+            if not self._main_behavior.stopped:
+                info("stopping existing behavior before turning into Kicker")
+                self._main_behavior.stop() # TODO - use returned bd
             self.turnToKicker()
+
+    def isGoalie(self):
+        return self._main_behavior.name == 'Goalie'
 
     def turnToKicker(self):
         # called by: _onPenalized, tests (or Goalie that decided to suicide and reincarnate as a Kicker)
