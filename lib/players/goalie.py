@@ -34,7 +34,7 @@ class Goalie(InitialBehavior):
         self.targetFinder.setOnTargetFoundCB(self.targetFound)
         self.targetFinder.setOnTargetLostCB(self.targetLost)
         self.targetFinder.setOnSearchFailedCB(self.searchFailed)
-        self.isPenalty = True # TODO: Use the gameStatus object.
+        self.isPenalty = False # TODO: Use the gameStatus object.
 
     def _start(self, firstTime = False):
         #AlignmentAfterLeap(self._actions, right).start()
