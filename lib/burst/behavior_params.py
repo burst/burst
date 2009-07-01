@@ -43,9 +43,9 @@ MOVEMENT_PERCENTAGE_TURN = 0.8
 # Kick consts (Measurements acquired via headTrackingTester)
 # First value is for LEFT leg, second for RIGHT leg
 KICK_X_MIN = [14, 14]
-KICK_X_MAX = [18, 18]
+KICK_X_MAX = [20, 20]
 KICK_Y_MIN = [4.0, -4.0]
-KICK_Y_MAX = [6.0, -6.5]
+KICK_Y_MAX = [7.0, -7.0]
 
 KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
 KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
