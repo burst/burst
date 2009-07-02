@@ -34,9 +34,9 @@ class Robot(Movable):
         self.world_heading = 0.0 # heading towards opponent goal
         self.world_update_time = -200.0 # in 200 seconds we can be in 20m radius - enough to say "I don't know shit"
 
-        #if world.connected_to_webots:
-        #    print "WARNING: FALL DETECTION DISABLED!!!! we are on webots, right?"
-        #    self.calc_events = self.calc_events_webots
+        if world.connected_to_webots:
+            print "WARNING: FALL DETECTION DISABLED!!!! we are on webots, right?"
+            self.calc_events = self.calc_events_webots
 
     @property
     def state(self):
