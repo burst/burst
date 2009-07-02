@@ -9,6 +9,8 @@ include Makefile.local
 
 MODULES=src/imops/build_robot/libimops.so src/burstmem/build_robot/libburstmem.so src/recordermodule/crossbuild/src/librecordermodule.so
 
+all: install
+
 prerequisites:
 ifeq ($(TABLE), )
 	@echo You must define a table in Makefile.local, i.e. TABLE=field_a.mtb
@@ -16,8 +18,6 @@ ifeq ($(TABLE), )
 else
     echo Using TABLE=$(TABLE)
 endif
-
-all: install
 
 # Main Targets:
 #  robot
