@@ -328,11 +328,12 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
             else:
+                forward_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
                 if self._last_movement_type != self._movement_type:
                     self._movement_deferred = self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False)
-                    self._movement_deferred.onDone(lambda _: self._actions.changeLocationRelative(min(max(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MIN_FORWARD_WALK),MAX_FORWARD_WALK)))
+                    self._movement_deferred.onDone(forward_move)
                 else:
-                    self._movement_deferred = self._actions.changeLocationRelative(min(max(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MIN_FORWARD_WALK),MAX_FORWARD_WALK))
+                    self._movement_deferred = forward_move()
         elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
             self.logverbose("Side-stepping!")
             movementAmount = min(kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS,MAX_SIDESTEP_WALK)
@@ -358,7 +359,13 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_TURN
             self._movement_location = target_location
-            self._movement_deferred = self._actions.turn(movementAmount)
+
+            turn_move = lambda _: self._actions.turn(movementAmount)
+            if self._last_movement_type != self._movement_type:
+                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred.onDone(turn_move)
+            else:
+                self._movement_deferred = turn_move()
         else:
             self.logverbose("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
             #import pdb; pdb.set_trace()
