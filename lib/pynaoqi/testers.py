@@ -1,6 +1,7 @@
 # controller for the simulation
 from time import sleep
 from math import atan2
+import cPickle
 
 import burst_consts
 
@@ -99,4 +100,15 @@ def testGoalPosts():
 
 def getBearingCenterXCenterYRealBearing(a):
     return [[(y[2], y[-3:]) for y in x if y[0]] for x in a]
+
+filename = 'data.pickle'
+def getPickle():
+    f1 = open(filename, 'r')
+    d = cPickle.load(f1)
+    f1.close()
+    f = open(file, 'w+')
+    return f, d
+
+def record(f, data):
+    cPickle.dump(data, f)
 
