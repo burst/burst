@@ -50,7 +50,7 @@ import random
 # * RESET self._aligned_to_goal when needed
 #===============================================================================
 
-GOAL_FAILURES_BEFORE_GIVEUP = 2 # count
+GOAL_FAILURES_BEFORE_GIVEUP = 4 # count
 MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
 
 class BallKicker(Behavior):
@@ -96,9 +96,7 @@ class BallKicker(Behavior):
 
         self._numGoalFailedStrafes = GOAL_FAILURES_BEFORE_GIVEUP # do this number, then giveup, walk 1 m, return to approachBall
 
-        # kicker initial position
-        self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
-            lambda: self.switchToFinder(to_goal_finder=False))
+        self.switchToFinder(to_goal_finder=False)
 
     def _stop(self):
         print "KICKING STOPS!!!"
@@ -516,8 +514,6 @@ class BallKicker(Behavior):
         self.log("Restarting goal finder")
         self._eventmanager.callLater(0.5, lambda: self.switchToFinder(to_goal_finder=True))
 
-    count_strafe = 1
-
     def strafe(self):
         self._is_strafing = True
 
@@ -535,7 +531,7 @@ class BallKicker(Behavior):
             
             self.logverbose("strafe: goal post not seen")
             # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
-            self._eventmanager.callLater(self._eventmanager.dt, self.strafe)
+            self._eventmanager.callLater(self._eventmanager.dt*2, self.strafe)
             return
         self.logverbose("strafe: goal post seen")
         self.logverbose("%s bearing is %s (seen %s, all %s). Left is %s, Right is %s" % (
@@ -578,7 +574,7 @@ class BallKicker(Behavior):
             self._movement_deferred = strafeMove()
 
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
-        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.1, self.strafe))
+        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.2, self.strafe))
 
         print "Movement STARTING! (strafing)"
         self._movement_deferred.onDone(nextAction)
