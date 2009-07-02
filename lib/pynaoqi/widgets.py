@@ -702,8 +702,11 @@ class ImopsMixin(object):
     def default_table(self):
         """ switch to default colortable """
         self._load_table('_default_table', consts.DEFAULT_TABLE_FILENAME)
-        self._table = self._default_table
-        self.imops.update_table()
+        try:
+            self._table = self._default_table
+            self.imops.update_table()
+        except:
+            self._table = ' '*2**21
 
     def installed_table(self):
         self._table = self._installed_table
@@ -716,6 +719,8 @@ class Calibrator(BaseWindow, ImopsMixin):
     """
 
     db_fullname = os.path.join(os.environ['HOME'], 'src/burst/data/calibration/human_classification.sqlite3')
+
+    _default_table = ' '*2**21
 
     def __init__(self, con):
         BaseWindow.__init__(self, builder_file='calibrator.glade',

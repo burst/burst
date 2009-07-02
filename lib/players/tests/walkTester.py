@@ -24,17 +24,17 @@ class WalkTester(InitialBehavior):
 
 #                      ('Walk straight',
 #                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
-#                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
+#                      lambda: self._actions.changeLocationRelative(1.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
 
-                      ('Walk arc',
-                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
-                      lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
+#                      ('Walk arc',
+#                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
 
 #                     ('Walk sideways',
 #                      lambda: self._actions.changeLocationRelativeSideways(0.0, 20.0, walk=walks.SIDESTEP_WALK)),
 
-#                     ('Turn 90 degrees (Straight walk params)',
-#                      lambda: self._actions.turn(1.57, walk=walks.STRAIGHT_WALK)),
+                     ('Turn 90 degrees (Straight walk params)',
+                      lambda: self._actions.turn(-3.14, walk=walks.TURN_WALK)),
 
 #                     ('Sit',
 #                     lambda: self._actions.sitPoseAndRelax())

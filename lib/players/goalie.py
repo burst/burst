@@ -176,7 +176,15 @@ class Goalie(InitialBehavior):
         self._player.registerFallHandling()
         if realLeap:
 #            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _=None: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
-            AlignmentAfterLeap(self._actions, side).start().onDone(self.readyToLeap)
+            #AlignmentAfterLeap(self._actions, side).start().onDone(self.readyToLeap)
+            
+            if self._player.isGoalie():
+                if not self._player._main_behavior.stopped:
+                    print "stopping existing behavior before turning into Kicker"
+                    self._player._main_behavior.stop() # TODO - use returned bd
+                self._player.turnToKicker()
+
+            
         else:
             self.readyToLeap()
 

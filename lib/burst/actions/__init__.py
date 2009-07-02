@@ -496,10 +496,12 @@ class Actions(object):
     #===============================================================================
 
     def switchToTopCamera(self):
-        return self.setCamera(CAMERA_WHICH_TOP_CAMERA)
+        return self.succeed(self)
+        #return self.setCamera(CAMERA_WHICH_TOP_CAMERA)
 
     def switchToBottomCamera(self):
-        return self.setCamera(CAMERA_WHICH_BOTTOM_CAMERA)
+        return self.succeed(self)
+        #return self.setCamera(CAMERA_WHICH_BOTTOM_CAMERA)
 
     @returnsbd # must be first (doesn't add to call stack)
 #    @whocalledme_outofclass
@@ -509,6 +511,9 @@ class Actions(object):
         """
         # Switching camera's doesn't always work. So we need to actually check for it.
         # Not sure if this is a webots problem or not, but assuming it isn't webots.
+        return self.succeed(self)
+
+    def this_doesnt_exist(self):
         if self._current_camera == whichCamera and not force:
             return self.succeed(self)
         dt_since_last = self._world.time - self._camera_switch_time

@@ -435,6 +435,10 @@ class BallKicker(Behavior):
         # use self._ballY_lastseen
         kick_side_offset = getKickingType(self, targetBearing, self._ballY_lastseen, self._side_last, margin=0)
         if kick_side_offset is None:
+            if self._diag_kick_forced:
+                self.logverbose("SUPPOSED TO BE ALIGNED BUT CAN'T SEE GOAL! KICKING ANYWAY!")
+                self.doKick(self._side_last, self._kick_side_offset)
+                return
             self._eventmanager.callLater(0.0, self._approachBall)
         else:
             # do diagonal kick

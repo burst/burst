@@ -44,7 +44,11 @@ class GameController(object):
     def calc_events(self, events, deferreds):
         message = self._receive()
         if not message is None:
-            self.gameStatus.readMessage(GameControllerMessage(message))
+            try:
+                self.gameStatus.readMessage(GameControllerMessage(message))
+            except:
+                # TODO - handle errors
+                pass
 
 
 
