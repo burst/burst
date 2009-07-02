@@ -83,6 +83,7 @@ class BallKicker(Behavior):
         self._diag_kick_tested = False
         self._movement_deferred = None
         self._movement_type = None
+        self._last_movement_type = None
         self._movement_location = None
 
         self._is_strafing = False
@@ -119,6 +120,7 @@ class BallKicker(Behavior):
                 print "CLEARING FOOTSTEPS!"
                 self._actions.clearFootsteps()
         self._movement_deferred = None
+        self._last_movement_type = self._movement_type
         self._movement_type = None
         self._movement_location = None
 
@@ -218,7 +220,7 @@ class BallKicker(Behavior):
         print "@ Calling localize"
         self._actions.localize().onDone(self._onSecondSearchFail_LocalizeStrategy_LocalizeOver)
 
-    def _onSecondSearchFail_LocalizeStrategy_LocalizeOver():
+    def _onSecondSearchFail_LocalizeStrategy_LocalizeOver(self):
         # so we are localized.
         # Let's see where we are:
         print "In SecondSearchFaile, LocalizeStrategy, Localize Over"
@@ -326,7 +328,12 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
             else:
-                self._movement_deferred = self._actions.changeLocationRelative(min(max(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MIN_FORWARD_WALK),MAX_FORWARD_WALK))
+                forward_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+                if self._last_movement_type != self._movement_type:
+                    self._movement_deferred = self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False)
+                    self._movement_deferred.onDone(forward_move)
+                else:
+                    self._movement_deferred = forward_move()
         elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
             self.logverbose("Side-stepping!")
             movementAmount = min(kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS,MAX_SIDESTEP_WALK)
@@ -335,9 +342,14 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_SIDEWAYS
             self._movement_location = target_location
-            # TODO: change numbers for side stepping. Does that 4 or 5 times.                            
-            self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+            # TODO: change numbers for side stepping. Does that 4 or 5 times.
+            sideways_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+            if self._last_movement_type != self._movement_type:
+                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred.onDone(sideways_move)
+            else:
+                self._movement_deferred = sideways_move()
+            
         elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
             self.logverbose("Turning!")
             self._aligned_to_goal = False
@@ -347,7 +359,13 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_TURN
             self._movement_location = target_location
-            self._movement_deferred = self._actions.turn(movementAmount)
+
+            turn_move = lambda _: self._actions.turn(movementAmount)
+            if self._last_movement_type != self._movement_type:
+                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred.onDone(turn_move)
+            else:
+                self._movement_deferred = turn_move()
         else:
             self.logverbose("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
             #import pdb; pdb.set_trace()
@@ -549,7 +567,7 @@ class BallKicker(Behavior):
             self._movement_deferred = strafeMove()
 
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
-        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.2, self.strafe))
+        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.1, self.strafe))
 
         print "Movement STARTING! (strafing)"
         self._movement_deferred.onDone(nextAction)
