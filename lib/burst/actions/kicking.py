@@ -50,6 +50,9 @@ import random
 # * RESET self._aligned_to_goal when needed
 #===============================================================================
 
+GOAL_FAILURES_BEFORE_GIVEUP = 2 # count
+MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
+
 class BallKicker(Behavior):
 
     def __init__(self, actions, target_left_right_posts, align_to_target=True):
@@ -89,6 +92,8 @@ class BallKicker(Behavior):
         self._target = self._world.ball
 
         self._initBallMovements()
+
+        self._numGoalFailedStrafes = GOAL_FAILURES_BEFORE_GIVEUP # do this number, then giveup, walk 1 m, return to approachBall
 
         # kicker initial position
         self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
@@ -247,10 +252,12 @@ class BallKicker(Behavior):
 
         if not self._target.recently_seen:
             if self._ballFinder.stopped:
-                print "TARGET LOST, RESTARTING BALL FINDER"
+                print "TARGET LOST, STARTING BALL FINDER"
                 self.switchToFinder(to_goal_finder=False)
             else:
-                print "TARGET LOST, RELYING ON SEARCHER"
+                print "TARGET LOST, RESTARTING BALL FINDER"
+                self._ballFinder.stop() # TODO - onDone
+                self.switchToFinder(to_goal_finder=False)
             # TODO: searcher / searcher CB should take care of finding target, behavior should take care of turning when search fails
             return
 
@@ -465,7 +472,16 @@ class BallKicker(Behavior):
             self.strafe()
 
     def _onGoalSearchFailed(self):
-        print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?)"
+        self._numGoalFailedStrafes -= 1
+        if self._numGoalFailedStrafes <= 0:
+            print "@ Goal not found, but limit of strafes reached - 1 m forward and back to approach"
+            self._numGoalFailedStrafes = GOAL_FAILURES_BEFORE_GIVEUP
+            self.switchToFinder(to_goal_finder=False)
+            self._movement_type = MOVE_FORWARD
+            self._movement_deferred = self._actions.changeLocationRelative(MOVE_WHEN_GOAL_LOST_GOOD)
+            self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
+            return
+        print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?) - %s left" % self._numGoalFailedStrafes
         #self._actions.searcher.stop()
         
         self._movement_type = MOVE_TURN
@@ -481,6 +497,8 @@ class BallKicker(Behavior):
     def restartGoalFinderAfterFailure(self):
         self.log("Restarting goal finder")
         self._eventmanager.callLater(0.5, lambda: self.switchToFinder(to_goal_finder=True))
+
+    count_strafe = 1
 
     def strafe(self):
         self._is_strafing = True
