@@ -38,3 +38,23 @@ walks.STRAIGHT_WALK = walks.Walk('STRAIGHT_WALK', walks.WalkParameters([
            0.015]),                  # ZmpOffsetY
            25          # 20ms count per step
     )
+
+
+#walks.TURN_WALK = walks.Walk('TURN_WALK', walks.WalkParameters([
+#           100.0 * walks.DEG_TO_RAD, # ShoulderMedian
+#           20.0 * walks.DEG_TO_RAD,  # ShoulderAmplitude
+#           30.0 * walks.DEG_TO_RAD,  # ElbowMedian
+#           20.0 * walks.DEG_TO_RAD,  # ElbowAmplitude
+#           5,                   # LHipRoll(degrees)
+#           -5,                  # RHipRoll(degrees)
+#           0.22,                  # HipHeight(meters) (0.19 isn't good)
+#           +8.0,                   # TorsoYOrientation(degrees)
+#           0.055,                  # StepLength
+#           0.015,                  # StepHeight
+#           0.04,                  # StepSide
+#           0.3,                   # MaxTurn
+#           0.01,                  # ZmpOffsetX
+#           0.00]),                  # ZmpOffsetY
+#           50          # 20ms count per step
+#    )
+

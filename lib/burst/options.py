@@ -59,7 +59,7 @@ def parse_command_line_arguments():
     # PREGAME TODO: game_controller and game_status should default to TRUE!!
     main.add_option('', '--use_game_controller', action='store_true', dest='game_controller', default=False, help='Use game controller (start in initial state)')
     main.add_option('', '--use_game_status', action='store_true', dest='game_status', default=False, help='Use game controller (start in initial state)')
-    main.add_option('', '--runsonar', action='store_true', dest='run_sonar', default=True, help='Run Sonar')
+    main.add_option('', '--runsonar', action='store_true', dest='run_sonar', default=False, help='Run Sonar')
 
     experimental = OptionGroup(parser, "experimental")
     experimental.add_option('', '--pynaoqi', action='store_true', dest='use_pynaoqi', help='use pynaoqi and twisted (TESTING)')
