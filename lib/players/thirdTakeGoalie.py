@@ -61,7 +61,7 @@ class Goalie(InitialBehavior):
                 self.onGoalPostFoundAndReadyForCentering(goalpost)
 
     def onGoalPostFoundAndReadyForCentering(self, goalpost):
-        print "onGoalPostFoundAndReadyForCentering"from burst_consts import
+        print "onGoalPostFoundAndReadyForCentering"
         self._actions.clearFootsteps().onDone(lambda _: self._centerOnGoal(goalpost))
         
             #lambda _=None, _goalpost1=goalpost: self._actions.centerer.start(target=_goalpost1).onDone(
