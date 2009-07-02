@@ -45,7 +45,7 @@ def import_burst():
 import_burst()
 import burst.moves as moves
 from burst_util import isnumeric, minimal_title, pairit
-
+from burst_consts import YELLOW_GOAL, BLUE_GOAL
 from burst import field
 
 ################################################################################
@@ -295,13 +295,7 @@ class Players(object):
             self.__dict__[name] = runner = PlayerRunner(self, player)
             self.runners.append((name, runner))
 
-# Keep lists of players and tests for easy running.
-import players as players_mod
-players = Players('players.%s' % x for x in get_submodules(players_mod))
-import players.tests as tests_mod
-tests = Players('players.tests.%s' % x for x in get_submodules(tests_mod))
-
-def getInitialBehavior(module_name):
+def getInitialBehavior(module_name, verbose=True):
     import burst.behavior
     base, last = module_name.rsplit('.', 1)
     try:
@@ -309,18 +303,20 @@ def getInitialBehavior(module_name):
     except SyntaxError, e:
         raise # Ipython catches, clear win.
     except ImportError:
-        print "no such player"
-        print "try one of:"
-        print ', '.join(players.players_list)
-        return
+        if verbose:
+            print "no such player"
+            print "try one of:"
+            print ', '.join(players.players_list)
+        return None
     candidate_classes = [v for v in playermod.__dict__.values()
                             if isinstance(v, type) and issubclass(v, burst.behavior.InitialBehavior)
                             and not v is burst.behavior.InitialBehavior]
     if len(candidate_classes) == 0:
-        print "%s contains no Player classes" % playermod.__name__
+        if verbose:
+            print "%s contains no InitialBehavior classes" % playermod.__name__
         return None
     if len(candidate_classes) > 1:
-        print "more then one Player in %s" % playermod.__name__
+        print "more then one InitialBehavior in %s" % playermod.__name__
         if clazz is None:
             ctor = candidate_classes[0]
             print "taking the first out of %s" % candidate_classes
@@ -334,6 +330,23 @@ def getInitialBehavior(module_name):
         ctor = candidate_classes[0]
     return ctor
 
+
+# Keep lists of players and tests for easy running.
+import players as players_mod
+import players.tests as tests_mod
+players_modules = ['players.%s' % x for x in get_submodules(players_mod)]
+tests_modules = ['players.tests.%s' % x for x in get_submodules(tests_mod)]
+players = Players(players_modules)
+tests = Players(tests_modules)
+
+class BehaviorsContainer(object):
+    def __init__(self):
+        behaviors = [x for x in [getInitialBehavior(x, verbose=False)
+                       for x in players_modules + tests_modules] if x is not None]
+        for b in behaviors:
+            setattr(self, b.__name__, b)
+behaviors = BehaviorsContainer()
+
 def makeplayerloop(module_name, clazz=None):
     """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
@@ -345,6 +358,16 @@ def makeplayerloop(module_name, clazz=None):
     loop = eventmanager.TwistedMainLoop(ctor, control_reactor=False, startRightNow=False)
     loop.initMainObjectsAndPlayer()
     return loop
+
+from burst.eventmanager import ExternalMainLoop
+
+def beone(b, goal):
+    eml = ExternalMainLoop(b)
+    eml._world.configure(goal)
+    return eml
+
+beblue = lambda b: beone(b, BLUE_GOAL)
+beyellow = lambda b: beone(b, YELLOW_GOAL)
 
 ################################################################################
 

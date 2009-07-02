@@ -199,9 +199,11 @@ def make_shell_namespace(use_pylab, using_gtk, con):
     import pynaoqi
     import math
     from shell_guts import (format_vision_vars, onevision, makeplayerloop,
-        players, tests, moves, field, f, fps,
+        players, tests, moves, field, f, fps, behaviors,
         checking_loop, compacting_loop, watch, plottime, canvaspairs,
-        fieldpairs, fieldshow, video, calibrator, notes, remote)
+        fieldpairs, fieldshow, video, calibrator, notes, remote,
+        beblue, beyellow)
+    from burst.eventmanager import ExternalMainLoop
 
     import burst
     from gui import Joints
@@ -230,6 +232,7 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         onevision = onevision,
         makeplayerloop = makeplayerloop,
         players = players,
+        behaviors = behaviors,
         tests = tests,
         player = None, # set by players.bla.start()
         remote = remote,
@@ -243,6 +246,9 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         burst_events = burst_events,
         vision_definitions = vision_definitions,
         image = image,
+        ExternalMainLoop = ExternalMainLoop,
+        beblue = beblue,
+        beyellow = beyellow,
         # utilities
         refilter = burst_util.refilter,
         redir = burst_util.redir,

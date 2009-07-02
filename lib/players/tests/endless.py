@@ -4,7 +4,7 @@ import player_init
 
 from burst.behavior import InitialBehavior
 
-class Template(InitialBehavior):
+class Endless(InitialBehavior):
 
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=None)
@@ -14,5 +14,5 @@ class Template(InitialBehavior):
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
-    MainLoop(Template).run()
+    MainLoop(Endless).run()
 
