@@ -14,7 +14,7 @@ for ip in ips:
     print "*"*20 + ip + "*"*20
     with open('Makefile.local', 'w') as fd:
         fd.write("""ROBOT=%s
-TABLE=maverick/graz_field_a.mtb
+TABLE=maverick/graz_field_c.mtb
 """ % ip)
     os.system('make installall')
 

@@ -13,7 +13,7 @@ from burst.behavior import InitialBehavior
 from burst_events import *
 from burst_consts import *
 from burst.eventmanager import AndEvent, SerialEvent
-import burst.moves as moves
+import burst.moves.walks as walks
 
 def pr(s):
     print s
@@ -26,7 +26,7 @@ class WalkRecorder(InitialBehavior):
     """
 
     WALK_DISTANCE = 40.0
-    WALK_PARAMETERS = moves.STRAIGHT_WALK
+    WALK_PARAMETERS = walks.STRAIGHT_WALK
 
     def __init__(self, actions):
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
