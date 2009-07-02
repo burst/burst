@@ -409,7 +409,7 @@ class Player(object):
         self._stopMainBehavior('; penalized, also calling killAll')
         self._actions._motion.killAll()
         # Vova strategy: if we are goalie, we now become a kicker.
-        if self.isGoalie():
+        if self.isGoalie() and not burst_consts.IS_PENALTY:
             if not self._main_behavior.stopped:
                 info("stopping existing behavior before turning into Kicker")
                 self._main_behavior.stop() # TODO - use returned bd
