@@ -162,14 +162,18 @@ class RemoteControl(object):
         self.send('rotblue')
     def rotyellow(self):
         self.send('rotyellow')
-    def pos(self, x, y, z):
-        self.send('pos %s %s %s' % (x, y, max(WORLD_STANDING_Z, z)))
+    def pos(self, x, y, z=WORLD_STANDING_Z):
+        # bug in current pos of remote_control.py - zero should be our goal, not midpoint.
+        self.send('pos %s %s %s' % (-x+field.MIDFIELD_X, y, max(WORLD_STANDING_Z, z)))
     def ball(self, x, y):
         self.send('ball %s %s %s' % (x, y, WORLD_BALL_Z))
     def rot(self, x, y, z, alpha):
         self.send('rot %s %s %s %s' % (x, y, z, alpha))
     def player_name(self, name):
         self.send('player_name %s' % name)
+
+def headup(con):
+    return con.ALMotion.setAngle('HeadPitch', -0.6)
 
 remote = RemoteControl()
 
@@ -363,7 +367,8 @@ from burst.eventmanager import ExternalMainLoop
 
 def beone(b, goal):
     eml = ExternalMainLoop(b)
-    eml._world.configure(goal)
+    # Doesn't work - configure is recalled by the Player.
+    #eml._world.configure(goal)
     return eml
 
 beblue = lambda b: beone(b, BLUE_GOAL)

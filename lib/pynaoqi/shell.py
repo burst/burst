@@ -202,8 +202,9 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         players, tests, moves, field, f, fps, behaviors,
         checking_loop, compacting_loop, watch, plottime, canvaspairs,
         fieldpairs, fieldshow, video, calibrator, notes, remote,
-        beblue, beyellow)
+        beblue, beyellow, headup)
     from burst.eventmanager import ExternalMainLoop
+    from . import testers
 
     import burst
     from gui import Joints
@@ -236,6 +237,7 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         tests = tests,
         player = None, # set by players.bla.start()
         remote = remote,
+        testers = testers,
         # burst
         burst = burst,
         burst_util = burst_util,
@@ -254,6 +256,7 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         redir = burst_util.redir,
         nicefloats = burst_util.nicefloats,
         pairit = burst_util.pairit,
+        headup = lambda con=con: headup(con),
         # asaf
         f = f,
         # place holder until onDataListName works

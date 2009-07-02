@@ -271,8 +271,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  translation 1.23776 0.321953 0.409387
-  rotation 0 1 0 1.31971
+  translation 1.23752 0.321766 0.409346
+  rotation -0.000453281 1 0.000398633 1.31952
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -286,5 +286,5 @@ Supervisor {
       name "emitter"
     }
   ]
-  controller "nao_burst_supervisor"
+  controller "remote_control"
 }

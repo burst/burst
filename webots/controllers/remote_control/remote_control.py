@@ -80,7 +80,7 @@ class RemoteControl (Supervisor):
         class Updater(object):
             def __init__(updater, name):
                 updater.name = name
-                updater.obj = updater.getFromDef(name)
+                updater.obj = remote.getFromDef(name)
                 updater.trans = updater.obj.getField('translation')
                 updater.rot = updater.obj.getField('rotation')
         remote.updates.append(Updater(name))
@@ -183,7 +183,7 @@ class RemoteControl (Supervisor):
                 self.onCommand(l)
             if self.step(BASIC_TIME_STEP) == -1: break
             for update in self.updates:
-                self.send('%r %r' % (update.pos.getSFVec3f(), update.getSFRotation()))
+                self.send('%r %r' % (update.trans.getSFVec3f(), update.rot.getSFRotation()))
         # Enter here exit cleanup code
 
 if __name__ == '__main__':
