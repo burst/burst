@@ -103,7 +103,7 @@ def calcBallArea(ball_x, ball_y, side):
             # don't turn to far balls (define a diagonal area)
             # TODO - uncomment and debug
 
-            if ball_x >= KICK_X_MAX[side]*3 and abs(ball_y)/(abs(ball_x) + 0.01) <= 1.0/4:  # TODO - constantize this
+            if ball_x >= KICK_X_MAX[side]*2 and abs(ball_y)/(abs(ball_x) + 0.01) <= 1.0/3.5:  # TODO - constantize this
                 return BALL_FRONT_FAR
             return BALL_DIAGONAL
 
@@ -116,6 +116,11 @@ def isInEllipse(ball_x, ball_y, side, margin=1.0):
     if ((ball_y-y_center)**2)/(a**2)+((ball_x-KICK_X_MIN[side])**2)/(b**2)<=1:
         print "IN ELLIPSE: ball close enough"
         return True
+    else:
+        # if ball close to body center, square the ellipse
+        if abs(y_center) > abs(ball_y) > abs(KICK_Y_MIN[side]) and ball_x <= KICK_X_MAX[side]:
+            return True
+
     print "OUT OF ELLIPSE: ball too far"
     return False
 
