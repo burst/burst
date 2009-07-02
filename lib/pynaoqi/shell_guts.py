@@ -301,14 +301,11 @@ players = Players('players.%s' % x for x in get_submodules(players_mod))
 import players.tests as tests_mod
 tests = Players('players.tests.%s' % x for x in get_submodules(tests_mod))
 
-def makeplayerloop(name, clazz=None):
-    """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
-    can use twisted to run previously naoqi only code, directly from pynaoqi shell.
-    """
+def getInitialBehavior(module_name):
     import burst.behavior
-    base, last = name.rsplit('.', 1)
+    base, last = module_name.rsplit('.', 1)
     try:
-        playermod = __import__(name, fromlist=[''])
+        playermod = __import__(module_name, fromlist=[''])
     except SyntaxError, e:
         raise # Ipython catches, clear win.
     except ImportError:
@@ -335,6 +332,13 @@ def makeplayerloop(name, clazz=None):
                 return None
     else:
         ctor = candidate_classes[0]
+    return ctor
+
+def makeplayerloop(module_name, clazz=None):
+    """ Debugging from pynaoqi. Now that everything works with twisted, almost, we
+    can use twisted to run previously naoqi only code, directly from pynaoqi shell.
+    """
+    ctor = getInitialBehavior(module_name)
     print "Initializing player %s" % ctor.__name__
     # Finally, start the update task.
     import burst.eventmanager as eventmanager

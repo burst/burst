@@ -899,6 +899,36 @@ class TwistedMainLoop(BasicMainLoop):
 
 ################################################################################
 
+class ExternalMainLoop(BasicMainLoop):
+
+    """ Until twisted is installed on the robot this is the default event loop.
+    It basically sleeps and polls. Some intelligence goes into not polling (sending
+    socket requests) too much, that happens in World.update.
+    """
+
+    def __init__(self, main_behavior_class=None):
+        super(ExternalMainLoop, self).__init__(main_behavior_class = main_behavior_class)
+        self._keep_the_loop = True
+
+        # need to call burst.init first
+        burst.init()
+
+        self.initMainObjectsAndPlayer()
+        self.preMainLoopInit() # Start point for Player / GameController
+        # Now just call self.doSingleStep
+
+    def profile_filename(self):
+        return '%s.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
+
+    def profile_player_filename(self):
+        return '%s_player.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
+
+    def _exitApp(self, _):
+        self._keep_the_loop = False
+
+
+################################################################################
+
 from burst_util import is64
 if is64() or burst.options.use_pynaoqi:
     MainLoop = TwistedMainLoop
