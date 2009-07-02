@@ -1,0 +1,10 @@
+#!/bin/bash
+J=$2
+R=$1
+
+if [ "x$J" == "x" ]; then
+    echo supply two params, <ip> <jersey>
+    exit -1
+fi
+
+ssh root@$1 /home/root/burst/lib/players/kicker.py --daemonize --red --jersey $2

@@ -641,27 +641,29 @@ class Goal(Locatable):
         self.right.get_new_state()
         left_seen_uncertain = self.left.is_uncertain()
         right_seen_uncertain = self.right.is_uncertain()
-        to_second_stage = []
-        # States:
-        if left_seen_uncertain and right_seen_uncertain:
-            # should never happen
-            to_second_stage.append(self.unknown)
-            state = self.left.get_state() if left_seen_uncertain else self.right.get_state()
-            print "BOTH UNCERTAIN AND SEEN??"
-            import pdb; pdb.set_trace()
-            self.unknown.set_state(state)
-        elif left_seen_uncertain or right_seen_uncertain:
-            # one uncertain, the other maybe certain or not.
-            # TODO: use the unknown to update the one the correct post.
-            # right now: we just update the unknown.
-            uncertain_one = self.left if left_seen_uncertain else self.right
-            other = self.right if left_seen_uncertain else self.left
-            self.unknown.set_state(uncertain_one.get_state())
-            to_second_stage = [self.unknown, other]
-        else:
-            # none seen uncertain - either both seen, one seen or none, so let the standard update happen
-            to_second_stage = [self.left, self.right]
-            self.unknown.seen = False
+        to_second_stage = [self.left, self.right]
+        if False:
+            # States:
+            if left_seen_uncertain and right_seen_uncertain:
+                # should never happen
+                to_second_stage.append(self.unknown)
+                state = self.left.get_state() if left_seen_uncertain else self.right.get_state()
+                print "BOTH UNCERTAIN AND SEEN??"
+                import pdb; pdb.set_trace()
+                self.unknown.set_state(state)
+            elif left_seen_uncertain or right_seen_uncertain:
+                # one uncertain, the other maybe certain or not.
+                # TODO: use the unknown to update the one the correct post.
+                # right now: we just update the unknown.
+                uncertain_one = self.left if left_seen_uncertain else self.right
+                other = self.right if left_seen_uncertain else self.left
+                self.unknown.set_state(uncertain_one.get_state())
+                to_second_stage = [self.unknown, other]
+            else:
+                # none seen uncertain - either both seen, one seen or none, so let the standard update happen
+                to_second_stage = [self.left, self.right]
+                self.unknown.seen = False
+        # Short circuit - just update first and second as usual
         for obj in to_second_stage:
             obj.second_stage_calc_events(events, deferreds)
         self.seen = self.left.seen or self.right.seen or self.unknown.seen
@@ -739,7 +741,8 @@ class GoalPost(Locatable):
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
                 ) = self._vars_values
-        return new_id_certainty != ID_SURE and new_dist > 0.0
+        return new_dist > 0.0
+        #return new_id_certainty != ID_SURE and new_dist > 0.0
 
     def second_stage_calc_events(self, events, deferreds):
         """ get new values from proxy, return set of events """

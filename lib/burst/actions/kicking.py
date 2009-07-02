@@ -504,9 +504,11 @@ class BallKicker(Behavior):
         if self.goalpost_to_track.bearing < self.alignLeftLimit:
             #strafeMove = lambda: self._actions.executeCircleStrafeClockwise().onDone(self._actions.executeCircleStrafeClockwise)
             strafeMove = self._actions.executeCircleStrafeClockwise
+            print "#### About to do a clockwise strafe"
         elif self.goalpost_to_track.bearing > self.alignRightLimit:
             #strafeMove = lambda: self._actions.executeCircleStrafeCounterClockwise().onDone(self._actions.executeCircleStrafeCounterClockwise)
             strafeMove = self._actions.executeCircleStrafeCounterClockwise
+            print "#### About to do a counter clockwise strafe"
         else:
             self._is_strafing = False
             self._is_strafing_init_done = False
