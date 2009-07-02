@@ -41,6 +41,8 @@ NAOQI_1_2_0 = 'NaoQi 1.2.0'
 #                                                                              #
 ################################################################################
 
+IS_PENALTY = False
+
 # From teams.cfg, in GameStateVisualizer 2009
 BURST_TEAM_NUMBER = 4
 
