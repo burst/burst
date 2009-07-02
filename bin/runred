@@ -2,10 +2,18 @@
 
 import os
 
+#config = {
+#    'messi': ['goalie.py', 1],
+#    'cech':  ['kicker.py', 2],
+#    'raul':  ['kicker.py', 3],
+#}
+
+# Penalty config - attack the blue goal (be red)
+
 config = {
-    'raul': ['goalie.py', 1],
-    'cech': ['kicker.py', 2],
-    'messi': ['kicker.py', 3],
+#    'raul': ['goalie.py', 1], # 0197
+    'cech':  ['kicker.py', 2], # 0020
+#    'messi':  ['kicker.py', 3],
 }
 
 other = '--red --daemonize'
