@@ -41,6 +41,8 @@ NAOQI_1_2_0 = 'NaoQi 1.2.0'
 #                                                                              #
 ################################################################################
 
+IS_PENALTY = False
+
 # From teams.cfg, in GameStateVisualizer 2009
 BURST_TEAM_NUMBER = 4
 
@@ -224,8 +226,8 @@ else: # using NAOQI_1_2_0
     SONAR_EXTRACTOR_SUBSCRIBE = lambda module, myname, dt_ms: module.subscribe(myname, [dt_ms])
 
 MIN_JERSEY_NUMBER, MAX_JERSEY_NUMBER = 1, 3
-#GAME_CONTROLLER_BROADCAST_PORT = 3838 # REAL ONE!!
-GAME_CONTROLLER_BROADCAST_PORT = 5838
+GAME_CONTROLLER_BROADCAST_PORT = 3838 # REAL ONE!!
+#GAME_CONTROLLER_BROADCAST_PORT = 5858
 GAME_CONTROLLER_NUM_PLAYERS = 11
 GAME_CONTROLLER_NUM_TEAMS = 2
 

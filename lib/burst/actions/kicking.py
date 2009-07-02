@@ -24,7 +24,7 @@ from burst_field import MIDFIELD_X
 from burst.behavior_params import (calcTarget, getKickingType, MAX_FORWARD_WALK, MAX_SIDESTEP_WALK, BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS,
                                    BALL_FRONT_NEAR, BALL_FRONT_FAR, BALL_SIDE_NEAR, BALL_SIDE_FAR, BALL_DIAGONAL,
                                    MOVEMENT_PERCENTAGE_FORWARD, MOVEMENT_PERCENTAGE_SIDEWAYS, MOVEMENT_PERCENTAGE_TURN,
-                                   MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK)
+                                   MOVE_FORWARD, MOVE_ARC, MOVE_TURN, MOVE_SIDEWAYS, MOVE_CIRCLE_STRAFE, MOVE_KICK, MIN_FORWARD_WALK)
 from burst_consts import (LEFT, RIGHT, IMAGE_CENTER_X, IMAGE_CENTER_Y,
     PIX_TO_RAD_X, PIX_TO_RAD_Y, DEG_TO_RAD)
 import burst_consts
@@ -49,6 +49,9 @@ import random
 # TODO's:
 # * RESET self._aligned_to_goal when needed
 #===============================================================================
+
+GOAL_FAILURES_BEFORE_GIVEUP = 2 # count
+MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
 
 class BallKicker(Behavior):
 
@@ -80,6 +83,7 @@ class BallKicker(Behavior):
         self._diag_kick_tested = False
         self._movement_deferred = None
         self._movement_type = None
+        self._last_movement_type = None
         self._movement_location = None
 
         self._is_strafing = False
@@ -89,6 +93,8 @@ class BallKicker(Behavior):
         self._target = self._world.ball
 
         self._initBallMovements()
+
+        self._numGoalFailedStrafes = GOAL_FAILURES_BEFORE_GIVEUP # do this number, then giveup, walk 1 m, return to approachBall
 
         # kicker initial position
         self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
@@ -114,6 +120,7 @@ class BallKicker(Behavior):
                 print "CLEARING FOOTSTEPS!"
                 self._actions.clearFootsteps()
         self._movement_deferred = None
+        self._last_movement_type = self._movement_type
         self._movement_type = None
         self._movement_location = None
 
@@ -213,7 +220,7 @@ class BallKicker(Behavior):
         print "@ Calling localize"
         self._actions.localize().onDone(self._onSecondSearchFail_LocalizeStrategy_LocalizeOver)
 
-    def _onSecondSearchFail_LocalizeStrategy_LocalizeOver():
+    def _onSecondSearchFail_LocalizeStrategy_LocalizeOver(self):
         # so we are localized.
         # Let's see where we are:
         print "In SecondSearchFaile, LocalizeStrategy, Localize Over"
@@ -247,10 +254,12 @@ class BallKicker(Behavior):
 
         if not self._target.recently_seen:
             if self._ballFinder.stopped:
-                print "TARGET LOST, RESTARTING BALL FINDER"
+                print "TARGET LOST, STARTING BALL FINDER"
                 self.switchToFinder(to_goal_finder=False)
             else:
-                print "TARGET LOST, RELYING ON SEARCHER"
+                print "TARGET LOST, RESTARTING BALL FINDER"
+                self._ballFinder.stop() # TODO - onDone
+                self.switchToFinder(to_goal_finder=False)
             # TODO: searcher / searcher CB should take care of finding target, behavior should take care of turning when search fails
             return
 
@@ -260,13 +269,26 @@ class BallKicker(Behavior):
         
         # Ball inside kicking area, kick it
         if target_location == BALL_IN_KICKING_AREA and (self._aligned_to_goal or not self._align_to_target):
-            # TODO: diagonalize the kick. It might be off target even if we think we are alligned            
-            self.doKick(side, kick_side_offset)
-            return
-
-        if target_location in (BALL_IN_KICKING_AREA, BALL_BETWEEN_LEGS) and not self._aligned_to_goal and self._align_to_target and not self._diag_kick_tested:
-            print "NEW CODE: Searching goal post!"
+            # TODO: diagonalize the kick. It might be off target even if we think we are aligned
+            
+            print "DIAGONAL KICK: Searching goal post 1"
             self._diag_kick_tested = True
+            self._diag_kick_forced = True
+            (ball_x, ball_y) = polar2cart(self._target.distSmoothed, self._target.bearing)
+            self._ballY_lastseen = ball_y
+            self._side_last = side
+            self._kick_side_offset = kick_side_offset
+            if self._ballFinder:
+                self._ballFinder.stop().onDone(self.searchGoalPost)
+                return
+            else:
+                self.log("NO BALL FINDER 1???")
+            #self.doKick(side, kick_side_offset)
+
+        if target_location == BALL_IN_KICKING_AREA and not self._aligned_to_goal and self._align_to_target and not self._diag_kick_tested:
+            print "DIAGONAL KICK: Searching goal post 2"
+            self._diag_kick_tested = True
+            self._diag_kick_forced = False
             (ball_x, ball_y) = polar2cart(self._target.distSmoothed, self._target.bearing)
             self._ballY_lastseen = ball_y
             self._side_last = side
@@ -274,7 +296,7 @@ class BallKicker(Behavior):
                 self._ballFinder.stop().onDone(self.searchGoalPost)
                 return
             else:
-                self.log("NO BALL FINDER???")
+                self.log("NO BALL FINDER 2???")
 
         self._diag_kick_tested = False
         
@@ -306,7 +328,12 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
             else:
-                self._movement_deferred = self._actions.changeLocationRelative(min(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MAX_FORWARD_WALK))
+                forward_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+                if self._last_movement_type != self._movement_type:
+                    self._movement_deferred = self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False)
+                    self._movement_deferred.onDone(forward_move)
+                else:
+                    self._movement_deferred = forward_move()
         elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
             self.logverbose("Side-stepping!")
             movementAmount = min(kp_y*MOVEMENT_PERCENTAGE_SIDEWAYS,MAX_SIDESTEP_WALK)
@@ -315,9 +342,14 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_SIDEWAYS
             self._movement_location = target_location
-            # TODO: change numbers for side stepping. Does that 4 or 5 times.                            
-            self._movement_deferred = self._actions.changeLocationRelativeSideways(
-                0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+            # TODO: change numbers for side stepping. Does that 4 or 5 times.
+            sideways_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+            if self._last_movement_type != self._movement_type:
+                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred.onDone(sideways_move)
+            else:
+                self._movement_deferred = sideways_move()
+            
         elif target_location in (BALL_DIAGONAL, BALL_SIDE_FAR):
             self.logverbose("Turning!")
             self._aligned_to_goal = False
@@ -327,7 +359,13 @@ class BallKicker(Behavior):
                 self._aligned_to_goal = False
             self._movement_type = MOVE_TURN
             self._movement_location = target_location
-            self._movement_deferred = self._actions.turn(movementAmount)
+
+            turn_move = lambda _: self._actions.turn(movementAmount)
+            if self._last_movement_type != self._movement_type:
+                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred.onDone(turn_move)
+            else:
+                self._movement_deferred = turn_move()
         else:
             self.logverbose("!!!!!!!!!!!!!!!!!!!!!!!!!!! ERROR!!! ball location problematic!")
             #import pdb; pdb.set_trace()
@@ -391,11 +429,16 @@ class BallKicker(Behavior):
         if self.target_left_right_posts[1].centered_self.sighted:
             if not nearestGoalpost or abs(nearestGoalpost.bearing) > self.target_left_right_posts[1].bearing:
                 nearestGoalpost = self.target_left_right_posts[1]
-                
+        
         if nearestGoalpost is None:
             self.logverbose("LOST GOAL WHILE TRYING TO KICK?! (switching to goal finder)")
             self._aligned_to_goal = False
             self._diag_kick_tested = True
+            if self._diag_kick_forced:
+                self.logverbose("SUPPOSED TO BE ALIGNED BUT CAN'T SEE GOAL! KICKING ANYWAY!")
+                self.doKick(self._side_last, self._kick_side_offset)
+                return
+
             self._onGoalSearchFailed()
             #self._eventmanager.callLater(0.0, self._approachBall)
             #TODO: RESTART GOAL/Ball TARGET_FINDER
@@ -409,14 +452,18 @@ class BallKicker(Behavior):
         # Add offset to the diagonal kick (so we'll align not on the actual goalpost, but on about 1/4 of the goal)
         targetBearing = nearestGoalpost.bearing
         if nearestGoalpost == self._world.opposing_lp:
-            targetBearing = targetBearing + 0.5/2
+            targetBearing = targetBearing + 0.5/3
         elif nearestGoalpost == self._world.opposing_rp:
-            targetBearing = targetBearing - 0.5/2 # TODO: Move to const, calibrate value (cover half-goal? goal? differs for different distances?)
+            targetBearing = targetBearing - 0.5/3 # TODO: Move to const, calibrate value (cover half-goal? goal? differs for different distances?)
 
         # check if diagonal kick is viable
         # use self._ballY_lastseen
         kick_side_offset = getKickingType(self, targetBearing, self._ballY_lastseen, self._side_last, margin=0)
         if kick_side_offset is None:
+            if self._diag_kick_forced:
+                self.logverbose("SUPPOSED TO BE ALIGNED BUT CAN'T SEE GOAL! KICKING ANYWAY!")
+                self.doKick(self._side_last, self._kick_side_offset)
+                return
             self._eventmanager.callLater(0.0, self._approachBall)
         else:
             # do diagonal kick
@@ -443,7 +490,16 @@ class BallKicker(Behavior):
             self.strafe()
 
     def _onGoalSearchFailed(self):
-        print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?"
+        self._numGoalFailedStrafes -= 1
+        if self._numGoalFailedStrafes <= 0:
+            print "@ Goal not found, but limit of strafes reached - 1 m forward and back to approach"
+            self._numGoalFailedStrafes = GOAL_FAILURES_BEFORE_GIVEUP
+            self.switchToFinder(to_goal_finder=False)
+            self._movement_type = MOVE_FORWARD
+            self._movement_deferred = self._actions.changeLocationRelative(MOVE_WHEN_GOAL_LOST_GOOD)
+            self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
+            return
+        print "@ Goal not found - doing some strafing (how do I do this for 180 degrees?) - %s left" % self._numGoalFailedStrafes
         #self._actions.searcher.stop()
         
         self._movement_type = MOVE_TURN
@@ -459,6 +515,8 @@ class BallKicker(Behavior):
     def restartGoalFinderAfterFailure(self):
         self.log("Restarting goal finder")
         self._eventmanager.callLater(0.5, lambda: self.switchToFinder(to_goal_finder=True))
+
+    count_strafe = 1
 
     def strafe(self):
         self._is_strafing = True
@@ -482,9 +540,11 @@ class BallKicker(Behavior):
         if self.goalpost_to_track.bearing < self.alignLeftLimit:
             #strafeMove = lambda: self._actions.executeCircleStrafeClockwise().onDone(self._actions.executeCircleStrafeClockwise)
             strafeMove = self._actions.executeCircleStrafeClockwise
+            print "#### About to do a clockwise strafe"
         elif self.goalpost_to_track.bearing > self.alignRightLimit:
             #strafeMove = lambda: self._actions.executeCircleStrafeCounterClockwise().onDone(self._actions.executeCircleStrafeCounterClockwise)
             strafeMove = self._actions.executeCircleStrafeCounterClockwise
+            print "#### About to do a counter clockwise strafe"
         else:
             self._is_strafing = False
             self._is_strafing_init_done = False
@@ -507,7 +567,7 @@ class BallKicker(Behavior):
             self._movement_deferred = strafeMove()
 
         # We use call later to allow the strafing to handle the correct image (otherwise we get too much strafing)
-        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.2, self.strafe))
+        nextAction = lambda _: self._onMovementFinished(lambda: self._eventmanager.callLater(0.1, self.strafe))
 
         print "Movement STARTING! (strafing)"
         self._movement_deferred.onDone(nextAction)

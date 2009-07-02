@@ -137,10 +137,15 @@ class GameStatus(object):
         '''
         Calculates events that are related to goals: either team having perhaps scored a goal.
         '''
-        if self.myTeamScore < message.getTeamScore(self.mySettings.teamColor):
+        try:
+            score = message.getTeamScore(self.mySettings.teamColor)
+            opposing_score = message.getTeamScore(1 - self.mySettings.teamColor)
+        except:
+            return # XXX don't care (this failes when team score is not valid. but checking it is not fun right now)
+        if self.myTeamScore < score:
             self.newEvents.add(burst_events.EVENT_GOAL_SCORED_BY_MY_TEAM)
             self.newEvents.add(burst_events.EVENT_GOAL_SCORED)
-        if self.opposingTeamScore < message.getTeamScore(1 - self.mySettings.teamColor):
+        if self.opposingTeamScore < opposing_score:
             self.newEvents.add(burst_events.EVENT_GOAL_SCORED_BY_OPPOSING_TEAM)
             self.newEvents.add(burst_events.EVENT_GOAL_SCORED)
 

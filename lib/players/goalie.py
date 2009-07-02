@@ -10,11 +10,12 @@ from burst.actions.goalie.alignment_after_leap import AlignmentAfterLeap
 
 HALF_GOAL_WIDTH = 65
 ERROR_IN_LENGTH = 20
+TIME_STAY_ON_SIDE = 0
 TIME_STAY_ON_BELLY = 0 #time to wait when finishing the leap for getting up
-WAITING_FOR_HEAD = 5
+WAITING_FOR_HEAD = 5 #time to wait when head is focusing on the ball, and data will be updated
 WAITING_FOR_NEW_DATA = 1  #not to use old data (made when head was searching)
 SEARCH_TIME = 0.3 #threshHold for the searcher to work before ruin history data.
-SLOW_BALL_TIME = 5 #not leaping for slow balls
+SLOW_BALL_TIME = 3 #not leaping for slow balls
 FAST_BALL_TIME = 0.1 #not leaping for too fast ball, since the robot won't make it
 LONG_TIME_ERROR = 0
 SHORT_TIME_ERROR = 0
@@ -28,13 +29,18 @@ debugLeapLeft = False
 class Goalie(InitialBehavior):
 
     def __init__(self, actions):
+        global TIME_STAY_ON_BELLY
+        global TIME_STAY_ON_SIDE
         InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.SIT_POS)
         self._world.ball.shouldComputeIntersection = True
         self.targetFinder = TargetFinder(actions=self._actions, targets=[self._world.ball], start=False)
         self.targetFinder.setOnTargetFoundCB(self.targetFound)
         self.targetFinder.setOnTargetLostCB(self.targetLost)
         self.targetFinder.setOnSearchFailedCB(self.searchFailed)
-        self.isPenalty = False # TODO: Use the gameStatus object.
+        self.isPenalty = burst_consts.IS_PENALTY # TODO: Use the gameStatus object?
+        if self.isPenalty:
+            TIME_STAY_ON_BELLY = 5
+            TIME_STAY_ON_SIDE = 2
 
     def _start(self, firstTime = False):
         #AlignmentAfterLeap(self._actions, right).start()
@@ -53,21 +59,17 @@ class Goalie(InitialBehavior):
 
     def targetFound(self):
         self.targetFoundTime = self._world.time
-        if self.isPenalty:#TODO: check penalty goalie!!!
+        if self.isPenalty:
             self.targetFinder.stop()
-            self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
-        #else:
-            #before = len(self._eventmanager._registered)
-            #after = len(self._eventmanager._registered)
-            #print "registering: self: %s %s, #registered: before %s, after %s" % (
-            #    id(self), id(self.leap), before, after) # note: id(self.leap) changes, but it's ok.
+            self._eventmanager.callLater(WAITING_FOR_HEAD, self.registerLeapPenalty)
+
+
+    def registerLeapPenalty(self):
+        self._eventmanager.register(self.leapPenalty, BALL_MOVING_PENALTY)
+   
 
     def targetLost(self):
         self.targetLostTime = self._world.time
-        #if self.isPenalty:
-            #self._eventmanager.unregister(self.leapPenalty)
-        #else:
-            #self._eventmanager.unregister(self.leap)
 
     def searchFailed(self):
         print "at searchFailed"
@@ -80,14 +82,15 @@ class Goalie(InitialBehavior):
             self._eventmanager.callLater(0.5, self.targetFinder.start)
 
     def leapPenalty(self, stopped=False):
-        if self.targetFoundTime + WAITING_FOR_HEAD < self._world.time:
-            print "LEAP (PENALTY) ABORTED, NOT ENOUGH DATA!"
-            return
+        #if self.targetFoundTime + WAITING_FOR_HEAD < self._world.time:
+        #   print "LEAP (PENALTY) ABORTED, NOT ENOUGH DATA!"
+        #   return
         print "Penalty leap!"
         self._eventmanager.unregister(self.leapPenalty)
         #print self._world.ball.dy
         if self._world.ball.dy < 0:
             if realLeap or debugLeapRight:
+                self.isLeaping = True
                 print "real leap right"
                 self._player.unregisterFallHandling()
                 self._actions.executeLeapRight().onDone(self.waitingOnRight)
@@ -96,6 +99,7 @@ class Goalie(InitialBehavior):
                 self.waitingOnRight()
         else:
             if realLeap or debugLeapLeft:
+                self.isLeaping = True
                 print "real leap left"
                 self._player.unregisterFallHandling()
                 self._actions.executeLeapLeft().onDone(self.waitingOnLeft)
@@ -150,11 +154,20 @@ class Goalie(InitialBehavior):
 
     def waitingOnRight(self):
         print "wait on right"
-        self._eventmanager.callLater(TIME_STAY_ON_BELLY, self.gettingUpRight)
+        self._eventmanager.callLater(TIME_STAY_ON_SIDE, self.waitingOnRightGROUND)
 
     def waitingOnLeft(self):
         print "wait on left"
+        self._eventmanager.callLater(TIME_STAY_ON_SIDE, self.waitingOnLeftGROUND)
+
+    def waitingOnRightGROUND(self):
+        print "wait on ground"
+        self._eventmanager.callLater(TIME_STAY_ON_BELLY, self.gettingUpRight)
+
+    def waitingOnLeftGROUND(self):
+        print "wait on ground"
         self._eventmanager.callLater(TIME_STAY_ON_BELLY, self.gettingUpLeft)
+
 
     def gettingUpRight(self):
         print "getting up right"
@@ -178,11 +191,19 @@ class Goalie(InitialBehavior):
         self._player.registerFallHandling()
         if realLeap:
 #            AlignmentAfterLeap(self._actions, side).start().onDone(lambda _=None: self._actions.executeMove(poses.SIT_POS).onDone(self.readyToLeap))
-            AlignmentAfterLeap(self._actions, side).start().onDone(self.readyToLeap)
+            #AlignmentAfterLeap(self._actions, side).start().onDone(self.readyToLeap)
+            
+            if not self.isPenalty:
+                if not self._player._main_behavior.stopped:
+                    print "stopping existing behavior before turning into Kicker"
+                    self._player._main_behavior.stop() # TODO - use returned bd
+                self._player.turnToKicker()
+            else:
+                # If we're at penalty, DO NOT align and DO NOT leap again
+                pass
         else:
             self.readyToLeap()
 
 if __name__ == '__main__':
     from burst.eventmanager import MainLoop
     MainLoop(Goalie).run()
-

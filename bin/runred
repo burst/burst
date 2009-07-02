@@ -1,0 +1,27 @@
+#!/usr/bin/python
+
+import os
+
+#config = {
+#    'messi': ['goalie.py', 1],
+#    'cech':  ['kicker.py', 2],
+#    'raul':  ['kicker.py', 3],
+#}
+
+# Penalty config - attack the blue goal (be red)
+
+config = {
+#    'raul': ['goalie.py', 1], # 0197
+    'cech':  ['kicker.py', 2], # 0020
+#    'messi':  ['kicker.py', 3],
+}
+
+other = '--red --daemonize'
+
+def run(x):
+    print "running %s" % x
+    os.system(x)
+
+for ip, (filename, jersey) in config.items():
+    run('ssh root@%s /home/root/burst/lib/players/%s --jersey %s %s' % (ip, filename, jersey, other))
+

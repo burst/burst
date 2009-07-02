@@ -409,7 +409,7 @@ class Player(object):
         self._stopMainBehavior('; penalized, also calling killAll')
         self._actions._motion.killAll()
         # Vova strategy: if we are goalie, we now become a kicker.
-        if self.isGoalie():
+        if self.isGoalie() and not burst_consts.IS_PENALTY:
             if not self._main_behavior.stopped:
                 info("stopping existing behavior before turning into Kicker")
                 self._main_behavior.stop() # TODO - use returned bd
@@ -428,7 +428,7 @@ class Player(object):
             self._startMainBehavior().onDone(self._onCheckIfPenalizedElsePlay)
 
     def _onUnpenalized(self):
-        if self._main_behavior.stopped: return # REQUIRED TESTING..
+        if not self._main_behavior.stopped: return # HUM.
         #print "<"*20 + " u n p e n a l i z e d " + ">"*20
         self._restartMainBehavior('; unpenalized')
         self._main_behavior.onDone(self._onCheckIfPenalizedElsePlay)

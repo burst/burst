@@ -62,7 +62,11 @@ class GameControllerMessage(object):
         GameControllerMessage._validateTeam(team)
         GameControllerMessage._validatePlayer(player)
         start = 24 + team*(4+11*4) + 4*player
-        return struct.unpack("h", self.string[start:start+2])[0]
+        try:
+            return struct.unpack("h", self.string[start:start+2])[0]
+        except:
+            pass
+        return 0
 
     def getPenaltyTimeRemaining(self, team, player): # TODO: Change this to status
         GameControllerMessage._validateTeam(team)

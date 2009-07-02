@@ -656,7 +656,7 @@ def CIRCLE_STRAFER_INIT_POSE():
     jointCodes = list()
     angles = list()
     times = list()
-    DT = 1.0 # 0.4
+    DT = 1.5 # 0.4
 
     jointCodes.append("LAnklePitch")
     angles.append([float(0.00000)])

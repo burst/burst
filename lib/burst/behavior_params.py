@@ -35,25 +35,26 @@ from burst_util import (polar2cart, cart2polar)
  MOVE_KICK
  ) = range(6)
 
-MOVEMENT_PERCENTAGE_FORWARD = 0.9
-MOVEMENT_PERCENTAGE_SIDEWAYS = 0.9
-MOVEMENT_PERCENTAGE_TURN = 0.8
+MOVEMENT_PERCENTAGE_FORWARD = 0.7
+MOVEMENT_PERCENTAGE_SIDEWAYS = 0.8
+MOVEMENT_PERCENTAGE_TURN = 0.75
 
 ## Kicks
 # Kick consts (Measurements acquired via headTrackingTester)
 # First value is for LEFT leg, second for RIGHT leg
 KICK_X_MIN = [14, 14]
-KICK_X_MAX = [18, 18]
+KICK_X_MAX = [20, 20]
 KICK_Y_MIN = [4.0, -4.0]
-KICK_Y_MAX = [6.0, -6.5]
+KICK_Y_MAX = [7.0, -7.0]
 
 KICK_X_OPT = ((KICK_X_MAX[LEFT]+KICK_X_MIN[LEFT])/2, (KICK_X_MAX[RIGHT]+KICK_X_MIN[RIGHT])/2)
 KICK_Y_OPT = ((KICK_Y_MAX[LEFT]+KICK_Y_MIN[LEFT])/2, (KICK_Y_MAX[RIGHT]+KICK_Y_MIN[RIGHT])/2)
 
 KICK_TURN_ANGLE = 45 * DEG_TO_RAD
 KICK_SIDEWAYS_DISTANCE = 10.0
-MAX_FORWARD_WALK = 100 # 100cm is the farthest we can stably go without stopping
+MAX_FORWARD_WALK = 90 # 120cm is the farthest we can stably go without stopping
 MAX_SIDESTEP_WALK = 20 # 20 cm is the farthest we go on side-stepping without stopping
+MIN_FORWARD_WALK = 5
 
 def calcTarget(distSmoothed, bearing):
     target_x, target_y = polar2cart(distSmoothed, bearing)
@@ -101,11 +102,12 @@ def calcBallArea(ball_x, ball_y, side):
         else: #ball_x > KICK_X_MAX[side]
             # don't turn to far balls (define a diagonal area)
             # TODO - uncomment and debug
-            #if ball_x > 100.0 and abs(ball_y)/(abs(ball_x) + 0.01) < 1.0/5:  # TODO - constantize this
-            #    return BALL_FRONT_FAR
+
+            if ball_x >= KICK_X_MAX[side]*2 and abs(ball_y)/(abs(ball_x) + 0.01) <= 1.0/3.5:  # TODO - constantize this
+                return BALL_FRONT_FAR
             return BALL_DIAGONAL
 
-def isInEllipse(ball_x, ball_y, side, margin=0):
+def isInEllipse(ball_x, ball_y, side, margin=1.0):
     #TODO: check if margin is legit
     radius = (KICK_Y_MAX[side]-KICK_Y_MIN[side])/2
     y_center = (KICK_Y_MAX[side]+KICK_Y_MIN[side])/2
@@ -114,12 +116,17 @@ def isInEllipse(ball_x, ball_y, side, margin=0):
     if ((ball_y-y_center)**2)/(a**2)+((ball_x-KICK_X_MIN[side])**2)/(b**2)<=1:
         print "IN ELLIPSE: ball close enough"
         return True
+    else:
+        # if ball close to body center, square the ellipse
+        if abs(y_center) > abs(ball_y) > abs(KICK_Y_MIN[side]) and ball_x <= KICK_X_MAX[side]:
+            return True
+
     print "OUT OF ELLIPSE: ball too far"
     return False
 
 delta_table = [(-0.55,4),(-0.44,3.5),(-0.38,3),(-0.31,2.5),(-0.24,2),(-0.14,1.5),(-0.09,1),(-0.03,0.5),(0,0),(0.07,-0.5),(0.1,-1),(0.12,-1.5),(0.19,-2),(0.24,-2.5),(0.33,-3),(0.42,-3.5),(0.52,-4)]
 
-def getKickingType(self, goal_bearing, ball_y, side, margin=0):
+def getKickingType(self, goal_bearing, ball_y, side, margin=1.0):
     def lookUpDelta(goal_bearing):
         for i in range(len(delta_table)):
             if goal_bearing == delta_table[i][0]:

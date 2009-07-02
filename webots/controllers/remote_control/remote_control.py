@@ -72,6 +72,19 @@ def world_to_webots_yellow_webots_minus(x, y, z):
 
 class RemoteControl (Supervisor):
 
+    def __init__(self):
+        Supervisor.__init__(self)
+        self.updates = [] # list of objects for which location updates are requested
+
+    def addUpdatee(remote, name):
+        class Updater(object):
+            def __init__(updater, name):
+                updater.name = name
+                updater.obj = updater.getFromDef(name)
+                updater.trans = updater.obj.getField('translation')
+                updater.rot = updater.obj.getField('rotation')
+        remote.updates.append(Updater(name))
+
     def onCommand(self, line):
         parts = line.split()
         cmd, params = parts[0], parts[1:]
@@ -90,6 +103,16 @@ class RemoteControl (Supervisor):
             method(*params)
         except Exception, e:
             print "RemoteControl: Error running %s: %s" % (cmd, e)
+
+    def on_request_location_update(self, name):
+        """ start continueous location updates, once per round - no lost information. will give updates
+        to the player with name 'name' """
+        if name not in self.updates:
+            self.addUpdatee(name)
+        
+    def on_request_location_update_stop(self, name):
+        if name in self.updates:
+            del self.updates[name]
 
     def on_player_name(self, name):
         self._on_object('player', name)
@@ -146,16 +169,21 @@ class RemoteControl (Supervisor):
     def label(self, s):
         self.setLabel(0, s, 0.05,0.01,0.08,0xff0000,0.0)
 
+    def send(self, s):
+        self.sock.trySend(s)
+
     def run(self):
         self.on_player_name('RED_GOAL_KEEPER') # burst.wbt compatible
         self.on_ball_name('BALL') # burst.wbt compatible
 
-        sock = NonBlockingListeningSocket(PORT)
+        self.sock = sock = NonBlockingListeningSocket(PORT)
         # Main loop
         while True:
             for s, l in sock.readLines():
                 self.onCommand(l)
             if self.step(BASIC_TIME_STEP) == -1: break
+            for update in self.updates:
+                self.send('%r %r' % (update.pos.getSFVec3f(), update.getSFRotation()))
         # Enter here exit cleanup code
 
 if __name__ == '__main__':
