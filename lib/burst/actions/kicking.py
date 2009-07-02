@@ -328,10 +328,10 @@ class BallKicker(Behavior):
 #                        self._movement_deferred = self._actions.executeCircleStraferInitPose().onDone(strafeMove)
 
             else:
-                forward_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+                forward_move = lambda: self._actions.changeLocationRelative(min(max(kp_x*MOVEMENT_PERCENTAGE_FORWARD,MIN_FORWARD_WALK),MAX_FORWARD_WALK))
                 if self._last_movement_type != self._movement_type:
-                    self._movement_deferred = self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False)
-                    self._movement_deferred.onDone(forward_move)
+                    first_part = self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE, headIncluded=False)
+                    self._movement_deferred = first_part.onDone(forward_move)
                 else:
                     self._movement_deferred = forward_move()
         elif target_location in (BALL_BETWEEN_LEGS, BALL_SIDE_NEAR):
@@ -343,10 +343,10 @@ class BallKicker(Behavior):
             self._movement_type = MOVE_SIDEWAYS
             self._movement_location = target_location
             # TODO: change numbers for side stepping. Does that 4 or 5 times.
-            sideways_move = lambda _: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
+            sideways_move = lambda: self._actions.changeLocationRelativeSideways(0.0, movementAmount, walk=walks.SIDESTEP_WALK)
             if self._last_movement_type != self._movement_type:
-                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
-                self._movement_deferred.onDone(sideways_move)
+                first_part = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred = first_part.onDone(sideways_move)
             else:
                 self._movement_deferred = sideways_move()
             
@@ -360,10 +360,10 @@ class BallKicker(Behavior):
             self._movement_type = MOVE_TURN
             self._movement_location = target_location
 
-            turn_move = lambda _: self._actions.turn(movementAmount)
+            turn_move = lambda: self._actions.turn(movementAmount)
             if self._last_movement_type != self._movement_type:
-                self._movement_deferred = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
-                self._movement_deferred.onDone(turn_move)
+                first_part = self._actions.executeMove(poses.SIDE_WALK_INITIAL_POSE, headIncluded=False)
+                self._movement_deferred = first_part.onDone(turn_move)
             else:
                 self._movement_deferred = turn_move()
         else:
@@ -522,6 +522,17 @@ class BallKicker(Behavior):
         self._is_strafing = True
 
         if not self.goalpost_to_track.seen:
+            # UGLY HACK - in case we wanna ignore strafing when goalpost isn't seen
+#            self._is_strafing = False
+#            self._is_strafing_init_done = False
+#            self.logverbose("Can't find goalpost while tracking, assuming we're aligned")
+#            self._aligned_to_goal = True
+#            if self._goalFinder:
+#                self._goalFinder.stop().onDone(self.refindBall)
+#            else:
+#                self.refindBall()
+#            return
+            
             self.logverbose("strafe: goal post not seen")
             # Eran: Needed? won't goal-post searcher wake us up? Can't this create a case where strafe is called twice?
             self._eventmanager.callLater(self._eventmanager.dt, self.strafe)
