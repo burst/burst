@@ -138,6 +138,15 @@ class NonBlockingListeningSocket(object):
         self.has_connection = (len(self.s) == 0)
         return msgs
 
+    def trySend(self, msg, indices=None):
+        if indices is None:
+            for i, s in self.s:
+                s.send(msg)
+        else:
+            for i, s in self.s:
+                if i not in indices: continue
+                s.send(msg)
+
 class DebugSocket(NonBlockingListeningSocket):
 
     def __init__(self, port):

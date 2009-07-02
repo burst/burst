@@ -106,11 +106,11 @@ class Localization(object):
                     print "Localization: UPDATE SELF POSITION"
                 events.add(EVENT_WORLD_LOCATION_UPDATED)
 
-        #seeing blue goal - yellow is unseen
+        #seeing our goal - opposing is unseen
         if self._world.our_lp.seen and self._world.our_rp.seen:
             self.calc_goal_coord(self._world.our_lp,self._world.our_rp, self._world.opposing_lp, self._world.opposing_rp)
 
-        #seeing yellow goal - blue is unseen
+        #seeing opposing goal - our is unseen
         if self._world.opposing_lp.seen and self._world.opposing_rp.seen:
             self.calc_goal_coord(self._world.opposing_lp,self._world.opposing_rp, self._world.our_lp, self._world.our_rp)
 
@@ -184,5 +184,6 @@ class Localization(object):
             uglp.bearing = asin(abs(-HALF_GOAL_SIZE + y1) / uglp.dist)
             ugrp.bearing = asin(abs(HALF_GOAL_SIZE + y1) / ugrp.dist)
         else:
-            print "NOTICE: localization->calc_goal_coord: x1/y1/theta1 is None"
+            #print "NOTICE: localization->calc_goal_coord: x1/y1/theta1 is None"
+            pass
 

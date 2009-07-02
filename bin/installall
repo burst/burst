@@ -9,7 +9,7 @@ HOME=os.environ['HOME']
 os.chdir('%s/src/burst' % HOME)
 #ips=['192.168.4.11', '192.168.4.20', '192.168.4.12']
 #ips=['raul', 'messi', 'cech']# , 'maldini od']
-ips=['cech']# , 'maldini']
+ips=['raul', 'cech']# , 'maldini']
 for ip in ips:
     print "*"*20 + ip + "*"*20
     with open('Makefile.local', 'w') as fd:
