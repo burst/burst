@@ -55,7 +55,7 @@ MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
 
 class BallKicker(Behavior):
 
-    def __init__(self, actions, target_left_right_posts, align_to_target=True):
+    def __init__(self, actions, target_left_right_posts, align_to_target=False):
         super(BallKicker, self).__init__(actions = actions, name = 'BallKicker')
 
         self.verbose = True
@@ -371,7 +371,7 @@ class BallKicker(Behavior):
         print "Movement STARTING!"
         self._movement_deferred.onDone(lambda _, nextAction=self._approachBall: self._onMovementFinished(nextAction))
 
-    def doKick(self, side, kick_side_offset):
+    def doKick(self, side, kick_side_offset, do_inside_kick = False):
         # Look for goal, decide if can skip adjustments and kick ball diagonally
         self.logverbose("Kicking!")
         if self._currentFinder:
@@ -381,7 +381,7 @@ class BallKicker(Behavior):
         self._movement_type = MOVE_KICK
         self._movement_location = BALL_IN_KICKING_AREA
 
-        if self._obstacle_in_front and self._obstacle_in_front[0] == "center":
+        if do_inside_kick or (self._obstacle_in_front and self._obstacle_in_front[0] == "center"):
             # TODO: Change to angle-kick towards left/right side of goal (except for Goalie)
             self._movement_deferred = self._actions.inside_kick(burst.actions.KICK_TYPE_INSIDE, side)
         else:
@@ -415,10 +415,37 @@ class BallKicker(Behavior):
 
     def searchGoalPost(self):
         self._currentFinder = None
-        self._actions.searcher.search_one_of(self.target_left_right_posts, center_on_targets=False).onDone(self.onSearchGoalPostOver)
+        if self._align_to_target:
+            self._actions.searcher.search_one_of(self.target_left_right_posts, center_on_targets=False).onDone(self.onSearchGoalPostOver)
+        else:
+            self._actions.searcher.search_one_of(self._world.all_posts_hack, center_on_targets=False).onDone(self.onSearchGoalPostOver)
 
     def onSearchGoalPostOver(self):
         self._actions.say('onSearchGoalPostOver')
+        
+        if not self._align_to_target:
+            for target in self._world.all_posts_hack:
+                print "%s %s" % (target.name, target.seen)
+                if target.centered_self.sighted == True:
+                    if target in [self._world.opposing_lp, self._world.opposing_rp]:
+                        self.logverbose("OPPOSING GOAL SEEN, FORCE DIAGONAL KICK")
+                        self.doKick(self._side_last, self._kick_side_offset)
+                        return
+                    if target in [self._world.our_lp, self._world.our_rp]:
+                        self.logverbose("OWN GOAL SEEN, FORCE INSIDE KICK")
+                        self.doKick(self._side_last, self._kick_side_offset, True)
+                        return
+                        
+            # NO TARGETS SEEN
+            if self._world.robot.jersey == 1:
+                # GOALIE DOES INSIDE KICK
+                self.logverbose("NO GOAL SEEN, FORCE INSIDE KICK")
+                self.doKick(self._side_last, self._kick_side_offset, True)
+            else:
+                self.logverbose("NO GOAL SEEN, FORCE DIAGONAL KICK")
+                self.doKick(self._side_last, self._kick_side_offset)
+             
+            return
         
         # calculate target bearing (position inside goal)
         nearestGoalpost = None
