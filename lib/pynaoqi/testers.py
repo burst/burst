@@ -29,13 +29,16 @@ def straight((a, b), (c, d), parts):
         yield x, y
     yield x, y
 
+DT_SETTLE_DOWN = 0.5 # 2.0 on Roy's computer
+DT_STEP = 0.1 * DT_SETTLE_DOWN
+
 def goalposts(eml, count=5):
     """ eml - main loop object """
 
     # Walk the robot through a route, and record the seen bearing of both posts.
     # can then test various ways of computing them (using uncertain posts, etc.)
 
-    con.ALMotion.setAngle('HeadPitch', -0.6)
+    con.ALMotion.setAngle('HeadPitch', -0.4)
     eml._world.configure(burst_consts.YELLOW_GOAL)
     sleep(0.5)
 
@@ -57,7 +60,7 @@ def goalposts(eml, count=5):
     def getdata(x, y):
         step(eml)
         def real_bearing(px, py):
-            print px, py, x, y, py - y,
+            #print px, py, x, y, py - y,
             return atan2(py - y, px - x)
         return [(p.seen, p.update_time, p.bearing, p.dist, p.centerX, p.centerY, real_bearing(*real_pos)) for p, real_pos in zip(posts, real_posts_xy)]
 
@@ -69,9 +72,9 @@ def goalposts(eml, count=5):
 
     from twisted.internet import reactor
 
-    for i, pos in enumerate(straight((100.0, 0.0), (500.0, 0.0), count)):
-         reactor.callLater(i*2.0, single, pos,loc)
-         reactor.callLater((i+1)*2.0 - 0.1, lambda pos=pos, loc=loc: loc.append(getdata(*pos)))
+    for i, pos in enumerate(straight((100.0, -50.0), (550.0, -50.0), count)):
+         reactor.callLater(i*DT_SETTLE_DOWN, single, pos,loc)
+         reactor.callLater((i+1)*DT_SETTLE_DOWN - DT_STEP, lambda pos=pos, loc=loc: loc.append(getdata(*pos)))
     return loc
 
 """
@@ -83,7 +86,7 @@ testers.getBearingCenterXCenterYRealBearing(logs)
 
 """
 
-def testGoalPosts():
+def testGoalPosts(count=10):
     """ a,eml=testers.testGoalPosts() """
     from shell_guts import behaviors
     from burst.eventmanager import ExternalMainLoop
@@ -94,8 +97,8 @@ def testGoalPosts():
     d = Deferred()
     def doit(eml, count):
         logs = goalposts(eml, count)
-        reactor.callLater(count*2.0+2.0, d.callback, logs)
-    reactor.callLater(2.0, doit, eml, 10)
+        reactor.callLater((count+1)*DT_SETTLE_DOWN, d.callback, logs)
+    reactor.callLater(2.0, doit, eml, count)
     return d, eml
 
 def getBearingCenterXCenterYRealBearing(a):
@@ -103,9 +106,12 @@ def getBearingCenterXCenterYRealBearing(a):
 
 filename = 'data.pickle'
 def getPickle():
-    f1 = open(filename, 'r')
-    d = cPickle.load(f1)
-    f1.close()
+    if os.path.exists(filename):
+        f1 = open(filename, 'r')
+        d = cPickle.load(f1)
+        f1.close()
+    else:
+        d = []
     f = open(file, 'w+')
     return f, d
 

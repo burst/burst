@@ -341,6 +341,16 @@ class Locatable(Nameable):
 
         self.centered_self._update() # must be after updating self.normalized2_center{X,Y}
 
+    def updateLocatable(self, new_seen):
+        """ helpers for inheriting classes from Locatable, specifically used by GoalPost, also
+        for Goal which updates the GoalPosts """
+        self.seen = new_seen
+        self.recently_seen = self.calc_recently_seen(new_seen)
+        if self.seen:
+            self.update_centered()
+            self.update_time = self._world.time
+
+
     def __str__(self):
         return "<%s; (%3.2f,%3.2f,%3.2f,%3.2f), cl=%s>" % (self.name, self.update_time, self.dist, self.bearing, self.elevation, str(self.centered_self))
 
@@ -635,38 +645,80 @@ class Goal(Locatable):
     def calc_events(self, events, deferreds):
         """ Try to get the location of the left/right posts from the unknown harder.
         """
-        # First read vars and check
+
         if self.left.color is None: return
-        self.left.get_new_state()
-        self.right.get_new_state()
+
+        def select_min_bearing_change_post(new_bearing):
+            d_left = abs(new_bearing - self.left.bearing)
+            d_right = abs(new_bearing - self.right.bearing)
+            if d_left < d_right:
+                print "!! Goal: selecting left"
+                min_diff = -burst_consts.MINIMAL_GOAL_POST_BEARING_DIFFERENCE
+                return self.left, self.right, min_diff
+            print "!! Goal: selecting right"
+            min_diff = burst_consts.MINIMAL_GOAL_POST_BEARING_DIFFERENCE
+            return self.right, self.left, min_diff
+
+        # First read vars and check
+        left_state = self.left.get_new_state()
+        right_state = self.right.get_new_state()
+        left_seen = self.left._new_seen
+        right_seen = self.right._new_seen
         left_seen_uncertain = self.left.is_uncertain()
         right_seen_uncertain = self.right.is_uncertain()
-        to_second_stage = [self.left, self.right]
-        if False:
-            # States:
-            if left_seen_uncertain and right_seen_uncertain:
-                # should never happen
-                to_second_stage.append(self.unknown)
-                state = self.left.get_state() if left_seen_uncertain else self.right.get_state()
-                print "BOTH UNCERTAIN AND SEEN??"
-                import pdb; pdb.set_trace()
-                self.unknown.set_state(state)
-            elif left_seen_uncertain or right_seen_uncertain:
-                # one uncertain, the other maybe certain or not.
-                # TODO: use the unknown to update the one the correct post.
-                # right now: we just update the unknown.
-                uncertain_one = self.left if left_seen_uncertain else self.right
-                other = self.right if left_seen_uncertain else self.left
-                self.unknown.set_state(uncertain_one.get_state())
-                to_second_stage = [self.unknown, other]
-            else:
-                # none seen uncertain - either both seen, one seen or none, so let the standard update happen
-                to_second_stage = [self.left, self.right]
-                self.unknown.seen = False
-        # Short circuit - just update first and second as usual
+        other = None # other gets defined if we are in the single-uncertain-goalpost clause
+        if left_seen and right_seen and not left_seen_uncertain and not right_seen_uncertain:
+            if self.verbose:
+                print "!! Whole %s Goal seen" % (self.left.color)
+            # generally best case, one goal seen perfectly
+            to_second_stage = [self.left, self.right]
+        elif left_seen and not left_seen_uncertain:
+            if self.verbose:
+                print "!! Left %s Post seen with certainty" % (self.left.color)
+            to_second_stage = [self.left]
+        elif right_seen and not right_seen_uncertain:
+            if self.verbose:
+                print "!! Right %s Post seen with certainty" % (self.left.color)
+            to_second_stage = [self.right]
+        elif left_seen and left_seen_uncertain:
+            #if self.verbose:
+            selected, other, minimal_post_bearing_diff = select_min_bearing_change_post(self.left._new_bearing)
+            to_second_stage = [selected]
+            selected.set_state(left_state)
+            print "!!!! Left %s post seen but uncertain" % (self.left.color)
+        elif right_seen and right_seen_uncertain:
+            # one of the last two never actually happens due to the way the vision code
+            # deterministically puts the unknown result in the left or right.
+            #if self.verbose:
+            selected, other, minimal_post_bearing_diff = select_min_bearing_change_post(self.right._new_bearing)
+            selected.set_state(right_state)
+            to_second_stage = [selected]
+            print "!!!! Right %s post seen but uncertain" % (self.left.color)
+        else:
+            if self.verbose:
+                print "!! Nothing seen for %s" % (self.left.color)
+            to_second_stage = []
+
+        # tell the objects not in to_second_stage that they are not seen
+        for obj in self.bottom_top:
+            if obj in to_second_stage: continue
+            obj.updateLocatable(False) # it wasn't seen - will update recently_seen as well.
+
         for obj in to_second_stage:
             obj.second_stage_calc_events(events, deferreds)
+
+        # finally, we update the bearing of the other post (in the single-goalpost-uncertain-seen case)
+        # so it is different by the minimal possible amount (since we don't know our location relative to it,
+        # but we can assume we are in the field) - this avoids errors in the next steps.
+        if other and abs(other.bearing - selected.bearing) < abs(minimal_post_bearing_diff):
+            print "GoalPost: updating bearing of other - saw %s, %3.2f other %3.2f" % (selected.name, selected.bearing, other.bearing)
+            other.bearing = selected.bearing + minimal_post_bearing_diff
+
+        # update some minimal vars on the goal itself - not actually used anywhere.
         self.seen = self.left.seen or self.right.seen or self.unknown.seen
+        if self.seen:
+            self.update_time = self._world.time
+            self.bearing = (self.left.bearing + self.right.bearing) / 2.0
         # TODO - thrown the team event here? instead of world.__init__
 
 class GoalPost(Locatable):
@@ -728,6 +780,13 @@ class GoalPost(Locatable):
     def get_new_state(self):
         # must be called first before calling anything else
         self._vars_values = self._world.getVars(self._vars)
+        (new_angleX, new_angleY, new_bearing, new_centerX, new_centerY,
+                new_dist, new_elevation, new_focDist, new_height,
+                new_width, new_x, new_y, new_id_certainty
+                ) = self._vars_values
+        # used by Goal only
+        self._new_seen = isinstance(new_dist, float) and new_dist > 0.0
+        self._new_bearing = new_bearing
         return self._vars_values
 
     def get_state(self):
@@ -741,11 +800,15 @@ class GoalPost(Locatable):
                 new_dist, new_elevation, new_focDist, new_height,
                 new_width, new_x, new_y, new_id_certainty
                 ) = self._vars_values
-        return new_dist > 0.0
-        #return new_id_certainty != ID_SURE and new_dist > 0.0
+        return new_id_certainty != ID_SURE and new_dist > 0.0
 
     def second_stage_calc_events(self, events, deferreds):
-        """ get new values from proxy, return set of events """
+        """ get new values from proxy, return set of events.
+
+        We don't care if the post is uncertain or not at this point since
+        the Goal won't call us if it isn't certain itself, and it uses an
+        improved "use nearest goal post when uncertain" strategy.
+        """
         # TODO: this is ugly - there is an idiom of using a class as a list
         # and a 'struct' at the same time - somewhere in activestate.com?
 
@@ -783,11 +846,7 @@ class GoalPost(Locatable):
                   new_angleX, new_angleY, new_centerX,
                   new_centerY, new_focDist, new_height, new_width,
                   new_x, new_y)
-        self.seen = new_seen
-        self.recently_seen = self.calc_recently_seen(new_seen)
-        if self.seen:
-            self.update_centered()
-            self.update_time = self._world.time
+        self.updateLocatable(new_seen)
 
 # Used for Centering, instead of centering on a goal post, center on:
 # StickyGoalPost(self._world.opposite_goal, self._world.opposite_goal.left)
