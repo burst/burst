@@ -701,7 +701,17 @@ class ImopsMixin(object):
 
     def default_table(self):
         """ switch to default colortable """
-        self._load_table('_default_table', consts.DEFAULT_TABLE_FILENAME)
+        filename = consts.DEFAULT_TABLE_FILENAME
+        if not os.path.exists(filename):
+            home = os.environ['HOME']
+            local = '%s/src/burst/Makefile.local' % (home)
+            print "Looking for %s" % local
+            if os.path.exists(local):
+                with open(local) as fd:
+                    lines = [x for x in fd.readlines() if x.strip()[:5] == 'TABLE']
+                table = lines[0].split('=')[1].strip()
+                filename = '%s/src/burst/data/tables/%s' % (home, table)
+        self._load_table('_default_table', filename)
         try:
             self._table = self._default_table
             self.imops.update_table()
