@@ -39,6 +39,16 @@ using namespace std;
 ObjectFragments::ObjectFragments(Vision* vis, Threshold* thr, int _color)
     : vision(vis), thresh(thr), color(_color), runsize(1)
 {
+#ifdef USE_ANYBALL
+    imgWidth= 320;
+    imgHeight= 240;
+    imgYUVNbLayers= 2;
+    imgRGBNbLayers= 3;
+    imgYUVStringSize= imgWidth*imgHeight*imgYUVNbLayers;
+    imgRGBStringSize= imgWidth*imgHeight*imgRGBNbLayers;
+    src = NULL;
+    storage = NULL;
+#endif
     init(0.0);
     allocateColorRuns();
 #ifdef OFFLINE
@@ -139,6 +149,7 @@ void ObjectFragments::setColor(int c)
     case ORANGE:
         runsize = BALL_RUNS_MALLOC_SIZE; //max number of runs
         run_num = runsize * 3;
+        // allocate the memory for anyball only for the ''Orange'' ball
         break;
     }
     runs = (run*)malloc(sizeof(run) * run_num);
@@ -1530,6 +1541,7 @@ void ObjectFragments::createObject(int c) {
     case ORANGE:
         // the ball
 #ifdef USE_ANYBALL
+        std::cout << "calling anyballs\n";
         anyballs(c, vision->ball);
 #else
         balls(c, vision->ball);
@@ -4194,6 +4206,19 @@ void ObjectFragments::drawMore(int x, int y, int c) {
 // Domain of the Musketeers, May they Rule in Peace.
 
 #ifdef USE_ANYBALL
+void ObjectFragments::allocAnyBall()
+{
+    if (src == NULL) {
+        std::cout << "AnyBall: Allocating IplImage" << std::endl;
+        src = cvCreateImage( cvSize( imgWidth, imgHeight ), 8,  imgRGBNbLayers);
+    }
+    if (storage == NULL) {
+        std::cout << "AnyBall: Allocating CvMemStorage" << std::endl;
+        storage = cvCreateMemStorage(0);
+    }
+}
+
+
 void ObjectFragments::yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size)
 {
     char y1, u, y2, v;
@@ -4234,12 +4259,8 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     int ballWidth= 0;
     int ballHeight= 0;
 
-    int imgWidth= 320;
-    int imgHeight= 240;
-    int imgYUVNbLayers= 2;
-    int imgRGBNbLayers= 3;
-    int imgYUVStringSize= imgWidth*imgHeight*imgYUVNbLayers;
-    int imgRGBStringSize= imgWidth*imgHeight*imgRGBNbLayers;
+    allocAnyBall();
+
     constyuvImg= (const char *) thresh->getYUV();
     char yuvImg[imgYUVStringSize];
     memcpy( yuvImg, constyuvImg, imgYUVStringSize );
@@ -4247,19 +4268,16 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     yuv422_to_rgb888(yuvImg, rgbImg, imgYUVStringSize, imgRGBStringSize);
 
     // now you create an openCV image and you save it in a file.
-    IplImage* src = cvCreateImage( cvSize( imgWidth, imgHeight ), 8,  imgRGBNbLayers);
-
     src->imageData = rgbImg;
 
-    IplImage* mask = 0;
-    IplImage* imageClipped = 0;
-    CvMemStorage* storage= cvCreateMemStorage(0);
+    IplImage* mask = NULL;
+    IplImage* imageClipped = NULL;
 
     // Get field
     CvRect fieldRect = cvRect(-1,-1,-1,-1);
     // HSV color of the field, +- range, saturation cuttoff, minimal field size.
-    //CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1); - WEBOTS PARAMETERS!
-    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1, &storage);
+    CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1, &storage); // - WEBOTS PARAMETERS!
+    //CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1, &storage);
 
     if (field != NULL) {
 #ifdef OFFLINE
@@ -4291,12 +4309,12 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 		// Get ball
 		CvRect ballRect= cvRect(-1,-1,-1,-1);
 		// HSV color of the ball, +- range, saturation cuttoff, minimal ball size.
-		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0); - WEBOTS PARAMETERS!
 	    if (field) {
 	    	cvClearSeq(field);
 	    	field= NULL;
 	    }
-		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0, &storage);
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0, &storage); // - WEBOTS PARAMETERS!
+		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0, &storage);
 
 #ifdef OFFLINE
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
@@ -4354,15 +4372,15 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
                                           static_cast<float>(thisBall->
                                                              getFocDist())));
 
-    if (src) cvReleaseImage( &src );
+    //if (src) cvReleaseImage( &src );
     if (mask) cvReleaseImage( &mask );
     if (imageClipped) cvReleaseImage( &imageClipped );
-    if (storage) cvReleaseMemStorage( &storage );
+    //if (storage) cvReleaseMemStorage( &storage );
 
-    src= NULL;
+    //src= NULL;
     mask= NULL;
     imageClipped= NULL;
-    storage= NULL;
+    //storage= NULL;
 
     // Everything is ok.
     return 0;

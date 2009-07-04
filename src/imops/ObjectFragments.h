@@ -280,6 +280,18 @@ public:
     int anyballs(int c, VisualBall *thisBall);
     void yuv422_to_rgb888(char* yuv, char* rgb, int size, int rgb_size);
     CvSeq* getLargestColoredContour(IplImage* src, int iBoxColorValue, int iBoxColorRange, int iBoxSaturationCutoff, int iMinimalArea, CvRect &rect, bool isField, CvMemStorage** storage);
+
+    void allocAnyBall();
+
+    CvMemStorage* storage;
+    IplImage*     src;
+    int imgWidth;
+    int imgHeight;
+    int imgYUVNbLayers;
+    int imgRGBNbLayers;
+    int imgYUVStringSize;
+    int imgRGBStringSize;
+
 #endif
 
     // sanity checks
