@@ -53,10 +53,20 @@ Vision Constants that span multiple classes and systems.
 
 
 // XXX Vision Frame rate needs to be in sync with lib/burst_consts.py
+#ifdef USE_ANYBALL
+#error
+// have much larger numbers for any-ball competition
+#define VISION_FRAME_LENGTH_MS 300
+#define VISION_FRAME_LENGTH_uS 300000
+#define VISION_FRAME_LENGTH_PRINT_THRESH_uS 450000
+#define VISION_FPS 5
+#else
+// standard numbers
 #define VISION_FRAME_LENGTH_MS 100
 #define VISION_FRAME_LENGTH_uS 100000
 #define VISION_FRAME_LENGTH_PRINT_THRESH_uS 150000
 #define VISION_FPS 10
+#endif
 // XXX VISION_FPS is the commanded fps to the camera proxy, which according
 // to help can only take on the values: 5, 10, 15, 30 - so I'm not sure
 // what 20 would do -- Alon.

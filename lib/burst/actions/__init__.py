@@ -50,17 +50,23 @@ def stopped(behavior_names):
         return wrapper
     return wrap
 
-def setfps(fps):
-    """ set fps on an Actions method """
-    def wrap(f):
-        def wrapper(self, *args, **kw):
-            if not self.isWalkInProgress() and not self.isMotionInProgress():
-                self.setCameraFrameRate(fps)
-            return f(self, *args, **kw)
-        wrapper.func_doc = f.func_doc
-        wrapper.func_name = f.func_name
-        return wrapper
-    return wrap
+if burst_consts.anyball:
+    def setfps(fps):
+        def wrap(f):
+            return f
+        return wrap
+else:
+    def setfps(fps):
+        """ set fps on an Actions method """
+        def wrap(f):
+            def wrapper(self, *args, **kw):
+                if not self.isWalkInProgress() and not self.isMotionInProgress():
+                    self.setCameraFrameRate(fps)
+                return f(self, *args, **kw)
+            wrapper.func_doc = f.func_doc
+            wrapper.func_name = f.func_name
+            return wrapper
+        return wrap
 
 #######
 
