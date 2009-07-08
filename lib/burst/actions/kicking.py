@@ -54,7 +54,7 @@ MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
 
 class BallKicker(Behavior):
 
-    def __init__(self, actions, target_left_right_posts, align_to_target=False):
+    def __init__(self, actions, target_left_right_posts, align_to_target=True):
         super(BallKicker, self).__init__(actions = actions, name = 'BallKicker')
 
         self.verbose = True
