@@ -1,7 +1,26 @@
 '''
-Created on Jun 14, 2009
+Kicking behavior:
+-----------------
+This behavior aims to kick the ball towards the opponent goal. We can either align
+towards the goal (using circle-strafing) or just kick (mainly as a hack to save 
+precious time when dealing with quicker opponents). Whether aligning or not, when
+close enough the ball to kick, we still look at what's in front of us, to avoid 
+scoring an own goal (we don't have localization, so we don't know our exact location
+or bearing).
 
-@author: Alon & Eran
+The first part of this behavior is approaching the ball, no matter where we are 
+(while tracking the ball). The second part is aligning towards the goal (while 
+tracking the goal). The third part is positioning our legs near the ball in order
+for us to kick (while tracking the ball again). The final part is looking up to make
+sure we don't score an own goal. 
+
+Handling Sonar data (obstacles):
+If we encounter an obstacle during a move, we stop the move only if it's a long
+straight walk (i.e., another robot between us and the ball). If we're at a short
+move, we don't stop it (i.e., turn or if we're really close to the ball).
+If we encounter an obstacle before a new move starts, we either use side-stepping
+to avoid the obstacle, or if we're good for a kick - change our kick to diagonal / 
+side-ways kick.
 '''
 
 from math import pi
@@ -29,26 +48,6 @@ from burst_consts import (LEFT, RIGHT, IMAGE_CENTER_X, IMAGE_CENTER_Y,
     PIX_TO_RAD_X, PIX_TO_RAD_Y, DEG_TO_RAD)
 import burst_consts
 import random
-
-#===============================================================================
-#    Logic for Kicking behavior:
-#
-# 1. Scan for ball
-# 2. Advance towards ball (while tracking ball)
-# 3. When near ball, circle-strafe (to correct direction) till goal is seen and centered (goal is tracked)
-# 4. Search ball down, align against ball and kick
-#
-# Handling Sonar data (obstacles):
-# When obstacle encountered DURING move:
-# * stop move only if it's a long walk (if it's a short walk to the ball, we prefer not to stop...)
-# When obstacle encountered BEFORE move:
-# * Kicking: change kick to inside-kick/angle-kick if obstacle is at center
-#   (Goalie->inside kick towards opposite side, Kicker-> angle-kick towards field center)
-# * Ball far: side-step to opposite side (or towards field center if at center)
-#
-# TODO's:
-# * RESET self._aligned_to_goal when needed
-#===============================================================================
 
 GOAL_FAILURES_BEFORE_GIVEUP = 4 # count
 MOVE_WHEN_GOAL_LOST_GOOD = 50.0 # [cm]
@@ -612,4 +611,3 @@ class BallKicker(Behavior):
             # TODO: Fix distSmooth after moving head - this is just a workaround
             lambda: self._eventmanager.callLater(0.5,
                  lambda: self.switchToFinder(to_goal_finder=False)))
-
