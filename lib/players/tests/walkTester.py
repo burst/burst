@@ -13,7 +13,7 @@ import time
 class WalkTester(InitialBehavior):
 
     def __init__(self, actions):
-        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__)
+        InitialBehavior.__init__(self, actions=actions, name=self.__class__.__name__, initial_pose=poses.STRAIGHT_WALK_INITIAL_POSE)
 
     def _start(self, firstTime=False):
         self.movesList = [
@@ -22,7 +22,11 @@ class WalkTester(InitialBehavior):
 #                      lambda: self._actions.changeLocationRelative(50.0, 0.0, 0.0, walk=walks.STABLE_WALK))),
 
 
-#                      ('Walk straight',
+                      ('Walk straight',
+                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+                      lambda: self._actions.changeLocationRelative(150.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
+
+#                      ('Walk arc',
 #                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationRelative(1.0, 0.0, 0.0, walk=walks.STRAIGHT_WALK))),
 
@@ -30,11 +34,18 @@ class WalkTester(InitialBehavior):
 #                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
 #                      lambda: self._actions.changeLocationArc(100.0, 100.0, walk=walks.STRAIGHT_WALK))),
 
+#                     ('Wait',
+#                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE)),
+
 #                     ('Walk sideways',
-#                      lambda: self._actions.changeLocationRelativeSideways(0.0, 20.0, walk=walks.SIDESTEP_WALK)),
+#                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE).onDone(
+#                      lambda: self._actions.changeLocationRelativeSideways(0.0, -20.0, walk=walks.SIDESTEP_WALK))),
 
                      ('Turn 90 degrees (Straight walk params)',
                       lambda: self._actions.turn(-3.14, walk=walks.TURN_WALK)),
+
+#                     ('Wait',
+#                      lambda: self._actions.executeMove(poses.STRAIGHT_WALK_INITIAL_POSE)),
 
 #                     ('Sit',
 #                     lambda: self._actions.sitPoseAndRelax())

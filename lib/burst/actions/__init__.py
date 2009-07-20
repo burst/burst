@@ -50,17 +50,23 @@ def stopped(behavior_names):
         return wrapper
     return wrap
 
-def setfps(fps):
-    """ set fps on an Actions method """
-    def wrap(f):
-        def wrapper(self, *args, **kw):
-            if not self.isWalkInProgress() and not self.isMotionInProgress():
-                self.setCameraFrameRate(fps)
-            return f(self, *args, **kw)
-        wrapper.func_doc = f.func_doc
-        wrapper.func_name = f.func_name
-        return wrapper
-    return wrap
+if burst_consts.anyball:
+    def setfps(fps):
+        def wrap(f):
+            return f
+        return wrap
+else:
+    def setfps(fps):
+        """ set fps on an Actions method """
+        def wrap(f):
+            def wrapper(self, *args, **kw):
+                if not self.isWalkInProgress() and not self.isMotionInProgress():
+                    self.setCameraFrameRate(fps)
+                return f(self, *args, **kw)
+            wrapper.func_doc = f.func_doc
+            wrapper.func_name = f.func_name
+            return wrapper
+        return wrap
 
 #######
 
@@ -321,7 +327,7 @@ class Actions(object):
     @returnsbd # must be first
     @legal_any
     @setfps(10)
-    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.STRAIGHT_WALK):
+    def changeLocationRelativeSideways(self, delta_x, delta_y = 0.0, walk=walks.SIDESTEP_WALK):
         """
         Add an optional addWalkSideways and StraightWalk to ALMotion's queue.
         Will fire EVENT_CHANGE_LOCATION_DONE once finished.
@@ -342,8 +348,8 @@ class Actions(object):
                     # All lambda's should have one parameter, the result of the last deferred.
         dgens.append(lambda _: self._motion.setSupportMode(SUPPORT_MODE_DOUBLE_LEFT))
 
-        if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            walk = walks.SIDESTEP_WALK
+#        if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
+#            walk = walks.SIDESTEP_WALK
 
         dgens.append(lambda _: self.setWalkConfig(walk.walkParameters))
 
@@ -363,13 +369,18 @@ class Actions(object):
                 print "ADD WALK STRAIGHT: %f, %f" % (distance, defaultSpeed)
                 dgens.append(lambda _: self._motion.addWalkStraight( distance, defaultSpeed ))
 
-        # Avoid minor sideways walking
-        if abs(distanceSideways) >= MINIMAL_CHANGELOCATION_SIDEWAYS:
-            print "WALKING SIDEWAYS (%3.3f)" % distanceSideways
-            did_sideways = distanceSideways
-            dgens.append(lambda _: self._motion.addWalkSideways(distanceSideways, defaultSpeed))
-        else:
-            print "MINOR SIDEWAYS AVOIDED! (%3.3f)" % distanceSideways
+        # When asked to do side-stepping for a very short distance, do a minimal one
+        if abs(distanceSideways) <= MINIMAL_CHANGELOCATION_SIDEWAYS:
+            print "MINOR SIDEWAYS MOVEMENT ENLARGED! (%3.3f)" % distanceSideways
+
+            if distanceSideways < 0:
+                distanceSideways = -MINIMAL_CHANGELOCATION_SIDEWAYS
+            else:
+                distanceSideways = MINIMAL_CHANGELOCATION_SIDEWAYS
+
+        print "WALKING SIDEWAYS (%3.3f)" % distanceSideways
+        did_sideways = distanceSideways
+        dgens.append(lambda _: self._motion.addWalkSideways(distanceSideways, defaultSpeed))
 
         duration = (defaultSpeed * distance / stepLength +
                     (did_sideways and defaultSpeed or self._eventmanager.dt) ) * 0.02 # 20ms steps
