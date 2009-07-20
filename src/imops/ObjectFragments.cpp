@@ -1541,7 +1541,6 @@ void ObjectFragments::createObject(int c) {
     case ORANGE:
         // the ball
 #ifdef USE_ANYBALL
-        std::cout << "calling anyballs\n";
         anyballs(c, vision->ball);
 #else
         balls(c, vision->ball);
@@ -4276,8 +4275,11 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
     // Get field
     CvRect fieldRect = cvRect(-1,-1,-1,-1);
     // HSV color of the field, +- range, saturation cuttoff, minimal field size.
+#ifdef WEBOTS
     CvSeq* field = getLargestColoredContour(src, 125, 30, 25, 100, fieldRect, 1, &storage); // - WEBOTS PARAMETERS!
-    //CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1, &storage);
+#else
+    CvSeq* field = getLargestColoredContour(src, 175, 30, 25, 1000, fieldRect, 1, &storage);
+#endif
 
     if (field != NULL) {
 #ifdef OFFLINE
@@ -4313,8 +4315,11 @@ int ObjectFragments::anyballs(int horizon, VisualBall *thisBall) {
 	    	cvClearSeq(field);
 	    	field= NULL;
 	    }
+#ifdef WEBOTS
 		CvSeq* ballHull = getLargestColoredContour(imageClipped, 275, 130, 30, 5, ballRect, 0, &storage); // - WEBOTS PARAMETERS!
-		//CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0, &storage);
+#else
+		CvSeq* ballHull = getLargestColoredContour(imageClipped, 355, 140, 50, 50, ballRect, 0, &storage);
+#endif
 
 #ifdef OFFLINE
 		std::cout << "ballRect: " << ballRect.x << ", " << ballRect.y << ", " << ballRect.width << ", " << ballRect.height << std::endl;
