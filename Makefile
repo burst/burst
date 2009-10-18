@@ -13,7 +13,7 @@ all: install
 
 prerequisites:
 ifeq ($(TABLE), )
-	@echo You must define a table in Makefile.local, i.e. TABLE=field_a.mtb
+	@echo You must define a table in Makefile.local, i.e. TABLE=maverick/burst_lab.mtb
 	@exit 1
 else
     echo Using TABLE=$(TABLE)
