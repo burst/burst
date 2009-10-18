@@ -389,12 +389,14 @@ class Ball(Movable):
         self.shouldComputeIntersection = False
         self.isTimeCalc = False
 
-    #for robot body when facing the other goal
+    #for goalie when facing the other goal, standing at the middle of the goal line
     def compute_intersection_with_body(self):
 
+        #makes sure that only the goalie computes the intersection
         if not self.shouldComputeIntersection:
             return False
 
+        #indexes for the self.history variable 
         T = 0
         DIST = 1
         BEARING = 2
@@ -402,22 +404,24 @@ class Ball(Movable):
         X = 1
         Y = 2
 
-        ERROR_VAL_X = 1
-        NUM_OF_POINTS = 10
+        ERROR_VAL_X = 1 #threshold for the error on the x axis.
+        NUM_OF_POINTS = 7 #the minimum number of points to use for the calculation
         HISTORY_SIZE = 20
 
+        #Checks if ball is moving by considering the noise from the camera.
         if not self.CalcIsBallMoving():
             return False
-
+        
+        #The first point to be used on the time line.
         if self.history[0] != None:
             if self.base_point_index == 0:
                 self.base_point = [self.history[0][T] , self.history[0][DIST] * cos(self.history[0][BEARING]) \
                                    , self.history[0][DIST] * sin(self.history[0][BEARING])]
-                #print "base point has changed"
+               
         else:
             return False
 
-        #vars for least mean squares
+        #variables for least mean squares
         self.base_point_index = 1
         last_point = self.base_point
         sumX = last_point[X]
@@ -428,51 +432,50 @@ class Ball(Movable):
         sumXT = last_point[X] * 0 # T0= 0
         sumSqrT = 0 * 0 # T0= 0
 
-        n = 1
+        n = 1#counts the point.
         for point in self.history:
             if point != None:
                 if n == 1:
                     n += 1
-                    continue #first point was calc already
+                    continue #first point was calculated already
                 if n <= self.base_point_index:
                     n += 1
-                    continue #skipping nonrelvant point
-                cor_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
-                if cor_point[X] > (last_point[X] + ERROR_VAL_X): #checking if not moving toward our goalie
-                    self.base_point = cor_point
+                    continue #skipping points that were not considered (the ones that are before the first one)
+                curr_point = [point[T] , point[DIST] * cos(point[BEARING]) , point[DIST] * sin(point[BEARING])]
+                if curr_point[X] > (last_point[X] + ERROR_VAL_X): #checking if moving toward the goalie
+                    self.base_point = curr_point
                     if n > HISTORY_SIZE-1:
-                    #if self.history[n] != None:
                         self.base_point_index = n -1
                     else:
                         self.base_point_index = n
-                    #print "base point index = ", self.base_point_index
                     return False
-                sumX += cor_point[X]
-                sumXY += cor_point[X] * cor_point[Y]
-                sumY += cor_point[Y]
-                sumSqrX +=  cor_point[X] * cor_point[X]
-                sumT += cor_point[T] - last_point[T]
-                sumXT += cor_point[X] * (cor_point[T] - last_point[T])
-                sumSqrT += (cor_point[T] - last_point[T]) * (cor_point[T] - last_point[T])
+                sumX += curr_point[X]
+                sumXY += curr_point[X] * curr_point[Y]
+                sumY += curr_point[Y]
+                sumSqrX +=  curr_point[X] * curr_point[X]
+                sumT += curr_point[T] - last_point[T]
+                sumXT += curr_point[X] * (curr_point[T] - last_point[T])
+                sumSqrT += (curr_point[T] - last_point[T]) * (curr_point[T] - last_point[T])
 
-                last_point = cor_point
+                last_point = curr_point
                 n += 1
             else:
-                if n < NUM_OF_POINTS: #TODO: need some kind of col' for diffrent speeds....
+                if n < NUM_OF_POINTS: 
                     return False
                 break
 
-        n = n - self.base_point_index #real number of valid points
+        n = n - self.base_point_index #real number of valid points (the points that were used for the calculation)
 
 
-        if n >= NUM_OF_POINTS:#TODO: need some kind of col' for diffrent speeds....
+        if n >= NUM_OF_POINTS:
             #Least mean squares (http://en.wikipedia.org/wiki/Linear_least_squares):
             if fabs((sumX * sumX) - (n * sumSqrX))  >  ERROR_VAL_X:
                 self.body_isect = ((sumX * sumXY) - (sumY * sumSqrX)) / ((sumX * sumX) - (n * sumSqrX))
                 slop = ((sumY * sumX) - (n * sumXY)) / ((sumX * sumX) - (n * sumSqrX))
 
 
-                #calc time for intersection:
+                #calculate the time for intersection:
+                
                 #finding the x coordinate of two point on the regression line
                 self.isTimeCalc = False
                 if slop != 0:
@@ -482,6 +485,7 @@ class Ball(Movable):
                     if (slop - slop2) != 0:
                         x_last_point = (n_last_point - self.body_isect) / (slop - slop2)
                         x_base_point = (n_base_point - self.body_isect) / (slop - slop2)
+                        
                         dx1 = x_last_point - x_base_point
                         dt1 = last_point [T] - self.base_point[T]
                         if dt1 != 0 and dx1 != 0:
@@ -489,11 +493,11 @@ class Ball(Movable):
                             dx2 = 0 - last_point[X]
                             self.time_intersection = dx2/self.velocity
                             self.isTimeCalc = True
-                            print "x2: ", last_point[X], " x1: ", self.base_point[X]
-                            print "t2: ", last_point[T], " t1: ", self.base_point[T]
-                            print "velocity: ", self.velocity
-                            print "time for intersection: ", self.time_intersection
-                            print "self.body_isect: ", self.body_isect
+                            #print "x2: ", last_point[X], " x1: ", self.base_point[X]
+                            #print "t2: ", last_point[T], " t1: ", self.base_point[T]
+                            #print "velocity: ", self.velocity
+                            #print "time for intersection: ", self.time_intersection
+                            #print "self.body_isect: ", self.body_isect
                     
                             
                 self.base_point_index -= 1
@@ -503,11 +507,16 @@ class Ball(Movable):
         return False
 
 
+    #this function is for the penalty mode.
+    #we assume the ball in not moving for the first few seconds
+    #when the slightest movement on the y axis is detected the function returns TRUE
     def movingBallPenalty(self):
 
-        ERROR_IN_Y = 2
+        ERROR_IN_Y = 2 # threshold for the error on the y axis (determined empirically).
+        
+        NUM_OF_POINTS_ = 20 # accumulate data to compute average value on the y axis
 
-        if self.avrYplace_index >= 20:
+        if self.avrYplace_index >= NUM_OF_POINTS_:
             self.dy = (self.dist * sin(self.bearing)) - self.avrYplace
             if fabs(self.dy) > ERROR_IN_Y:
                 return True
@@ -518,17 +527,18 @@ class Ball(Movable):
 
         return False
 
+    #This functions checks if the ball is moving 
+    #the perceived distance of the ball from the robot body fluctuates due to noise
+    #(usually remains for a few frames on some value, then changes but remains in some small range).
+    #We use this knowledge to decide when the ball is moving toward the goalie (poor man's kalman filter)
     def CalcIsBallMoving(self):
 
-        #The error functions (for ball.dist):
-        #10.33 < x < 120 : f = 0.2955 * x - 10.33
-        #120 <= x : f = 0.00136 * x ^ 1.94609
         T = 0
         DIST = 1
         BEARING = 2
 
-        ERROR_VAR = 1
-        NUM_OF_CHANGED_POINTS = 3
+        ERROR_VAR = 1 #threshold for the error
+        NUM_OF_CHANGED_POINTS = 3 #the number of different(!) values to determined if the ball is moving toward the goalie
 
         i = 0
         dist_list = []
@@ -551,7 +561,6 @@ class Ball(Movable):
             if dist_list_sub[-i] > 0:
                 return False
 
-        #print "Ball comming"
         return True
 
 
@@ -652,10 +661,12 @@ class Goal(Locatable):
             d_left = abs(new_bearing - self.left.bearing)
             d_right = abs(new_bearing - self.right.bearing)
             if d_left < d_right:
-                print "!! Goal: selecting left"
+                if self.verbose:
+                    print "!! Goal: selecting left"
                 min_diff = -burst_consts.MINIMAL_GOAL_POST_BEARING_DIFFERENCE
                 return self.left, self.right, min_diff
-            print "!! Goal: selecting right"
+            if self.verbose:
+                print "!! Goal: selecting right"
             min_diff = burst_consts.MINIMAL_GOAL_POST_BEARING_DIFFERENCE
             return self.right, self.left, min_diff
 
@@ -685,7 +696,8 @@ class Goal(Locatable):
             selected, other, minimal_post_bearing_diff = select_min_bearing_change_post(self.left._new_bearing)
             to_second_stage = [selected]
             selected.set_state(left_state)
-            print "!!!! Left %s post seen but uncertain" % (self.left.color)
+            if self.verbose:
+                print "!!!! Left %s post seen but uncertain" % (self.left.color)
         elif right_seen and right_seen_uncertain:
             # one of the last two never actually happens due to the way the vision code
             # deterministically puts the unknown result in the left or right.
@@ -693,7 +705,8 @@ class Goal(Locatable):
             selected, other, minimal_post_bearing_diff = select_min_bearing_change_post(self.right._new_bearing)
             selected.set_state(right_state)
             to_second_stage = [selected]
-            print "!!!! Right %s post seen but uncertain" % (self.left.color)
+            if self.verbose:
+                print "!!!! Right %s post seen but uncertain" % (self.left.color)
         else:
             if self.verbose:
                 print "!! Nothing seen for %s" % (self.left.color)
@@ -711,7 +724,8 @@ class Goal(Locatable):
         # so it is different by the minimal possible amount (since we don't know our location relative to it,
         # but we can assume we are in the field) - this avoids errors in the next steps.
         if other and abs(other.bearing - selected.bearing) < abs(minimal_post_bearing_diff):
-            print "GoalPost: updating bearing of other - saw %s, %3.2f other %3.2f" % (selected.name, selected.bearing, other.bearing)
+            if self.verbose:
+                print "GoalPost: updating bearing of other - saw %s, %3.2f other %3.2f" % (selected.name, selected.bearing, other.bearing)
             other.bearing = selected.bearing + minimal_post_bearing_diff
 
         # update some minimal vars on the goal itself - not actually used anywhere.

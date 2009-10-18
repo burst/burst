@@ -1,9 +1,4 @@
-#VRML_SIM V5.0 utf8
-#000000
-#!mainWindow: 0.266667 0.0174014 0.558333 0.822506
-#!logWindow: 0.00138889 0.701856 0.7625 0.212297
-#!robotView: ""
-
+#VRML_SIM V6.0 utf8
 WorldInfo {
   info [
     "Nao robots playing the Robocup standard league"
@@ -11,13 +6,13 @@ WorldInfo {
     "Date: 12 OCT 2007"
   ]
   title "Nao Robocup"
+  physics "ball"
   basicTimeStep 40
   runRealTime TRUE
-  physics "ball"
 }
 Viewpoint {
-  orientation 0.0535888 0.994049 0.0948366 3.99358
-  position -4.49266 2.06331 -4.42963
+  orientation 0.201286 0.96361 0.175895 4.72262
+  position -6.40632 3.34899 -0.110789
 }
 Background {
   skyColor [
@@ -62,7 +57,6 @@ DEF GROUND Solid {
           geometry IndexedFaceSet {
             coord Coordinate {
               point [
-#3rd quarter
                 -1.1 0 2
                 3 0 2
                 3 0 -1
@@ -95,7 +89,6 @@ DEF GROUND Solid {
           geometry IndexedFaceSet {
             coord Coordinate {
               point [
-#4th quarter
                 -1.1 0 3
                 3 0 3
                 3 0 0
@@ -129,7 +122,6 @@ DEF GROUND Solid {
           geometry IndexedFaceSet {
             coord Coordinate {
               point [
-#2nd quarter
                 -1.1 0 3
                 3 0 3
                 3 0 0
@@ -162,7 +154,6 @@ DEF GROUND Solid {
           appearance USE GREEN_APPEARANCE
           geometry IndexedFaceSet {
             coord Coordinate {
-#1st quarter
               point [
                 -1.1 0 2
                 3 0 2
@@ -205,9 +196,8 @@ DEF GROUND Solid {
           0, 1, 2, 3
         ]
       }
-#Outer walls:
       Transform {
-        translation 4.6 0.5 0      # x z y
+        translation 4.6 0.5 0
         children [
           Box {
             size 1 1 6
@@ -242,15 +232,12 @@ DEF GROUND Solid {
   }
   locked TRUE
 }
-
-
 DEF LARGER_YELLOW_GOAL Transform {
   scale 1.07 1.07 1.07
   children [
     DEF YELLOW_GOAL Goal {
       translation -3.11 0 0
       rotation 0 1 0 3.14159
-      postColor 1 1 0
     }
     DEF BLUE_GOAL Goal {
       translation 3.11 0 0
@@ -258,10 +245,7 @@ DEF LARGER_YELLOW_GOAL Transform {
     }
   ]
 }
-
-
 DEF BALL Solid {
-  translation 0 0.0 0
   children [
     DEF BALL_SHAPE Shape {
       appearance Appearance {
@@ -287,10 +271,8 @@ DEF BALL Solid {
   }
 }
 DEF RED_GOAL_KEEPER Nao {
-  # Goalie initial position and rotation
   translation 3.1 0.325 0
-  rotation 0 1 0 0 #-1.57
-#  rotation 0 0.5 0 0
+  rotation 0 1 0 4.82907
   color 1 0 0
   texture [
     "textures/red_logo.png"
@@ -299,11 +281,10 @@ DEF RED_GOAL_KEEPER Nao {
   name "red goal keeper"
 }
 Supervisor {
- children [
+  children [
     Emitter {
       name "emitter"
     }
   ]
   controller "goalie_trainer"
 }
-
