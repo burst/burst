@@ -833,11 +833,21 @@ class BaseNaoQiConnection(object):
     def getModules(self):
         """ get the modules list by parsing the http page for the broker -
         probably there is another way, but who cares?! 8)
+
+        Changes:
+         * Supports naoqi 1.6.0 sdk - still using soap, but format changed. Page
+         now includes a little more data. Instead of the nextSibling strategy
+         using [-1] which should be a little more future proof as long as
+         modules is the last entry.
         """
         x = minidom.parse(urllib2.urlopen(self._url))
-        modulesroot = x.firstChild.nextSibling.firstChild.firstChild.firstChild.nextSibling.nextSibling
-        modules = [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
-        return modules
+        page=x.getElementsByTagName('page')[0]
+        content=page.getElementsByTagName('content')[0]
+        broker=content.getElementsByTagName('broker')[0]
+        modulesroot = broker.getElementsByTagName('modules')[0]
+        modules = modulesroot.getElementsByTagName('module')
+        module_names = [m.getElementsByTagName('name')[0].firstChild.nodeValue for m in modules]
+        return module_names
 
     def getModule(self, modname):
         if modname == 'ALMotion':
