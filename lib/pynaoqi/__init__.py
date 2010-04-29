@@ -692,7 +692,7 @@ def getpairs(elem):
 
 class BaseNaoQiConnection(object):
 
-    def __init__(self, url="http://localhost:9560/", verbose = True, options=None):
+    def __init__(self, url="http://localhost:9559/", verbose = True, options=None):
         self.verbose = verbose
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
