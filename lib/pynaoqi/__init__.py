@@ -694,7 +694,8 @@ class ALMotionExtended(NaoQiModule):
         #print repr((joints, angles_matrix, durations_matrix))
         if return_instead:
             return (joints, angles_matrix, durations_matrix, interp_type)
-        return self.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        # used to be doMove. interp_type changed to isAbsolute (angles, not time)
+        return self.angleInterpolation(joints, angles_matrix, durations_matrix, True)
 
     def executeMoveHead(self, moves, interp_type, return_instead=False):
         joints = self._joint_names[:2]

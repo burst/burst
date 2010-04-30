@@ -6,7 +6,14 @@ from twisted.internet import reactor, task
 from twisted.internet.defer import succeed
 from twisted.internet.threads import deferToThread
 
-import gtk, gobject, cairo, goocanvas
+try:
+    import goocanvas
+except:
+    print "missing goocanvas"
+    print "sudo apt-get install python-pygoocanvas"
+    raise SystemExit
+
+import gtk, gobject, cairo
 
 # add path to burst lib
 import os
@@ -189,16 +196,9 @@ def setWalkConfig(con, param):
         StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
     ds = []
-    ds.append(con.ALMotion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
-                                        ElbowMedian, ElbowAmplitude ))
-    ds.append(con.ALMotion.setWalkArmsEnable(True))
-
+    ds.append(con.ALMotion.setWalkArmsEnable(True, True))
+    # con.ALMotion.setMotionConfig - possibly useful?
     # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-    ds.append(con.ALMotion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
-
-    ds.append(con.ALMotion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
-                                                ZmpOffsetX, ZmpOffsetY ))
-
     return DeferredList(ds)
 
 class ScalePane(object):
@@ -398,6 +398,7 @@ class Joints(BaseWindow):
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
             distance_per_step = self._walkconfig[WalkParameters.StepLength]
+            import pdb; pdb.set_trace()
             return setWalkConfig(self.con, self._walkconfig).addCallback(
                 lambda result: self.con.ALMotion.addWalkStraight(
                     steps * distance_per_step, self._default_walk_speed).addCallback(startWalkTest)
