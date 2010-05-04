@@ -6,7 +6,14 @@ from twisted.internet import reactor, task
 from twisted.internet.defer import succeed
 from twisted.internet.threads import deferToThread
 
-import gtk, gobject, cairo, goocanvas
+try:
+    import goocanvas
+except:
+    print "missing goocanvas"
+    print "sudo apt-get install python-pygoocanvas"
+    raise SystemExit
+
+import gtk, gobject, cairo
 
 # add path to burst lib
 import os
@@ -53,19 +60,19 @@ def getJointData(con):
     def collect_callback(joint_names):
         print "Collecting Joint Limits (need %s):" % len(joint_names),
         def store_one(jointname, result):
-            results[jointname] = result
+            results[jointname] = result[0]
             print "%s," % len(results),
             if len(results) == len(joint_names):
                 # finally!
                 print "Joint Limits Done"
                 collecting.callback((joint_names, results))
         for joint_name in joint_names:
-            con.ALMotion.getJointLimits(joint_name).addCallback(
+            con.ALMotion.getLimits(joint_name).addCallback(
                 lambda result, joint_name=joint_name: store_one(joint_name, result))
 
     # NOTE - not using con.ALMotion.initDeferred, not sure it can be called multiple times, need
     # to minimize the usage of that deferred.
-    con.ALMotion.getBodyJointNames().addCallback(collect_callback)
+    con.ALMotion.getJointNames('Body').addCallback(collect_callback)
 
     return collecting
 
@@ -163,7 +170,8 @@ class Scale(object):
             #print "joint %s, ind %s, value %s %s" % (
             #            self.name, ind, s.get_value(), val)
             if ind == self._waiting_callbacks:
-                d = con.ALMotion.gotoAngleWithSpeed(self.name, clip(-pi, pi, val), 50, 1)
+                # gotoAngleWithSpeed
+                d = con.ALMotion.angleInterpolationWithSpeed(self.name, clip(-pi, pi, val), 0.2) # 50, 1
             else:
                 #print "not moving, %s != %s" % (ind, self._waiting_callbacks)
                 d = succeed(0)
@@ -188,16 +196,9 @@ def setWalkConfig(con, param):
         StepHeight, StepSide, MaxTurn, ZmpOffsetX, ZmpOffsetY) = param[:]
 
     ds = []
-    ds.append(con.ALMotion.setWalkArmsConfig( ShoulderMedian, ShoulderAmplitude,
-                                        ElbowMedian, ElbowAmplitude ))
-    ds.append(con.ALMotion.setWalkArmsEnable(True))
-
+    ds.append(con.ALMotion.setWalkArmsEnable(True, True))
+    # con.ALMotion.setMotionConfig - possibly useful?
     # LHipRoll(degrees), RHipRoll(degrees), HipHeight(meters), TorsoYOrientation(degrees)
-    ds.append(con.ALMotion.setWalkExtraConfig( LHipRoll, RHipRoll, HipHeight, TorsoYOrientation ))
-
-    ds.append(con.ALMotion.setWalkConfig( StepLength, StepHeight, StepSide, MaxTurn,
-                                                ZmpOffsetX, ZmpOffsetY ))
-
     return DeferredList(ds)
 
 class ScalePane(object):
@@ -321,7 +322,7 @@ class Joints(BaseWindow):
             # that time consuming. Besides, joint data is cached, should only happen once on the
             # machine (unless you delete ~/.burst_joint_data.pickle
             self.joint_names, self.joint_limits = results
-            self.con.ALMotion.getBodyAngles().addCallback(onBodyAngles)
+            self.con.ALMotion.getAngles('Body', False).addCallback(onBodyAngles) # getAngles - second param is useSensors (use True?)
 
         # initiate network request that will lead to slides creation.
         # do everything based on a initDeferred, otherwise methods will not be available.
@@ -397,6 +398,7 @@ class Joints(BaseWindow):
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
             distance_per_step = self._walkconfig[WalkParameters.StepLength]
+            import pdb; pdb.set_trace()
             return setWalkConfig(self.con, self._walkconfig).addCallback(
                 lambda result: self.con.ALMotion.addWalkStraight(
                     steps * distance_per_step, self._default_walk_speed).addCallback(startWalkTest)
@@ -500,8 +502,7 @@ class Joints(BaseWindow):
     def onChanged(self, w, scroll_type, val, joint_name):
         """ called by scales, calls one scale or two, depending on the mirror checkbox
         """
-        #import pdb; pdb.set_trace()
-        if self._mirror_moves.get_active():
+        if joint_name[0] in 'LR' and self._mirror_moves.get_active():
             mirrored = {'L':'R', 'R':'L'}[joint_name[0]] + joint_name[1:]
             scales = [self.scales[joint_name], self.scales[mirrored]]
         else:
@@ -568,7 +569,7 @@ class Joints(BaseWindow):
     def getAngles(self):
         """ TODO: callback from twisted
         """
-        self.con.ALMotion.getBodyAngles().addCallback(self.onNewAngles)
+        self.con.ALMotion.getAngles('Body', False).addCallback(self.onNewAngles)
 
     def onNewAngles(self, new_angles):
         self.cur_read_angles = new_angles

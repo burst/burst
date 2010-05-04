@@ -288,34 +288,11 @@ def postNaoQiObject(mod, meth, *args):
     return o
 
 
-##################################################################
-# NaoQiModule, NaoQiMethod (Top Level objects)
-
-class NaoQiParam(object):
-
-    def __init__(self, ztype, zname, zdoc):
-        ztype = int(ztype)
-        self.__doc__ = zdoc
-        _, self._type = nao_type_dict.get(ztype, (None, ztype))
-        self.name = zname
-
-    def validate(self, v):
-        # TODO
-        if callable(self._type):
-            try:
-                self._type(v)
-            except:
-                return False
-        return True
-
-    def docstring(self):
-        return '%s %s: %s' % (self._type, self.name, self.__doc__)
-
-    def __str__(self):
-        return str(self._type)
+################################################################################
 
 ARRAY='array'
 VECTOR_STRING = 'vectorString'
+UNKNOWN = 100
 nao_type_dict = {
     1: ('void', None),
     2: ('bool', lambda v: v != 'false'),
@@ -325,14 +302,14 @@ nao_type_dict = {
     6: ('ARRAY6', ARRAY),
     24: ('ARRAY24', ARRAY),
     25: ('VECTOR_STRING', VECTOR_STRING),
+    UNKNOWN: ('UNKNOWN', UNKNOWN),
     }
 
 def arrayctor(node):
-    # TODO - better fix. This happens with sonar
-    if node.firstChild.childNodes[0].attributes is None:
+    if node.childNodes[0].attributes is None:
         return [x.data for x in node.firstChild.childNodes]
     try:
-        return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.firstChild.childNodes]
+        return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in node.childNodes]
     except:
         import pdb; pdb.set_trace()
 
@@ -368,13 +345,40 @@ def get_xsi_type_to_ctor(typename):
         missing_types.add(typename)
     return str
 
+
+##################################################################
+# NaoQiModule, NaoQiMethod (Top Level objects)
+
+class NaoQiParam(object):
+
+    def __init__(self, zname, zdoc, ztype=UNKNOWN):
+        ztype = int(ztype)
+        self.__doc__ = zdoc
+        _, self._type = nao_type_dict.get(ztype, (None, ztype))
+        self.name = zname
+
+    def validate(self, v):
+        # TODO
+        if callable(self._type):
+            try:
+                self._type(v)
+            except:
+                return False
+        return True
+
+    def docstring(self):
+        return '%s %s: %s' % (self._type, self.name, self.__doc__)
+
+    def __str__(self):
+        return str(self._type)
+
 ##################################################################
 
 class NaoQiReturn(object):
 
     def __init__(self, rettype, name, doc):
         rettype = int(rettype)
-        self._rettype_pprint, self._rettype = nao_type_dict.get(rettype, rettype)
+        self._rettype_pprint, self._rettype = nao_type_dict.get(rettype, (str(rettype), rettype))
         self.__doc__ = doc
         self.name = name
 
@@ -387,22 +391,33 @@ class NaoQiReturn(object):
     def fromNaoQiCall(self, obj):
         # TODO - check error
         ret = obj.firstChild.firstChild
+        if ret.nodeValue is None and len(ret.childNodes) == 0:
+            return None
         if ret.nodeName == 'faultcode':
             return ret.toprettyxml()
         if self._rettype == None:
             return None
+        if self._rettype == UNKNOWN:
+            try:
+                the_type = ret.firstChild.getAttribute('xsi:type')
+            except:
+                import pdb; pdb.set_trace()
+            if the_type == 'Array':
+                self._rettype = ARRAY
         if self._rettype in [ARRAY, VECTOR_STRING]:
             if ret.firstChild is None:
                 return []
-            first_child_type = ret.firstChild.attributes['xsi:type'].value
+            first_child_type = ret.firstChild.getAttribute('xsi:type')
             if first_child_type in ['xsd:float', 'xsd:int', 'xsd:string']: # some sort of exception
-                return get_xsi_type_to_ctor(ret.firstChild.attributes['xsi:type'].value)(ret.firstChild)
-            return [get_xsi_type_to_ctor(x.attributes['xsi:type'].value)(x) for x in ret.firstChild.childNodes]
+                return get_xsi_type_to_ctor(ret.firstChild.getAttribute('xsi:type'))(ret.firstChild)
+            return [get_xsi_type_to_ctor(x.getAttribute('xsi:type'))(x) for x in ret.firstChild.childNodes]
         return self._rettype(ret.firstChild.firstChild.nodeValue)
 
 ##################################################################
 
 class NaoQiMethod(object):
+
+    verbose = False
 
     def __init__(self, mod, name):
         self._mod = mod
@@ -425,8 +440,21 @@ class NaoQiMethod(object):
         return self.getMethodHelp().addCallback(self._getDocs_onResponse)
 
     def _getDocs_onResponse(self, soapbody):
+        """ Supports Aldebaran 1.6.0 ; Older code supported 1.3.7 (which is still
+        useful for older robots)
+
+        doc is: array with
+            Name: item, value name
+            help: item, value help
+            params: array, odd are parameters, even are help (so no types?)
+            return name: item, value
+            return help: item, value
+
+        """
         self._has_docs = True
         doc = soapbody.firstChild.firstChild.firstChild
+        if self.verbose:
+            print "verbose:", doc.toprettyxml()
         if doc == None:
             self.__doc__ = 'no help supplied by module'
             self._params = []
@@ -438,10 +466,13 @@ class NaoQiMethod(object):
         # index 2   - params
         def nodevalues(arr):
             return [q.firstChild.nodeValue for q in arr.childNodes]
-        self._params = [NaoQiParam(*nodevalues(t)) for t in doc.childNodes[2].childNodes]
-        self._return = NaoQiReturn(*nodevalues(doc.childNodes[1]))
-        name, docstring, module = [c.firstChild.nodeValue for c in doc.firstChild.childNodes]
-        self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (self._return, name, ','.join(map(str, self._params)), docstring, module, ''.join(' %s\n' % p.docstring() for p in self._params))
+        name_help = nodevalues(doc.childNodes[2])
+        self._params = [NaoQiParam(name_help[i], name_help[i+1]) for i in xrange(0, len(name_help), 2)]
+        name, docstring = [c.firstChild.nodeValue for c in doc.childNodes[:2]]
+        self._return = NaoQiReturn(rettype=UNKNOWN, name=name, doc=docstring)
+        self.__doc__ = '%s %s(%s) - %s (%s)\nParameters:\n%s' % (
+            self._return, name, ','.join(map(str, self._params)),
+            docstring, self._mod.getName(), ''.join(' %s\n' % p.docstring() for p in self._params))
 
     def getMethodHelp(self):
         return self._con._sendRequest(callNaoQiObject(self._mod._modname, 'getMethodHelp', self.name))
@@ -627,9 +658,9 @@ class ALMotionExtended(NaoQiModule):
         self.initDeferred.addCallback(self.onModuleInited)
 
     def onModuleInited(self, result):
-        self.getBodyJointNames().addCallback(self.onBodyJointNames)
+        self.getJointNames('Body').addCallback(self.onJointNames)
 
-    def onBodyJointNames(self, joint_names):
+    def onJointNames(self, joint_names):
         self._joint_names = joint_names
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, return_instead=False):
@@ -663,7 +694,8 @@ class ALMotionExtended(NaoQiModule):
         #print repr((joints, angles_matrix, durations_matrix))
         if return_instead:
             return (joints, angles_matrix, durations_matrix, interp_type)
-        return self.doMove(joints, angles_matrix, durations_matrix, interp_type)
+        # used to be doMove. interp_type changed to isAbsolute (angles, not time)
+        return self.angleInterpolation(joints, angles_matrix, durations_matrix, True)
 
     def executeMoveHead(self, moves, interp_type, return_instead=False):
         joints = self._joint_names[:2]
@@ -692,7 +724,7 @@ def getpairs(elem):
 
 class BaseNaoQiConnection(object):
 
-    def __init__(self, url="http://localhost:9560/", verbose = True, options=None):
+    def __init__(self, url="http://localhost:9559/", verbose = True, options=None):
         self.verbose = verbose
         self.options = options # the parsed command line options, convenient place to store them
         self._url = url
@@ -755,7 +787,13 @@ class BaseNaoQiConnection(object):
             # a loading naoqi - live with it.
             self._modules_to_wait_for_init_of = len(self._modules)
             for m in self._modules:
+                m.initDeferred.addErrback(lambda failure, m=m: self._moduleInitDoneFailure(failure, m))
                 m.initDeferred.addCallback(self._moduleInitDone)
+
+    def _moduleInitDoneFailure(self, failure, module):
+        print "%s init failed" % module.getName()
+        failure.printTraceback()
+        self._moduleInitDone()
 
     def _moduleInitDone(self, _):
         self._modules_to_wait_for_init_of -= 1
@@ -802,7 +840,8 @@ class BaseNaoQiConnection(object):
             print "Will close socket"
         if DEBUG:
             print "expecting %s" % content_length
-        # this loop is required for getting large stuff, like getRemoteImage (1200000~ bytes for 640x480 RGB)
+        # this loop is required for getting large stuff, like
+        # getRemoteImage (1200000~ bytes for 640x480 RGB)
         rest = []
         left = content_length - 1
         while left > 0:
@@ -812,7 +851,8 @@ class BaseNaoQiConnection(object):
             print "memory = %s" % memory.memory()
         body = h[-1] + ''.join(rest)
         if DEBUG:
-            print "***     Got:          ***\n%s" % compresstoprint(headers + body, 1000, 1000)
+            print "***     Got:          ***\n%s" % compresstoprint(
+                                                headers + body, 1000, 1000)
             print "*************************"
         if close_socket:
             self.s.close()
@@ -822,8 +862,8 @@ class BaseNaoQiConnection(object):
         return succeed(soapbody)
 
     def _twistedSendRequest(self, o):
-        """ send a request for object o, return deferred to be called with result as soapbody
-        instance
+        """ send a request for object o, return deferred to be called with
+            result as soapbody instance
         """
         tosend = self._message_maker.make(o, keepalive=True)
         return self.connection_manager.sendPacket(tosend)
@@ -833,11 +873,21 @@ class BaseNaoQiConnection(object):
     def getModules(self):
         """ get the modules list by parsing the http page for the broker -
         probably there is another way, but who cares?! 8)
+
+        Changes:
+         * Supports naoqi 1.6.0 sdk - still using soap, but format changed. Page
+         now includes a little more data. Instead of the nextSibling strategy
+         using [-1] which should be a little more future proof as long as
+         modules is the last entry.
         """
         x = minidom.parse(urllib2.urlopen(self._url))
-        modulesroot = x.firstChild.nextSibling.firstChild.firstChild.firstChild.nextSibling.nextSibling
-        modules = [y.firstChild.firstChild.nodeValue for y in modulesroot.childNodes[1:-1:2]]
-        return modules
+        page=x.getElementsByTagName('page')[0]
+        content=page.getElementsByTagName('content')[0]
+        broker=content.getElementsByTagName('broker')[0]
+        modulesroot = broker.getElementsByTagName('modules')[0]
+        modules = modulesroot.getElementsByTagName('module')
+        module_names = [m.getElementsByTagName('name')[0].firstChild.nodeValue for m in modules]
+        return module_names
 
     def getModule(self, modname):
         if modname == 'ALMotion':
