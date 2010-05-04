@@ -680,11 +680,11 @@ class ALMotionExtended(NaoQiModule):
 
         if len(moves[0]) == 6:
             def getangles((head, larm, lleg, rleg, rarm, interp_time)):
-                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+                return list(head) + list(larm) + list(lleg) + list(rleg) + list(rarm)
             joints = self._joint_names
         else:
             def getangles((larm, lleg, rleg, rarm, interp_time)):
-                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
+                return list(larm) + list(lleg) + list(rleg) + list(rarm)
             joints = self._joint_names[2:]
 
         n_joints = len(joints)
