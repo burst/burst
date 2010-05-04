@@ -577,10 +577,10 @@ class Joints(BaseWindow):
             self.scales[joint].state_scale.set_value(angle)
 
     def setStiffnessOn(self, w):
-        self.con.ALMotion.setBodyStiffness(0.8)
+        self.con.ALMotion.setStiffnesses('Body', 0.8)
 
     def setStiffnessOff(self, w):
-        self.con.ALMotion.setBodyStiffness(0.0)
+        self.con.ALMotion.setStiffnesses('Body', 0.0)
 
     def printAngles(self, w):
         j = self.cur_read_angles

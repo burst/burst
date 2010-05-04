@@ -662,6 +662,10 @@ class ALMotionExtended(NaoQiModule):
 
     def onJointNames(self, joint_names):
         self._joint_names = joint_names
+        if len(self._joint_names) == 22:
+            self._join_names_22 = self._joint_names
+        else:
+            self._joint_names_22 = joint_names[:6]+joint_names[8:24]
 
     def executeMove(self, moves, interp_type = INTERPOLATION_SMOOTH, return_instead=False):
         """ Work like northern bites code using ALMotion.doMove
@@ -680,12 +684,12 @@ class ALMotionExtended(NaoQiModule):
 
         if len(moves[0]) == 6:
             def getangles((head, larm, lleg, rleg, rarm, interp_time)):
-                return list(head) + list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
-            joints = self._joint_names
+                return list(head) + list(larm) + list(lleg) + list(rleg) + list(rarm)
+            joints = self._joint_names_22
         else:
             def getangles((larm, lleg, rleg, rarm, interp_time)):
-                return list(larm) + [0.0, 0.0] + list(lleg) + list(rleg) + list(rarm) + [0.0, 0.0]
-            joints = self._joint_names[2:]
+                return list(larm) + list(lleg) + list(rleg) + list(rarm)
+            joints = self._joint_names_22[2:]
 
         n_joints = len(joints)
         angles_matrix = transpose([[x for x in getangles(move)] for move in moves])
