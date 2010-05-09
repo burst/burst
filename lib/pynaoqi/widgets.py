@@ -12,6 +12,7 @@ import Image
 import gtk, goocanvas
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.internet import task
 
 if __name__ == '__main__':
     import sys

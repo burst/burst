@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from time import time
-from math import pi
+from math import pi, sin, cos
 
 from twisted.internet import reactor, task
 from twisted.internet.defer import succeed
@@ -383,36 +383,20 @@ class Joints(BaseWindow):
         def updateWalkConfig(_):
             self.con.ALMotion.getWalkConfig().addCallback(self.setWalkConfig)
 
-        self._start_walk_count = 1
-        def startWalkTest(result=None):
-            print "start walk req %s" % self._start_walk_count
-            self._start_walk_count += 1
-            self.con.ALMotion.getRemainingFootStepCount().addCallback(startWalkCb)
-
-        def startWalkCb(steps):
-            if steps > 0:
-                print "remaining footsteps, not calling walk"
-            else:
-                self.con.ALMotion.walk()
-
         def doWalk(steps):
             # distance [m], # 20ms cycles per step
             distance_per_step = self._walkconfig[WalkParameters.StepLength]
-            import pdb; pdb.set_trace()
-            return setWalkConfig(self.con, self._walkconfig).addCallback(
-                lambda result: self.con.ALMotion.addWalkStraight(
-                    steps * distance_per_step, self._default_walk_speed).addCallback(startWalkTest)
-                    )
+            return self.con.ALMotion.walkTo(steps * distance_per_step,
+                    0.0, 0.0)
 
         def doArc(angle, radius=0.5, cycles_per_step=60):
             # angle [rad], radius [m], # 20ms cycles per step
-            return self.con.ALMotion.addWalkArc(
-                angle, radius, cycles_per_step).addCallback(startWalkTest)
+            return self.con.ALMotion.walkTo(radius*sin(angle),
+                radius*(1-cos(angle)), angle)
 
         def doTurn(angle, cycles_per_step=60):
             # angle [rad], # 20ms cycles per step
-            return self.con.ALMotion.addTurn(
-                angle, cycles_per_step).addCallback(startWalkTest)
+            return self.con.ALMotion.walkTo(0, 0, angle)
 
         toggle_buttons_data = [
             ('all', self.onShowAll),

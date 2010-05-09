@@ -33,7 +33,7 @@ def fix_sys_path():
         if not os.path.exists(al_dir):
             print "AL_DIR set to nonexistant path!\nAL_DIR = %s." % al_dir
         else:
-            base = os.path.join(al_dir, 'extern', 'python')
+            base = os.path.join(al_dir, 'lib')
             dirpath, dirnames, filenames = os.walk(base).next()
             for dirpath in dirnames:
                 if os.path.split(dirpath)[-1] != 'proxies':
