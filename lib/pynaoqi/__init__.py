@@ -465,6 +465,8 @@ class NaoQiMethod(object):
         # index 1   - return value
         # index 2   - params
         def nodevalues(arr):
+            if len(arr.childNodes) == 1 and arr.childNodes[0].data == 'nil':
+                return ''
             return [q.firstChild.nodeValue for q in arr.childNodes]
         name_help = nodevalues(doc.childNodes[2])
         self._params = [NaoQiParam(name_help[i], name_help[i+1]) for i in xrange(0, len(name_help), 2)]
@@ -1015,7 +1017,8 @@ class NaoQiConnection(BaseNaoQiConnection):
         """ Debugging helper - you need to run pynaoqi with the -gthread argument
         for this to work """
 
-        import gtk, gobject
+        import mygtk
+        gtk, gobject = mygtk.gtk, mygtk.gobject
 
         self.subscribeToCamera()
         w = gtk.Window()

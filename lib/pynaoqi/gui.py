@@ -333,7 +333,8 @@ class Joints(BaseWindow):
         self.con.modulesDeferred.addCallback(lambda _: self.battery_level_task.start(
             DT_CHECK_BATTERY_LEVEL))
         w = self._w
-        w.set_title('naojoints - %s (%s)' % (self.con.host, host_to_ip(self.con.host)))
+        w.set_title('naojoints %s:%s (%s)' % (self.con.host,
+            self.con.options.port, host_to_ip(self.con.host)))
         self.c = c = gtk.VBox()
         self._joints_container = gtk.VBox() # top - buttons, bottom - joints sliders table
         w.add(c)

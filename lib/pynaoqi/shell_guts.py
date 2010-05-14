@@ -51,11 +51,12 @@ from burst import field
 ################################################################################
 # Gui Widgets
 
-from widgets import (GtkTextLogger, GtkTimeTicker,
-    CanvasTicker, VideoWindow, PlottingWindow, Calibrator, NotesWindow,
-    GtkTextCompactingLogger)
+def get_widgets():
+    from widgets import (GtkTextLogger, GtkTimeTicker,
+        CanvasTicker, VideoWindow, PlottingWindow, Calibrator, NotesWindow,
+        GtkTextCompactingLogger)
 
-from gui import Joints
+    from gui import Joints
 
 def watch(names, dt=1.0):
     """ watch multiple variables. For instance:
@@ -71,6 +72,7 @@ def watch(names, dt=1.0):
         title = '%s - %s' % (options.ip, minimal_title(names)), dt=dt)
 
 def plottime(names, limits=(0.0, 320.0), dt=1.0):
+    from widgets import GtkTimeTicker
     return GtkTimeTicker(lambda: con.ALMemory.getListData(names), limits=limits, dt=dt)
 
 ##### Allow for a single video window to be open ########
@@ -356,10 +358,12 @@ def makeplayerloop(module_name, clazz=None):
     can use twisted to run previously naoqi only code, directly from pynaoqi shell.
     """
     ctor = getInitialBehavior(module_name)
+    if ctor is None:
+        import pdb; pdb.set_trace()
     print "Initializing player %s" % ctor.__name__
     # Finally, start the update task.
     import burst.eventmanager as eventmanager
-    loop = eventmanager.TwistedMainLoop(ctor, control_reactor=False, startRightNow=False)
+    loop = eventmanager.TwistedMainLoop(ctor, reactor=False, startRightNow=False)
     loop.initMainObjectsAndPlayer()
     return loop
 
@@ -386,7 +390,10 @@ def fps(c, dt):
 f=fps(lambda: user_ns['eventmanager'].frame, 1.0)
 fps = lambda: checking_loop(lambda: f.next())
 
-def checking_loop(f, widget=GtkTextLogger, **kw):
+def checking_loop(f, widget=None, **kw):
+    if widget is None:
+        import widgets
+        widget = widgets.GtkTextLogger
     first = f()
     if isinstance(first, Deferred):
         widget(f, **kw)

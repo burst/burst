@@ -70,6 +70,8 @@ class SerialPostQueue(object):
         self._make_bd = self._world.burst_deferred_maker.make
         # print stuff
         self.verbose = burst.options.verbose_movecoordinator
+        from twisted.internet import reactor
+        self._reactor = reactor
 
     def isNotEmpty(self):
         return len(self._posts) > 0
@@ -110,8 +112,7 @@ class SerialPostQueue(object):
     def _isRunningSimulated(self, postid):
         print "--- SIMULATING ---"
         d = Deferred()
-        from twisted.internet import reactor
-        reactor.callLater(1.0, d.callback, None)
+        self._reactor.callLater(1.0, d.callback, None)
         return d
 
     def _onIsRunning(self, result, postid, event, deferred):
