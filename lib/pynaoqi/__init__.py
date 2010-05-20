@@ -411,7 +411,11 @@ class NaoQiReturn(object):
             if first_child_type in ['xsd:float', 'xsd:int', 'xsd:string']: # some sort of exception
                 return get_xsi_type_to_ctor(ret.firstChild.getAttribute('xsi:type'))(ret.firstChild)
             return [get_xsi_type_to_ctor(x.getAttribute('xsi:type'))(x) for x in ret.firstChild.childNodes]
-        return self._rettype(ret.firstChild.firstChild.nodeValue)
+        retval = ret.firstChild.firstChild.nodeValue
+        if callable(self._rettype):
+            return self._rettype(retval)
+        else:
+            return retval
 
 ##################################################################
 
@@ -665,7 +669,7 @@ class ALMotionExtended(NaoQiModule):
     def onJointNames(self, joint_names):
         self._joint_names = joint_names
         if len(self._joint_names) == 22:
-            self._join_names_22 = self._joint_names
+            self._joint_names_22 = self._joint_names
         else:
             self._joint_names_22 = joint_names[:6]+joint_names[8:24]
 
