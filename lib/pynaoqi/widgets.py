@@ -9,9 +9,12 @@ import ctypes
 
 import Image
 
-import gtk, goocanvas
+import mygtk
+import goocanvas
+gtk = mygtk.gtk
 
 from twisted.internet.defer import Deferred, succeed
+from twisted.internet import task
 
 if __name__ == '__main__':
     import sys
@@ -1114,6 +1117,7 @@ class Localization(object):
         self.w.set_title('localization - %s - %s' % (self.con.host, self.status))
 
     def installUpdater(self, _):
+        from gui import DT_CHECK_FOR_NEW_INERTIAL
         self.updater = task.LoopingCall(self.getVariables)
         self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
 
@@ -1163,6 +1167,7 @@ class Inertial(object):
 
         w.show_all()
         self.updater = task.LoopingCall(self.getInertial)
+        from gui import DT_CHECK_FOR_NEW_INERTIAL
         self.updater.start(DT_CHECK_FOR_NEW_INERTIAL)
 
     def getInertial(self):

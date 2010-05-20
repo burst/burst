@@ -207,8 +207,9 @@ def make_shell_namespace(use_pylab, using_gtk, con):
     from . import testers
 
     import burst
-    from gui import Joints
-    from widgets import CanvasTicker
+    if using_gtk:
+        from gui import Joints
+        from widgets import CanvasTicker
     import burst_util
     import burst_consts as consts
     import burst_events
@@ -264,7 +265,8 @@ def make_shell_namespace(use_pylab, using_gtk, con):
         )
 
     if using_gtk:
-        import gtk
+        import mygtk
+        gtk = mygtk.gtk
         my_ns.update(dict(
             naojoints = Joints,
             fps = fps,
@@ -308,6 +310,69 @@ printed and available as _d."""
         examples()
 
 def main_twisted(con, my_ns):
+    import gtk
+    from ipython_view import IPythonView
+    import pango
+
+    import platform
+    if platform.system()=="Windows":
+            FONT = "Lucida Console 9"
+    else:
+            FONT = "Luxi Mono 10"
+
+    W = gtk.Window()
+    W.set_size_request(750,550)
+    W.set_resizable(True)
+    S = gtk.ScrolledWindow()
+    S.set_policy(gtk.POLICY_AUTOMATIC,gtk.POLICY_AUTOMATIC)
+    V = IPythonView(user_ns=my_ns)
+    shell = V.IP
+    V.modify_font(pango.FontDescription(FONT))
+    V.set_wrap_mode(gtk.WRAP_CHAR)
+    V.show()
+    S.add(V)
+    S.show()
+    W.add(S)
+    W.show()
+    W.connect('delete_event',lambda x,y:False)
+    W.connect('destroy',lambda x:gtk.main_quit())
+
+    globals()['shell'] = shell # for later updating variables in user table
+    globals()['user_ns'] = my_ns
+    pimp_my_shell(shell, con)
+
+    twisted_banner(print_own_deferred_help = True)
+
+    # Start the mainloop, and add a hook to display deferred results when they
+    # are available (also affects *any* deferred you try to print)
+    import twisted.internet.defer as defer
+    from IPython.hooks import result_display
+    from IPython.genutils import Term
+
+    def print_deferred(x):
+        s = str(x)
+        if len(s) > 1000:
+            s = s[:1000] + '...'
+        print >>Term.cout, "deferred: %s" % s
+        shell.user_ns['_d'] = x
+        return x
+
+    def display_deferred(self, arg):
+        # don't display already called deferreds?
+        if isinstance(arg, defer.Deferred):
+            arg.addCallback(print_deferred)
+        else:
+            result_display(self, arg)
+    shell.set_hook('result_display', display_deferred)
+
+    start_names_request(my_ns)
+
+    #gtk.main()
+    from twisted.internet import reactor
+    reactor.run()
+
+
+def main_twisted_barfed(con, my_ns):
 
     #from ipy import IPShellTwisted
     from IPython.twshell import IPShellTwisted
@@ -349,9 +414,9 @@ def main_twisted(con, my_ns):
 def installgtkreactor():
     import pynaoqi
     options = pynaoqi.getDefaultOptions()
-    if options.twisted:
+    using_gtk = False
+    if options.twisted and not options.nogtk:
         # Try to throw in gtk support
-        using_gtk = False
         try:
             from twisted.internet import gtk2reactor
             gtk2reactor.install()
@@ -366,7 +431,7 @@ def installgtkreactor():
 
 def runWithProtocol(klass):
     import termios, tty
-    from twisted.internet import reactor, stdio
+    from twisted.internet import stdio
     from twisted.conch.insults.insults import ServerProtocol
 
     fd = sys.__stdin__.fileno()
@@ -375,7 +440,8 @@ def runWithProtocol(klass):
     try:
         p = ServerProtocol(klass)
         stdio.StandardIO(p)
-        reactor.run()
+        import myreactor
+        myreactor.reactor.run()
     finally:
         termios.tcsetattr(fd, termios.TCSANOW, oldSettings)
         #os.write(fd, "\r\x1bc\r")
@@ -432,7 +498,10 @@ def pimp_my_shell(shell, con):
     # set a nicer prompt to tell the user where he is connected to
     # reminder: can use ${} to eval stuff, like: '${con.host} [\#]: '
     # NM stands for No Modules
-    shell.outputcache.prompt1.p_template='%s ${not con._modules and "NM " or ""}[\#]: ' % (con.host)
+    try:
+        shell.outputcache.prompt1.p_template='%s ${not con._modules and "NM " or ""}[\#]: ' % (con.host)
+    except:
+        print "TODO: prompt"
 
 #############################################################################
 

@@ -22,7 +22,9 @@ def running_on_nao():
 def connecting_to_webots():
     """ True if we are connecting to webots """
     #is_nao = os.popen("uname -m").read().strip() == 'i586'
-    return not running_on_nao() and ip == LOCALHOST_IP or ip == 'localhost'
+    return False # 2010 - this year we use bhuman simulator, and naoqi simulation api.
+        # default port is 9559, not 9560
+    #return not running_on_nao() and ip == LOCALHOST_IP or ip == 'localhost'
 
 def connecting_to_nao():
     """ True if we are not connecting to webots.

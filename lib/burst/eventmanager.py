@@ -775,12 +775,21 @@ class SimpleMainLoop(BasicMainLoop):
 
 class TwistedMainLoop(BasicMainLoop):
 
-    def __init__(self, main_behavior_class=None, control_reactor=True, startRightNow=True):
+    def __init__(self, main_behavior_class=None, reactor=True, startRightNow=True):
         super(TwistedMainLoop, self).__init__(main_behavior_class = main_behavior_class)
         self._do_cleanup = True
-        self._control_reactor = control_reactor
+        self._reactor = reactor
+        if reactor:
+            self._install_sigint_handler(reactor)
+        import pynaoqi
+        self.con = pynaoqi.getDefaultConnection()
+        self.started = False        # True when setStartCallback has been called
+        self.quitting = False
+        if startRightNow:
+            self.start()
 
-        from twisted.internet import reactor
+    def _install_sigint_handler(self, reactor):
+        print "installing SIG_INT handler"
         orig_sigInt = reactor.sigInt
         self._ctrl_c_presses = 0
         def my_int_handler(reactor, *args):
@@ -796,13 +805,6 @@ class TwistedMainLoop(BasicMainLoop):
                 orig_sigInt(*args)
 
         reactor.sigInt = my_int_handler
-
-        import pynaoqi
-        self.con = pynaoqi.getDefaultConnection()
-        self.started = False        # True when setStartCallback has been called
-        self.quitting = False
-        if startRightNow:
-            self.start()
 
     def profile_filename(self):
         return '%s_twisted.kcachegrind' % sys.argv[0].rsplit('.',1)[0]
@@ -824,7 +826,7 @@ class TwistedMainLoop(BasicMainLoop):
         info( "TwistedMainLoop: _twistedStart")
         self.initMainObjectsAndPlayer()
         info( "TwistedMainLoop: created main objects")
-        from twisted.internet import reactor, task
+        from twisted.internet import task
         self.preMainLoopInit()
         self._startBanner("running TWISTED event loop with sleep time of %s milliseconds" % (self._eventmanager.dt*1000))
         self._main_task = task.LoopingCall(self.onTimeStep)
@@ -836,11 +838,10 @@ class TwistedMainLoop(BasicMainLoop):
         self._main_task.interval = dt
 
     def _run_loop(self):
-        if not self._control_reactor:
+        if not self._reactor:
             info( "TwistedMainLoop: not in control of reactor")
             return
-        from twisted.internet import reactor
-        reactor.run() #installSignalHandlers=0)
+        self._reactor.run() #installSignalHandlers=0)
         info( "TwistedMainLoop: event loop done")
 
     def shutdown(self):
@@ -885,10 +886,9 @@ class TwistedMainLoop(BasicMainLoop):
         if hasattr(self, '_main_task') and self._main_task.running:
             self._main_task.stop()
         # only if we are in charge of the reactor stop that too
-        if not self._control_reactor: return
-        from twisted.internet import reactor
+        if not self._reactor: return
         self.cleanupAfterNaoqi()
-        reactor.stop()
+        self._reactor.stop()
 
     def onTimeStep(self):
         #info( ">>>    twisted burst step     <<<")
